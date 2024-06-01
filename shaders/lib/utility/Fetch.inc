@@ -12,7 +12,7 @@ float GetDepthFix(in ivec2 texel) {
 	return depth + 0.38 * step(depth, 0.56);
 }
 
-vec3 GetNormal(in ivec2 texel) {
+vec3 GetWorldNormal(in ivec2 texel) {
 	return decodeUnitVector(unpackUnorm2x8(texelFetch(colortex4, texel, 0).y) * 2.0 - 1.0);
 }
 

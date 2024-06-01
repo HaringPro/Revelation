@@ -30,6 +30,8 @@ flat in vec3 skyIlluminance;
 flat in vec3 sunIlluminance;
 flat in vec3 moonIlluminance;
 
+flat in vec3 blocklightColor;
+
 //======// Uniform //=============================================================================//
 
 uniform sampler2DShadow shadowtex1;
@@ -41,18 +43,14 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex0;
 uniform sampler3D colortex1;
-uniform sampler2D colortex2;
+
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
-uniform sampler2D colortex5;
-uniform sampler2D colortex6;
-uniform sampler2D colortex7;
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex2;
 
-uniform float frameTime;
 uniform float frameTimeCounter;
 uniform float nightVision;
 uniform float near;
@@ -62,7 +60,6 @@ uniform float viewHeight;
 uniform float aspectRatio;
 uniform float wetness;
 uniform float wetnessCustom;
-uniform float sunAngle;
 uniform float eyeAltitude;
 uniform float weatherSnowySmooth;
 uniform float eyeSkylightFix;
@@ -130,9 +127,9 @@ void main() {
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
-	if (depth >= 1.0 + gbufferData0.y * 1e6) {
+	if (depth > 0.999999 + gbufferData0.y * 1e6) {
 		vec3 transmittance;
-		sceneOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittance) * 4.0;
+		sceneOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittance) * 6.0;
 		sceneOut += transmittance * (RenderStars(worldDir) + RenderSun(worldDir, worldSunVector));
 	} else {
 		vec3 albedo = sRGBtoLinear(texelFetch(colortex0, texel, 0).rgb);
@@ -146,24 +143,20 @@ void main() {
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 		vec3 flatNormal = GetFlatNormal(texel);
-		vec3 worldNormal = flatNormal;
+		vec3 worldNormal = GetWorldNormal(texel);
 
 		float LdotV = dot(worldLightVector, -worldDir);
-
-		float NdotV = saturate(dot(worldNormal, -worldDir));
 		float NdotL = dot(worldNormal, worldLightVector);
-		float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-		float NdotH = (NdotL + NdotV) * halfwayNorm;
-		float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-		vec3 sunlightMult = 12.0 * directIlluminance;
+		// Sunlight
+		vec3 sunlightMult = 9.0 * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
-		vec3 diffuse = vec3(1.0);
-		vec3 specular = vec3(0.0);
+		vec3 diffuseBRDF = vec3(1.0);
+		vec3 specularBRDF = vec3(0.0);
 
 		float distortFactor;
-		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 4e-5 + 2e-2) * (2.0 - saturate(NdotL));
+		vec3 normalOffset = worldNormal * fma(dotSelf(worldPos), 4e-5, 2e-2) * (2.0 - saturate(NdotL));
 
 		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
 
@@ -176,34 +169,43 @@ void main() {
 			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
 
 			if (maxOf(shadow) > 1e-6) {
+				float NdotV = saturate(dot(worldNormal, -worldDir));
+				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+				float NdotH = (NdotL + NdotV) * halfwayNorm;
+				float LdotH = LdotV * halfwayNorm + halfwayNorm;
+
 				#ifdef SCREEN_SPACE_SHADOWS
 					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither, 0.);
 				#endif
-				diffuse *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo);
+				diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo);
 
-				specular = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
+				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
 
 				shadow *= saturate(lightmap.y * 1e8);
 				shadow *= sunlightMult;
 			}
 		}
 
-		sceneOut += shadow * diffuse;
-
-		// Skylight
-		if (lightmap.y > 1e-5) {
-			// vec3 skylight = FromSH(skySH, worldNormal);
-			vec3 skylight = skyIlluminance * 0.1;
-			skylight *= worldNormal.y * 2.0 + 3.0;
-
-			sceneOut += skylight * cube(lightmap.y);
-		}
+		sceneOut += shadow * diffuseBRDF;
 
 		float bounce = CalculateFittedBouncedLight(worldNormal);
 		if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
 		sceneOut += bounce * sunlightMult;
 
-		sceneOut += 2.0 * float(materialID == 20u || materialID == 46u) + CalculateBlocklightFalloff(lightmap.x) * 4.0;
+		// Skylight
+		if (lightmap.y > 1e-5) {
+			// vec3 skylight = FromSH(skySH, worldNormal);
+			vec3 skylight = skyIlluminance * 0.6;
+			skylight *= worldNormal.y * 0.4 + 0.6;
+
+			sceneOut += skylight * cube(lightmap.y);
+		}
+
+		// Emissive & Blocklight
+		sceneOut += 2.0 * float(materialID == 20u || materialID == 46u) + CalculateBlocklightFalloff(lightmap.x) * blocklightColor * 4.0;
 		sceneOut *= albedo;
+
+		// Specular highlights
+		sceneOut += shadow * specularBRDF;
 	}
 }

@@ -64,12 +64,12 @@ float Get3DNoiseSmooth(in vec3 position) {
 // http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 
 const float PHI2 = 1.32471795724;
-//const float PHI3 = 1.22074408460;
+const float PHI3 = 1.22074408460;
 
 float R1(in int n, in float seed) {
 	return fract(seed + n * PHI);
 }
-/*
+
 vec2 R2(in int n, in vec2 seed) {
     const vec2 alpha = 1.0 / vec2(PHI2, PHI2 * PHI2);
 	return fract(seed + n * alpha);
@@ -79,7 +79,6 @@ vec3 R3(in int n, in vec3 seed) {
     const vec3 alpha = 1.0 / vec3(PHI3, PHI3 * PHI3, PHI3 * PHI3 * PHI3);
 	return fract(seed + n * alpha);
 }
-*/
 
 vec2 R2(in float n) {
 	const vec2 alpha = 1.0 / vec2(PHI2, PHI2 * PHI2);

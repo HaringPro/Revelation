@@ -5,9 +5,10 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,3 */
+/* RENDERTARGETS: 0,3,4 */
 layout(location = 0) out vec4 albedoOut;
 layout(location = 1) out vec4 gbufferOut0;
+layout(location = 2) out vec2 gbufferOut1;
 
 //======// Uniform //=============================================================================//
 
@@ -41,4 +42,7 @@ void main() {
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
+
+	gbufferOut1.x = packUnorm2x8(encodeUnitVector(flatNormal) * 0.5 + 0.5);
+	gbufferOut1.y = gbufferOut1.x;
 }

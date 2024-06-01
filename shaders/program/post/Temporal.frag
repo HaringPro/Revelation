@@ -1,4 +1,15 @@
 
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
 //======// Utility //=============================================================================//
 
 #include "/lib/utility.inc"
@@ -166,5 +177,5 @@ void main() {
     vec3 closestFragment = GetClosestFragment(texel, depth);
     vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
 
-    temporalOut = CalculateTAA(screenCoord, velocity);
+    temporalOut = clamp16F(CalculateTAA(screenCoord, velocity));
 }

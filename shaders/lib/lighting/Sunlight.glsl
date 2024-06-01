@@ -11,7 +11,7 @@ const float	shadowDistance	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0
 const float realShadowMapRes = shadowMapResolution * MC_SHADOW_QUALITY;
 
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 #include "ShadowDistortion.glsl"
 
@@ -23,7 +23,7 @@ vec3 WorldPosToShadowProjPosBias(in vec3 worldOffsetPos, out float distortFactor
 	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
 }
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 	float searchDepth = 0.0;
@@ -74,7 +74,7 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 		ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
 		float sampleDepth0 = step(shadowProjPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
 		if (sampleDepth0 != sampleDepth1) {
-			result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+			result += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
 		} else 
 	#endif
 		{ result += sampleDepth1; }
@@ -83,7 +83,7 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 	return result * rSteps;
 }
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in float sssAmount) {
 	vec3 lightVector = mat3(gbufferModelView) * worldLightVector;
@@ -96,7 +96,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	vec2 absScreenDir = abs(screenDir.xy);
     screenDir *= mix(1.0 / absScreenDir.x, 1.0 / absScreenDir.y, absScreenDir.y > absScreenDir.x);
 
-    vec3 rayStep = screenDir * mix(0.004, 0.006, sssAmount < 1e-4);
+    vec3 rayStep = screenDir * mix(0.003, 0.005, sssAmount < 1e-4);
 	rayPos += rayStep * (dither + 0.5);
 
     rayStep.xy *= viewSize;
@@ -112,8 +112,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
         float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 
         if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = LinearToScreenDepth(sampleDepth);
-			float traceDepthLinear = LinearToScreenDepth(rayPos.z);
+			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
+			float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
 
 			if (abs(sampleDepthLinear - traceDepthLinear) / traceDepthLinear < zTolerance) {
 				shadow *= absorption;
@@ -127,11 +127,9 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	return shadow;
 }
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
-	//if (sssAmount < 1e-4) return vec3(0.0);
-
 	vec3 coeff = albedo * inversesqrt(GetLuminance(albedo) + 1e-6);
 	coeff = oneMinus(0.75 * saturate(coeff)) * (32.0 / sssAmount);
 
@@ -143,11 +141,11 @@ vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float 
 	return subsurfaceScattering * sssAmount * PI;
 }
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 float CalculateFittedBouncedLight(in vec3 normal) {
 	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
 	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
 
-	return bounce * (2.0 - bounce) * 2e-2;
+	return bounce * (2.0 - bounce) * 4e-2;
 }

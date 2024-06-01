@@ -1,4 +1,15 @@
 
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
 //======// Utility //=============================================================================//
 
 #include "/lib/utility.inc"
@@ -16,12 +27,6 @@ layout(location = 0) out vec3 LDRImageOut;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
-uniform sampler2D colortex2;
-uniform sampler2D colortex3;
-uniform sampler2D colortex4;
-uniform sampler2D colortex5;
-uniform sampler2D colortex6;
-uniform sampler2D colortex7;
 
 uniform vec2 viewPixelSize;
 

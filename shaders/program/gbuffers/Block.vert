@@ -58,9 +58,9 @@ void main() {
 	#endif
 	// vec4 worldPos = gbufferModelViewInverse * viewPos;
 
-    tbnMatrix[2] = normalize(normalMatrix * gl_Normal);
+    tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#if defined MC_NORMAL_MAP
-		tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
+		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
 	#endif
 

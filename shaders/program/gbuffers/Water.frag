@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 0,3 */
-layout(location = 0) out vec4 albedoOut;
+layout(location = 0) out vec4 sceneOut;
 layout(location = 1) out vec4 gbufferOut0;
 
 //======// Uniform //=============================================================================//
@@ -33,7 +33,7 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	albedoOut = vec4(sqr(albedo.rgb), sqrt2(albedo.a));
+	sceneOut = vec4(sqr(albedo.rgb) * 0.75, pow(albedo.a, 0.3));
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-// flat out mat3 tbnMatrix;
+flat out mat3 tbnMatrix;
 
 out vec4 tint;
 out vec2 texCoord;
@@ -18,13 +18,13 @@ in vec3 vaPosition;
 in vec4 vaColor;
 in vec2 vaUV0;
 in ivec2 vaUV2;
-// in vec3 vaNormal;
+in vec3 vaNormal;
 
-// #ifndef MC_GL_VENDOR_INTEL
-// 	#define attribute in
-// #endif
+#ifndef MC_GL_VENDOR_INTEL
+	#define attribute in
+#endif
 
-// attribute vec4 at_tangent;
+attribute vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
 
@@ -36,7 +36,6 @@ uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
-uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
 
 uniform vec2 taaOffset;
@@ -56,11 +55,11 @@ void main() {
 	#endif
 	// vec4 worldPos = gbufferModelViewInverse * viewPos;
 
-    // tbnMatrix[2] = normalize(normalMatrix * gl_Normal);
-	// #if defined MC_NORMAL_MAP
-	// 	tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
-	// 	tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
-	// #endif
+    tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
+	#if defined MC_NORMAL_MAP
+		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
+		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
+	#endif
 
 	materialID = uint(entityId - 10000);
 }

@@ -58,9 +58,9 @@ void main() {
 
 	vec4 worldPos = gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 
-    tbnMatrix[2] = normalize(normalMatrix * gl_Normal);
+    tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#if defined MC_NORMAL_MAP
-		tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
+		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
 	#endif
 
@@ -99,9 +99,9 @@ void main() {
 
 	// if (materialID > 0u) { materialID = max(materialID, 6u); }
 	// #ifdef GENERAL_GRASS_FIX
-	// else if (abs(gl_Normal.x) > 0.01 && abs(gl_Normal.x) < 0.99 ||
-	// 		 abs(gl_Normal.y) > 0.01 && abs(gl_Normal.y) < 0.99 ||
-	// 		 abs(gl_Normal.z) > 0.01 && abs(gl_Normal.z) < 0.99
+	// else if (abs(vaNormal.x) > 0.01 && abs(vaNormal.x) < 0.99 ||
+	// 		 abs(vaNormal.y) > 0.01 && abs(vaNormal.y) < 0.99 ||
+	// 		 abs(vaNormal.z) > 0.01 && abs(vaNormal.z) < 0.99
 	// 		) materialID = 6u;
 	// #endif
 

@@ -28,6 +28,8 @@ uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform mat4 gbufferModelViewInverse;
+
 uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
@@ -37,7 +39,7 @@ void main() {
 	lightmap = saturate(vec2(vaUV2) * rcp(240.0));
 
 	tint = vaColor;
-	flatNormal = normalize(normalMatrix * vaNormal);
+	flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 
 	materialID = lightmap.x > 0.99 ? 20u : 40u;
 

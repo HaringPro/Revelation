@@ -15,6 +15,8 @@
 
 #include "/lib/utility.inc"
 
+#define TORCHLIGHT_COLOR_TEMPERATURE 3000 // Color temperature of torch light in Kelvin. [1000 1500 2000 2300 2500 3000 3400 3500 4000 4500 5000 5500 6000]
+
 //======// Output //==============================================================================//
 
 out vec2 screenCoord;
@@ -24,6 +26,8 @@ flat out vec3 skyIlluminance;
 
 flat out vec3 sunIlluminance;
 flat out vec3 moonIlluminance;
+
+flat out vec3 blocklightColor;
 
 //======// Attribute //===========================================================================//
 
@@ -54,4 +58,6 @@ void main() {
 	vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
 	skyIlluminance = GetSunAndSkyIrradiance(atmosphereModel, camera, worldSunVector, sunIlluminance, moonIlluminance);
 	directIlluminance = sunIlluminance + moonIlluminance;
+
+	blocklightColor = blackbody(float(TORCHLIGHT_COLOR_TEMPERATURE));
 }

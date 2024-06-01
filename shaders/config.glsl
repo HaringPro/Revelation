@@ -1,6 +1,18 @@
-//======// Pipeline configuration
 
 /*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+/*
+	// Pipeline configuration
+
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= R11F_G11F_B10F;
 	const int 	colortex2Format 			= R11F_G11F_B10F;
@@ -8,6 +20,7 @@
 	const int 	colortex4Format 			= RGBA16;
 	const int 	colortex5Format 			= RGBA16F;
 	const int 	colortex6Format 			= RGBA16F;
+	// const int 	colortex8Format 			= RGBA8;
 	const int 	colortex10Format 			= R11F_G11F_B10F;
 
 	const bool	colortex0Clear				= false;
@@ -33,5 +46,4 @@
 	const bool 	shadowHardwareFiltering1 	= true;
 
     const int   noiseTextureResolution      = 256;
-
 */
