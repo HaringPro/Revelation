@@ -27,9 +27,6 @@ in vec2 screenCoord;
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
-flat in vec3 sunIlluminance;
-flat in vec3 moonIlluminance;
-
 flat in vec3 blocklightColor;
 
 //======// Uniform //=============================================================================//
@@ -41,11 +38,15 @@ uniform sampler2D shadowcolor1;
 
 uniform sampler2D noisetex;
 
-uniform sampler2D colortex0;
+uniform sampler2D colortex0; // Albedo
 uniform sampler3D colortex1;
+
+uniform sampler2D colortex2; // Sky view LUT
 
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
+
+uniform sampler2D colortex10;
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -128,8 +129,9 @@ void main() {
 	uint materialID = uint(gbufferData0.y * 255.0);
 
 	if (depth > 0.999999 + gbufferData0.y * 1e6) {
-		vec3 transmittance;
-		sceneOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittance) * 6.0;
+		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
+		sceneOut = textureBicubic(colortex2, skyViewCoord).rgb;
+		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut += transmittance * (RenderStars(worldDir) + RenderSun(worldDir, worldSunVector));
 	} else {
 		vec3 albedo = sRGBtoLinear(texelFetch(colortex0, texel, 0).rgb);
@@ -149,7 +151,7 @@ void main() {
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
-		vec3 sunlightMult = 9.0 * directIlluminance;
+		vec3 sunlightMult = (9.0 - wetness * 8.0) * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		vec3 diffuseBRDF = vec3(1.0);
@@ -195,7 +197,7 @@ void main() {
 		// Skylight
 		if (lightmap.y > 1e-5) {
 			// vec3 skylight = FromSH(skySH, worldNormal);
-			vec3 skylight = skyIlluminance * 0.6;
+			vec3 skylight = mix(skyIlluminance * 0.6, directIlluminance * 0.2, wetness * 0.7);
 			skylight *= worldNormal.y * 0.4 + 0.6;
 
 			sceneOut += skylight * cube(lightmap.y);

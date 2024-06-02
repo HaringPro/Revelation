@@ -13,15 +13,14 @@ float Get3DNoise(in vec3 position) {
 	return mix(noiseSample.x, noiseSample.y, f.z);
 }
 
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
+float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
 
-#define bayer4(a)   (bayer2(  0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer8(a)   (bayer4(  0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer16(a)  (bayer8(  0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer32(a)  (bayer16( 0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer64(a)  (bayer32( 0.5 * (a)) * 0.25 + bayer2(a))
-//#define bayer128(a) (bayer64( 0.5 * (a)) * 0.25 + bayer2(a))
-//#define bayer256(a) (bayer128(0.5 * (a)) * 0.25 + bayer2(a))
+float bayer4(vec2 a)   { return bayer2 (0.5   * a) * 0.25     + bayer2(a); }
+float bayer8(vec2 a)   { return bayer4 (0.5   * a) * 0.25     + bayer2(a); }
+float bayer16(vec2 a)  { return bayer4 (0.25  * a) * 0.0625   + bayer4(a); }
+float bayer32(vec2 a)  { return bayer8 (0.25  * a) * 0.0625   + bayer4(a); }
+float bayer64(vec2 a)  { return bayer8 (0.125 * a) * 0.015625 + bayer8(a); }
+float bayer128(vec2 a) { return bayer16(0.125 * a) * 0.015625 + bayer8(a); }
 
 vec2 hash2(vec3 p3) {
 	p3 = fract(p3 * vec3(443.897, 441.423, 437.195));

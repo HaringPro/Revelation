@@ -1,4 +1,14 @@
 
+float moonlightFactor = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
+
+const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
+
+const float sunAngularRadius = 0.004675;
+// const float sunAngularRadius = 0.012; // Unphysical
+const float mie_phase_g = 0.78;
+
+//================================================================================================//
+
 float RayleighPhase(in float cosTheta) {
 	const float c = 3.0 / 16.0 * rPI;
 	return cosTheta * cosTheta * c + c;
@@ -50,13 +60,44 @@ vec3 FromSH(in mat4x3 coeff, in vec3 dir) {
 	return coeff[0] * harmonics.x + coeff[1] * harmonics.y + coeff[2] * harmonics.z + coeff[3] * harmonics.w;
 }
 
-//----------------------------------------------------------------------------//
-float moonlightFactor = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
+float viewerHeight = planetRadius + max(1.0, eyeAltitude);
+float horizonCos = sqrt(viewerHeight * viewerHeight - planetRadius * planetRadius) / viewerHeight;
+float horizonAngle = fastAcos(horizonCos);
 
-const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
+const float scale = oneMinus(4.0 / skyCaptureRes.x);
+const float offset = 2.0 / float(skyCaptureRes.x);
 
-const float sunAngularRadius = 0.004675;
-// const float sunAngularRadius = 0.012; // Unphysical
-const float mie_phase_g = 0.78;
+const vec2 cScale = vec2(skyCaptureRes.x / (skyCaptureRes.x + 1.0), 0.5);
+
+// Reference: https://sebh.github.io/publications/egsr2020.pdf
+vec3 ToSkyViewLutParams(in vec2 coord) {
+	coord *= rcp(cScale);
+
+	coord.x = fract((coord.x - offset) * rcp(scale));
+
+	coord.y = coord.y < 0.5 ? -sqr(1.0 - 2.0 * coord.y) : sqr(2.0 * coord.y - 1.0);
+
+	float azimuthAngle = coord.x * TAU - PI;
+	float altitudeAngle = (coord.y + 1.0) * hPI - horizonAngle;
+
+	float altitudeCos = cos(altitudeAngle);
+
+	return vec3(altitudeCos * sin(azimuthAngle), sin(altitudeAngle), -altitudeCos * cos(azimuthAngle));
+}
+
+vec2 FromSkyViewLutParams(in vec3 direction) {
+	vec2 projectedDir = normalize(direction.xz);
+
+	float azimuthAngle = PI + atan(projectedDir.x, -projectedDir.y);
+	float altitudeAngle = horizonAngle - fastAcos(direction.y);
+
+	vec2 coord;
+	coord.x = azimuthAngle * rTAU;
+	coord.y = 0.5 + 0.5 * sign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle));
+
+	coord.x = coord.x * scale + offset;
+
+	return coord * cScale;
+}
 
 #include "PrecomputedAtmosphericScattering.glsl"

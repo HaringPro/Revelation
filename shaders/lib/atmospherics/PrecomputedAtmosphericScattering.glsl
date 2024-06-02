@@ -243,7 +243,7 @@ vec3 GetTransmittance(
 }
 
 vec3 GetTransmittance(vec3 view_ray) {
-	vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
+	vec3 camera = vec3(0.0, viewerHeight, 0.0);
     // Compute the distance to the top atmosphere boundary along the view ray,
     // assuming the viewer is in space (or NaN if the view ray does not intersect
     // the atmosphere).
@@ -407,7 +407,7 @@ vec3 GetSkyRadiance(
     vec3 sun_direction,
     out vec3 transmittance
     ) {
-		vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
+		vec3 camera = vec3(0.0, viewerHeight, 0.0);
         // Compute the distance to the top atmosphere boundary along the view ray,
         // assuming the viewer is in space (or NaN if the view ray does not intersect
         // the atmosphere).
@@ -457,7 +457,7 @@ vec3 GetSkyRadiance(
                 float d = distance(camera, planet_surface);
                 vec3 surface_transmittance = GetTransmittance(r, mu, d, ray_r_mu_intersects_ground);
 
-                groundDiffuse = mix(sky_irradiance * 0.1, sun_irradiance * 0.01, wetness * 0.7) * surface_transmittance;
+                groundDiffuse = mix(sky_irradiance * 0.1, sun_irradiance * 0.07, wetness * 0.7) * surface_transmittance;
             }
         #else
             ray_r_mu_intersects_ground = false;
@@ -474,7 +474,7 @@ vec3 GetSkyRadiance(
 
         rayleigh = mix(rayleigh,  GetLuminance(rayleigh) * vec3(1.026186824, 0.9881671071, 1.015787125), wetness * 0.7);
 
-        return (rayleigh + mie + groundDiffuse) * oneMinus(wetness * 0.7);
+        return (rayleigh + mie + groundDiffuse) * oneMinus(wetness * 0.6);
 }
 
 vec3 GetSkyRadianceToPoint(
@@ -484,7 +484,7 @@ vec3 GetSkyRadianceToPoint(
     vec3 sun_direction,
     out vec3 transmittance
     ) {
-		vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
+		vec3 camera = vec3(0.0, viewerHeight, 0.0);
         // Compute the distance to the top atmosphere boundary along the view ray,
         // assuming the viewer is in space (or NaN if the view ray does not intersect
         // the atmosphere).
@@ -547,7 +547,7 @@ vec3 GetSkyRadianceToPoint(
 
         rayleigh = mix(rayleigh,  GetLuminance(rayleigh) * vec3(1.026186824, 0.9881671071, 1.015787125), wetness * 0.7);
 
-        return (rayleigh + mie) * oneMinus(wetness * 0.7);
+        return (rayleigh + mie) * oneMinus(wetness * 0.6);
 }
 
 vec3 GetSunAndSkyIrradiance(

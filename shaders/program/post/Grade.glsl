@@ -49,11 +49,7 @@ const mat3 XYZtoSRGB = mat3(
 // Source: https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp
 vec3 Uchimura(in vec3 x) {
     const float maxDisplayBrightness = 1.0;
-	#ifdef COLOR_GRADING
-    	const float contrast		 = CONTRAST;
-	#else
-    	const float contrast		 = 1.0;
-	#endif
+    const float contrast			 = 1.0;
     const float linearStart			 = 0.2;
     const float linearLength		 = 0.1;
     const float black				 = 1.33;

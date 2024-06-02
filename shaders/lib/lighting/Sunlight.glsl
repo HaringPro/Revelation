@@ -86,42 +86,43 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 //================================================================================================//
 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in float sssAmount) {
-	vec3 lightVector = mat3(gbufferModelView) * worldLightVector;
+	vec3 viewlightVector = mat3(gbufferModelView) * worldLightVector;
 
-    vec3 position = ViewToScreenSpace(lightVector * -viewPos.z + viewPos);
+    vec3 position = ViewToScreenSpace(viewlightVector * -viewPos.z + viewPos);
     vec3 screenDir = normalize(position - rayPos);
+    screenDir *= minOf((step(0.0, screenDir) - rayPos) / screenDir);
 
-    float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 2.0);
+    rayPos.xy *= viewSize;
+    screenDir.xy *= viewSize;
 
 	vec2 absScreenDir = abs(screenDir.xy);
     screenDir *= mix(1.0 / absScreenDir.x, 1.0 / absScreenDir.y, absScreenDir.y > absScreenDir.x);
 
-    vec3 rayStep = screenDir * mix(0.003, 0.005, sssAmount < 1e-4);
-	rayPos += rayStep * (dither + 0.5);
+    vec3 rayStep = screenDir * mix(1.2, 2.4, sssAmount < 1e-4);
+	rayPos += rayStep * (dither + 1.0);
 
-    rayStep.xy *= viewSize;
-    rayPos.xy *= viewSize;
+    float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 2.0);
 
-	const float zTolerance = 0.04;
+	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
 	float shadow = 1.0;
 
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {
-        if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
-        if (rayPos.z >= 1.0) break;
+        if (rayPos.z < 0.0 || rayPos.z - rayStep.z > 1.0) break;
+        if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
+			float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 
-        float sampleDepth = sampleDepth(ivec2(rayPos.xy));
+			if (sampleDepth < rayPos.z) {
+				float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
+				float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
 
-        if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
-			float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
-
-			if (abs(sampleDepthLinear - traceDepthLinear) / traceDepthLinear < zTolerance) {
-				shadow *= absorption;
-				// break;
+				if (traceDepthLinear - sampleDepthLinear < maxThickness) {
+					shadow *= absorption;
+					// break;
+				}
 			}
-        }
 
-		if (shadow < 1e-2) break;
+			if (shadow < 1e-2) break;
+		}
     }
 
 	return shadow;

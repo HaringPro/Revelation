@@ -39,7 +39,7 @@ bool ScreenSpaceRayTrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
             if (rayPos.z >= 1.0) break;
         #endif
 
-        float sampleDepth = GetDepthSoild(ivec2(rayPos.xy));
+        float sampleDepth = sampleDepthSoild(ivec2(rayPos.xy));
 
         rayStep = screenDir * clamp((sampleDepth - rayPos.z) * stepWeight, minLength, rSteps);
         rayPos += rayStep;
@@ -52,7 +52,7 @@ bool ScreenSpaceRayTrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
 
                     rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
 
-                    sampleDepth = GetDepthSoild(ivec2(rayPos.xy));
+                    sampleDepth = sampleDepthSoild(ivec2(rayPos.xy));
                 }
             #endif
             // float sampleDepthLinear = GetDepthLinear(sampleDepth);
