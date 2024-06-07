@@ -1,3 +1,13 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
 
 //======// Utility //=============================================================================//
 
@@ -74,7 +84,7 @@ void main() {
 		isWater = 1.0;
 	}
 
-	lightmap = saturate(vec2(vaUV2) * rcp(240.0));
+	lightmap = saturate(vec2(vaUV2) * r240);
 	texCoord = vaUV0;
 
 	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);

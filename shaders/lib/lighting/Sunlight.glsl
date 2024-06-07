@@ -98,7 +98,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	vec2 absScreenDir = abs(screenDir.xy);
     screenDir *= mix(1.0 / absScreenDir.x, 1.0 / absScreenDir.y, absScreenDir.y > absScreenDir.x);
 
-    vec3 rayStep = screenDir * mix(1.2, 2.4, sssAmount < 1e-4);
+    vec3 rayStep = screenDir * mix(1.6, 3.0, sssAmount < 1e-4);
 	rayPos += rayStep * (dither + 1.0);
 
     float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 2.0);

@@ -54,7 +54,7 @@ void main() {
 	tint = vaColor;
 	texCoord = vaUV0;
 
-	lightmap = saturate(vec2(vaUV2) * rcp(240.0));
+	lightmap = saturate(vec2(vaUV2) * r240);
 
 	vec4 worldPos = gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 
@@ -65,9 +65,6 @@ void main() {
 	#endif
 
 	materialID = uint(max0(mc_Entity.x - 1e4));
-
-	#ifdef MOD_BLOCK_SUPPORT
-	#endif
 
 	#ifdef PLANT_WAVING
 		worldPos.xyz += cameraPosition;

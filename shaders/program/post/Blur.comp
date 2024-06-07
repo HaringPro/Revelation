@@ -1,0 +1,57 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+#if BLUR_ORIENTATION == 0 // Horizontal
+	#define OFFSET ivec2(1, 0)
+	layout (local_size_x = 64, local_size_y = 1) in;
+#else // Vertical
+	#define OFFSET ivec2(0, 1)
+	layout (local_size_x = 1, local_size_y = 64) in;
+#endif
+
+const vec2 workGroupsRender = vec2(0.5f, 1.0f);
+
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+
+// uniform float viewWidth;
+// uniform float viewHeight;
+
+shared vec3 sharedData[64 + 8];
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+// #if BLUR_ORIENTATION == 1
+// 	texel.x += int(0.5 * viewWidth);
+// 	texel.y = int(viewHeight - 1) - texel.y;
+// #endif
+
+	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg0, texel - OFFSET * 4).rgb;
+	if (gl_LocalInvocationIndex < 8) {
+		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg0, ivec2(texel + OFFSET * (64 - 4))).rgb;
+	}
+	barrier();
+
+	const float sumWeight[5] = float[5](0.27343750, 0.21875000, 0.10937500, 0.03125000, 0.00390625);
+
+	vec3 bloomTiles = vec3(0.0);
+	for (int i = -4; i <= 4; ++i) {
+		bloomTiles += sharedData[gl_LocalInvocationIndex + i + 4].rgb * sumWeight[abs(i)];
+	}
+
+// #if BLUR_ORIENTATION == 0
+// 	texel.x += int(0.5 * viewWidth);
+// 	texel.y = int(viewHeight - 1) - texel.y;
+// #else
+// 	texel = ivec2(gl_GlobalInvocationID.xy);
+// #endif
+    imageStore(colorimg0, texel, vec4(bloomTiles, 1.0));
+}

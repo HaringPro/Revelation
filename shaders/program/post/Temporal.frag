@@ -1,4 +1,3 @@
-
 /*
 --------------------------------------------------------------------------------
 
@@ -169,13 +168,13 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texel = ivec2(gl_FragCoord.xy);
+	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
-    float depth = texelFetch(depthtex0, texel, 0).x;
+    float depth = texelFetch(depthtex0, screenTexel, 0).x;
 
-    vec3 closestFragment = GetClosestFragment(texel, depth);
+    vec3 closestFragment = GetClosestFragment(screenTexel, depth);
     vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
 
-    temporalOut = clamp16F(CalculateTAA(screenCoord, velocity));
+    temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
 }

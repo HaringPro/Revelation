@@ -1,4 +1,3 @@
-
 /*
 --------------------------------------------------------------------------------
 
@@ -42,7 +41,7 @@ uniform vec2 viewPixelSize;
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 
-#define sampleColor(texel) texelFetch(colortex3, texel, 0).rgb
+#define sampleColor(texel) texelFetch(colortex4, texel, 0).rgb
 
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
@@ -116,19 +115,20 @@ vec3 textureCatmullRomFast(in sampler2D tex, in vec2 position, in const float sh
 	return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer8(a)   (bayer4(  0.5 * (a)) * 0.25 + bayer2(a))
-#define bayer16(a)  (bayer8(  0.5 * (a)) * 0.25 + bayer2(a))
+float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+
+float bayer4(vec2 a)   { return bayer2 (0.5   * a) * 0.25     + bayer2(a); }
+float bayer8(vec2 a)   { return bayer4 (0.5   * a) * 0.25     + bayer2(a); }
+float bayer16(vec2 a)  { return bayer4 (0.25  * a) * 0.0625   + bayer4(a); }
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texel = ivec2(gl_FragCoord.xy);
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
-    	finalOut = CASFilter(texel);
-	}else{
-		finalOut = textureCatmullRomFast(colortex3, texel * MC_RENDER_QUALITY, 0.6);
+    	finalOut = CASFilter(screenTexel);
+	} else {
+		finalOut = textureCatmullRomFast(colortex4, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 	}
 
 	finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * r255;

@@ -13,6 +13,14 @@ uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex2;
 
+uniform int frameCounter;
+uniform int isEyeInWater;
+uniform int heldItemId;
+uniform int heldBlockLightValue;
+uniform int heldItemId2;
+uniform int heldBlockLightValue2;
+uniform int moonPhase;
+
 uniform float frameTime;
 uniform float frameTimeCounter;
 uniform float nightVision;
@@ -34,18 +42,14 @@ uniform float timeMidnight;
 uniform float timeSunrise;
 uniform float timeSunset;
 
+uniform vec2 viewPixelSize;
+uniform vec2 viewSize;
+uniform vec2 taaOffset;
+
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
-
-uniform int frameCounter;
-uniform int isEyeInWater;
-uniform int heldItemId;
-uniform int heldBlockLightValue;
-uniform int heldItemId2;
-uniform int heldBlockLightValue2;
-uniform int moonPhase;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
@@ -57,10 +61,6 @@ uniform mat4 gbufferModelView;
 uniform mat4 shadowProjection;
 uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelView;
-
-uniform vec2 viewPixelSize;
-uniform vec2 viewSize;
-uniform vec2 taaOffset;
 
 #if defined DISTANT_HORIZONS
     uniform sampler2D dhDepthTex0;

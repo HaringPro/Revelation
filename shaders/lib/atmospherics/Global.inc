@@ -7,6 +7,15 @@ const float sunAngularRadius = 0.004675;
 // const float sunAngularRadius = 0.012; // Unphysical
 const float mie_phase_g = 0.78;
 
+#define ATMOSPHERE_BOTTOM_ALTITUDE  1000.0 // [0.0 500.0 1000.0 2000.0 3000.0 4000.0 5000.0 6000.0 7000.0 8000.0 9000.0 10000.0 11000.0 12000.0 13000.0 14000.0 15000.0 16000.0]
+#define ATMOSPHERE_TOP_ALTITUDE     110000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
+
+const float atmosphere_bottom_radius = planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE;
+const float atmosphere_top_radius = planetRadius + ATMOSPHERE_TOP_ALTITUDE;
+
+const float atmosphere_bottom_radius_sq = atmosphere_bottom_radius * atmosphere_bottom_radius;
+const float atmosphere_top_radius_sq = atmosphere_top_radius * atmosphere_top_radius;
+
 //================================================================================================//
 
 float RayleighPhase(in float cosTheta) {
@@ -46,14 +55,14 @@ vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {
 	return vec2(-delta, delta) - PdotD;
 }
 
-mat4x3 ToSH(in vec3 value, in vec3 dir) {
+mat4x3 ToSphericalHarmonics(in vec3 value, in vec3 dir) {
 	const vec2 foo = vec2(0.5 * sqrt(rPI), sqrt(0.75 * rPI));
     vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
 
 	return mat4x3(value * harmonics.x, value * harmonics.y, value * harmonics.z, value * harmonics.w);
 }
 
-vec3 FromSH(in mat4x3 coeff, in vec3 dir) {
+vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
 	const vec2 foo = vec2(0.5 * sqrt(rPI), sqrt(0.75 * rPI));
     vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
 
@@ -61,7 +70,7 @@ vec3 FromSH(in mat4x3 coeff, in vec3 dir) {
 }
 
 float viewerHeight = planetRadius + max(1.0, eyeAltitude);
-float horizonCos = sqrt(viewerHeight * viewerHeight - planetRadius * planetRadius) / viewerHeight;
+float horizonCos = sqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq) / viewerHeight;
 float horizonAngle = fastAcos(horizonCos);
 
 const float scale = oneMinus(4.0 / skyCaptureRes.x);
@@ -73,8 +82,10 @@ const vec2 cScale = vec2(skyCaptureRes.x / (skyCaptureRes.x + 1.0), 0.5);
 vec3 ToSkyViewLutParams(in vec2 coord) {
 	coord *= rcp(cScale);
 
+	// From unit range
 	coord.x = fract((coord.x - offset) * rcp(scale));
 
+	// Non-linear mapping of the altitude angle
 	coord.y = coord.y < 0.5 ? -sqr(1.0 - 2.0 * coord.y) : sqr(2.0 * coord.y - 1.0);
 
 	float azimuthAngle = coord.x * TAU - PI;
@@ -86,18 +97,18 @@ vec3 ToSkyViewLutParams(in vec2 coord) {
 }
 
 vec2 FromSkyViewLutParams(in vec3 direction) {
-	vec2 projectedDir = normalize(direction.xz);
+	vec2 coord = normalize(direction.xz);
 
-	float azimuthAngle = PI + atan(projectedDir.x, -projectedDir.y);
+	float azimuthAngle = atan(coord.x, -coord.y);
 	float altitudeAngle = horizonAngle - fastAcos(direction.y);
 
-	vec2 coord;
-	coord.x = azimuthAngle * rTAU;
+	coord.x = (azimuthAngle + PI) * rTAU;
+
+	// Non-linear mapping of the altitude angle
 	coord.y = 0.5 + 0.5 * sign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle));
 
+	// To unit range
 	coord.x = coord.x * scale + offset;
 
 	return coord * cScale;
 }
-
-#include "PrecomputedAtmosphericScattering.glsl"

@@ -1,7 +1,16 @@
+/*
+--------------------------------------------------------------------------------
 
-out vec3 sceneOut;
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
 
 /* RENDERTARGETS: 0 */
+out vec3 sceneOut;
 
 #include "/lib/utility.inc"
 #include "/lib/Head/Uniforms.inc"

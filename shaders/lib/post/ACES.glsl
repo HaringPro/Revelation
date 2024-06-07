@@ -220,8 +220,8 @@ vec3 RRTSweeteners(in vec3 aces) {
 	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oneMinus(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
-    aces = clamp16F(aces);
-	vec3 rgbPre = clamp16F(aces * AP0toAP1);
+    aces = clamp16f(aces);
+	vec3 rgbPre = clamp16f(aces * AP0toAP1);
 
 	// --- Global desaturation --- //
 	float luminance = GetLuminance(rgbPre);
@@ -398,8 +398,8 @@ vec3 RRT(in vec3 aces) {
 	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oneMinus(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
-    aces = clamp16F(aces);
-	vec3 rgbPre = clamp16F(aces * AP0toAP1);
+    aces = clamp16f(aces);
+	vec3 rgbPre = clamp16f(aces * AP0toAP1);
 
 	// --- Global desaturation --- //
 	float luminance = GetLuminance(rgbPre);

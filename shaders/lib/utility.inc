@@ -23,6 +23,7 @@ const float goldenAngle = 2.39996322973;
 
 //const float EPS 	    = 1e-6;
 const float r255 		= 0.00392156863;
+const float r240		= 0.00416666667;
 
 #define rcp(x) 			(1.0 / (x))
 #define oneMinus(x) 	(1.0 - (x))
@@ -30,7 +31,7 @@ const float r255 		= 0.00392156863;
 #define max0(x) 		max(x, 0.0)
 #define maxEps(x) 		max(x, 1e-6)
 #define saturate(x) 	clamp(x, 0.0, 1.0)
-#define clamp16F(x) 	clamp(x, 0.0, 65535.0)
+#define clamp16f(x) 	clamp(x, 0.0, 65535.0)
 
 #define transMAD(m, v)	(mat3(m) * (v) + (m)[3].xyz)
 #define diagonal2(m)	vec2((m)[0].x, (m)[1].y)
@@ -38,7 +39,7 @@ const float r255 		= 0.00392156863;
 #define diagonal4(m)	vec4(diagonal3(m), (m)[2].w)
 #define projMAD(m, v)	(diagonal3(m) * (v) + (m)[3].xyz)
 
-#define RawCoord(coord) ivec2((coord) * viewSize)
+#define rawCoord(coord) ivec2((coord) * viewSize)
 
 float maxOf(vec2 v)   	{ return max(v.x, v.y); }
 float maxOf(vec3 v)   	{ return max(v.x, max(v.y, v.z)); }
@@ -86,8 +87,7 @@ float fastSqrtN1(in float x) { return sqrtNewton(x, fastSqrt(x)); }
 
 float fastAcos(in float x) {
     float a = abs(x);
-	float r = 1.570796 - 0.175394 * a;
-	r *= fastSqrt(1.0 - a);
+	float r = (hPI - 0.175394 * a) * sqrt(1.0 - a);
 
 	return x < 0.0 ? PI - r : r;
 }
@@ -95,7 +95,7 @@ float fastAcos(in float x) {
 #if defined MC_NORMAL_MAP
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (all(lessThan(normalTex, vec3(0.003)))) return;
-		normalTex = normalTex * 2.0 - (254.0 / 255.0);
+		normalTex = normalTex * 2.0 - oneMinus(r255);
 		#if TEXTURE_FORMAT == 0
 			normalTex.z = sqrt(saturate(oneMinus(dotSelf(normalTex.xy))));
 		#else
@@ -109,14 +109,14 @@ float fastAcos(in float x) {
 
 // Octahedral Unit Vector encoding
 // Intuitive, fast, and has very little error.
-vec2 encodeUnitVector(vec3 vector) {
+vec2 encodeUnitVector(in vec3 vector) {
 	// Scale down to octahedron, project onto XY plane
 	vector.xy /= abs(vector.x) + abs(vector.y) + abs(vector.z);
 	// Reflect -Z hemisphere folds over the diagonals
 	return vector.z <= 0.0 ? (1.0 - abs(vector.yx)) * vec2(vector.x >= 0.0 ? 1.0 : -1.0, vector.y >= 0.0 ? 1.0 : -1.0) : vector.xy;
 }
 
-vec3 decodeUnitVector(vec2 encoded) {
+vec3 decodeUnitVector(in vec2 encoded) {
 	// Exctract Z component
 	vec3 vector = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
 	// Reflect -Z hemisphere folds over the diagonals
@@ -126,17 +126,17 @@ vec3 decodeUnitVector(vec2 encoded) {
 	return normalize(vector);
 }
 
-float packUnorm2x8(vec2 xy) {
+float packUnorm2x8(in vec2 xy) {
 	return dot(floor(255.0 * xy + 0.5), vec2(1.0 / 65535.0, 256.0 / 65535.0));
 }
 
-float packUnorm2x8(float x, float y) { return packUnorm2x8(vec2(x, y)); }
+float packUnorm2x8(in float x, in float y) { return packUnorm2x8(vec2(x, y)); }
 
-float packUnorm2x8Dithered(vec2 xy, float dither) {
+float packUnorm2x8Dithered(in vec2 xy, in float dither) {
 	return dot(floor(255.0 * xy + dither), vec2(1.0 / 65535.0, 256.0 / 65535.0));
 }
 
-vec2 unpackUnorm2x8(float pack) {
+vec2 unpackUnorm2x8(in float pack) {
 	vec2 xy; xy.x = modf(pack * 65535.0 / 256.0, xy.y);
 	return xy * vec2(256.0 * r255, r255);
 }

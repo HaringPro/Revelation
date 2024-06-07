@@ -36,7 +36,7 @@ uniform vec2 taaOffset;
 void main() {
 	texCoord = vaUV0;
 
-	lightmap = saturate(vec2(vaUV2) * rcp(240.0));
+	lightmap = saturate(vec2(vaUV2) * r240);
 
 	tint = vaColor;
 	flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);

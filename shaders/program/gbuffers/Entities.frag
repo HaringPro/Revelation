@@ -34,6 +34,8 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 void main() {
 	vec4 albedo = texture(tex, texCoord) * tint;
 
+	if (materialID == 60u) albedo = vec4(0.45, 0.43, 1.0, 0.5);
+
 	if (albedo.a < 0.1) { discard; return; }
 
 	#ifdef WHITE_WORLD

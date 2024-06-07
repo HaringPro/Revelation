@@ -29,7 +29,7 @@ uniform int renderStage;
 //======// Main //================================================================================//
 void main() {
 	tint = vaColor;
-	lightmap = saturate(vec2(vaUV2) * rcp(240.0));
+	lightmap = saturate(vec2(vaUV2) * r240);
 
     if (renderStage == MC_RENDER_STAGE_OUTLINE) {
         const float lineWidth = 3.0;
@@ -46,7 +46,7 @@ void main() {
         if (gl_VertexID % 2 == 0) gl_Position.xyz *= NDCStart + vec3(lineOffset, 0.0);
         else gl_Position.xyz *= NDCStart - vec3(lineOffset, 0.0);
 
-        tint = vec4(1.0);
+        lightmap = vec2(0.0);
     } else {
     	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
     }

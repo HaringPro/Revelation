@@ -1,10 +1,3 @@
 #version 450 compatibility
 
-//======// Attribute //===========================================================================//
-
-in vec3 vaPosition;
-
-//======// Main //================================================================================//
-void main() {
-    gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
-}
+#include "/program/post/Universal.vert"

@@ -1,9 +1,18 @@
+/*
+--------------------------------------------------------------------------------
 
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+/* RENDERTARGETS: 0 */
 out vec3 bloomTiles;
 
-/* RENDERTARGETS: 4 */
-
-uniform sampler2D colortex4;
+uniform sampler2D colortex0;
 
 uniform vec2 viewPixelSize;
 
@@ -18,6 +27,6 @@ void main() {
 
 	bloomTiles = vec3(0.0);
 	for (int i = -4; i <= 4; ++i) {
-		bloomTiles += texelFetch(colortex4, texel + ivec2(0,  i), 0).rgb * sumWeight[abs(i)];
+		bloomTiles += texelFetch(colortex0, texel + ivec2(i,  0), 0).rgb * sumWeight[abs(i)];
 	}
 }

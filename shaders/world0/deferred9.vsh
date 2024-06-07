@@ -15,7 +15,7 @@
 
 #include "/lib/utility.inc"
 
-#define TORCHLIGHT_COLOR_TEMPERATURE 3000 // Color temperature of torch light in Kelvin. [1000 1500 2000 2300 2500 3000 3400 3500 4000 4500 5000 5500 6000]
+#define BLOCKLIGHT_TEMPERATURE 3000 // [1000 1500 2000 2300 2500 3000 3400 3500 4000 4500 5000 5500 6000]
 
 //======// Output //==============================================================================//
 
@@ -45,5 +45,5 @@ void main() {
 	directIlluminance = texelFetch(colortex2, ivec2(skyCaptureRes.x, 0), 0).rgb;
 	skyIlluminance = texelFetch(colortex2, ivec2(skyCaptureRes.x, 1), 0).rgb;
 
-	blocklightColor = blackbody(float(TORCHLIGHT_COLOR_TEMPERATURE));
+	blocklightColor = blackbody(float(BLOCKLIGHT_TEMPERATURE));
 }

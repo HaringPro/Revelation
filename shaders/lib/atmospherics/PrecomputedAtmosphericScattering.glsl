@@ -1,7 +1,7 @@
 
 // Precomputed atmospheric scattering from https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html
 
-#define SKY_GROUND
+#define PLANET_GROUND
 
 
 #define TRANSMITTANCE_TEXTURE_WIDTH     256.0
@@ -123,15 +123,6 @@ AtmosphereParameters atmosphereModel = AtmosphereParameters(
 //    -0.500000
 );
 
-#define ATMOSPHERE_BOTTOM_ALTITUDE  1000.0 // [0.0 500.0 1000.0 2000.0 3000.0 4000.0 5000.0 6000.0 7000.0 8000.0 9000.0 10000.0 11000.0 12000.0 13000.0 14000.0 15000.0 16000.0]
-#define ATMOSPHERE_TOP_ALTITUDE     110000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
-
-const float atmosphere_bottom_radius = planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE;
-const float atmosphere_top_radius = planetRadius + ATMOSPHERE_TOP_ALTITUDE;
-
-const float atmosphere_bottom_radius_sq = atmosphere_bottom_radius * atmosphere_bottom_radius;
-const float atmosphere_top_radius_sq = atmosphere_top_radius * atmosphere_top_radius;
-
 const float mu_s_min = -0.3;
 
 //--// Utility functions //---------------------------------------------------//
@@ -216,7 +207,7 @@ vec3 GetTransmittanceToTopAtmosphereBoundary(
     float mu
     ) {
         vec2 uv = GetTransmittanceTextureUvFromRMu(r, mu);
-        return vec3(texture(colortex1, vec3(uv, 32.5 / 33.0)));
+        return vec3(texture(colortex3, vec3(uv, 32.5 / 33.0)));
 }
 
 vec3 GetTransmittance(
@@ -376,7 +367,7 @@ vec3 GetCombinedScattering(
         vec3 uvw0 = vec3((tex_x + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
         vec3 uvw1 = vec3((tex_x + 1.0 + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
 
-        vec4 combined_scattering = texture(colortex1, uvw0) * oneMinus(lerp) + texture(colortex1, uvw1) * lerp;
+        vec4 combined_scattering = texture(colortex3, uvw0) * oneMinus(lerp) + texture(colortex3, uvw1) * lerp;
 
         vec3 scattering = vec3(combined_scattering);
         single_mie_scattering = GetExtrapolatedSingleMieScattering(atmosphere, combined_scattering);
@@ -396,7 +387,7 @@ vec3 GetIrradiance(
         vec2 uv = vec2(GetCombinedTextureCoordFromUnitRange(x_mu_s, IRRADIANCE_TEXTURE_WIDTH, COMBINED_TEXTURE_WIDTH),
                        GetCombinedTextureCoordFromUnitRange(x_r, IRRADIANCE_TEXTURE_HEIGHT, COMBINED_TEXTURE_HEIGHT) + TRANSMITTANCE_TEXTURE_HEIGHT / COMBINED_TEXTURE_HEIGHT);
 
-        return vec3(texture(colortex1, vec3(uv, 32.5 / 33.0)));
+        return vec3(texture(colortex3, vec3(uv, 32.5 / 33.0)));
 }
 
 //--// Rendering //-----------------------------------------------------------//
@@ -443,7 +434,7 @@ vec3 GetSkyRadiance(
         vec3 moon_scattering;
 
         vec3 groundDiffuse = vec3(0.0);
-        #ifdef SKY_GROUND
+        #ifdef PLANET_GROUND
             if (ray_r_mu_intersects_ground) {
                 vec3 planet_surface = camera + view_ray * DistanceToBottomAtmosphereBoundary(r, mu);
 

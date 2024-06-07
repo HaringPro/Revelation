@@ -1,4 +1,3 @@
-
 /*
 --------------------------------------------------------------------------------
 
@@ -18,15 +17,17 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 3 */
+/* RENDERTARGETS: 4 */
 layout(location = 0) out vec3 LDRImageOut;
 
 //======// Input //===============================================================================//
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex0;
-uniform sampler2D colortex1;
+uniform sampler2D colortex0; // Bloom tiles
+uniform sampler2D colortex1; // HDR scene image
+
+uniform sampler2D colortex2;
 
 uniform vec2 viewPixelSize;
 
@@ -100,12 +101,16 @@ vec3 Lottes(in vec3 x) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texel = ivec2(gl_FragCoord.xy);
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	vec3 HDRImage = texelFetch(colortex1, texel, 0).rgb;
+	vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
 
-	// LDRImageOut = linearToSRGB(HDRImage);
+	// Exposure
+	HDRImage *= texelFetch(colortex2, ivec2(skyCaptureRes.x, 4), 0).x;
+
+	// Tone mapping
 	LDRImageOut = TONEMAP(HDRImage);
 
+	// LDR range clamp
 	LDRImageOut = saturate(LDRImageOut);
 }

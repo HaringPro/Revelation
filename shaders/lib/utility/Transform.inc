@@ -19,7 +19,7 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 }
 
 vec3 ScreenToViewSpace(in vec2 coord) {
-	vec3 NDCPos = vec3(coord, texelFetch(depthtex0, RawCoord(coord), 0).x) * 2.0 - 1.0;
+	vec3 NDCPos = vec3(coord, texelFetch(depthtex0, rawCoord(coord), 0).x) * 2.0 - 1.0;
 	#ifdef TAA_ENABLED
 		NDCPos.xy -= taaOffset;
 	#endif
