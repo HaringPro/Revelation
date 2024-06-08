@@ -57,13 +57,13 @@ uniform vec3 worldSunVector;
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-float CalculateWeightedExposure() {
+float CalculateWeightedLuminance() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
 
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
     vec2 rTileSteps = 1.0 / vec2(tileSteps);
 
-    float exposure = 0.0;
+    float total = 0.0;
     float sumWeight = 0.0;
 
     const float minEV = -16.0;
@@ -76,14 +76,14 @@ float CalculateWeightedExposure() {
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
-            exposure += clamp(log2(luminance), minEV, maxEV) * weight;
+            total += clamp(log2(luminance), minEV, maxEV) * weight;
             sumWeight += weight;
         }
 	}
 
-    exposure /= sumWeight;
+    total /= sumWeight;
 
-	return exp2(exposure * -0.7);
+	return exp2(total * -0.7);
 }
 
 //======// Main //================================================================================//
@@ -96,9 +96,9 @@ void main() {
 	directIlluminance = sunIlluminance + moonIlluminance;
 
  	#ifdef AUTO_EXPOSURE
-		exposure = CalculateWeightedExposure();
+		exposure = CalculateWeightedLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.6 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.5 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex2, ivec2(skyCaptureRes.x, 4), 0).x;

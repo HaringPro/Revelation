@@ -9,34 +9,21 @@
 --------------------------------------------------------------------------------
 */
 
-#if BLUR_ORIENTATION == 0 // Horizontal
-	#define OFFSET ivec2(1, 0)
-	layout (local_size_x = 64, local_size_y = 1) in;
-#else // Vertical
-	#define OFFSET ivec2(0, 1)
-	layout (local_size_x = 1, local_size_y = 64) in;
-#endif
-
 const vec2 workGroupsRender = vec2(0.5f, 1.0f);
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+//======// Output //==============================================================================//
 
-// uniform float viewWidth;
-// uniform float viewHeight;
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 
 shared vec3 sharedData[64 + 8];
 
 //======// Main //================================================================================//
 void main() {
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-// #if BLUR_ORIENTATION == 1
-// 	texel.x += int(0.5 * viewWidth);
-// 	texel.y = int(viewHeight - 1) - texel.y;
-// #endif
 
 	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg0, texel - OFFSET * 4).rgb;
 	if (gl_LocalInvocationIndex < 8) {
-		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg0, ivec2(texel + OFFSET * (64 - 4))).rgb;
+		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg0, texel + OFFSET * (64 - 4)).rgb;
 	}
 	barrier();
 
@@ -47,11 +34,5 @@ void main() {
 		bloomTiles += sharedData[gl_LocalInvocationIndex + i + 4].rgb * sumWeight[abs(i)];
 	}
 
-// #if BLUR_ORIENTATION == 0
-// 	texel.x += int(0.5 * viewWidth);
-// 	texel.y = int(viewHeight - 1) - texel.y;
-// #else
-// 	texel = ivec2(gl_GlobalInvocationID.xy);
-// #endif
     imageStore(colorimg0, texel, vec4(bloomTiles, 1.0));
 }

@@ -1,0 +1,77 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 8, local_size_y = 8) in;
+
+//======// Output //==============================================================================//
+
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+
+//======// Utility //=============================================================================//
+
+#include "/lib/utility.inc"
+
+#define BLUR_SAMPLES 1 // [1 2 3 4 5 6]
+
+//======// Uniform //=============================================================================//
+
+#if DOWNSAMPLE_LEVEL == 0
+	uniform sampler2D colortex1;
+	#define sampleTile(uv) textureLod(colortex1, uv, 0.0).rgb
+#else
+	uniform sampler2D colortex0;
+	#define sampleTile(uv) textureLod(colortex0, uv, 0.0).rgb
+#endif
+
+uniform vec2 viewSize;
+uniform vec2 viewPixelSize;
+
+//======// Function //============================================================================//
+
+#if DOWNSAMPLE_LEVEL == 0
+	#define CalculateTileOffset(lod) vec2(0.0)
+#else
+    vec2 CalculateTileOffset(in const int lod) {
+        vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
+        vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
+
+        return lodMult * 12.0 * viewPixelSize + offset;
+    }
+#endif
+
+vec3 CalculateBloomTile(in vec2 uv) {
+	vec3  bloomTile = vec3(0.0);
+	float sumWeight = 1e-6;
+
+	for (int y = -BLUR_SAMPLES; y <= BLUR_SAMPLES; ++y) {
+		for (int x = -BLUR_SAMPLES; x <= BLUR_SAMPLES; ++x) {
+			float weight = saturate(1.0 - length(vec2(x, y)) * 0.25);
+			      weight *= weight;
+
+			bloomTile += sampleTile(uv + vec2(x, y) * viewPixelSize) * weight;
+			sumWeight += weight;
+		}
+	}
+
+	return bloomTile / sumWeight;
+}
+
+//======// Main //================================================================================//
+void main() {
+    vec2 uv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
+
+    if (any(greaterThan(uv, viewSize - 0.5))) return;
+
+    vec2 srcUv = uv * viewPixelSize + CalculateTileOffset(DOWNSAMPLE_LEVEL - 1);
+	vec3 bloomTile = CalculateBloomTile(srcUv);
+
+    imageStore(colorimg0, ivec2(gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize), vec4(bloomTile, 1.0));
+}

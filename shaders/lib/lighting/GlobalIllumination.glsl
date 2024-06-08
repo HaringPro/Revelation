@@ -5,7 +5,7 @@ uniform sampler2D shadowcolor1;
 
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 
-//----------------------------------------------------------------------------//
+//================================================================================================//
 
 #include "ShadowDistortion.glsl"
 
@@ -21,7 +21,7 @@ vec2 DistortShadowScreenPos(in vec2 shadowPos) {
 	return shadowPos * 0.5 + 0.5;
 }
 
-//----------------------------------------------------------------------------//
+//================================================================================================//
 
 vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	vec3 total = vec3(0.0);

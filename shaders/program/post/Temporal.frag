@@ -19,8 +19,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 1 */
+/* RENDERTARGETS: 1,0 */
 layout(location = 0) out vec3 temporalOut;
+layout(location = 1) out vec3 sceneOut;
 
 //======// Function //============================================================================//
 
@@ -169,12 +170,13 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
     float depth = texelFetch(depthtex0, screenTexel, 0).x;
 
     vec3 closestFragment = GetClosestFragment(screenTexel, depth);
     vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
 
+	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
     temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
+    sceneOut = vec3(0.0); // Clear colortex0 for bloom tile pass
 }

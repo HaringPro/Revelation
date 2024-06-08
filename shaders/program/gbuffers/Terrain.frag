@@ -43,6 +43,6 @@ void main() {
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
-	gbufferOut1.x = packUnorm2x8(encodeUnitVector(tbnMatrix[2]) * 0.5 + 0.5);
+	gbufferOut1.x = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 	gbufferOut1.y = gbufferOut1.x;
 }

@@ -15,12 +15,16 @@
 
 #define TONEMAP AcademyFit // [AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
+#define BLOOM_INTENSITY 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
+
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 4 */
 layout(location = 0) out vec3 LDRImageOut;
 
 //======// Input //===============================================================================//
+
+flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
@@ -32,6 +36,46 @@ uniform sampler2D colortex2;
 uniform vec2 viewPixelSize;
 
 //======// Function //============================================================================//
+
+vec2 CalculateTileOffset(in const int lod) {
+	vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
+	vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
+
+	return lodMult * 12.0 * viewPixelSize + offset;
+}
+
+vec3 BloomTileUpsample(in vec2 screenCoord, in const int lod) {
+    vec2 coord = screenCoord * exp2(-float(lod + 1)) + CalculateTileOffset(lod);
+
+    return textureBicubic(colortex0, coord).rgb;
+}
+
+void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
+	vec3 bloomData = vec3(0.0);
+	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+
+	float weight = 1.0;
+	float sumWeight = 0.0;
+
+	for (int i = 0; i < 7; ++i) {
+		vec3 sampleTile = BloomTileUpsample(screenCoord, i);
+
+		bloomData += sampleTile * weight;
+		sumWeight += weight;
+		weight *= 0.8;
+	}
+
+	bloomData /= sumWeight;
+
+	float bloomIntensity = BLOOM_INTENSITY * 0.1;
+	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.6, 0.4);
+
+	image = mix(image, bloomData, bloomIntensity);
+}
+
+
+//================================================================================================//
+
 
 const mat3 sRGBtoXYZ = mat3(
 	vec3(0.4124564, 0.3575761, 0.1804375),
@@ -105,8 +149,13 @@ void main() {
 
 	vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
 
+	// Bloom and fog
+	#ifdef BLOOM_ENABLED
+		CombineBloomAndFog(HDRImage, screenTexel);
+	#endif
+
 	// Exposure
-	HDRImage *= texelFetch(colortex2, ivec2(skyCaptureRes.x, 4), 0).x;
+	HDRImage *= exposure;
 
 	// Tone mapping
 	LDRImageOut = TONEMAP(HDRImage);

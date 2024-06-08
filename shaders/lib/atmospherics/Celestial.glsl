@@ -4,7 +4,7 @@
 
 #define coneAngleToSolidAngle(x) (TAU * oneMinus(cos(x)))
 
-//----------------------------------------------------------------------------//
+//================================================================================================//
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 	//const float sunRadius = 1392082.56;
@@ -27,7 +27,7 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
     return finalLuminance;
 }
 
-//----------------------------------------------------------------------------//
+//================================================================================================//
 
 vec3 RenderMoonReflection(in vec3 worldDir, in vec3 sunVector) {
 	float cosTheta = dot(worldDir, -sunVector);
@@ -37,7 +37,7 @@ vec3 RenderMoonReflection(in vec3 worldDir, in vec3 sunVector) {
 	return vec3(0.76, 0.9, 1.1) * disc * 0.3;
 }
 
-//----------------------------------------------------------------------------//
+//================================================================================================//
 
 mat3 RotateMatrix(in vec3 x, in vec3 y) {
     float d = dot(x, y);

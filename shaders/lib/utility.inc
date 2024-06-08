@@ -113,10 +113,14 @@ vec2 encodeUnitVector(in vec3 vector) {
 	// Scale down to octahedron, project onto XY plane
 	vector.xy /= abs(vector.x) + abs(vector.y) + abs(vector.z);
 	// Reflect -Z hemisphere folds over the diagonals
-	return vector.z <= 0.0 ? (1.0 - abs(vector.yx)) * vec2(vector.x >= 0.0 ? 1.0 : -1.0, vector.y >= 0.0 ? 1.0 : -1.0) : vector.xy;
+	vec2 encoded = vector.z <= 0.0 ? (1.0 - abs(vector.yx)) * vec2(vector.x >= 0.0 ? 1.0 : -1.0, vector.y >= 0.0 ? 1.0 : -1.0) : vector.xy;
+	// Scale to [0, 1]
+	return encoded * 0.5 + 0.5;
 }
 
 vec3 decodeUnitVector(in vec2 encoded) {
+	// Scale to [-1, 1]
+	encoded = (encoded - 0.5) * 2.0;
 	// Exctract Z component
 	vec3 vector = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
 	// Reflect -Z hemisphere folds over the diagonals

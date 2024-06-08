@@ -200,7 +200,7 @@ void main() {
 		// Skylight
 		if (lightmap.y > 1e-5) {
 			// vec3 skylight = FromSH(skySH, worldNormal);
-			vec3 skylight = mix(skyIlluminance * 0.6, directIlluminance * 0.2, wetness * 0.7);
+			vec3 skylight = mix(skyIlluminance * 0.6, directIlluminance * 0.2, wetness * 0.6 + 0.1);
 			skylight *= worldNormal.y * 1.2 + 1.8;
 
 			sceneOut += skylight * cube(lightmap.y);
@@ -209,7 +209,7 @@ void main() {
 		// Emissive & Blocklight
 		vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos);
 		sceneOut += CalculateBlocklightFalloff(lightmap.x) * blocklightColor * emissive.a;
-		sceneOut += emissive.rgb;
+		sceneOut += emissive.rgb * 3.0;
 
 		sceneOut *= albedo;
 

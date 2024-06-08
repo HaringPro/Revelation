@@ -81,7 +81,7 @@ vec3 CASFilter(in ivec2 texel) {
 // Approximation from SMAA presentation from siggraph 2016
 vec3 textureCatmullRomFast(in sampler2D tex, in vec2 position, in const float sharpness) {
 	//vec2 screenSize = textureSize(sampler, 0);
-	//vec2 screenPixelSize = 1.0 / screenSize;
+	//vec2 viewPixelSize = 1.0 / screenSize;
 
 	//vec2 position = screenSize * coord;
 	vec2 centerPosition = floor(position - 0.5) + 0.5;
@@ -115,11 +115,10 @@ vec3 textureCatmullRomFast(in sampler2D tex, in vec2 position, in const float sh
 	return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
-
-float bayer4(vec2 a)   { return bayer2 (0.5   * a) * 0.25     + bayer2(a); }
-float bayer8(vec2 a)   { return bayer4 (0.5   * a) * 0.25     + bayer2(a); }
-float bayer16(vec2 a)  { return bayer4 (0.25  * a) * 0.0625   + bayer4(a); }
+float bayer2(vec2 a)   { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+float bayer4(vec2 a)   { return bayer2 (0.5  * a) * 0.25   + bayer2(a); }
+float bayer8(vec2 a)   { return bayer4 (0.5  * a) * 0.25   + bayer2(a); }
+float bayer16(vec2 a)  { return bayer4 (0.25 * a) * 0.0625 + bayer4(a); }
 
 //======// Main //================================================================================//
 void main() {
@@ -131,5 +130,6 @@ void main() {
 		finalOut = textureCatmullRomFast(colortex4, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 	}
 
+	// finalOut = texelFetch(colortex0, screenTexel, 0).rgb;
 	finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * r255;
 }

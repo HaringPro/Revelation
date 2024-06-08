@@ -110,5 +110,5 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	// To unit range
 	coord.x = coord.x * scale + offset;
 
-	return coord * cScale;
+	return saturate(coord * cScale);
 }
