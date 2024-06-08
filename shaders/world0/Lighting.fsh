@@ -163,7 +163,7 @@ void main() {
 		float distortFactor;
 		vec3 normalOffset = worldNormal * fma(dotSelf(worldPos), 4e-5, 2e-2) * (2.0 - saturate(NdotL));
 
-		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
+		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
