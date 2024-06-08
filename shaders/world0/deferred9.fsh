@@ -27,6 +27,8 @@ in vec2 screenCoord;
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
+flat in mat4x3 skySH;
+
 flat in vec3 blocklightColor;
 
 //======// Uniform //=============================================================================//
@@ -103,11 +105,14 @@ uniform mat4 shadowModelView;
 #include "/lib/utility/Noise.inc"
 
 #include "/lib/atmospherics/Global.inc"
-
 #include "/lib/atmospherics/Celestial.glsl"
 
 #include "/lib/lighting/Sunlight.glsl"
 #include "/lib/lighting/Blocklight.glsl"
+
+#if AO_ENABLED > 0
+	#include "/lib/lighting/AmbientOcclusion.glsl"
+#endif
 
 
 //======// Main //================================================================================//
@@ -131,6 +136,8 @@ void main() {
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut += transmittance * (RenderStars(worldDir) + RenderSun(worldDir, worldSunVector));
 	} else {
+		sceneOut = vec3(0.0);
+
 		vec3 albedoRaw = texelFetch(colortex0, screenTexel, 0).rgb;
 		vec3 albedo = sRGBtoLinear(albedoRaw);
 		worldPos += gbufferModelViewInverse[3].xyz;
@@ -165,6 +172,18 @@ void main() {
 			float dither = InterleavedGradientNoise(gl_FragCoord.xy);
 		#endif
 
+		float ao = 1.0;
+		#if AO_ENABLED > 0
+			if (depth > 0.56) {
+				vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
+				#if AO_ENABLED == 1
+					ao = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+				#else
+					ao = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
+				#endif
+			}
+		#endif
+
 		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
 
 		// #if TEXTURE_FORMAT == 0 && defined MC_SPECULAR_MAP
@@ -193,7 +212,7 @@ void main() {
 		if (sssAmount > 1e-4) {
 			vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 			subsurfaceScattering *= eyeSkylightFix;
-			sceneOut += subsurfaceScattering * sunlightMult;
+			sceneOut += subsurfaceScattering * sunlightMult * ao;
 			sunlightMult *= 1.0 - sssAmount * 0.5;
 		}
 
@@ -221,25 +240,26 @@ void main() {
 
 		sceneOut += shadow * diffuseBRDF;
 
-		float bounce = CalculateFittedBouncedLight(worldNormal);
-		if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
-		sceneOut += bounce * sunlightMult;
-
-		// Skylight
 		if (lightmap.y > 1e-5) {
-			// vec3 skylight = FromSH(skySH, worldNormal);
-			vec3 skylight = mix(skyIlluminance * 0.6, directIlluminance * 0.2, wetness * 0.6 + 0.1);
+			// Skylight
+			vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
 			skylight *= worldNormal.y * 1.2 + 1.8;
 
-			sceneOut += skylight * cube(lightmap.y);
+			sceneOut += skylight * cube(lightmap.y) * ao;
+
+			// Bounced light
+			float bounce = CalculateFittedBouncedLight(worldNormal);
+			if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
+			sceneOut += bounce * sunlightMult * ao;
 		}
 
 		// Emissive & Blocklight
 		vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos);
-		if (emissive.a * lightmap.x > 1e-5) sceneOut += CalculateBlocklightFalloff(lightmap.x) * blocklightColor * emissive.a;
+		if (emissive.a * lightmap.x > 1e-5) {
+			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
+			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
+		}
 		sceneOut += emissive.rgb * 3.0;
-
-		float ao = 1.0;
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
 				float falloff = rcp(max(dotSelf(worldPos), 1.0));

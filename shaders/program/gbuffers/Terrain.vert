@@ -69,15 +69,14 @@ void main() {
 	#ifdef PLANT_WAVING
 		worldPos.xyz += cameraPosition;
 
-		float tick = frameTimeCounter * PI;
-
 		float windIntensity = pow4(saturate(lightmap.y * 1.5 - 0.5)) * fma(wetnessCustom, 0.2, 0.1);
 
 		// Plants
 		if (materialID > 8u && materialID < 12u) {
-			float topVertex = step(vaUV0.y, mc_midTexCoord.y) + float(materialID == 10u);
+			float tick = frameTimeCounter * PI;
 
 			windIntensity *= materialID > 9u ? 0.75 : 1.0;
+			float topVertex = step(vaUV0.y, mc_midTexCoord.y) + float(materialID == 10u);
 
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 6e-4) * 2.0 - 1.0).xy * 1.3 - 0.3;
 			vec2 wind = sin(dot(worldPos.xz, vec2(0.87, 0.5)) + tick) * noise - cossin(PI * 0.2) * fastSqrt(max(worldPos.y, 1.0) * 0.4) * 0.2;
@@ -86,6 +85,8 @@ void main() {
 
 		// Leaves
 		if (materialID == 12u) {
+			float tick = frameTimeCounter * PI;
+
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 6e-4) * 2.0 - 1.0).xy * 1.3 - 0.3;
 			vec3 wind = sin(dot(worldPos.xyz, vec3(0.87, 0.6, 0.5)) + tick) * vec3(noise.x, noise.x * noise.y, noise.y);
 			worldPos.xyz += wind * windIntensity * 0.5;

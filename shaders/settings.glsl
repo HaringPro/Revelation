@@ -1,4 +1,3 @@
-
 /*
 --------------------------------------------------------------------------------
 
@@ -25,6 +24,9 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 
 /* Lighting brightness */
 	#define NIGHT_BRIGHTNESS 0.0005 // Brightness of the night. [0.0 0.00005 0.00007 0.0001 0.0002 0.0003 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 1.0]
+
+/* Ambient Occlusion */
+	#define AO_ENABLED 1 // Enables ambient occlusion. [0 1 2]
 
 /* Shadows */
 	#define COLORED_SHADOWS // Enables colored shadows

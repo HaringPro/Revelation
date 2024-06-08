@@ -133,7 +133,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
 	vec3 coeff = albedo * inversesqrt(GetLuminance(albedo) + 1e-6);
-	coeff = oneMinus(0.5 * saturate(coeff)) * (32.0 / sssAmount);
+	coeff = oneMinus(0.65 * saturate(coeff)) * (32.0 / sssAmount);
 
 	vec3 subsurfaceScattering =  fastExp(0.375 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
 		 subsurfaceScattering += fastExp(0.125 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);

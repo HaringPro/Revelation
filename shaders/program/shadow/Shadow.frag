@@ -46,7 +46,7 @@ void main() {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
 
-        if (albedo.a > 254.0 / 255.0) {
+        if (albedo.a > oneMinus(r255)) {
 			shadowcolor0Out = albedo.rgb * tint;
 		} else {
 			shadowcolor0Out = mix(vec3(1.0), albedo.rgb * tint, fastSqrt(albedo.a));
