@@ -72,7 +72,7 @@ float CalculateWeightedLuminance() {
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
             vec2 uv = (vec2(x, y) + 0.5) * rTileSteps;
-            float luminance = GetLuminance(texture(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
+            float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 

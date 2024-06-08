@@ -12,6 +12,9 @@ out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
+out vec3 minecraftPos;
+out vec3 tangentViewDir;
+
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -30,6 +33,7 @@ attribute vec4 at_tangent;
 //======// Uniform //=============================================================================//
 
 uniform vec3 chunkOffset;
+uniform vec3 cameraPosition;
 
 uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
@@ -55,7 +59,11 @@ void main() {
 
 	materialID = uint(max0(mc_Entity.x - 1e4));
 
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	vec4 viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	minecraftPos = transMAD(gbufferModelViewInverse, viewPos.xyz) + cameraPosition;
+	tangentViewDir = normalize(viewPos.xyz * tbnMatrix);
+
+	gl_Position = projectionMatrix * viewPos;
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

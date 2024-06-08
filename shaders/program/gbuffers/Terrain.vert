@@ -106,7 +106,7 @@ void main() {
 	// minecraftPos = worldPos.xyz;
 
 	gl_Position = projectionMatrix * gbufferModelView * worldPos;
-	
+
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif

@@ -5,7 +5,7 @@
 #define RAYTRACE_REFINEMENT
 #define RAYTRACE_REFINEMENT_STEPS 6 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
 
-bool ScreenSpaceRayTrace(in vec3 viewPos, in vec3 viewDir, in float dither, const in uint steps, inout vec3 rayPos) {
+bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, const in uint steps, inout vec3 rayPos) {
     const float rSteps = 1.0 / float(steps);
 
     vec3 clipPos = rayPos;

@@ -2,6 +2,8 @@
 #define sampleDepth(texel) texelFetch(depthtex0, texel, 0).x
 #define sampleDepthSoild(texel) texelFetch(depthtex1, texel, 0).x
 
+#define sampleSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
+
 float GetDepthFix(in ivec2 texel) {
 	float depth = texelFetch(depthtex0, texel, 0).x;
 	return depth + 0.38 * step(depth, 0.56);

@@ -32,3 +32,18 @@ vec3 GetWavesNormal(in vec2 position) {
 
 	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.5));
 }
+
+vec3 GetWavesNormal(in vec2 position, in vec3 tangentViewDir) {
+	vec3 stepSize = tangentViewDir * vec3(vec2(0.1 * WATER_WAVE_HEIGHT), 1.0);
+    stepSize *= 0.02 / abs(stepSize.z);
+
+    vec3 samplePos = vec3(position, 1.0) + stepSize;
+	float sampleHeight = WaterHeight(samplePos.xy);
+
+	for (uint i = 0u; sampleHeight < samplePos.z && i < 60u; ++i) {
+        samplePos += stepSize;
+		sampleHeight = WaterHeight(samplePos.xy);
+	}
+
+	return GetWavesNormal(samplePos.xy);
+}

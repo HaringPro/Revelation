@@ -1,8 +1,8 @@
 
 float CalculateBlocklightFalloff(in float blocklight) {
 	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
-	blocklight += sqr(blocklight * 1.5 - 0.5);
-	return saturate(blocklight * sqrt(blocklight) * fade * 0.75);
+	blocklight += saturate(blocklight * 1.5 - 0.5);
+	return saturate(curve(blocklight * 0.5) * fade);
 }
 
 vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 albedoRaw, in vec3 worldPos) {

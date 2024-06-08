@@ -78,7 +78,7 @@ uniform mat4 gbufferModelView;
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    sceneOut = texelFetch(colortex0, screenTexel, 0).rgb;
+    sceneOut = sampleSceneColor(screenTexel);
 
 	float depth = sampleDepth(screenTexel);
 

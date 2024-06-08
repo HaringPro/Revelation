@@ -52,10 +52,10 @@
 		vec3 viewDir = normalize(-viewPos);
 
 		const int sliceCount = GTAO_SLICE_SAMPLES;
-		const float rSliceCount = 1.0 / sliceCount;
+		const float rSliceCount = 1.0 / float(sliceCount);
 
 		const int directionSampleCount = GTAO_DIRECTION_SAMPLES;
-		const float rDirectionSampleCount = 1.0 / directionSampleCount;
+		const float rDirectionSampleCount = 1.0 / float(directionSampleCount);
 
 		float falloff = gbufferProjection[1][1] / -viewPos.z * 0.6;
 		vec2 radius = max(GTAO_RADIUS * falloff, 0.1) * vec2(1.0, aspectRatio);

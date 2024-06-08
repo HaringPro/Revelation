@@ -173,16 +173,16 @@ void main() {
 		#endif
 
 		float ao = 1.0;
-		#if AO_ENABLED > 0
-			if (depth > 0.56) {
+		if (depth > 0.56) {
+			#if AO_ENABLED > 0
 				vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 				#if AO_ENABLED == 1
 					ao = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
 				#else
 					ao = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
 				#endif
-			}
-		#endif
+			#endif
+		} else depth += 0.38;
 
 		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
 

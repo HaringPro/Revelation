@@ -68,7 +68,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	bloomData /= sumWeight;
 
 	float bloomIntensity = BLOOM_INTENSITY * 0.1;
-	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.6, 0.4);
+	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.7, 0.3);
 
 	image = mix(image, bloomData, bloomIntensity);
 }

@@ -37,11 +37,45 @@ uniform sampler2D tex;
 
 //======// Function //============================================================================//
 
+#ifdef WATER_CAUSTICS
+	uniform sampler2D noisetex;
+
+	uniform float frameTimeCounter;
+	uniform float far;
+
+	#include "/lib/water/WaterWave.glsl"
+
+	vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
+		float NdotD = dot(normal, dir);
+		float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+		if (k < 0.0) return vec3(0.0);
+
+		return dir * eta - normal * (sqrt(k) + NdotD * eta);
+	}
+#endif
+
 //======// Main //================================================================================//
 void main() {
-	if (isWater == 1) {
-		shadowcolor0Out = vec3(1.0);
-		shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+	if (isWater == 1u) {
+		#ifdef WATER_CAUSTICS
+			vec3 wavesNormal = GetWavesNormal(minecraftPos.xz - minecraftPos.y);
+			vec3 normal = tbnMatrix * wavesNormal;
+
+			vec3 oldPos = viewPos;
+			vec3 newPos = oldPos + fastRefract(vec3(0.0, 0.0, -1.0), normal, 1.0 / WATER_REFRACT_IOR) * 4.0;
+
+			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
+			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
+
+			float caustics = inversesqrt(oldArea / newArea) * 0.5;
+
+			shadowcolor0Out = vec3(pow(caustics, 0.4));
+			shadowcolor1Out.xy = encodeUnitVector(normal);
+			// shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
+		#else
+			shadowcolor0Out = vec3(0.8);
+			shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+		#endif
 	} else {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
