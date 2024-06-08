@@ -1,0 +1,6 @@
+# Editor
+.vscode
+
+# Build System
+__pycache__
+
