@@ -25,6 +25,11 @@ vec3 WorldPosToShadowProjPosBias(in vec3 worldOffsetPos, out float distortFactor
 
 //================================================================================================//
 
+uniform sampler2DShadow shadowtex1;
+uniform sampler2D shadowtex0;
+uniform sampler2D shadowcolor0;
+uniform sampler2D shadowcolor1;
+
 vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 	float searchDepth = 0.0;
 	float sumWeight = 0.0;
@@ -85,7 +90,7 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in float sssAmount) {
+float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
 	vec3 viewlightVector = mat3(gbufferModelView) * worldLightVector;
 
     vec3 position = ViewToScreenSpace(viewlightVector * -viewPos.z + viewPos);
@@ -98,10 +103,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	vec2 absScreenDir = abs(screenDir.xy);
     screenDir *= mix(1.0 / absScreenDir.x, 1.0 / absScreenDir.y, absScreenDir.y > absScreenDir.x);
 
-    vec3 rayStep = screenDir * mix(1.6, 3.0, sssAmount < 1e-4);
+    vec3 rayStep = screenDir * 3.0;
 	rayPos += rayStep * (dither + 1.0);
-
-    float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 2.0);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
 	float shadow = 1.0;
@@ -116,12 +119,10 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 				float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
 
 				if (traceDepthLinear - sampleDepthLinear < maxThickness) {
-					shadow *= absorption;
-					// break;
+					shadow = 0.0;
+					break;
 				}
 			}
-
-			if (shadow < 1e-2) break;
 		}
     }
 
@@ -132,7 +133,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
 	vec3 coeff = albedo * inversesqrt(GetLuminance(albedo) + 1e-6);
-	coeff = oneMinus(0.75 * saturate(coeff)) * (32.0 / sssAmount);
+	coeff = oneMinus(0.65 * saturate(coeff)) * (32.0 / sssAmount);
 
 	vec3 subsurfaceScattering =  fastExp(0.375 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
 		 subsurfaceScattering += fastExp(0.125 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);

@@ -97,7 +97,7 @@ void main() {
 	uint materialID = uint(gbufferData0.y * 255.0);
 
 	#ifdef BORDER_FOG
-		if (depth + materialID < 1.0) {
+		if (depth < 1.0) {
 			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
 
 			density *= oneMinus(saturate(worldDir.y * 3.0));

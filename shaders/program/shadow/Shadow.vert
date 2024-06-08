@@ -23,7 +23,7 @@ out vec3 minecraftPos;
 
 flat out mat3 tbnMatrix;
 
-flat out float isWater;
+flat out uint isWater;
 
 //======// Attribute //===========================================================================//
 
@@ -76,12 +76,12 @@ void main() {
 
 	tint = vaColor.rgb;
 
-	isWater = 0.0;
-	if (int(mc_Entity.x) == 10017) {
+	isWater = 0;
+	if (int(mc_Entity.x) == 10003) {
 		tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
 
-		isWater = 1.0;
+		isWater = 1;
 	}
 
 	lightmap = saturate(vec2(vaUV2) * r240);
