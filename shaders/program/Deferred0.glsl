@@ -98,7 +98,7 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateWeightedLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.5 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.45 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex2, ivec2(skyCaptureRes.x, 4), 0).x;
@@ -185,12 +185,12 @@ void main() {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 16.0;
+		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
 	} else {
 		// Sky map with clouds
 
-		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 16.0;
+		// vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
+		// skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
 	}
 }
 

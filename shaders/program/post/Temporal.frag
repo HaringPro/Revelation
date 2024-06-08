@@ -119,6 +119,8 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
+#define sampleColor(offset) RGBtoYCoCgR(texelFetch(colortex0, texel + offset, 0).rgb);
+
 vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     ivec2 texel = ivec2((screenCoord + taaOffset * 0.5) * viewSize);
 
@@ -126,8 +128,6 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     vec2 previousCoord = screenCoord - velocity;
 
     if (saturate(previousCoord) != previousCoord) return currentSample;
-
-    #define sampleColor(offset) RGBtoYCoCgR(texelFetch(colortex0, texel + offset, 0).rgb);
 
     vec3 col0 = RGBtoYCoCgR(currentSample);
 

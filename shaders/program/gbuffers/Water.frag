@@ -33,7 +33,8 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	sceneOut = vec4(sqr(albedo.rgb), pow(albedo.a, 0.3));
+	if (materialID == 3u) sceneOut = vec4(0.0); // water
+	else sceneOut = vec4(sqr(albedo.rgb), pow(albedo.a, 0.3));
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

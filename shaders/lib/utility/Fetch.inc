@@ -2,11 +2,6 @@
 #define sampleDepth(texel) texelFetch(depthtex0, texel, 0).x
 #define sampleDepthSoild(texel) texelFetch(depthtex1, texel, 0).x
 
-float CalculateBlocklightFalloff(in float blocklight) {
-	blocklight = rcp(sqr(16.0 - 15.0 * blocklight)) + sqr(blocklight) * 0.05;
-	return remap(rcp(256.0), 1.0, blocklight);
-}
-
 float GetDepthFix(in ivec2 texel) {
 	float depth = texelFetch(depthtex0, texel, 0).x;
 	return depth + 0.38 * step(depth, 0.56);
