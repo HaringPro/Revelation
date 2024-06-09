@@ -13,7 +13,10 @@ out vec2 lightmap;
 flat out uint materialID;
 
 out vec3 minecraftPos;
-out vec3 tangentViewDir;
+out vec4 viewPos;
+
+flat out vec3 directIlluminance;
+flat out vec3 skyIlluminance;
 
 //======// Attribute //===========================================================================//
 
@@ -31,6 +34,8 @@ attribute vec4 mc_Entity;
 attribute vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
+
+uniform sampler2D colortex5;
 
 uniform vec3 chunkOffset;
 uniform vec3 cameraPosition;
@@ -59,13 +64,15 @@ void main() {
 
 	materialID = uint(max0(mc_Entity.x - 1e4));
 
-	vec4 viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 	minecraftPos = transMAD(gbufferModelViewInverse, viewPos.xyz) + cameraPosition;
-	tangentViewDir = normalize(viewPos.xyz * tbnMatrix);
 
 	gl_Position = projectionMatrix * viewPos;
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
+
+	directIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 0), 0).rgb;
+	skyIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 1), 0).rgb;
 }

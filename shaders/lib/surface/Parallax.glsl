@@ -21,10 +21,10 @@ float BilinearHeightSample(in vec2 coord)
     return mix(sh.x, sh.y, fpc.y);
 }
 */
-vec3 CalculateParallax(in vec3 tangentViewVector, in mat2 texGrad, in float dither) {
+vec3 CalculateParallax(in vec3 tangentViewDir, in mat2 texGrad, in float dither) {
     vec3 offsetCoord = vec3(tileCoord, 1.0);
-    vec3 stepSize = vec3(tangentViewVector.xy, -1.0) * rcp(PARALLAX_SAMPLES);
-    stepSize.xy *= PARALLAX_DEPTH * rcp(-tangentViewVector.z);
+    vec3 stepSize = vec3(tangentViewDir.xy, -1.0) * rcp(PARALLAX_SAMPLES);
+    stepSize.xy *= PARALLAX_DEPTH * rcp(-tangentViewDir.z);
     stepSize *= 2.0 / PARALLAX_SAMPLES;
 
     uint currRefinements = 0u;

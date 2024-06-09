@@ -207,7 +207,7 @@ vec3 GetTransmittanceToTopAtmosphereBoundary(
     float mu
     ) {
         vec2 uv = GetTransmittanceTextureUvFromRMu(r, mu);
-        return vec3(texture(colortex3, vec3(uv, 32.5 / 33.0)));
+        return vec3(textureLod(colortex3, vec3(uv, 32.5 / 33.0), 0.0));
 }
 
 vec3 GetTransmittance(
@@ -367,7 +367,7 @@ vec3 GetCombinedScattering(
         vec3 uvw0 = vec3((tex_x + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
         vec3 uvw1 = vec3((tex_x + 1.0 + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
 
-        vec4 combined_scattering = texture(colortex3, uvw0) * oneMinus(lerp) + texture(colortex3, uvw1) * lerp;
+        vec4 combined_scattering = textureLod(colortex3, uvw0, 0.0) * oneMinus(lerp) + textureLod(colortex3, uvw1, 0.0) * lerp;
 
         vec3 scattering = vec3(combined_scattering);
         single_mie_scattering = GetExtrapolatedSingleMieScattering(atmosphere, combined_scattering);
@@ -387,7 +387,7 @@ vec3 GetIrradiance(
         vec2 uv = vec2(GetCombinedTextureCoordFromUnitRange(x_mu_s, IRRADIANCE_TEXTURE_WIDTH, COMBINED_TEXTURE_WIDTH),
                        GetCombinedTextureCoordFromUnitRange(x_r, IRRADIANCE_TEXTURE_HEIGHT, COMBINED_TEXTURE_HEIGHT) + TRANSMITTANCE_TEXTURE_HEIGHT / COMBINED_TEXTURE_HEIGHT);
 
-        return vec3(texture(colortex3, vec3(uv, 32.5 / 33.0)));
+        return vec3(textureLod(colortex3, vec3(uv, 32.5 / 33.0), 0.0));
 }
 
 //--// Rendering //-----------------------------------------------------------//
@@ -448,7 +448,7 @@ vec3 GetSkyRadiance(
                 float d = distance(camera, planet_surface);
                 vec3 surface_transmittance = GetTransmittance(r, mu, d, ray_r_mu_intersects_ground);
 
-                groundDiffuse = mix(sky_irradiance * 0.1, sun_irradiance * 0.07, wetness * 0.7) * surface_transmittance;
+                groundDiffuse = mix(sky_irradiance * 0.1, sun_irradiance * 0.05, wetness * 0.6) * surface_transmittance;
             }
         #else
             ray_r_mu_intersects_ground = false;
@@ -463,7 +463,7 @@ vec3 GetSkyRadiance(
         vec3 mie = sun_single_mie_scattering * HenyeyGreensteinPhase(nu, mie_phase_g)
                 + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightFactor;
 
-        rayleigh = mix(rayleigh,  GetLuminance(rayleigh) * vec3(1.026186824, 0.9881671071, 1.015787125), wetness * 0.7);
+        rayleigh = mix(rayleigh, vec3(GetLuminance(rayleigh)), wetness * 0.6);
 
         return (rayleigh + mie + groundDiffuse) * oneMinus(wetness * 0.6);
 }
@@ -536,7 +536,7 @@ vec3 GetSkyRadianceToPoint(
         vec3 mie = sun_single_mie_scattering * HenyeyGreensteinPhase(nu, mie_phase_g)
                 + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightFactor;
 
-        rayleigh = mix(rayleigh,  GetLuminance(rayleigh) * vec3(1.026186824, 0.9881671071, 1.015787125), wetness * 0.7);
+        rayleigh = mix(rayleigh, vec3(GetLuminance(rayleigh)), wetness * 0.6);
 
         return (rayleigh + mie) * oneMinus(wetness * 0.6);
 }

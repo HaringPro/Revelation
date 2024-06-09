@@ -42,7 +42,7 @@ vec2 CalculateRefractCoord(in TranslucentMask mask, in vec3 normal, in vec3 worl
 
 	if (mask.water) {
         worldPos += cameraPosition;
-		vec3 wavesNormal = GetWavesNormal(worldPos.xz - worldPos.y).xzy;
+		vec3 wavesNormal = CalculateWaterNormal(worldPos.xz - worldPos.y).xzy;
 		vec3 waterNormal = mat3(gbufferModelView) * wavesNormal;
 		vec3 wavesNormalView = normalize(waterNormal);
 

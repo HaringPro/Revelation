@@ -1,6 +1,4 @@
 
-#include "/lib/surface/BRDF.glsl"
-
 #define PCF_SAMPLES 16 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 48 64]
 
 const float shadowDistanceRenderMul = 1.0; // [-1.0 1.0]
@@ -40,7 +38,7 @@ vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 	vec2 rot = cossin(dither * TAU) * searchRadius;
 	const vec2 angleStep = cossin(TAU * 0.125);
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
-	for (uint i = 0u; i < 8u; ++i, rot *= rotStep) {
+	for (uint i = 0u; i < 9u; ++i, rot *= rotStep) {
 		float fi = float(i) + dither;
 		vec2 sampleCoord = shadowProjPos.xy + rot * sqrt(fi * 0.125);
 
@@ -127,27 +125,4 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
     }
 
 	return shadow;
-}
-
-//================================================================================================//
-
-vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
-	vec3 coeff = albedo * inversesqrt(GetLuminance(albedo) + 1e-6);
-	coeff = oneMinus(0.65 * saturate(coeff)) * (32.0 / sssAmount);
-
-	vec3 subsurfaceScattering =  fastExp(0.375 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
-		 subsurfaceScattering += fastExp(0.125 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);
-
-	//vec3 subsurfaceScattering = fastExp(coeff * sssDepth);
-	//subsurfaceScattering *= HenyeyGreensteinPhase(-LdotV, 0.65) + 0.25;
-	return subsurfaceScattering * sssAmount * PI;
-}
-
-//================================================================================================//
-
-float CalculateFittedBouncedLight(in vec3 normal) {
-	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
-	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
-
-	return bounce * (2.0 - bounce) * 3e-2;
 }

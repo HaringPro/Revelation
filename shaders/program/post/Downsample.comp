@@ -24,10 +24,10 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 //======// Uniform //=============================================================================//
 
 #if DOWNSAMPLE_LEVEL == 0
-	uniform sampler2D colortex1;
-	#define sampleTile(uv) textureLod(colortex1, uv, 0.0).rgb
+	uniform sampler2D colortex7; // TAA image output
+	#define sampleTile(uv) textureLod(colortex7, uv, 0.0).rgb
 #else
-	uniform sampler2D colortex0;
+	uniform sampler2D colortex0; // Bloom tile input
 	#define sampleTile(uv) textureLod(colortex0, uv, 0.0).rgb
 #endif
 

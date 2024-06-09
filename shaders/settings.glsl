@@ -45,6 +45,9 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 	#define WATER_CAUSTICS // Enables water caustics
 	#define WATER_FOG_DENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 
+
+	#define GLASS_REFRACT_IOR 1.5 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
+
 /* Fog */
 	#define BORDER_FOG // Enables border fog
 	#define BORDER_FOG_FALLOFF 12.0 // Falloff of the border fog. [0.0 0.5 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0]
@@ -74,6 +77,7 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 
 /* Bloom */
 	#define BLOOM_ENABLED // Enables bloom
+	#define BLOOMY_FOG // Enables bloomy fog
 
 /* CAS */
 	#define CAS_ENABLED // Sharpens the final image (contrast-adaptive sharpening)

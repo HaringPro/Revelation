@@ -17,9 +17,8 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,6 */
+/* RENDERTARGETS: 0 */
 layout (location = 0) out vec3 sceneOut;
-layout (location = 1) out float bloomyFogTrans;
 
 //======// Input //===============================================================================//
 
@@ -34,7 +33,6 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex0; // Scene data
 
-uniform sampler2D colortex2; // Translucent data
 uniform sampler2D colortex3; // Gbuffer data 0
 uniform sampler2D colortex4; // Gbuffer data 1
 
@@ -96,34 +94,13 @@ void main() {
 	vec3 viewPos = ScreenToViewSpace(vec3(screenCoord, depth));
 	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
 
-	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
-	vec3 worldDir = normalize(worldPos);
-
 	vec4 gbufferData0 = texelFetch(colortex3, screenTexel, 0);
 
 	vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 	uint materialID = uint(gbufferData0.y * 255.0);
 
-	bloomyFogTrans = 1.0;
-	if (isEyeInWater == 1) {
-		mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), length(viewPos));
-		sceneOut = sceneOut * waterFog[1] + waterFog[0];
-		bloomyFogTrans = GetLuminance(waterFog[1]);
-	} else if (materialID == 3u) {
+	if (materialID == 3u) {
 		mat2x3 waterFog = CalculateWaterFog(lightmap.y, distance(viewPos, sViewPos));
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 	}
-
-    vec4 translucents = texelFetch(colortex2, screenTexel, 0);
-	sceneOut += (translucents.rgb - sceneOut) * translucents.a;
-
-	#ifdef BORDER_FOG
-		if (depth + isEyeInWater < 1.0) {
-			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
-			density *= oneMinus(saturate(worldDir.y * 3.0));
-
-			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
-			sceneOut = mix(sceneOut, skyRadiance, density);
-		}
-	#endif
 }

@@ -188,7 +188,7 @@ vec4 textureSmoothFilter(in sampler2D tex, in vec2 coord) {
 	coord = i + f;
 
 	coord = (coord - 0.5) / res;
-	return texture(tex, coord);
+	return textureLod(tex, coord, 0.0);
 }
 
 vec4 cubic(in float x) {
@@ -220,10 +220,10 @@ vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
     vec4 offset = c + vec4(xCubic.y, xCubic.w, yCubic.y, yCubic.w) / s;
 	offset *= 1.0 / res.xxyy;
 
-	vec4 sample0 = texture(tex, offset.xz);
-	vec4 sample1 = texture(tex, offset.yz);
-	vec4 sample2 = texture(tex, offset.xw);
-	vec4 sample3 = texture(tex, offset.yw);
+	vec4 sample0 = textureLod(tex, offset.xz, 0.0);
+	vec4 sample1 = textureLod(tex, offset.yz, 0.0);
+	vec4 sample2 = textureLod(tex, offset.xw, 0.0);
+	vec4 sample3 = textureLod(tex, offset.yw, 0.0);
 
     float sx = s.x / (s.x + s.y);
     float sy = s.z / (s.z + s.w);
@@ -267,10 +267,10 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
     vec2 p = floor(coord);
 
 	vec2 pixelSize = 1.0 / res;
-    vec4 sample0 = texture(tex, (p                 ) * pixelSize);
-    vec4 sample1 = texture(tex, (p + vec2(1.0, 0.0)) * pixelSize);
-    vec4 sample2 = texture(tex, (p + vec2(0.0, 1.0)) * pixelSize);
-    vec4 sample3 = texture(tex, (p + vec2(1.0, 1.0)) * pixelSize);
+    vec4 sample0 = textureLod(tex, (p                 ) * pixelSize, 0.0);
+    vec4 sample1 = textureLod(tex, (p + vec2(1.0, 0.0)) * pixelSize, 0.0);
+    vec4 sample2 = textureLod(tex, (p + vec2(0.0, 1.0)) * pixelSize, 0.0);
+    vec4 sample3 = textureLod(tex, (p + vec2(1.0, 1.0)) * pixelSize, 0.0);
 
     vec2 f = fract(coord);
     return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);

@@ -20,7 +20,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 4 */
-layout(location = 0) out vec3 LDRImageOut;
+layout (location = 0) out vec3 LDRImageOut;
 
 //======// Input //===============================================================================//
 
@@ -29,9 +29,11 @@ flat in float exposure;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex0; // Bloom tiles
-uniform sampler2D colortex1; // HDR scene image
+uniform sampler2D colortex2; // Rain alpha
+uniform sampler2D colortex6; // Bloomy fog transmittance
+uniform sampler2D colortex7; // HDR scene image
 
-uniform sampler2D colortex2;
+uniform float wetnessCustom;
 
 uniform vec2 viewPixelSize;
 
@@ -62,15 +64,26 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 
 		bloomData += sampleTile * weight;
 		sumWeight += weight;
-		weight *= 0.8;
+		weight *= 0.9;
 	}
 
 	bloomData /= sumWeight;
 
-	float bloomIntensity = BLOOM_INTENSITY * 0.1;
+	float bloomIntensity = BLOOM_INTENSITY * 0.075;
 	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.7, 0.3);
 
 	image = mix(image, bloomData, bloomIntensity);
+
+	#ifdef BLOOMY_FOG
+		float fogTransmittance = texelFetch(colortex6, texel, 0).x;
+
+		image = mix(bloomData, image, saturate(fogTransmittance));
+	#endif
+
+	if (wetnessCustom > 1e-2) {
+		float rain = texelFetch(colortex2, texel, 0).x * 0.2;
+		image = image * oneMinus(rain) + bloomData * rain;
+	}
 }
 
 
@@ -147,7 +160,7 @@ vec3 Lottes(in vec3 x) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
+	vec3 HDRImage = texelFetch(colortex7, screenTexel, 0).rgb;
 
 	// Bloom and fog
 	#ifdef BLOOM_ENABLED

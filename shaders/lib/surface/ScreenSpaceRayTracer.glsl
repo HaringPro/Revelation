@@ -8,8 +8,7 @@
 bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, const in uint steps, inout vec3 rayPos) {
     const float rSteps = 1.0 / float(steps);
 
-    vec3 clipPos = rayPos;
-    vec3 position = viewToScreenSpace(viewDir * abs(viewPos.z) + viewPos);
+    vec3 position = ViewToScreenSpace(viewDir * abs(viewPos.z) + viewPos);
     vec3 screenDir = normalize(position - rayPos);
     float stepWeight = 1.0 / screenDir.z;
 

@@ -13,23 +13,22 @@
 /*
 	Pipeline configuration
 
-	const int 	colortex0Format 			= R11F_G11F_B10F;
-	const int 	colortex1Format 			= R11F_G11F_B10F;
-	const int 	colortex2Format 			= R11F_G11F_B10F;
-	const int 	colortex3Format 			= RGBA16;
-	const int 	colortex4Format 			= RGBA16;
-	const int 	colortex5Format 			= RGBA16F;
-	const int 	colortex6Format 			= RGBA16F;
-	// const int 	colortex8Format 			= RGBA8;
-	const int 	colortex10Format 			= R11F_G11F_B10F;
+	const int 	colortex0Format 			= R11F_G11F_B10F;	// Scene data
+	const int 	colortex2Format 			= RGBA16F;			// Temp data
+	const int 	colortex3Format 			= RGBA16;			// Gbuffer data 0
+	const int 	colortex4Format 			= RGBA16;			// Gbuffer data 1
+	const int 	colortex5Format 			= R11F_G11F_B10F;	// Sky-View LUT, light colors
+	const int 	colortex6Format 			= RGB8;				// Albedo
+	const int 	colortex7Format 			= R11F_G11F_B10F;	// Scene history
+	const int 	colortex10Format 			= R11F_G11F_B10F;	// Transmittance-View LUT, cloud shadow map
 
 	const bool	colortex0Clear				= false;
-	const bool	colortex1Clear				= false;
-	const bool	colortex2Clear				= false;
+	const bool	colortex2Clear				= true;
 	const bool	colortex3Clear				= true;
 	const bool	colortex4Clear				= false;
 	const bool  colortex5Clear				= false;
 	const bool  colortex6Clear				= false;
+	const bool	colortex7Clear				= false;
 	const bool 	colortex10Clear				= true;
 
 

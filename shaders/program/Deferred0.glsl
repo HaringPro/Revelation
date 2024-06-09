@@ -34,10 +34,9 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex1; // Previous scene color
-uniform sampler2D colortex2;
-
 uniform sampler3D colortex3; // Combined Atmospheric LUT
+uniform sampler2D colortex5;
+uniform sampler2D colortex7; // Previous scene color
 
 uniform int moonPhase;
 
@@ -72,7 +71,7 @@ float CalculateWeightedLuminance() {
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
             vec2 uv = (vec2(x, y) + 0.5) * rTileSteps;
-            float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
+            float luminance = GetLuminance(textureLod(colortex7, uv, AUTO_EXPOSURE_LOD).rgb);
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
@@ -101,7 +100,7 @@ void main() {
         float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.45 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
-        float prevExposure = texelFetch(colortex2, ivec2(skyCaptureRes.x, 4), 0).x;
+        float prevExposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;
 
         float fadedSpeed = targetExposure < prevExposure ? 2.0 : 1.0;
         exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime * EXPOSURE_SPEED));
@@ -118,9 +117,9 @@ void main() {
 const bool colortex1MipmapEnabled = true;
 */
 
-/* RENDERTARGETS: 2,10 */
-layout(location = 0) out vec3 skyViewOut;
-layout(location = 1) out vec3 transmittanceOut;
+/* RENDERTARGETS: 5,10 */
+layout (location = 0) out vec3 skyViewOut;
+layout (location = 1) out vec3 transmittanceOut;
 
 //======// Input //===============================================================================//
 

@@ -13,12 +13,12 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0 */
-out vec3 albedoOut;
+/* RENDERTARGETS: 2 */
+out float rainAlpha;
 
 //======// Input //===============================================================================//
 
-in vec3 tint;
+in float tint;
 in vec2 texCoord;
 
 //======// Uniform //=============================================================================//
@@ -27,9 +27,9 @@ uniform sampler2D tex;
 
 //======// Main //================================================================================//
 void main() {
-	vec4 albedo = texture(tex, texCoord);
+    float albedoAlpha = texture(tex, texCoord * vec2(4.0, 2.0)).a;
 
-	if (albedo.a < 0.1) { discard; return; }
+    if (albedoAlpha < 0.1) discard;
 
-	albedoOut = albedo.rgb * tint;
+	rainAlpha = albedoAlpha * tint;
 }

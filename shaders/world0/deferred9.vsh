@@ -35,7 +35,7 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex2;
+uniform sampler2D colortex5;
 
 uniform int moonPhase;
 
@@ -51,8 +51,8 @@ void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	screenCoord = vaUV0;
 
-	directIlluminance = texelFetch(colortex2, ivec2(skyCaptureRes.x, 0), 0).rgb;
-	skyIlluminance = texelFetch(colortex2, ivec2(skyCaptureRes.x, 1), 0).rgb;
+	directIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 0), 0).rgb;
+	skyIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 1), 0).rgb;
 
 	skySH = mat4x3(0.0);
 
@@ -63,7 +63,7 @@ void main() {
 			float longitude = float(v) * PI * 0.4;
 			vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
 
-			vec3 skyRadiance = texture(colortex2, FromSkyViewLutParams(direction)).rgb;
+			vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction)).rgb;
 			skySH += ToSphericalHarmonics(skyRadiance, direction);
 		}
 	}

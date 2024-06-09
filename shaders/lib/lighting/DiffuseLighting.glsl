@@ -1,4 +1,29 @@
 
+#include "/lib/surface/BRDF.glsl"
+
+//================================================================================================//
+
+vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
+	vec3 coeff = albedo * inversesqrt(GetLuminance(albedo) + 1e-6);
+	coeff = oneMinus(0.65 * saturate(coeff)) * (32.0 / sssAmount);
+
+	vec3 subsurfaceScattering =  fastExp(0.375 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
+		 subsurfaceScattering += fastExp(0.125 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);
+
+	//vec3 subsurfaceScattering = fastExp(coeff * sssDepth);
+	//subsurfaceScattering *= HenyeyGreensteinPhase(-LdotV, 0.65) + 0.25;
+	return subsurfaceScattering * sssAmount * PI;
+}
+
+float CalculateFittedBouncedLight(in vec3 normal) {
+	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
+	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
+
+	return bounce * (2.0 - bounce) * 3e-2;
+}
+
+//================================================================================================//
+
 float CalculateBlocklightFalloff(in float blocklight) {
 	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
 	blocklight += saturate(blocklight * 1.5 - 0.5);

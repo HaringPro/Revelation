@@ -58,7 +58,7 @@ uniform sampler2D tex;
 void main() {
 	if (isWater == 1u) {
 		#ifdef WATER_CAUSTICS
-			vec3 wavesNormal = GetWavesNormal(minecraftPos.xz - minecraftPos.y);
+			vec3 wavesNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 			vec3 normal = tbnMatrix * wavesNormal;
 
 			vec3 oldPos = viewPos;

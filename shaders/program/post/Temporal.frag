@@ -15,13 +15,14 @@
 #include "/lib/utility/Uniform.inc"
 
 #include "/lib/utility/Transform.inc"
+#include "/lib/utility/Fetch.inc"
 #include "/lib/utility/Offset.inc"
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 1,0 */
-layout(location = 0) out vec3 temporalOut;
-layout(location = 1) out vec3 sceneOut;
+/* RENDERTARGETS: 0,7 */
+layout (location = 0) out vec3 sceneOut;
+layout (location = 1) out vec3 temporalOut;
 
 //======// Function //============================================================================//
 
@@ -119,12 +120,12 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define sampleColor(offset) RGBtoYCoCgR(texelFetch(colortex0, texel + offset, 0).rgb);
+#define sampleColor(offset) RGBtoYCoCgR(sampleSceneColor(texel + offset));
 
 vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     ivec2 texel = ivec2((screenCoord + taaOffset * 0.5) * viewSize);
 
-    vec3 currentSample = texelFetch(colortex0, texel, 0).rgb;
+    vec3 currentSample = sampleSceneColor(texel);
     vec2 previousCoord = screenCoord - velocity;
 
     if (saturate(previousCoord) != previousCoord) return currentSample;
@@ -145,14 +146,13 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     vec3 sqrVar = (col0 * col0 + col1 * col1 + col2 * col2 + col3 * col3 + col4 * col4 + col5 * col5 + col6 * col6 + col7 * col7 + col8 * col8) * rcp(9.0);
 
     vec3 variance = sqrt(abs(sqrVar - clipAvg * clipAvg));
-    vec3 clipMin = clipAvg - variance * 1.25;
-    vec3 clipMax = clipAvg + variance * 1.25;
+    vec3 clipMin = min(clipAvg - variance * 1.25, col0);
+    vec3 clipMax = max(clipAvg + variance * 1.25, col0);
 
     #ifdef TAA_SHARPEN
-        //currentSample = textureSmoothFilter(colortex0, coord).rgb;
-        vec3 previousSample = textureCatmullRomFast(colortex1, previousCoord, TAA_SHARPNESS).rgb;
+        vec3 previousSample = textureCatmullRomFast(colortex7, previousCoord, TAA_SHARPNESS).rgb;
     #else
-        vec3 previousSample = texture(colortex1, previousCoord).rgb;
+        vec3 previousSample = texture(colortex7, previousCoord).rgb;
     #endif
 
     previousSample = RGBtoYCoCgR(previousSample);
@@ -169,14 +169,15 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
 //======// Main //================================================================================//
 void main() {
+    sceneOut = vec3(0.0); // Clear colortex0 for bloom tile pass
+
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    float depth = texelFetch(depthtex0, screenTexel, 0).x;
+    float depth = sampleDepth(screenTexel);
 
     vec3 closestFragment = GetClosestFragment(screenTexel, depth);
     vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
 
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
     temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
-    sceneOut = vec3(0.0); // Clear colortex0 for bloom tile pass
 }

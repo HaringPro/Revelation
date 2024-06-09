@@ -5,9 +5,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,3 */
-layout(location = 0) out vec3 albedoOut;
-layout(location = 1) out vec4 gbufferOut0;
+/* RENDERTARGETS: 6,3 */
+layout (location = 0) out vec3 albedoOut;
+layout (location = 1) out vec4 gbufferOut0;
 
 //======// Input //===============================================================================//
 

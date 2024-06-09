@@ -43,11 +43,11 @@ float CalculateCoC(float p, float z, float a, float f) {
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texel = ivec2(gl_FragCoord.xy);
+	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = texelFetch(depthtex1, texel, 0).x;
+	float depth = texelFetch(depthtex1, screenTexel, 0).x;
 	if (depth < 0.56) {
-		sceneOut = texelFetch(colortex0, texel, 0).rgb;
+		sceneOut = sampleSceneColor(screenTexel);
 		return;
 	}
 
@@ -56,7 +56,7 @@ void main() {
         float focusDist = texelFetch(colortex5, ivec2(1), 0).a;
     #else
         float focus = far * (MANUAL_FOCUS - near) / ((far - near) * MANUAL_FOCUS);
-        float focusDist = GetDepthLinear(focus);
+        float focusDist = GetLinearDepth(focus);
     #endif
 
     const float focalLength = 0.5 * 0.035 * gbufferProjection[1][1];
@@ -88,12 +88,12 @@ void main() {
 		vec2 sampleOffset = rot * sqrt((noise + i) * rSteps);
 
         #ifdef DOF_TRANSVERSE_CA
-			ivec2 sampleCoord = texel + ivec2(sampleOffset);
+			ivec2 sampleCoord = screenTexel + ivec2(sampleOffset);
         	sceneOut.r += texelFetch(colortex0, sampleCoord + aberrated, 0).r;
         	sceneOut.g += texelFetch(colortex0, sampleCoord, 0).g;
         	sceneOut.b += texelFetch(colortex0, sampleCoord - aberrated, 0).b;
 		#else
-        	sceneOut += texelFetch(colortex0, texel + ivec2(sampleOffset), 0).rgb;
+        	sceneOut += sampleSceneColor(screenTexel + ivec2(sampleOffset));
         #endif
     }
 

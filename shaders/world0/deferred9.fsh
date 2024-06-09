@@ -18,7 +18,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 0 */
-layout(location = 0) out vec3 sceneOut;
+layout (location = 0) out vec3 sceneOut;
 
 //======// Input //===============================================================================//
 
@@ -35,12 +35,12 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
-uniform sampler2D colortex0; // Albedo
-
-uniform sampler2D colortex2; // Sky-View LUT
-
 uniform sampler2D colortex3; // Gbuffer data 0
 uniform sampler2D colortex4; // Gbuffer data 1
+
+uniform sampler2D colortex5; // Sky-View LUT
+
+uniform sampler2D colortex6; // Albedo
 
 uniform sampler2D colortex10; // Transmittance-View LUT
 
@@ -107,8 +107,8 @@ uniform mat4 shadowModelView;
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/Celestial.glsl"
 
-#include "/lib/lighting/Sunlight.glsl"
-#include "/lib/lighting/Blocklight.glsl"
+#include "/lib/lighting/Shadows.glsl"
+#include "/lib/lighting/DiffuseLighting.glsl"
 
 #if AO_ENABLED > 0
 	#include "/lib/lighting/AmbientOcclusion.glsl"
@@ -132,13 +132,13 @@ void main() {
 
 	if (depth > 0.999999 + materialID) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
-		sceneOut = textureBicubic(colortex2, skyViewCoord).rgb;
+		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut += transmittance * (RenderStars(worldDir) + RenderSun(worldDir, worldSunVector));
 	} else {
 		sceneOut = vec3(0.0);
 
-		vec3 albedoRaw = texelFetch(colortex0, screenTexel, 0).rgb;
+		vec3 albedoRaw = texelFetch(colortex6, screenTexel, 0).rgb;
 		vec3 albedo = sRGBtoLinear(albedoRaw);
 		worldPos += gbufferModelViewInverse[3].xyz;
 
@@ -153,7 +153,7 @@ void main() {
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -23.0, 24.0) * directIlluminance;
+		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		vec3 diffuseBRDF = vec3(1.0);
@@ -209,13 +209,14 @@ void main() {
 		}
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * SUBSERFACE_SCATTERING_STRENTGH;
 
+		// Subsurface scattering
 		if (sssAmount > 1e-4) {
 			vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 			subsurfaceScattering *= eyeSkylightFix;
 			sceneOut += subsurfaceScattering * sunlightMult * ao;
-			sunlightMult *= 1.0 - sssAmount * 0.5;
 		}
 
+		// Shadows
 		if (NdotL > 1e-3) {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
 			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
@@ -229,7 +230,7 @@ void main() {
 				#ifdef SCREEN_SPACE_SHADOWS
 					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither);
 				#endif
-				diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo);
+				diffuseBRDF *= mix(DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.5);
 
 				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
 
@@ -243,6 +244,7 @@ void main() {
 		if (lightmap.y > 1e-5) {
 			// Skylight
 			vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
+			skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5);
 			skylight *= worldNormal.y * 1.2 + 1.8;
 
 			sceneOut += skylight * cube(lightmap.y) * ao;
