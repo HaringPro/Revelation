@@ -5,10 +5,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,3,4 */
+/* RENDERTARGETS: 2,3 */
 layout (location = 0) out vec4 sceneOut;
 layout (location = 1) out vec4 gbufferOut0;
-layout (location = 2) out vec4 gbufferOut1;
 
 //======// Uniform //=============================================================================//
 
@@ -42,7 +41,8 @@ flat in vec3 skyIlluminance;
 #include "/lib/water/WaterWave.glsl"
 // #include "/lib/water/WaterFog.glsl"
 
-#include "/lib/surface/BRDF.glsl"
+#include "/lib/lighting/Shadows.glsl"
+#include "/lib/lighting/DiffuseLighting.glsl"
 
 #include "/lib/surface/ScreenSpaceRaytracer.glsl"
 
@@ -68,7 +68,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 
 			reflection = skyRadiance * skylight;
 		} else if (materialID == 3u) {
-			reflection = skyIlluminance * rPI;
+			reflection = skyIlluminance * 5e-3 / (vec3(WATER_ABSORPTION_R, WATER_ABSORPTION_G, WATER_ABSORPTION_B) + 1e-2);
 		}
 	}
 
@@ -96,29 +96,99 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 
 //======// Main //================================================================================//
 void main() {
-
 	vec3 normalOut;
-	if (materialID == 3u) { // water
-    	// ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-		// vec3 forwardPos = ScreenToViewSpace(vec3(texCoord, gl_FragCoord.z));
-		// vec3 backPos = ScreenToViewSpace(vec3(texCoord, sampleDepthSoild(screenTexel)));
+	vec4 albedo;
 
-		// sceneOut = WaterFog(lightmap.y, distance(forwardPos, backPos));
+	if (materialID == 3u) { // water
 		#ifdef WATER_PARALLAX
 			normalOut = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(minecraftPos - cameraPosition) * tbnMatrix);
 		#else
 			normalOut = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 		#endif
 
+		gbufferOut0.w = packUnorm2x8(encodeUnitVector(normalOut));
+		albedo = sceneOut = vec4(0.0);
 		normalOut = normalize(tbnMatrix * normalOut);
-		sceneOut = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
 	} else {
-		vec4 albedo = texture(tex, texCoord) * tint;
+		albedo = texture(tex, texCoord) * tint;
 
 		if (albedo.a < 0.1) { discard; return; }
-		sceneOut = vec4(sqr(albedo.rgb) * (skyIlluminance + directIlluminance), pow(albedo.a, 0.3));
+		sceneOut = vec4(vec3(0.0), pow(albedo.a, 0.2));
 		normalOut = tbnMatrix[2];
+	}
 
+	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz;
+	vec3 worldDir = normalize(worldPos);
+	worldPos += gbufferModelViewInverse[3].xyz;
+
+	float LdotV = dot(worldLightVector, -worldDir);
+	float NdotL = dot(normalOut, worldLightVector);
+
+	// Sunlight
+	vec3 sunlightMult = fma(wetness, -15.5, 16.0) * directIlluminance;
+
+	vec3 shadow = vec3(0.0);
+	float diffuseBRDF = fastSqrt(NdotL) * 0.1;
+	float specularBRDF = 0.0;
+
+	float distortFactor;
+	vec3 normalOffset = normalOut * fma(dotSelf(worldPos), 4e-5, 2e-2) * (2.0 - saturate(NdotL));
+
+	vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
+
+	// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
+
+	#ifdef TAA_ENABLED
+		float dither = BlueNoiseTemporal();
+	#else
+		float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+	#endif
+
+	// Shadows
+	if (NdotL > 1e-3) {
+		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
+		float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
+		shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
+
+		if (maxOf(shadow) > 1e-6) {
+			float NdotV = saturate(dot(normalOut, -worldDir));
+			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+			float NdotH = (NdotL + NdotV) * halfwayNorm;
+			float LdotH = LdotV * halfwayNorm + halfwayNorm;
+
+			// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
+
+			specularBRDF = SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.01), 0.02);
+
+			shadow *= saturate(lightmap.y * 1e8);
+			shadow *= sunlightMult;
+		}
+	}
+
+	sceneOut.rgb += shadow * diffuseBRDF;
+
+	if (lightmap.y > 1e-5) {
+		// Skylight
+		vec3 skylight = skyIlluminance * 0.7;
+		skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5 + 0.2);
+		skylight *= normalOut.y * 1.2 + 1.8;
+
+		sceneOut.rgb += skylight * cube(lightmap.y);
+
+		// Bounced light
+		float bounce = CalculateFittedBouncedLight(normalOut);
+		if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
+		sceneOut.rgb += bounce * sunlightMult * 2.0;
+	}
+
+	sceneOut.rgb *= albedo.rgb;
+
+	// Specular highlights
+	sceneOut.rgb += shadow * specularBRDF;
+
+	if (materialID == 3u) { // water
+		sceneOut += CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
+	} else {
 		vec4 reflections = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
 		sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
 		sceneOut.rgb /= maxEps(sceneOut.a);
@@ -127,6 +197,5 @@ void main() {
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
-	gbufferOut1.x = packUnorm2x8(encodeUnitVector(normalOut));
-	gbufferOut1.y = gbufferOut1.x;
+	// gbufferOut0.z = packUnorm2x8(encodeUnitVector(normalOut));
 }

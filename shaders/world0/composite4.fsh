@@ -98,19 +98,22 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
+	worldPos += gbufferModelViewInverse[3].xyz;
 
 	vec4 gbufferData0 = texelFetch(colortex3, screenTexel, 0);
 
 	vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 	uint materialID = uint(gbufferData0.y * 255.0);
 
+	float LdotV = dot(worldLightVector, worldDir);
+
 	bloomyFogTrans = 1.0;
 	if (isEyeInWater == 1) {
-		mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), length(viewPos));
+		mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), length(viewPos), LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		bloomyFogTrans = GetLuminance(waterFog[1]);
 	} else if (materialID == 3u) {
-		mat2x3 waterFog = CalculateWaterFog(lightmap.y, distance(viewPos, sViewPos));
+		mat2x3 waterFog = CalculateWaterFog(lightmap.y, distance(viewPos, sViewPos), LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 	}
 

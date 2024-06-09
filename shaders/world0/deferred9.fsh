@@ -256,7 +256,7 @@ void main() {
 		}
 
 		// Emissive & Blocklight
-		vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos);
+		vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos, blocklightColor);
 		if (emissive.a * lightmap.x > 1e-5) {
 			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;

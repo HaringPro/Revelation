@@ -30,7 +30,7 @@ float CalculateBlocklightFalloff(in float blocklight) {
 	return saturate(curve(blocklight * 0.5) * fade);
 }
 
-vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 albedoRaw, in vec3 worldPos) {
+vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 albedoRaw, in vec3 worldPos, in vec3 blocklightColor) {
     float albedoLuminance = length(albedo);
 
 	switch (materialID) {

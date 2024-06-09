@@ -11,16 +11,16 @@ float textureSmooth(in vec2 coord) {
 }
 
 float CalculateWaterWaves(in vec2 position) {
-    float wavesTime = frameTimeCounter * 1.5 * WATER_WAVE_SPEED;
+    float wavesTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
 	position.y *= 0.8;
 
     float wave = 0.0;
-	wave += textureSmooth((position + vec2(wavesTime, position.x - wavesTime)) * 0.7);
-	wave += textureSmooth((position - vec2(wavesTime * 0.4, position.x - wavesTime * 0.4)) * 1.4) * 0.5;
-	wave += textureSmooth((position + vec2(wavesTime, position.x - wavesTime)) * 2.2) * 0.2;
-	wave += textureSmooth((position - vec2(wavesTime * 0.4, position.x + wavesTime * 0.4)) * 3.2) * 0.1;
+	wave += textureSmooth((position + vec2(wavesTime, position.x)) * 0.7);
+	wave += textureSmooth((position + vec2(wavesTime * 1.2,  - position.x)) * 1.4) * 0.5;
+	wave += textureSmooth((position + vec2(wavesTime, position.x)) * 2.2) * 0.2;
+	wave += textureSmooth((position + vec2(wavesTime * 1.4,  - position.x)) * 3.2) * 0.1;
 
-	return wave / (0.8 + dot(abs(dFdx(position) + dFdy(position)), vec2(2e2 / far)));
+	return exp2(-wave) / (0.2 + dot(abs(dFdx(position) + dFdy(position)), vec2(64.0 / far)));
 }
 
 vec3 CalculateWaterNormal(in vec2 position) {
@@ -30,7 +30,7 @@ vec3 CalculateWaterNormal(in vec2 position) {
 
 	vec2 wavesNormal = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
 
-	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.5));
+	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.6));
 }
 
 vec3 CalculateWaterNormal(in vec2 position, in vec3 tangentViewDir) {
