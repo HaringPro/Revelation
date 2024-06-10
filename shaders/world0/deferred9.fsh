@@ -143,6 +143,7 @@ void main() {
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
 		// vec3 flatNormal = GetFlatNormal(screenTexel);
 		vec3 worldNormal = GetWorldNormal(screenTexel);
 
@@ -251,7 +252,7 @@ void main() {
 
 			// Bounced light
 			float bounce = CalculateFittedBouncedLight(worldNormal);
-			if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
+			bounce *= pow5(lightmap.y);
 			sceneOut += bounce * sunlightMult * ao;
 		}
 

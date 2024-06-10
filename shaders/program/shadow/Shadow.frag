@@ -62,14 +62,14 @@ void main() {
 			vec3 normal = tbnMatrix * wavesNormal;
 
 			vec3 oldPos = viewPos;
-			vec3 newPos = oldPos + fastRefract(vec3(0.0, 0.0, -1.0), normal, 1.0 / WATER_REFRACT_IOR) * 4.0;
+			vec3 newPos = oldPos + fastRefract(vec3(0.0, 0.0, -1.0), normal, 1.0 / WATER_REFRACT_IOR) * 3.0;
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.5;
+			float caustics = inversesqrt(oldArea / newArea) * 0.7;
 
-			shadowcolor0Out = vec3(pow(caustics, 0.4));
+			shadowcolor0Out = vec3(sqrt(caustics));
 			shadowcolor1Out.xy = encodeUnitVector(normal);
 			// shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
 		#else

@@ -5,9 +5,10 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,3 */
+/* RENDERTARGETS: 0,2,3 */
 layout (location = 0) out vec4 sceneOut;
-layout (location = 1) out vec4 gbufferOut0;
+layout (location = 1) out vec4 reflections;
+layout (location = 2) out vec4 gbufferOut0;
 
 //======// Uniform //=============================================================================//
 
@@ -106,7 +107,7 @@ void main() {
 			normalOut = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 		#endif
 
-		gbufferOut0.w = packUnorm2x8(encodeUnitVector(normalOut));
+		// gbufferOut0.w = packUnorm2x8(encodeUnitVector(normalOut));
 		albedo = sceneOut = vec4(0.0);
 		normalOut = normalize(tbnMatrix * normalOut);
 	} else {
@@ -158,7 +159,7 @@ void main() {
 
 			// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
 
-			specularBRDF = SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.01), 0.02);
+			specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.01), 0.04);
 
 			shadow *= saturate(lightmap.y * 1e8);
 			shadow *= sunlightMult;
@@ -178,21 +179,22 @@ void main() {
 		// Bounced light
 		float bounce = CalculateFittedBouncedLight(normalOut);
 		if (isEyeInWater == 0) bounce *= pow5(lightmap.y);
-		sceneOut.rgb += bounce * sunlightMult * 2.0;
+		sceneOut.rgb += bounce * sunlightMult;
 	}
 
-	sceneOut.rgb *= albedo.rgb;
+	if (lightmap.x > 1e-5) sceneOut.rgb += lightmap.x * blackbody(float(BLOCKLIGHT_TEMPERATURE));
+
+	reflections = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
+	if (materialID == 3u) { // water
+		sceneOut.a = 1e-2;
+	} else {
+		sceneOut.rgb *= albedo.rgb;
+		// sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
+	}
+	// sceneOut.rgb /= maxEps(sceneOut.a);
 
 	// Specular highlights
-	sceneOut.rgb += shadow * specularBRDF;
-
-	if (materialID == 3u) { // water
-		sceneOut += CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
-	} else {
-		vec4 reflections = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
-		sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
-		sceneOut.rgb /= maxEps(sceneOut.a);
-	}
+	reflections.rgb += shadow * specularBRDF;
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

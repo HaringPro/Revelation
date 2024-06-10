@@ -117,8 +117,8 @@ void main() {
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 	}
 
-    vec4 translucents = texelFetch(colortex2, screenTexel, 0);
-	sceneOut += (translucents.rgb - sceneOut) * translucents.a;
+    vec4 reflections = texelFetch(colortex2, screenTexel, 0);
+	sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 
 	#ifdef BORDER_FOG
 		if (depth + isEyeInWater < 1.0) {
