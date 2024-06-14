@@ -97,7 +97,7 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateWeightedLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.45 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.4 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;

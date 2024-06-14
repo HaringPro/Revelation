@@ -62,7 +62,7 @@ void main() {
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
 	#endif
 
-	materialID = uint(max0(mc_Entity.x - 1e4));
+	materialID = uint(max(mc_Entity.x - 1e4, 2.0));
 
 	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 	minecraftPos = transMAD(gbufferModelViewInverse, viewPos.xyz) + cameraPosition;

@@ -20,6 +20,7 @@
 	const int 	colortex5Format 			= R11F_G11F_B10F;	// Sky-View LUT, light colors
 	const int 	colortex6Format 			= RGB8;				// Albedo
 	const int 	colortex7Format 			= R11F_G11F_B10F;	// Scene history
+//	const int 	colortex8Format 			= RGBA8;			// Transparent albedo
 	const int 	colortex10Format 			= R11F_G11F_B10F;	// Transmittance-View LUT, cloud shadow map
 
 	const bool	colortex0Clear				= false;
@@ -31,6 +32,7 @@
 	const bool	colortex7Clear				= false;
 	const bool 	colortex10Clear				= true;
 
+//	const vec4 colortex8ClearColor 			= vec4(0.0, 0.0, 0.0, 1.0);
 
 	const float shadowIntervalSize 			= 2.0;
 	const float ambientOcclusionLevel 		= 1.0;

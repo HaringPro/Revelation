@@ -17,6 +17,10 @@ vec3 GetWorldNormal(in ivec2 texel) {
 	return decodeUnitVector(unpackUnorm2x8(texelFetch(colortex3, texel, 0).w));
 }
 
+vec3 GetWorldNormal(in vec4 data) {
+	return decodeUnitVector(unpackUnorm2x8(data.w));
+}
+
 float GetLinearDepth(in ivec2 texel) {
     return (near * far) / (texelFetch(depthtex0, texel, 0).x * (near - far) + far);
 }

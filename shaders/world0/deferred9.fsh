@@ -145,7 +145,7 @@ void main() {
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
 		// vec3 flatNormal = GetFlatNormal(screenTexel);
-		vec3 worldNormal = GetWorldNormal(screenTexel);
+		vec3 worldNormal = GetWorldNormal(gbufferData0);
 
 		// vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
 		// vec4 specTex = vec4(unpackUnorm2x8(gbufferData1.z), unpackUnorm2x8(gbufferData1.w));
@@ -196,7 +196,7 @@ void main() {
 		float sssAmount = 0.0;
 		switch (materialID) {
 			case 9u: case 10u: case 11u: case 28u: // Plants
-				sssAmount = 0.55;
+				sssAmount = 0.6;
 				break;
 			case 12u: // Leaves
 				sssAmount = 0.75;
@@ -262,7 +262,7 @@ void main() {
 			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
 		}
-		sceneOut += emissive.rgb * 3.0;
+		sceneOut += emissive.rgb * 2.0;
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
 				float falloff = rcp(max(dotSelf(worldPos), 1.0));

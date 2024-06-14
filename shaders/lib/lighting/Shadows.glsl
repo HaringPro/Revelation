@@ -77,7 +77,7 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 		ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
 		float sampleDepth0 = step(shadowProjPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
 		if (sampleDepth0 != sampleDepth1) {
-			result += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+			result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
 		} else 
 	#endif
 		{ result += sampleDepth1; }

@@ -19,7 +19,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 
 #include "/lib/utility.inc"
 
-#define BLUR_SAMPLES 1 // [1 2 3 4 5 6]
+#define BLUR_SAMPLES 1 // [1 2 3 4 5 6 7 8]
 
 //======// Uniform //=============================================================================//
 
@@ -29,6 +29,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 #else
 	uniform sampler2D colortex0; // Bloom tile input
 	#define sampleTile(uv) textureLod(colortex0, uv, 0.0).rgb
+	// #define sampleTile(texel) imageLoad(colorimg0, texel).rgb
 #endif
 
 uniform vec2 viewSize;
@@ -61,17 +62,18 @@ vec3 CalculateBloomTile(in vec2 uv) {
 		}
 	}
 
-	return bloomTile / sumWeight;
+	return bloomTile * rcp(sumWeight);
 }
 
 //======// Main //================================================================================//
 void main() {
-    vec2 uv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
+    vec2 interpolatedUV = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
 
-    if (any(greaterThan(uv, viewSize - 0.5))) return;
+    if (any(greaterThan(interpolatedUV, viewSize - 0.5))) return;
 
-    vec2 srcUv = uv * viewPixelSize + CalculateTileOffset(DOWNSAMPLE_LEVEL - 1);
-	vec3 bloomTile = CalculateBloomTile(srcUv);
+    vec2 srcUV = interpolatedUV * viewPixelSize + CalculateTileOffset(DOWNSAMPLE_LEVEL - 1);
+	vec3 bloomTile = CalculateBloomTile(srcUV);
 
-    imageStore(colorimg0, ivec2(gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize), vec4(bloomTile, 1.0));
+	vec2 dstTexel = gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
+    imageStore(colorimg0, ivec2(dstTexel), vec4(bloomTile, 1.0));
 }

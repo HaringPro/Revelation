@@ -67,9 +67,9 @@ void main() {
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.7;
+			float caustics = inversesqrt(oldArea / newArea) * 0.6;
 
-			shadowcolor0Out = vec3(sqrt(caustics));
+			shadowcolor0Out = vec3(pow(caustics, 0.3));
 			shadowcolor1Out.xy = encodeUnitVector(normal);
 			// shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
 		#else
@@ -83,7 +83,8 @@ void main() {
         if (albedo.a > oneMinus(r255)) {
 			shadowcolor0Out = albedo.rgb * tint;
 		} else {
-			shadowcolor0Out = mix(vec3(1.0), albedo.rgb * tint, fastSqrt(albedo.a));
+			albedo.a = sqrt2(albedo.a);
+			shadowcolor0Out = mix(vec3(1.0), albedo.rgb * tint * albedo.a, albedo.a);
 		}
 		shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 	}
