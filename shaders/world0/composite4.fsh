@@ -98,7 +98,7 @@ void main() {
 	uint materialID = uint(gbufferData0.y * 255.0);
 
 	float depth = GetDepthFix(screenTexel);
-	float sDepth = sampleDepthSoild(screenTexel);
+	float sDepth = GetDepthSoildFix(screenTexel);
 
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
@@ -113,8 +113,12 @@ void main() {
 	vec2 refractCoord;
 	ivec2 refractTexel;
 	bool waterMask = false;
-	if (depth != sDepth) {
-		refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, transparentDepth);
+	if (materialID == 2u || materialID == 3u) {
+		#ifdef RAYTRACED_REFRACTION
+			refractCoord = CalculateRefractCoord(viewPos, viewNormal, screenPos);
+		#else	
+			refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, transparentDepth);
+		#endif
 		refractTexel = rawCoord(refractCoord);
 		if (sampleDepthSoild(refractTexel) < depth) {
 			refractCoord = screenCoord;

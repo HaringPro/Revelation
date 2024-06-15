@@ -135,14 +135,12 @@ void main() {
 	float specularBRDF = 0.0;
 
 	float distortFactor;
-	vec3 normalOffset = normalOut * fma(dotSelf(worldPos), 4e-5, 2e-2) * (2.0 - saturate(NdotL));
-
-	vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
+	vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos, normalOut, distortFactor);	
 
 	// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
 	#ifdef TAA_ENABLED
-		float dither = BlueNoiseTemporal();
+		float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
 	#else
 		float dither = InterleavedGradientNoise(gl_FragCoord.xy);
 	#endif
@@ -161,7 +159,7 @@ void main() {
 
 			// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
 
-			specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.01), 0.04);
+			specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.002), 0.02);
 
 			shadow *= saturate(lightmap.y * 1e8);
 			shadow *= sunlightMult;

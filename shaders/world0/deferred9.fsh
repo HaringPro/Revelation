@@ -161,16 +161,14 @@ void main() {
 		vec3 specularBRDF = vec3(0.0);
 
 		float distortFactor;
-		vec3 normalOffset = worldNormal * fma(dotSelf(worldPos), 4e-5, 2e-2) * (2.0 - saturate(NdotL));
-
-		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
+		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos, worldNormal, distortFactor);	
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
 		#ifdef TAA_ENABLED
-			float dither = BlueNoiseTemporal();
+			float dither = BlueNoiseTemporal(screenTexel);
 		#else
-			float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+			float dither = BlueNoise(screenTexel);
 		#endif
 
 		float ao = 1.0;
@@ -189,26 +187,26 @@ void main() {
 
 		float sssAmount = 0.0;
 		switch (materialID) {
-			case 9u: case 10u: case 11u: case 28u: // Plants
+			case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
 				sssAmount = 0.55;
 				NdotL = worldLightVector.y;
 				break;
 			case 12u: // Leaves
 				sssAmount = 0.8;
 				break;
-			case 13u: case 27u: case 37u: // Weak SSS
+			case 27u: case 37u: // Weak SSS
 				sssAmount = 0.5;
 				break;
 			case 38u: case 51u: // Strong SSS
 				sssAmount = 0.8;
 				break;
 		}
-		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * SUBSERFACE_SCATTERING_STRENTGH;
+		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
 
 		// Subsurface scattering
 		if (sssAmount > 1e-4) {
 			vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
-			subsurfaceScattering *= eyeSkylightFix;
+			// subsurfaceScattering *= eyeSkylightFix;
 			sceneOut += subsurfaceScattering * sunlightMult * ao;
 		}
 

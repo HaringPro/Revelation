@@ -2,15 +2,14 @@
 const int noiseTextureResolution = 256;
 const float noiseTexturePixelSize = 1.0 / noiseTextureResolution;
 
-float Get3DNoise(in vec3 position) {
-	vec3 p = floor(position);
-	vec3 f = saturate(position - p);
+float Calculate3DNoise(in vec3 position) {
+    vec3 p = floor(position);
+	vec3 b = curve(position - p);
 
-	vec2 uv = p.xy + f.xy + p.z * 97.0;
+	vec2 uv = p.xy + b.xy + 97.0 * p.z;
+    vec2 rg = texture(noisetex, (uv + 0.5) * noiseTexturePixelSize).xy;
 
-	vec2 coord = (uv + 0.5f) * noiseTexturePixelSize;
-	vec2 noiseSample = texture(noisetex, coord).xy;
-	return mix(noiseSample.x, noiseSample.y, f.z);
+    return mix(rg.x, rg.y, b.z);
 }
 
 float bayer2(vec2 a)   { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
@@ -40,28 +39,19 @@ uint triple32(uint x) {
     return x;
 }
 
-uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
-uint RandNext() { return randState = triple32(randState); }
-//#define RandNext2()  uvec2(RandNext(), RandNext())
-//#define RandNext3()  uvec3(RandNext2(), RandNext())
-//#define RandNext4()  uvec4(RandNext3(), RandNext())
-#define RandNextF()  (float(RandNext()) / float(0xffffffffu))
-#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
-//#define RandNext3F() (vec3(RandNext3()) / float(0xffffffffu))
-//#define RandNext4F() (vec4(RandNext4()) / float(0xffffffffu))
-
-float Get3DNoiseSmooth(in vec3 position) {
-    vec3 p = floor(position);
-	vec3 b = curve(position - p);
-
-	vec2 uv = p.xy + b.xy + 97.0 * p.z;
-    vec2 rg = texture(noisetex, (uv + 0.5) * noiseTexturePixelSize).xy;
-
-    return mix(rg.x, rg.y, b.z);
-}
+//#if defined RANDOM_NOISE
+	uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
+	uint RandNext() { return randState = triple32(randState); }
+	//#define RandNext2()  	uvec2(RandNext(), RandNext())
+	//#define RandNext3()  	uvec3(RandNext2(), RandNext())
+	//#define RandNext4()  	uvec4(RandNext3(), RandNext())
+	#define RandNextF()  	(float(RandNext()) / float(0xffffffffu))
+	#define RandNext2F() 	(vec2(RandNext()) / float(0xffffffffu))
+	//#define RandNext3F() 	(vec3(RandNext3()) / float(0xffffffffu))
+	//#define RandNext4F() 	(vec4(RandNext4()) / float(0xffffffffu))
+//#endif
 
 // http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-
 const float PHI2 = 1.32471795724;
 const float PHI3 = 1.22074408460;
 
@@ -84,8 +74,16 @@ vec2 R2(in float n) {
 	return fract(0.5 + n * alpha);
 }
 
-float BlueNoiseTemporal() {
-	return R1(frameCounter % 256, texelFetch(noisetex, ivec2(gl_FragCoord.xy) & 255, 0).a);
+float BlueNoise(in ivec2 texel) {
+	return texelFetch(noisetex, texel & 255, 0).a;
+}
+
+float BlueNoiseTemporal(in ivec2 texel) {
+	return R1(frameCounter % 256, texelFetch(noisetex, texel & 255, 0).a);
+}
+
+float Bayer64Temporal(in vec2 coord) {
+	return R1(frameCounter % 256, bayer64(coord));
 }
 
 float InterleavedGradientNoise(in vec2 coord) {

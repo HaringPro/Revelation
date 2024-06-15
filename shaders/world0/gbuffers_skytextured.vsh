@@ -35,13 +35,12 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
+	tint = vaColor.rgb;
+	texCoord = vaUV0;
+
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
 
     #ifdef TAA_ENABLED
-        gl_Position.xy += taaOffset * gl_Position.w;
+		gl_Position.xy += taaOffset * gl_Position.w;
     #endif
-
-	tint = vaColor.rgb;
-
-	texCoord = vaUV0;
 }

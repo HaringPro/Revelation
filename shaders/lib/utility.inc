@@ -92,6 +92,27 @@ float fastAcos(in float x) {
 	return x < 0.0 ? PI - r : r;
 }
 
+/*
+// Handbook of Mathematical Functions
+// M. Abramowitz and I.A. Stegun, Ed.
+// Absolute error <= 6.7e-5
+// Source: https://web.archive.org/web/20161223122122/http://http.developer.nvidia.com:80/Cg/acos.html
+float FastAcos(float x) {
+	float negate = float(x < 0.0);
+	x = abs(x);
+	float ret = -0.0187293;
+	ret = ret * x;
+	ret = ret + 0.0742610;
+	ret = ret * x;
+	ret = ret - 0.2121144;
+	ret = ret * x;
+	ret = ret + 1.5707288;
+	ret = ret * sqrt(1.0 - x);
+	ret = ret - 2 * negate * ret;
+	return negate * PI + ret;
+}
+*/
+
 #if defined MC_NORMAL_MAP
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (all(lessThan(normalTex, vec3(0.003)))) return;

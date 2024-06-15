@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,3 */
-layout (location = 0) out vec4 albedoOut;
+layout (location = 0) out vec3 albedoOut;
 layout (location = 1) out vec4 gbufferOut0;
 // layout (location = 2) out vec2 gbufferOut1;
 
@@ -38,7 +38,7 @@ void main() {
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	albedoOut = albedo;
+	albedoOut = albedo.rgb;
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

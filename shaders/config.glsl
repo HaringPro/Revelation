@@ -30,7 +30,7 @@
 	const bool  colortex5Clear				= false;
 	const bool  colortex6Clear				= false;
 	const bool	colortex7Clear				= false;
-	const bool 	colortex10Clear				= true;
+	const bool 	colortex10Clear				= false;
 
 //	const vec4 colortex8ClearColor 			= vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -42,9 +42,5 @@
 	const float wetnessHalflife				= 180.0;
 	const float drynessHalflife				= 60.0;
 
-    const float shadowDistanceRenderMul     = 1.0; // [-1.0 1.0]
-
 	const bool 	shadowHardwareFiltering1 	= true;
-
-    const int   noiseTextureResolution      = 256;
 */

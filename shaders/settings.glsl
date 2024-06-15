@@ -12,6 +12,8 @@
 #if !defined INCLUDE_SETTINGS
 #define INCLUDE_SETTINGS
 
+#define INFO 0
+
 //======// Atmospherics //========================================================================//
 
 const ivec2 skyCaptureRes = ivec2(255, 192);
@@ -40,10 +42,11 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 
 /* Water */
 	#define WATER_PARALLAX // Enables water parallax
+	#define WATER_CAUSTICS // Enables water caustics
+
+	#define WATER_REFRACT_IOR 1.33 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.33 1.4 1.5 1.6]
 	#define WATER_WAVE_HEIGHT 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 5.0 7.0 10.0]
 	#define WATER_WAVE_SPEED 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.4 3.6 3.8 4.0 4.2 4.4 4.6 4.8 5.0 5.5 6.0 6.5 7.0 7.5 8.0 9.5 10.0]
-	#define WATER_REFRACT_IOR 1.33 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.33 1.4 1.5 1.6]
-	#define WATER_CAUSTICS // Enables water caustics
 	#define WATER_FOG_DENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 
 	#define WATER_ABSORPTION_R 0.3  // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
@@ -72,6 +75,10 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 	// #define TAA_SHARPEN // Sharpens the image when applying TAA
 	#define TAA_SHARPNESS 0.7 // Sharpness of the TAA sharpening. [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
+/* Bloom */
+	#define BLOOM_ENABLED // Enables bloom
+	#define BLOOMY_FOG // Enables bloomy fog
+
 /* Exposure */
 	#define AUTO_EXPOSURE // Enables auto exposure
 	#define AUTO_EXPOSURE_LOD 6 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16]
@@ -79,10 +86,6 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 	#define EXPOSURE_SPEED 1.0 // Speed of the exposure. [0.1 0.2 0.3 0.5 0.7 1.0 1.3 1.6 2.0 2.5 3.0 5.0 7.0 10.0]
 	#define AUTO_EXPOSURE_BIAS 0.0 // [-2.0 -1.9 -1.8 -1.7 -1.6 -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 	#define MANUAL_EXPOSURE_VALUE 12.0 // [0.1 0.3 0.5 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 14.0 16.0 18.0 20.0 25.0 30.0 40.0 50.0]
-
-/* Bloom */
-	#define BLOOM_ENABLED // Enables bloom
-	#define BLOOMY_FOG // Enables bloomy fog
 
 /* CAS */
 	#define CAS_ENABLED // Sharpens the final image (contrast-adaptive sharpening)

@@ -13,11 +13,15 @@ const float realShadowMapRes = shadowMapResolution * MC_SHADOW_QUALITY;
 
 #include "ShadowDistortion.glsl"
 
-vec3 WorldPosToShadowProjPosBias(in vec3 worldOffsetPos, out float distortFactor) {
-	vec3 shadowClipPos = transMAD(shadowModelView, worldOffsetPos);
+vec3 WorldPosToShadowProjPosBias(in vec3 worldPos, in vec3 worldNormal, out float distortFactor) {
+	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
+	vec3 shadowViewNormal = normalize(mat3(shadowModelView) * worldNormal);
+	shadowViewNormal.z = -shadowViewNormal.z;
+
 	distortFactor = DistortionFactor(shadowClipPos.xy);
+	shadowClipPos += shadowViewNormal * 2e-3 * distortFactor; // Normal bias
 	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
 }
 

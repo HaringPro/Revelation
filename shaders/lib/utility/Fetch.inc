@@ -9,6 +9,11 @@ float GetDepthFix(in ivec2 texel) {
 	return depth + 0.38 * step(depth, 0.56);
 }
 
+float GetDepthSoildFix(in ivec2 texel) {
+	float depth = texelFetch(depthtex1, texel, 0).x;
+	return depth + 0.38 * step(depth, 0.56);
+}
+
 vec3 GetFlatNormal(in ivec2 texel) {
 	return decodeUnitVector(unpackUnorm2x8(texelFetch(colortex3, texel, 0).z));
 }

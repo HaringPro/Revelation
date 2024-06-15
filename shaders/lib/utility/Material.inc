@@ -1,4 +1,22 @@
 
+float IORFromF0(in float f0) {
+	float sqrtF0 = sqrt(f0);
+	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
+}
+vec3 IORFromF0(in vec3 f0) {
+	vec3 sqrtF0 = sqrt(f0);
+	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
+}
+
+float F0FromIOR(in float ior) {
+	float ratio = (ior - 1.0) / (ior + 1.0);
+	return ratio * ratio;
+}
+vec3 F0FromIOR(in vec3 ior) {
+	vec3 ratio = (ior - 1.0) / (ior + 1.0);
+	return ratio * ratio;
+}
+
 struct Material {
 	float roughness;
 	float metalness;

@@ -11,13 +11,12 @@ vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 
 #ifdef RAYTRACED_REFRACTION
 
-vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNormal, in float depth) {
-	if (materialID != 2u && materialID != 3u) return screenCoord;
+vec2 CalculateRefractCoord(in vec3 viewPos, in vec3 viewNormal, in vec3 hitPos) {
+	// if (materialID != 2u && materialID != 3u) return screenCoord;
 
 	vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);
 
-    vec3 hitPos = vec3(screenCoord, depth);
-	if (ScreenSpaceRaytrace(viewPos, refractedDir, BlueNoiseTemporal(), RAYTRACE_SAMPLES, hitPos)) {
+	if (ScreenSpaceRaytrace(viewPos, refractedDir, BlueNoiseTemporal(ivec2(gl_FragCoord.xy)), RAYTRACE_SAMPLES, hitPos)) {
 		hitPos.xy *= viewPixelSize;
 	} else {
 		refractedDir /= saturate(dot(refractedDir, -viewNormal));
@@ -32,7 +31,7 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 #include "/lib/water/WaterWave.glsl"
 
 vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNormal, in vec4 gbufferData1, in float transparentDepth) {
-	if (materialID != 2u && materialID != 3u) return screenCoord;
+	// if (materialID != 2u && materialID != 3u) return screenCoord;
 
 	vec2 refractCoord;
 	if (materialID == 3u) {
