@@ -143,9 +143,9 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
     // Variance clip
     vec3 clipAvg = (col0 + col1 + col2 + col3 + col4 + col5 + col6 + col7 + col8) * rcp(9.0);
-    vec3 sqrVar = (col0 * col0 + col1 * col1 + col2 * col2 + col3 * col3 + col4 * col4 + col5 * col5 + col6 * col6 + col7 * col7 + col8 * col8) * rcp(9.0);
+    vec3 clipAvgSq = (col0 * col0 + col1 * col1 + col2 * col2 + col3 * col3 + col4 * col4 + col5 * col5 + col6 * col6 + col7 * col7 + col8 * col8) * rcp(9.0);
 
-    vec3 variance = sqrt(abs(sqrVar - clipAvg * clipAvg));
+    vec3 variance = sqrt(abs(clipAvgSq - clipAvg * clipAvg));
     vec3 clipMin = min(clipAvg - variance, col0);
     vec3 clipMax = max(clipAvg + variance, col0);
 

@@ -187,25 +187,20 @@ void main() {
 
 		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
 
-		// #if TEXTURE_FORMAT == 0 && defined MC_SPECULAR_MAP
-		// 	float hasSSScattering = step(64.5 / 255.0, specTex.b);
-		// 	float sssAmount = remap(64.0 / 255.0, 1.0, specTex.b * hasSSScattering) * SUBSERFACE_SCATTERING_STRENTGH;
-		// #else
-		// 	float sssAmount = remap(64.0 / 255.0, 1.0, specTex.a) * SUBSERFACE_SCATTERING_STRENTGH;
-		// #endif
 		float sssAmount = 0.0;
 		switch (materialID) {
 			case 9u: case 10u: case 11u: case 28u: // Plants
-				sssAmount = 0.6;
+				sssAmount = 0.55;
+				NdotL = worldLightVector.y;
 				break;
 			case 12u: // Leaves
-				sssAmount = 0.75;
+				sssAmount = 0.8;
 				break;
 			case 13u: case 27u: case 37u: // Weak SSS
-				sssAmount = 0.45;
+				sssAmount = 0.5;
 				break;
-			case 38u: // Strong SSS
-				sssAmount = 0.75;
+			case 38u: case 51u: // Strong SSS
+				sssAmount = 0.8;
 				break;
 		}
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * SUBSERFACE_SCATTERING_STRENTGH;
@@ -229,9 +224,9 @@ void main() {
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 				#ifdef SCREEN_SPACE_SHADOWS
-					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither);
+					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither, sssAmount);
 				#endif
-				diffuseBRDF *= mix(DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.5);
+				diffuseBRDF *= mix(DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
 
 				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
 

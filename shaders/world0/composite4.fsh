@@ -97,7 +97,7 @@ void main() {
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
-	float depth = sampleDepth(screenTexel);
+	float depth = GetDepthFix(screenTexel);
 	float sDepth = sampleDepthSoild(screenTexel);
 
 	vec3 screenPos = vec3(screenCoord, depth);
@@ -109,20 +109,29 @@ void main() {
 
 	vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
 	vec3 viewNormal = mat3(gbufferModelView) * GetWorldNormal(gbufferData0);
-	vec2 refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, viewDistance, transparentDepth);
-	ivec2 refractTexel = rawCoord(refractCoord);
 
-	if (sampleDepthSoild(refractTexel) < depth) {
+	vec2 refractCoord;
+	ivec2 refractTexel;
+	bool waterMask = false;
+	if (depth != sDepth) {
+		refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, transparentDepth);
+		refractTexel = rawCoord(refractCoord);
+		if (sampleDepthSoild(refractTexel) < depth) {
+			refractCoord = screenCoord;
+			refractTexel = screenTexel;
+		}
+
+		depth = sampleDepth(refractTexel);
+		sDepth = sampleDepthSoild(refractTexel);
+
+		gbufferData0 = texelFetch(colortex3, refractTexel, 0);
+		waterMask = uint(gbufferData0.y * 255.0) == 3u;
+	} else {
 		refractCoord = screenCoord;
 		refractTexel = screenTexel;
 	}
-	depth = sampleDepth(refractTexel);
-	sDepth = sampleDepthSoild(refractTexel);
 
     sceneOut = sampleSceneColor(refractTexel);
-	gbufferData0 = texelFetch(colortex3, refractTexel, 0);
-
-	materialID = uint(gbufferData0.y * 255.0);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -136,13 +145,13 @@ void main() {
 		mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), viewDistance, LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
-	} else if (materialID == 3u) {
+	} else if (waterMask) {
 		float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
 		mat2x3 waterFog = CalculateWaterFog(lightmap.y, waterDepth, LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 	}
 
-	if (materialID == 3u || materialID == 2u) {
+	if (waterMask || materialID == 2u) {
 		// Specular reflections of Water and lighting of glass
 		vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
 		sceneOut += (blendedData.rgb - sceneOut) * blendedData.a;
@@ -156,6 +165,9 @@ void main() {
 			vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
+	} else if (materialID == 51u) {
+		vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
+		sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 	}
 
 	#ifdef BORDER_FOG

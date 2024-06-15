@@ -57,7 +57,7 @@ vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 }
 
 vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float penumbraScale) {
-	shadowProjPos.z -= 1e-4;
+	shadowProjPos.z -= 2e-7 * (1.0 + dither) * shadowDistance;
 
 	// const uint steps = 16u;
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
@@ -88,7 +88,7 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
+float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in float sssAmount) {
 	vec3 viewlightVector = mat3(gbufferModelView) * worldLightVector;
 
     vec3 position = ViewToScreenSpace(viewlightVector * -viewPos.z + viewPos);
@@ -105,8 +105,9 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
 	rayPos += rayStep * (dither + 1.0);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
-	float shadow = 1.0;
+    float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 4.0);
 
+	float shadow = 1.0;
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {
         if (rayPos.z < 0.0 || rayPos.z - rayStep.z > 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
@@ -116,13 +117,12 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither) {
 				float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
 				float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
 
-				if (traceDepthLinear - sampleDepthLinear < maxThickness) {
-					shadow = 0.0;
-					break;
-				}
+				if (traceDepthLinear - sampleDepthLinear < maxThickness) shadow *= absorption;
 			}
 		}
-    }
+ 
+		if (shadow < 1e-2) break;
+   }
 
 	return shadow;
 }

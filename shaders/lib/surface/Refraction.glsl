@@ -31,7 +31,7 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 
 #include "/lib/water/WaterWave.glsl"
 
-vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNormal, in vec4 gbufferData1, in float viewDistance, in float transparentDepth) {
+vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNormal, in vec4 gbufferData1, in float transparentDepth) {
 	if (materialID != 2u && materialID != 3u) return screenCoord;
 
 	vec2 refractCoord;
@@ -42,7 +42,7 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 		vec3 nv = normalize(gbufferModelView[1].xyz);
 
 		refractCoord = nv.xy - waveNormalView.xy;
-		refractCoord *= saturate(transparentDepth) * 0.5 / (viewDistance + 1e-6);
+		refractCoord *= saturate(transparentDepth) * 0.5 / (1e-4 - viewPos.z);
 		refractCoord += screenCoord;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);
