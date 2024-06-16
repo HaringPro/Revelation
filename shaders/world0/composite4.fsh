@@ -13,7 +13,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -32,15 +32,15 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-#include "/lib/utility/Uniform.inc"
+#include "/lib/utility/Uniform.glsl"
 
 //======// Struct //==============================================================================//
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.inc"
-#include "/lib/utility/Fetch.inc"
-#include "/lib/utility/Noise.inc"
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
 
@@ -61,8 +61,6 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	float NdotL = dot(viewNormal, rayDir);
 	if (NdotL < 1e-6) return vec4(0.0);
 
-	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
-
 	vec3 reflection;
 	if (skylight > 1e-3) {
 		if (isEyeInWater == 0) {
@@ -73,17 +71,15 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 		}
 	}
 
-	float NdotV = max(1e-6, dot(viewNormal, -viewDir));
+	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 	bool hit = ScreenSpaceRaytrace(viewPos, rayDir, dither, RAYTRACE_SAMPLES, screenPos);
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
-		vec2 previousCoord = Reproject(screenPos).xy;
-		if (saturate(previousCoord) == previousCoord) {
-			float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-			reflection += (texelFetch(colortex7, rawCoord(previousCoord), 0).rgb - reflection) * saturate(edgeFade * 7e2);
-		}
+		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 7e2);
 	}
 
+	float NdotV = max(1e-6, dot(viewNormal, -viewDir));
 	float brdf = FresnelDielectricN(NdotV, GLASS_REFRACT_IOR);
 
 	return vec4(reflection, brdf);
@@ -92,7 +88,7 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-	vec4 gbufferData0 = texelFetch(colortex3, screenTexel, 0);
+	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
 	vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
@@ -107,7 +103,7 @@ void main() {
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
 
-	vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
+	vec4 gbufferData1 = texelFetch(colortex8, screenTexel, 0);
 	vec3 viewNormal = mat3(gbufferModelView) * GetWorldNormal(gbufferData0);
 
 	vec2 refractCoord;
@@ -128,7 +124,7 @@ void main() {
 		depth = sampleDepth(refractTexel);
 		sDepth = sampleDepthSoild(refractTexel);
 
-		gbufferData0 = texelFetch(colortex3, refractTexel, 0);
+		gbufferData0 = texelFetch(colortex7, refractTexel, 0);
 		waterMask = uint(gbufferData0.y * 255.0) == 3u;
 	} else {
 		refractCoord = screenCoord;
@@ -156,7 +152,7 @@ void main() {
 	}
 
 	if (waterMask || materialID == 2u) {
-		// Specular reflections of Water and lighting of glass
+		// Specular reflections of water and lighting of glass
 		vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
 		sceneOut += (blendedData.rgb - sceneOut) * blendedData.a;
 		if (materialID == 2u) {
@@ -170,6 +166,7 @@ void main() {
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
 	} else if (materialID == 51u) {
+		// Specular reflections of slime
 		vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
 		sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 	}

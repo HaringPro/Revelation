@@ -8,12 +8,14 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass: Deferred lighting and sky rendering
+
 --------------------------------------------------------------------------------
 */
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -35,18 +37,16 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
-uniform sampler2D colortex3; // Gbuffer data 0
-uniform sampler2D colortex4; // Gbuffer data 1
-
 uniform sampler2D colortex5; // Sky-View LUT
 
 uniform sampler2D colortex6; // Albedo
+uniform sampler2D colortex7; // Gbuffer data 0
+uniform sampler2D colortex8; // Gbuffer data 1
 
 uniform sampler2D colortex10; // Transmittance-View LUT
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
-uniform sampler2D depthtex2;
 
 uniform int frameCounter;
 uniform int isEyeInWater;
@@ -100,9 +100,9 @@ uniform mat4 shadowModelView;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.inc"
-#include "/lib/utility/Fetch.inc"
-#include "/lib/utility/Noise.inc"
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/Celestial.glsl"
@@ -126,7 +126,7 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
-	vec4 gbufferData0 = texelFetch(colortex3, screenTexel, 0);
+	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
@@ -183,8 +183,6 @@ void main() {
 			#endif
 		} else depth += 0.38;
 
-		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
-
 		float sssAmount = 0.0;
 		switch (materialID) {
 			case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
@@ -203,6 +201,8 @@ void main() {
 		}
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
 
+		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
+
 		// Subsurface scattering
 		if (sssAmount > 1e-4) {
 			vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
@@ -213,7 +213,7 @@ void main() {
 		// Shadows
 		if (NdotL > 1e-3) {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
+			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 			if (maxOf(shadow) > 1e-6) {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
@@ -221,15 +221,13 @@ void main() {
 				float NdotH = (NdotL + NdotV) * halfwayNorm;
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
+				shadow *= sunlightMult;
 				#ifdef SCREEN_SPACE_SHADOWS
 					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither, sssAmount);
 				#endif
+
 				diffuseBRDF *= mix(DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
-
 				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
-
-				shadow *= saturate(lightmap.y * 1e8);
-				shadow *= sunlightMult;
 			}
 		}
 

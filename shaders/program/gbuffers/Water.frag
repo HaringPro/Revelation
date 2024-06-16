@@ -1,11 +1,11 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,3,4 */
+/* RENDERTARGETS: 2,7,8 */
 layout (location = 0) out vec4 sceneOut;
 layout (location = 1) out vec4 gbufferOut0;
 layout (location = 2) out vec4 gbufferOut1;
@@ -14,7 +14,7 @@ layout (location = 2) out vec4 gbufferOut1;
 
 uniform sampler2D tex;
 
-#include "/lib/utility/Uniform.inc"
+#include "/lib/utility/Uniform.glsl"
 
 //======// Input //===============================================================================//
 
@@ -33,9 +33,9 @@ flat in vec3 skyIlluminance;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.inc"
-#include "/lib/utility/Fetch.inc"
-#include "/lib/utility/Noise.inc"
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
 
@@ -58,9 +58,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 	float NdotL = dot(normal, rayDir);
 	if (NdotL < 1e-6) return vec4(0.0);
 
-	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
-	vec3 screenPos = vec3(gl_FragCoord.xy * viewPixelSize, gl_FragCoord.z);
-
 	vec3 reflection;
 	if (skylight > 1e-3) {
 		if (isEyeInWater == 0) {
@@ -73,17 +70,17 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 		}
 	}
 
-	float NdotV = max(1e-6, dot(normal, -viewDir));
+	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
+	vec3 screenPos = vec3(gl_FragCoord.xy * viewPixelSize, gl_FragCoord.z);
+
 	bool hit = ScreenSpaceRaytrace(viewPos, rayDir, dither, RAYTRACE_SAMPLES, screenPos);
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
-		vec2 previousCoord = Reproject(screenPos).xy;
-		if (saturate(previousCoord) == previousCoord) {
-			float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-			reflection += (texelFetch(colortex7, rawCoord(previousCoord), 0).rgb - reflection) * saturate(edgeFade * 7e2);
-		}
+		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 7e2);
 	}
 
+	float NdotV = max(1e-6, dot(normal, -viewDir));
 	float brdf;
 	if (isEyeInWater == 1) { // Total internal reflection
 		//specular = FresnelDielectricN(NdotV, 1.000293 / WATER_REFRACT_IOR);
@@ -116,7 +113,7 @@ void main() {
 
 		if (albedo.a < 0.1) { discard; return; }
 
-		sceneOut = vec4(vec3(0.0), albedo.a);
+		sceneOut = vec4(vec3(0.0), albedo.a * 0.75);
 		normalOut = tbnMatrix[2];
 	}
 
@@ -149,7 +146,7 @@ void main() {
 	if (NdotL > 1e-3) {
 		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
 		float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-		shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
+		shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 		if (maxOf(shadow) > 1e-6) {
 			float NdotV = saturate(dot(normalOut, -worldDir));
@@ -157,12 +154,10 @@ void main() {
 			float NdotH = (NdotL + NdotV) * halfwayNorm;
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
+			shadow *= sunlightMult;
 			// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
 
 			specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.002), 0.02);
-
-			shadow *= saturate(lightmap.y * 1e8);
-			shadow *= sunlightMult;
 		}
 	}
 

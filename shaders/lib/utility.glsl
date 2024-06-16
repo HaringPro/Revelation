@@ -97,7 +97,7 @@ float fastAcos(in float x) {
 // M. Abramowitz and I.A. Stegun, Ed.
 // Absolute error <= 6.7e-5
 // Source: https://web.archive.org/web/20161223122122/http://http.developer.nvidia.com:80/Cg/acos.html
-float FastAcos(float x) {
+float FastAcos(in float x) {
 	float negate = float(x < 0.0);
 	x = abs(x);
 	float ret = -0.0187293;
@@ -108,7 +108,7 @@ float FastAcos(float x) {
 	ret = ret * x;
 	ret = ret + 1.5707288;
 	ret = ret * sqrt(1.0 - x);
-	ret = ret - 2 * negate * ret;
+	ret = ret - 2.0 * negate * ret;
 	return negate * PI + ret;
 }
 */
@@ -116,7 +116,7 @@ float FastAcos(float x) {
 #if defined MC_NORMAL_MAP
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (all(lessThan(normalTex, vec3(0.003)))) return;
-		normalTex = normalTex * 2.0 - oneMinus(r255);
+		normalTex = normalTex * 2.0 - 1.0 + r255;
 		#if TEXTURE_FORMAT == 0
 			normalTex.z = sqrt(saturate(oneMinus(dotSelf(normalTex.xy))));
 		#else

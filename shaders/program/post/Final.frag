@@ -6,6 +6,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass: Contrast adaptive sharpening and final output
+
 --------------------------------------------------------------------------------
 */
 
@@ -15,7 +17,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -26,13 +28,14 @@ out vec3 finalOut;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex0; // Bloom tiles
-uniform sampler2D colortex1;
-uniform sampler2D colortex2;
-uniform sampler2D colortex3;
-uniform sampler2D colortex4; // LDR scene image
-uniform sampler2D colortex5;
-uniform sampler2D colortex6;
-uniform sampler2D colortex7;
+// uniform sampler2D colortex1; // Scene history
+// uniform sampler2D colortex2;
+// uniform sampler2D colortex3;
+// uniform sampler2D colortex4; // Projected scene history
+// uniform sampler2D colortex5;
+// uniform sampler2D colortex6;
+// uniform sampler2D colortex7;
+uniform sampler2D colortex8; // LDR scene image
 
 uniform vec2 viewPixelSize;
 
@@ -41,7 +44,7 @@ uniform vec2 viewPixelSize;
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 
-#define sampleColor(texel) texelFetch(colortex4, texel, 0).rgb
+#define sampleColor(texel) texelFetch(colortex8, texel, 0).rgb
 
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
@@ -127,7 +130,7 @@ void main() {
 	if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
     	finalOut = CASFilter(screenTexel);
 	} else {
-		finalOut = textureCatmullRomFast(colortex4, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
+		finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 	}
 
 	// finalOut = texelFetch(colortex0, screenTexel, 0).rgb;

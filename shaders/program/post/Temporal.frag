@@ -6,25 +6,52 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+    Pass: Temporal Anti-Aliasing and buffer clear
+
 --------------------------------------------------------------------------------
 */
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
-#include "/lib/utility/Uniform.inc"
-
-#include "/lib/utility/Transform.inc"
-#include "/lib/utility/Fetch.inc"
-#include "/lib/utility/Offset.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,7 */
+/* RENDERTARGETS: 0,1 */
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec3 temporalOut;
 
+//======// Uniform //=============================================================================//
+
+uniform sampler2D depthtex0;
+uniform sampler2D depthtex1;
+
+uniform sampler2D colortex0; // Scene data
+uniform sampler2D colortex1; // Scene history
+
+uniform mat4 gbufferModelView;
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjection;
+uniform mat4 gbufferProjectionInverse;
+
+uniform mat4 gbufferPreviousModelView;
+uniform mat4 gbufferPreviousProjection;
+
+uniform float near;
+uniform float far;
+
+uniform vec3 cameraPosition;
+uniform vec3 previousCameraPosition;
+
+uniform vec2 viewSize;
+uniform vec2 viewPixelSize;
+uniform vec2 taaOffset;
+
 //======// Function //============================================================================//
+
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Offset.glsl"
 
 vec3 GetClosestFragment(in ivec2 texel, in float depth) {
     vec3 closestFragment = vec3(texel, depth);
@@ -150,9 +177,9 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     vec3 clipMax = max(clipAvg + variance, col0);
 
     #ifdef TAA_SHARPEN
-        vec3 previousSample = textureCatmullRomFast(colortex7, previousCoord, TAA_SHARPNESS).rgb;
+        vec3 previousSample = textureCatmullRomFast(colortex1, previousCoord, TAA_SHARPNESS).rgb;
     #else
-        vec3 previousSample = texture(colortex7, previousCoord).rgb;
+        vec3 previousSample = texture(colortex1, previousCoord).rgb;
     #endif
 
     previousSample = RGBtoYCoCgR(previousSample);

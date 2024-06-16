@@ -13,6 +13,7 @@
 #define INCLUDE_SETTINGS
 
 #define INFO 0
+#define VERSION Alpha // [Alpha Beta Release]
 
 //======// Atmospherics //========================================================================//
 

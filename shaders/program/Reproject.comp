@@ -1,0 +1,67 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: Reproject scene history (half-res)
+
+--------------------------------------------------------------------------------
+*/
+
+const vec2 workGroupsRender = vec2(0.5f, 0.5f);
+
+layout (local_size_x = 8, local_size_y = 8) in;
+
+//======// Output //==============================================================================//
+
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
+
+//======// Utility //=============================================================================//
+
+#include "/lib/utility.glsl"
+
+//======// Uniform //=============================================================================//
+
+uniform sampler2D depthtex0;
+
+uniform sampler2D colortex1; // Scene history
+
+uniform mat4 gbufferModelView;
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjection;
+uniform mat4 gbufferProjectionInverse;
+
+uniform mat4 gbufferPreviousModelView;
+uniform mat4 gbufferPreviousProjection;
+
+uniform float near;
+uniform float far;
+
+uniform vec3 cameraPosition;
+uniform vec3 previousCameraPosition;
+
+uniform vec2 viewSize;
+uniform vec2 viewPixelSize;
+uniform vec2 taaOffset;
+
+//======// Function //============================================================================//
+
+#include "/lib/utility/Transform.glsl"
+
+//======// Main //================================================================================//
+void main() {
+    ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
+
+	float depth = texelFetch(depthtex0, screenTexel * 2, 0).x;
+
+	vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+    vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
+
+    if (saturate(previousCoord) == previousCoord) {
+        vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
+        imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
+    }
+}

@@ -109,7 +109,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	rayPos += rayStep * (dither + 1.0);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
-    float absorption = exp2(-sqr(oneMinus(sssAmount)) * length(position) * 4.0);
+    float absorption = exp2(-oneMinus(max0(sssAmount - 0.25)) * length(viewPos) * 5.0) * step(0.25, sssAmount);
 
 	float shadow = 1.0;
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {

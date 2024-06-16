@@ -20,7 +20,7 @@ vec2 CalculateRefractCoord(in vec3 viewPos, in vec3 viewNormal, in vec3 hitPos) 
 		hitPos.xy *= viewPixelSize;
 	} else {
 		refractedDir /= saturate(dot(refractedDir, -viewNormal));
-		hitPos.xy = ViewToScreenSpace(viewPos + refractedDir * 0.4).xy;
+		hitPos.xy = ViewToScreenSpace(viewPos + refractedDir * 0.5).xy;
 	}
 
 	return saturate(hitPos.xy);
@@ -41,11 +41,11 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 		vec3 nv = normalize(gbufferModelView[1].xyz);
 
 		refractCoord = nv.xy - waveNormalView.xy;
-		refractCoord *= saturate(transparentDepth) * 0.5 / (1e-4 - viewPos.z);
+		refractCoord *= min(transparentDepth * 0.1, 0.5) / (1e-4 - viewPos.z);
 		refractCoord += screenCoord;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);
-		refractedDir *= saturate(transparentDepth) * 0.4 / saturate(dot(refractedDir, -viewNormal));
+		refractedDir *= min(transparentDepth * 5e-2, 0.5) / saturate(dot(refractedDir, -viewNormal));
 
 		refractCoord = ViewToScreenSpace(viewPos + refractedDir).xy;
 	}

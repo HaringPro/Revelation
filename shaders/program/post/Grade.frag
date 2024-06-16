@@ -6,12 +6,14 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass: Combine bloom and fog, apply exposure, color grading and etc.
+
 --------------------------------------------------------------------------------
 */
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 #define TONEMAP AcademyFit // [AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
@@ -19,9 +21,13 @@
 
 #define PURKINJE_SHIFT // Enable purkinje shift effect
 
+// #define VIGNETTE_ENABLED
+#define VIGNETTE_STRENGTH 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define VIGNETTE_ROUNDNESS 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 4 */
+/* RENDERTARGETS: 8 */
 layout (location = 0) out vec3 LDRImageOut;
 
 //======// Input //===============================================================================//
@@ -31,10 +37,11 @@ flat in float exposure;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex0; // Bloom tiles
+uniform sampler2D colortex1; // HDR scene image
+uniform sampler2D colortex3; // Rain alpha
 uniform sampler2D colortex6; // Bloomy fog transmittance
-uniform sampler2D colortex7; // HDR scene image
-uniform sampler2D colortex8; // Rain alpha
 
+uniform float aspectRatio;
 uniform float wetnessCustom;
 
 uniform vec2 viewPixelSize;
@@ -83,7 +90,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#endif
 
 	if (wetnessCustom > 1e-2) {
-		float rain = texelFetch(colortex8, texel, 0).x * 0.2;
+		float rain = texelFetch(colortex3, texel, 0).x * 0.2;
 		image = image * oneMinus(rain) + bloomData * rain;
 	}
 }
@@ -162,21 +169,29 @@ vec3 Lottes(in vec3 x) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	vec3 HDRImage = texelFetch(colortex7, screenTexel, 0).rgb;
+	vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
 
 	// Bloom and fog
 	#ifdef BLOOM_ENABLED
 		CombineBloomAndFog(HDRImage, screenTexel);
 	#endif
 
+	// Purkinje shift
 	#ifdef PURKINJE_SHIFT
 		float luma = dot(HDRImage, vec3(0.25, 0.4, 0.35));
 		// float purkinjeFactor = oneMinus(exp2(-1e3 * luma)) * exposure / (exposure + 1.0);
-		HDRImage = mix(HDRImage, vec3(0.6, 0.7, 1.0) * luma, exp2(-2e2 * luma));
+		HDRImage = mix(HDRImage, vec3(0.5, 0.7, 1.0) * luma, exp2(-2e2 * luma));
 	#endif
 
 	// Exposure
 	HDRImage *= exposure;
+
+	// Vignetting
+	#ifdef VIGNETTE_ENABLED
+		vec2 clipCoord = gl_FragCoord.xy * viewPixelSize * 2.0 - 1.0;
+		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
+		HDRImage *= fastExp(-0.4 * dotSelf(clipCoord) * VIGNETTE_STRENGTH);
+	#endif
 
 	// Tone mapping
 	LDRImageOut = TONEMAP(HDRImage);

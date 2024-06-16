@@ -6,12 +6,16 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+    Pass: 
+    - Vertex Shader: Compute illuminances and exposure
+    - Fragment Shader: Compute Sky-View LUT and Transmittance-View LUT, store illuminances and exposure
+
 --------------------------------------------------------------------------------
 */
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 #if defined VERTEX_SHADER
 
@@ -35,8 +39,8 @@ in vec2 vaUV0;
 //======// Uniform //=============================================================================//
 
 uniform sampler3D colortex3; // Combined Atmospheric LUT
+uniform sampler2D colortex4; // Projected sceen history
 uniform sampler2D colortex5;
-uniform sampler2D colortex7; // Previous scene color
 
 uniform int moonPhase;
 
@@ -60,7 +64,7 @@ float CalculateWeightedLuminance() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
 
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
-    vec2 rTileSteps = 1.0 / vec2(tileSteps);
+    vec2 pixelSize = 0.5 / vec2(tileSteps);
 
     float total = 0.0;
     float sumWeight = 0.0;
@@ -70,8 +74,8 @@ float CalculateWeightedLuminance() {
 
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
-            vec2 uv = (vec2(x, y) + 0.5) * rTileSteps;
-            float luminance = GetLuminance(textureLod(colortex7, uv, AUTO_EXPOSURE_LOD).rgb);
+            vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
+            float luminance = GetLuminance(textureLod(colortex4, uv, AUTO_EXPOSURE_LOD).rgb);
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
@@ -102,7 +106,7 @@ void main() {
 
         float prevExposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;
 
-        float fadedSpeed = targetExposure < prevExposure ? 2.0 : 1.0;
+        float fadedSpeed = targetExposure < prevExposure ? 8.0 : 4.0;
         exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime * EXPOSURE_SPEED));
 	#else
 		exposure = exp2(-MANUAL_EXPOSURE_VALUE);

@@ -1,11 +1,11 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/utility.glsl"
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 6,3 */
+/* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out vec4 gbufferOut0;
 // layout (location = 2) out vec2 gbufferOut1;
