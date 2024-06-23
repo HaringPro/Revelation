@@ -99,21 +99,25 @@ vec3 agxDefaultContrastApprox_7th(vec3 x) {
 // }
 
 vec3 AgX_Minimal(in vec3 val) {
+    val *= 2.0;
+
     const mat3 agx_mat = mat3(
         0.842479062253094, 0.0423282422610123, 0.0423756549057051,
         0.0784335999999992,  0.878468636469772,  0.0784336,
         0.0792237451477643, 0.0791661274605434, 0.879142973793104);
 
+	val *= mat3(0.99999976, -1.26657e-7, -1.29064e-9, 1.67316e-8, 0.99999976, -5.32026e-9, -0.00725587, 6.47740e-9, 1.00725580);
+
     //const float min_ev = -12.47393f;
     //const float max_ev = 4.026069f;
-    const float min_ev = -7.0;
-    const float max_ev = 5.5;
+    const float min_ev = -6.0;
+    const float max_ev = 6.0;
 
     // Input transform
-    val = agx_mat * val * 8.0;
+    val = agx_mat * val;
 
     // Log2 space encoding
-    val = clamp(log2(val), min_ev, max_ev);
+    val = clamp(log2(val * 5.5), min_ev, max_ev);
     val = (val - min_ev) / (max_ev - min_ev);
 
     // Apply sigmoid function approximation

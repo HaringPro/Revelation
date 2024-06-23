@@ -13,7 +13,7 @@ const float realShadowMapRes = shadowMapResolution * MC_SHADOW_QUALITY;
 
 #include "ShadowDistortion.glsl"
 
-vec3 WorldPosToShadowProjPosBias(in vec3 worldPos, in vec3 worldNormal, out float distortFactor) {
+vec3 WorldToShadowScreenSpaceBias(in vec3 worldPos, in vec3 worldNormal, out float distortFactor) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
@@ -21,7 +21,7 @@ vec3 WorldPosToShadowProjPosBias(in vec3 worldPos, in vec3 worldNormal, out floa
 	shadowViewNormal.z = -shadowViewNormal.z;
 
 	distortFactor = DistortionFactor(shadowClipPos.xy);
-	shadowClipPos += shadowViewNormal * 2e-3 * distortFactor; // Normal bias
+	shadowClipPos += shadowViewNormal * 4e-3 * distortFactor; // Normal bias
 	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
 }
 
@@ -32,7 +32,7 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
+vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	float searchDepth = 0.0;
 	float sumWeight = 0.0;
 	float sssDepth = 0.0;
@@ -44,26 +44,25 @@ vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
 	for (uint i = 0u; i < 9u; ++i, rot *= rotStep) {
 		float fi = float(i) + dither;
-		vec2 sampleCoord = shadowProjPos.xy + rot * sqrt(fi * 0.125);
+		vec2 sampleCoord = shadowScreenPos.xy + rot * sqrt(fi * 0.125);
 
 		float depthSample = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
-		float weight = step(depthSample, shadowProjPos.z);
+		float weight = step(depthSample, shadowScreenPos.z);
 
-		sssDepth += max0(shadowProjPos.z - depthSample);
+		sssDepth += max0(shadowScreenPos.z - depthSample);
 		searchDepth += depthSample * weight;
 		sumWeight += weight;
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = min(2.0 * (shadowProjPos.z - searchDepth) / searchDepth, 0.4);
+	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.4);
 
 	return vec2(searchDepth * shadowProjection[0].x, sssDepth * shadowProjectionInverse[2].z);
 }
 
-vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float penumbraScale) {
-	shadowProjPos.z -= 2e-7 * (1.0 + dither) * shadowDistance;
+vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
+	shadowScreenPos.z -= 4e-5 * (1.0 - dither);
 
-	// const uint steps = 16u;
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 
 	vec3 result = vec3(0.0);
@@ -73,15 +72,15 @@ vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float pen
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, rot *= rotStep) {
 		float fi = float(i) + dither;
-		vec2 sampleCoord = shadowProjPos.xy + rot * sqrt(fi * rSteps);
+		vec2 sampleCoord = shadowScreenPos.xy + rot * sqrt(fi * rSteps);
 
-		float sampleDepth1 = textureLod(shadowtex1, vec3(sampleCoord, shadowProjPos.z), 0).x;
+		float sampleDepth1 = textureLod(shadowtex1, vec3(sampleCoord, shadowScreenPos.z), 0).x;
 
 	#ifdef COLORED_SHADOWS
 		ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
-		float sampleDepth0 = step(shadowProjPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
+		float sampleDepth0 = step(shadowScreenPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
 		if (sampleDepth0 != sampleDepth1) {
-			result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+			result += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
 		} else 
 	#endif
 		{ result += sampleDepth1; }
@@ -109,7 +108,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 	rayPos += rayStep * (dither + 1.0);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
-    float absorption = exp2(-oneMinus(max0(sssAmount - 0.25)) * length(viewPos) * 5.0) * step(0.25, sssAmount);
+    float absorption = step(1e-4, sssAmount) * exp2(-oneMinus(sssAmount) * length(viewPos) * 0.75);
 
 	float shadow = 1.0;
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {

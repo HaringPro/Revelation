@@ -66,7 +66,7 @@ uniform float aspectRatio;
 uniform float wetness;
 uniform float wetnessCustom;
 uniform float eyeAltitude;
-uniform float weatherSnowySmooth;
+uniform float biomeSnowySmooth;
 uniform float eyeSkylightFix;
 uniform float lightningFlashing;
 uniform float worldTimeCounter;
@@ -130,16 +130,20 @@ void main() {
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
+	vec3 albedoRaw = texelFetch(colortex6, screenTexel, 0).rgb;
+	vec3 albedo = sRGBtoLinear(albedoRaw);
+
 	if (depth > 0.999999 + materialID) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
 		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
+
+		vec3 moonDisc = mix(albedo, GetLuminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
+		vec3 celestial = mix(RenderStars(worldDir), moonDisc, albedo.g > 0.06) + RenderSun(worldDir, worldSunVector);
+
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
-		sceneOut += transmittance * (RenderStars(worldDir) + RenderSun(worldDir, worldSunVector));
+		sceneOut += transmittance * celestial;
 	} else {
 		sceneOut = vec3(0.0);
-
-		vec3 albedoRaw = texelFetch(colortex6, screenTexel, 0).rgb;
-		vec3 albedo = sRGBtoLinear(albedoRaw);
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
@@ -161,7 +165,7 @@ void main() {
 		vec3 specularBRDF = vec3(0.0);
 
 		float distortFactor;
-		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos, worldNormal, distortFactor);	
+		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
@@ -201,7 +205,7 @@ void main() {
 		}
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
 
-		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
+		vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
 
 		// Subsurface scattering
 		if (sssAmount > 1e-4) {
@@ -213,7 +217,7 @@ void main() {
 		// Shadows
 		if (NdotL > 1e-3) {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+			shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 			if (maxOf(shadow) > 1e-6) {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
@@ -253,11 +257,11 @@ void main() {
 			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
 		}
-		sceneOut += emissive.rgb * 2.0;
+		sceneOut += emissive.rgb * EMISSION_BRIGHTNESS;
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
 				float falloff = rcp(max(dotSelf(worldPos), 1.0));
-				sceneOut += falloff * (ao * oneMinus(falloff) + falloff) * max(heldBlockLightValue, heldBlockLightValue2) * HELDL_IGHT_BRIGHTNESS * blocklightColor;
+				sceneOut += falloff * (ao * oneMinus(falloff) + falloff) * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS * blocklightColor;
 			}
 		#endif
 

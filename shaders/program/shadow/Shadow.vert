@@ -79,7 +79,7 @@ void main() {
 	isWater = 0;
 	if (int(mc_Entity.x) == 10003) {
 		tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * sign(at_tangent.w);
+		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 
 		isWater = 1;
 	}

@@ -15,11 +15,12 @@
 
 #include "/lib/utility.glsl"
 
-#define TONEMAP AcademyFit // [AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
+#define TONEMAP_OPERATOR AgX_Minimal // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
 #define BLOOM_INTENSITY 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
 
 #define PURKINJE_SHIFT // Enable purkinje shift effect
+#define PURKINJE_SHIFT_STRENGTH 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 // #define VIGNETTE_ENABLED
 #define VIGNETTE_STRENGTH 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
@@ -78,7 +79,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 
 	bloomData /= sumWeight;
 
-	float bloomIntensity = BLOOM_INTENSITY * 0.075;
+	float bloomIntensity = BLOOM_INTENSITY * 0.08;
 	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.7, 0.3);
 
 	image = mix(image, bloomData, bloomIntensity);
@@ -90,7 +91,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#endif
 
 	if (wetnessCustom > 1e-2) {
-		float rain = texelFetch(colortex3, texel, 0).x * 0.2;
+		float rain = texelFetch(colortex3, texel, 0).x * RAIN_VISIBILITY;
 		image = image * oneMinus(rain) + bloomData * rain;
 	}
 }
@@ -110,6 +111,10 @@ const mat3 XYZtoSRGB = mat3(
 	vec3(-0.9692436363,  1.8759675015,  0.0415550574),
 	vec3(0.0556300797, 	-0.2039769589,  1.0569715142)
 );
+
+vec3 None(in vec3 x) {
+	return linearToSRGB(x);
+}
 
 // Uchimura 2017, "HDR theory and practice"
 // Math: https://www.desmos.com/calculator/gslcdxvipg
@@ -179,8 +184,8 @@ void main() {
 	// Purkinje shift
 	#ifdef PURKINJE_SHIFT
 		float luma = dot(HDRImage, vec3(0.25, 0.4, 0.35));
-		// float purkinjeFactor = oneMinus(exp2(-1e3 * luma)) * exposure / (exposure + 1.0);
-		HDRImage = mix(HDRImage, vec3(0.5, 0.7, 1.0) * luma, exp2(-2e2 * luma));
+		float purkinjeFactor = exp2(-2e2 / PURKINJE_SHIFT_STRENGTH * luma) * exposure / (exposure + 1.0);
+		HDRImage = mix(HDRImage, vec3(0.7, 1.1, 1.5) * luma, purkinjeFactor);
 	#endif
 
 	// Exposure
@@ -194,7 +199,7 @@ void main() {
 	#endif
 
 	// Tone mapping
-	LDRImageOut = TONEMAP(HDRImage);
+	LDRImageOut = TONEMAP_OPERATOR(HDRImage);
 
 	// LDR range clamp
 	LDRImageOut = saturate(LDRImageOut);

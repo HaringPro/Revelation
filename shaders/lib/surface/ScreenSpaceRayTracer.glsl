@@ -1,6 +1,6 @@
 
 #define RAYTRACE_SAMPLES 16 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
-#define REAL_SKY_REFLECTION
+#define REAL_SKY_REFLECTIONS
 
 #define RAYTRACE_REFINEMENT
 #define RAYTRACE_REFINEMENT_STEPS 6 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
@@ -32,7 +32,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
     for (uint i = 0u; i < steps; ++i) {
         if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 
-        #ifdef REAL_SKY_REFLECTION
+        #ifdef REAL_SKY_REFLECTIONS
             if (rayPos.z >= 1.0) { hit = true; break; }
         #else
             if (rayPos.z >= 1.0) break;

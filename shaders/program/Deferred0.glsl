@@ -101,12 +101,12 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateWeightedLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.4 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.36 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;
 
-        float fadedSpeed = targetExposure < prevExposure ? 8.0 : 4.0;
+        float fadedSpeed = targetExposure < prevExposure ? 3.0 : 1.5;
         exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime * EXPOSURE_SPEED));
 	#else
 		exposure = exp2(-MANUAL_EXPOSURE_VALUE);
@@ -184,7 +184,7 @@ void main() {
                 skyViewOut.x = exposure;
                 break;
 		}
-	} else if (screenTexel.y < skyCaptureRes.y) {
+	} else if (screenTexel.y <= skyCaptureRes.y) {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);

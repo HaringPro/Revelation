@@ -1,21 +1,22 @@
 
 float GetSmoothNoise(in vec2 coord) {
-	coord += 0.5;
+	coord += 0.5 / 256.0;
 
 	vec2 whole = floor(coord);
 	vec2 part  = curve(coord - whole);
 
 	coord = whole + part - 0.5;
 
-	return texture(noisetex, coord * rcp(256.0)).x;
+	return textureLod(noisetex, coord * rcp(256.0), 0.0).x;
 }
 
 float CalculateWaterHeight(in vec2 position) {
+	float fade = 0.2 + dot(abs(dFdx(position) + dFdy(position)), vec2(120.0 / far));
     float wavesTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
 
 	// position += wavesTime * vec2(-0.4, 0.2);
 	// Apply a large scale noise to the position to create a more stochastic looking wave
-	position += 1.0 - exp2(-4.0 * pow5(1.0 - GetSmoothNoise(position * 0.2)));
+	position += exp2(-4.0 * pow5(1.0 - GetSmoothNoise(position * 0.2)));
 
     float wave = 0.0;
 	position += vec2(wavesTime, position.x);
@@ -27,7 +28,7 @@ float CalculateWaterHeight(in vec2 position) {
 	position -= vec2(wavesTime * 0.5,  position.x * 0.3);
 	wave += GetSmoothNoise(position * 3.2) * 0.1;
 
-	return exp2(-wave * wave) / (0.2 + dot(abs(dFdx(position) + dFdy(position)), vec2(80.0 / far)));
+	return exp2(-wave * wave) / fade;
 }
 
 vec3 CalculateWaterNormal(in vec2 position) {
@@ -37,12 +38,12 @@ vec3 CalculateWaterNormal(in vec2 position) {
 
 	vec2 wavesNormal = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
 
-	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.75));
+	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.5));
 }
 
 vec3 CalculateWaterNormal(in vec2 position, in vec3 tangentViewDir) {
 	vec3 stepSize = tangentViewDir * vec3(vec2(0.2 * WATER_WAVE_HEIGHT), 1.0);
-	stepSize *= rcp(32.0) / -tangentViewDir.z;
+	stepSize *= rcp(64.0) / -tangentViewDir.z;
 
     vec3 samplePos = vec3(position, 0.0) + stepSize;
 	float sampleHeight = CalculateWaterHeight(samplePos.xy);

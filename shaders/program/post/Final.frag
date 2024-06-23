@@ -36,6 +36,9 @@ uniform sampler2D colortex0; // Bloom tiles
 // uniform sampler2D colortex6;
 // uniform sampler2D colortex7;
 uniform sampler2D colortex8; // LDR scene image
+#ifdef FSR_ENABLED
+	uniform sampler2D colortex15; // FSR EASU output
+#endif
 
 uniform vec2 viewPixelSize;
 
@@ -44,25 +47,25 @@ uniform vec2 viewPixelSize;
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 
-#define sampleColor(texel) texelFetch(colortex8, texel, 0).rgb
+#define CasLoad(texel) texelFetch(colortex8, texel, 0).rgb
 
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
 // https://gpuopen.com/wp-content/uploads/2019/07/FidelityFX-CAS.pptx
-vec3 CASFilter(in ivec2 texel) {
+vec3 FidelityFX_CAS(in ivec2 texel) {
 	#ifndef CAS_ENABLED
-		return sampleColor(texel);
+		return CasLoad(texel);
 	#endif
 
-	vec3 a = sampleColor(texel + ivec2(-1, -1));
-	vec3 b = sampleColor(texel + ivec2( 0, -1));
-	vec3 c = sampleColor(texel + ivec2( 1, -1));
-	vec3 d = sampleColor(texel + ivec2(-1,  0));
-	vec3 e = sampleColor(texel);
-	vec3 f = sampleColor(texel + ivec2( 1,  0));
-	vec3 g = sampleColor(texel + ivec2(-1,  1));
-	vec3 h = sampleColor(texel + ivec2( 0,  1));
-	vec3 i = sampleColor(texel + ivec2( 1,  1));
+	vec3 a = CasLoad(texel + ivec2(-1, -1));
+	vec3 b = CasLoad(texel + ivec2( 0, -1));
+	vec3 c = CasLoad(texel + ivec2( 1, -1));
+	vec3 d = CasLoad(texel + ivec2(-1,  0));
+	vec3 e = CasLoad(texel);
+	vec3 f = CasLoad(texel + ivec2( 1,  0));
+	vec3 g = CasLoad(texel + ivec2(-1,  1));
+	vec3 h = CasLoad(texel + ivec2( 0,  1));
+	vec3 i = CasLoad(texel + ivec2( 1,  1));
 
 	vec3 minColor = minOf(a, b, c, d, e, f, g, h, i);
 	vec3 maxColor = maxOf(a, b, c, d, e, f, g, h, i);
@@ -78,6 +81,10 @@ vec3 CASFilter(in ivec2 texel) {
 
 	return ((b + d + f + h) * w + e) / (4.0 * w + 1.0);
 }
+
+#ifdef FSR_ENABLED
+	#include "/lib/post/FSR.glsl"
+#endif
 
 //================================================================================================//
 
@@ -127,12 +134,19 @@ float bayer16(vec2 a)  { return bayer4 (0.25 * a) * 0.0625 + bayer4(a); }
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
-    	finalOut = CASFilter(screenTexel);
-	} else {
-		finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
-	}
+	#ifdef DEBUG_BLOOM_TILES
+		finalOut = texelFetch(colortex0, screenTexel, 0).rgb;
+	#else
+		if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
+			finalOut = FidelityFX_CAS(screenTexel);
+			#ifdef FSR_ENABLED
+				} else if (MC_RENDER_QUALITY < 1.0) {
+					finalOut = FsrRcasF(screenTexel);
+			#endif
+		} else {
+			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
+		}
+	#endif
 
-	// finalOut = texelFetch(colortex0, screenTexel, 0).rgb;
 	finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * r255;
 }

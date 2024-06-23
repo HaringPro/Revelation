@@ -113,86 +113,96 @@ void main() {
 
 		if (albedo.a < 0.1) { discard; return; }
 
-		sceneOut = vec4(vec3(0.0), albedo.a * 0.75);
+		sceneOut = vec4(0.0);
 		normalOut = tbnMatrix[2];
 	}
 
-	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz;
-	vec3 worldDir = normalize(worldPos);
-	worldPos += gbufferModelViewInverse[3].xyz;
+	//==// Translucent lighting //================================================================//
+	#ifdef TRANSLUCENT_LIGHTING
+		vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz;
+		vec3 worldDir = normalize(worldPos);
+		worldPos += gbufferModelViewInverse[3].xyz;
 
-	float LdotV = dot(worldLightVector, -worldDir);
-	float NdotL = dot(normalOut, worldLightVector);
+		float LdotV = dot(worldLightVector, -worldDir);
+		float NdotL = dot(normalOut, worldLightVector);
 
-	// Sunlight
-	vec3 sunlightMult = fma(wetness, -15.5, 16.0) * directIlluminance;
+		// Sunlight
+		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
 
-	vec3 shadow = vec3(0.0);
-	float diffuseBRDF = fastSqrt(NdotL) * rPI;
-	float specularBRDF = 0.0;
+		vec3 shadow = vec3(0.0);
+		float diffuseBRDF = fastSqrt(NdotL) * rPI;
+		float specularBRDF = 0.0;
 
-	float distortFactor;
-	vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos, normalOut, distortFactor);	
+		float distortFactor;
+		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, normalOut, distortFactor);	
 
-	// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
+		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
-	#ifdef TAA_ENABLED
-		float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+		#ifdef TAA_ENABLED
+			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+		#else
+			float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+		#endif
+
+		// Shadows
+		if (NdotL > 1e-3) {
+			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
+			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
+			shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+
+			if (maxOf(shadow) > 1e-6) {
+				float NdotV = saturate(dot(normalOut, -worldDir));
+				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+				float NdotH = (NdotL + NdotV) * halfwayNorm;
+				float LdotH = LdotV * halfwayNorm + halfwayNorm;
+
+				shadow *= sunlightMult;
+				// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
+
+				specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.002), materialID == 3u ? 0.02 : 0.04);
+			}
+		}
+
+		if (materialID != 3u) {
+			gbufferOut1.x = packUnorm2x8(albedo.rg);
+			gbufferOut1.y = packUnorm2x8(albedo.ba);
+
+			sceneOut.rgb += shadow * diffuseBRDF;
+
+			if (lightmap.y > 1e-5) {
+				// Skylight
+				vec3 skylight = skyIlluminance * 0.75;
+				skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5 + 0.2);
+				skylight *= normalOut.y * 1.2 + 1.8;
+
+				sceneOut.rgb += skylight * cube(lightmap.y);
+
+				// Bounced light
+				float bounce = CalculateFittedBouncedLight(normalOut);
+				bounce *= pow5(lightmap.y);
+				sceneOut.rgb += bounce * sunlightMult;
+			}
+
+			if (lightmap.x > 1e-5) sceneOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
+			// if (materialID != 3u) {
+			// 	sceneOut.rgb *= albedo.rgb;
+			// 	// sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
+			// }
+			// albedo.a = sqrt2(albedo.a);
+			// shadow /= cube(1.0 - albedo.a + saturate(albedo.rgb * albedo.a) * albedo.a);
+			sceneOut.a = fastSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
+		}
+
+		// Specular highlights
+		sceneOut.rgb += shadow * specularBRDF;
+		sceneOut.rgb /= maxEps(sceneOut.a);
 	#else
-		float dither = InterleavedGradientNoise(gl_FragCoord.xy);
+		if (materialID != 3u) {
+			gbufferOut1.x = packUnorm2x8(albedo.rg);
+			gbufferOut1.y = packUnorm2x8(albedo.ba);
+		}
 	#endif
-
-	// Shadows
-	if (NdotL > 1e-3) {
-		vec2 blockerSearch = BlockerSearch(shadowProjPos, dither);
-		float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-		shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
-
-		if (maxOf(shadow) > 1e-6) {
-			float NdotV = saturate(dot(normalOut, -worldDir));
-			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-			float NdotH = (NdotL + NdotV) * halfwayNorm;
-			float LdotH = LdotV * halfwayNorm + halfwayNorm;
-
-			shadow *= sunlightMult;
-			// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
-
-			specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.002), 0.02);
-		}
-	}
-
-	if (materialID != 3u) {
-		gbufferOut1.x = packUnorm2x8(albedo.rg);
-		gbufferOut1.y = packUnorm2x8(albedo.ba);
-
-		sceneOut.rgb += shadow * diffuseBRDF;
-
-		if (lightmap.y > 1e-5) {
-			// Skylight
-			vec3 skylight = skyIlluminance * 0.75;
-			skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5 + 0.2);
-			skylight *= normalOut.y * 1.2 + 1.8;
-
-			sceneOut.rgb += skylight * cube(lightmap.y);
-
-			// Bounced light
-			float bounce = CalculateFittedBouncedLight(normalOut);
-			bounce *= pow5(lightmap.y);
-			sceneOut.rgb += bounce * sunlightMult;
-		}
-
-		if (lightmap.x > 1e-5) sceneOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
-		// if (materialID != 3u) {
-		// 	sceneOut.rgb *= albedo.rgb;
-		// 	// sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
-		// }
-		// albedo.a = sqrt2(albedo.a);
-		// shadow /= cube(1.0 - albedo.a + saturate(albedo.rgb * albedo.a) * albedo.a);
-	}
-
-	// Specular highlights
-	sceneOut.rgb += shadow * specularBRDF;
-	sceneOut.rgb /= maxEps(sceneOut.a);
+	//============================================================================================//
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

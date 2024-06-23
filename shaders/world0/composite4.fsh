@@ -104,7 +104,8 @@ void main() {
 	float transparentDepth = distance(viewPos, sViewPos);
 
 	vec4 gbufferData1 = texelFetch(colortex8, screenTexel, 0);
-	vec3 viewNormal = mat3(gbufferModelView) * GetWorldNormal(gbufferData0);
+	vec3 worldNormal = GetWorldNormal(gbufferData0);
+	vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 	vec2 refractCoord;
 	ivec2 refractTexel;
@@ -125,7 +126,7 @@ void main() {
 		sDepth = sampleDepthSoild(refractTexel);
 
 		gbufferData0 = texelFetch(colortex7, refractTexel, 0);
-		waterMask = uint(gbufferData0.y * 255.0) == 3u;
+		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
 	} else {
 		refractCoord = screenCoord;
 		refractTexel = screenTexel;
@@ -147,7 +148,7 @@ void main() {
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
 	} else if (waterMask) {
 		float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
-		mat2x3 waterFog = CalculateWaterFog(lightmap.y, waterDepth, LdotV);
+		mat2x3 waterFog = CalculateWaterFog(lightmap.y, max(transparentDepth, waterDepth), LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 	}
 
@@ -158,8 +159,8 @@ void main() {
 		if (materialID == 2u) {
 			// Glass tint
 			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
-			translucents.a = sqrt2(translucents.a);
-			sceneOut *= cube(1.0 - translucents.a + saturate(translucents.rgb * translucents.a) * translucents.a);
+			translucents.a = fastSqrt(fastSqrt(translucents.a));
+			sceneOut *= cube((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
 
 			// Specular reflections of glass
 			vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
@@ -174,10 +175,21 @@ void main() {
 	#ifdef BORDER_FOG
 		if (depth + isEyeInWater < 1.0) {
 			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
-			density *= oneMinus(saturate(worldDir.y * 3.0));
+			density *= exp2(-6.0 * curve(saturate(worldDir.y * 3.0)));
 
 			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
 			sceneOut = mix(sceneOut, skyRadiance, density);
 		}
+	#endif
+
+
+	#if DEBUG_NORMALS == 1
+		sceneOut = worldNormal * 0.5 + 0.5;
+	#elif DEBUG_NORMALS == 2
+		sceneOut = GetFlatNormal(gbufferData0) * 0.5 + 0.5;
+	// #elif DEBUG_DEPTH == 1
+	// 	sceneOut = vec3(depth);
+	// #elif DEBUG_DEPTH == 2
+	// 	sceneOut = vec3(sDepth);
 	#endif
 }

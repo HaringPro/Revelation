@@ -50,7 +50,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 		vec2 sampleCoord 			= shadowScreenPos.xy + rot * sampleRad;
 		ivec2 sampleTexel 			= ivec2(DistortShadowScreenPos(sampleCoord) * realShadowMapRes);
 
-		float sampleDepth 		= texelFetch(shadowtex1, sampleTexel, 0).x * 5.0 - 2.0;
+		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 5.0 - 2.0;
 
 		vec3 sampleVector 			= vec3(sampleCoord, sampleDepth) - shadowScreenPos;
 		sampleVector 				= mat3(shadowProjectionInverse) * sampleVector;
@@ -72,7 +72,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 
 		float falloff 	 			= rcp((sampleSqLen + 0.5) * falloffScale + sampleRad);
 
-		float skylightWeight 	= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
+		float skylightWeight 		= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
 
 		// vec3 albedo 				= SRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
 		vec3 albedo 				= pow(texelFetch(shadowcolor0, sampleTexel, 0).rgb, vec3(2.2));
@@ -82,5 +82,5 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 
 	total *= sqRadius * rSteps;
 
-	return total * inversesqrt(maxEps(total));
+	return total;
 }

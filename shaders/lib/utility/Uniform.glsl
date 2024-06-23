@@ -34,7 +34,7 @@ uniform float wetness;
 uniform float wetnessCustom;
 uniform float sunAngle;
 uniform float eyeAltitude;
-uniform float weatherSnowySmooth;
+uniform float biomeSnowySmooth;
 uniform float eyeSkylightFix;
 uniform float lightningFlashing;
 uniform float worldTimeCounter;

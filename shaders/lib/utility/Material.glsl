@@ -79,37 +79,3 @@ Material GetMaterialData(in vec4 specTex) {
 
 	return material;
 }
-
-Material GetMaterialData(in vec2 specTex) {
-	Material material;
-
-	material.roughness = specTex.r;
-	#if defined MC_SPECULAR_MAP
-		material.isHardcodedMetal = false;
-
-		#if TEXTURE_FORMAT == 0
-			if (specTex.g < (229.5 / 255.0)) {
-				material.metalness = 0.0;
-				material.f0 = specTex.g;			
-			} else if (specTex.g < 237.5 / 255.0) {
-				material.metalness = 1.0;
-				material.isHardcodedMetal = true;
-				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(uint(specTex.g * 255.0) - 230u, 0u, 7u)];
-			} else {
-				material.metalness = 1.0;
-				material.f0 = 0.91;
-			}
-		#else
-			material.metalness = specTex.g;
-			material.f0 = specTex.g * 0.96 + 0.04;
-		#endif
-	#else
-		material.metalness = 0.0;
-		material.f0 = specTex.g;
-	#endif
-
-	material.hasReflections = max0(0.625 - material.roughness) + material.metalness > 5e-3;
-	material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
-
-	return material;
-}

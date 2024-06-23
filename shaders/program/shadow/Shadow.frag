@@ -83,8 +83,8 @@ void main() {
         if (albedo.a > oneMinus(r255)) {
 			shadowcolor0Out = albedo.rgb * tint;
 		} else {
-			albedo.a = sqrt2(albedo.a);
-			shadowcolor0Out = mix(vec3(1.0), albedo.rgb * tint * albedo.a, albedo.a);
+			albedo.a = fastSqrt(fastSqrt(albedo.a));
+			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint, albedo.a);
 		}
 		shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 	}

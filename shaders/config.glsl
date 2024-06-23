@@ -8,9 +8,7 @@
 	Apache License 2.0
 
 --------------------------------------------------------------------------------
-*/
 
-/*
 	Pipeline configuration
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;	// Scene data
@@ -23,6 +21,7 @@
 	const int 	colortex7Format 			= RGBA16;			// Gbuffer data 0
 	const int 	colortex8Format 			= RGBA16;			// Gbuffer data 1
 	const int 	colortex10Format 			= R11F_G11F_B10F;	// Transmittance-View LUT, cloud shadow map
+	const int 	colortex15Format 			= RGB16;			// FSR EASU output
 
 	const bool	colortex0Clear				= false;
 	const bool 	colortex1Clear				= false;
@@ -30,12 +29,11 @@
 //	const bool	colortex3Clear				= false;
 	const bool	colortex4Clear				= false;
 	const bool  colortex5Clear				= false;
-	const bool  colortex6Clear				= false;
+	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= true;
 	const bool	colortex8Clear				= true;
 	const bool 	colortex10Clear				= false;
-
-//	const vec4 colortex4ClearColor 			= vec4(0.0, 0.0, 0.0, 1.0);
+	const bool 	colortex15Clear				= false;
 
 	const float shadowIntervalSize 			= 2.0;
 	const float ambientOcclusionLevel 		= 1.0;
@@ -46,4 +44,6 @@
 	const float drynessHalflife				= 60.0;
 
 	const bool 	shadowHardwareFiltering1 	= true;
+
+--------------------------------------------------------------------------------
 */

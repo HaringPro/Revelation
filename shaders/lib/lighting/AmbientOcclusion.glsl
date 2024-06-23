@@ -42,12 +42,13 @@
 
 #elif AO_ENABLED == 2
 	// Ground-truth ambient occlusion
+	// Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
+
 	#define GTAO_SLICES	3 // [1 2 3 4 5 6 8 10 12 15 17 20]
 	#define GTAO_DIRECTION_SAMPLES 3 // [1 2 3 4 5 6 8 10 12 15 17 20]
 
 	#define GTAO_RADIUS 0.5 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
-	// Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 	float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither){
 		vec3 viewDir = normalize(-viewPos);
 
@@ -74,7 +75,7 @@
 			float normV = inversesqrt(lenV);
 			lenV *= normV;
 
-			float sgnN = sign(dot(orthoDirectionV, projNormalV));
+			float sgnN = fastSign(dot(orthoDirectionV, projNormalV));
 			float cosN = saturate(dot(projNormalV, viewDir) * normV);
 			float n = sgnN * fastAcos(cosN);
 

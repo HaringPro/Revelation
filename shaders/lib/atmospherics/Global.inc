@@ -105,7 +105,7 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	coord.x = (azimuthAngle + PI) * rTAU;
 
 	// Non-linear mapping of the altitude angle
-	coord.y = 0.5 + 0.5 * sign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle));
+	coord.y = 0.5 + 0.5 * fastSign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle));
 
 	// To unit range
 	coord.x = coord.x * scale + offset;

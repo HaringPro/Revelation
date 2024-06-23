@@ -32,6 +32,7 @@ const float r240		= 0.00416666667;
 #define maxEps(x) 		max(x, 1e-6)
 #define saturate(x) 	clamp(x, 0.0, 1.0)
 #define clamp16f(x) 	clamp(x, 0.0, 65535.0)
+#define fastSign(x)		(saturate((x) * 1e35) * 2.0 - 1.0)
 
 #define transMAD(m, v)	(mat3(m) * (v) + (m)[3].xyz)
 #define diagonal2(m)	vec2((m)[0].x, (m)[1].y)
@@ -122,7 +123,7 @@ float FastAcos(in float x) {
 		#else
 			normalTex = normalize(normalTex);
 		#endif
-		//normalTex.xy = max0(abs(normalTex.xy) - r255) * sign(normalTex.xy);
+		//normalTex.xy = max0(abs(normalTex.xy) - r255) * fastSign(normalTex.xy);
 	}
 #endif
 

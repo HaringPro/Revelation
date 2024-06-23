@@ -94,19 +94,19 @@ vec3 YCoCgRtoRGB(in vec3 YCoCgRColor) {
     return rgbColor;
 }
 
-vec3 clipAABB(in vec3 boxMin, in vec3 boxMax, in vec3 previousSample) {
+vec3 clipAABB(in vec3 boxMin, in vec3 boxMax, in vec3 prevSample) {
     vec3 p_clip = 0.5 * (boxMax + boxMin);
     vec3 e_clip = 0.5 * (boxMax - boxMin);
 
-    vec3 v_clip = previousSample - p_clip;
+    vec3 v_clip = prevSample - p_clip;
     vec3 v_unit = v_clip / e_clip;
     vec3 a_unit = abs(v_unit);
     float ma_unit = maxOf(a_unit);
 
     if (ma_unit > 1.0) {
         return v_clip / ma_unit + p_clip;
-    }else{
-        return previousSample;
+    } else {
+        return prevSample;
     }
 }
 
@@ -147,51 +147,59 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define sampleColor(offset) RGBtoYCoCgR(sampleSceneColor(texel + offset));
+#define currentLoad(offset) RGBtoYCoCgR(sampleSceneColor(texel + offset));
+
+#define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
+#define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 
 vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
-    ivec2 texel = ivec2((screenCoord + taaOffset * 0.5) * viewSize);
+    ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
 
     vec3 currentSample = sampleSceneColor(texel);
-    vec2 previousCoord = screenCoord - velocity;
+    vec2 prevCoord = screenCoord - velocity;
 
-    if (saturate(previousCoord) != previousCoord) return currentSample;
+    if (saturate(prevCoord) != prevCoord) return currentSample;
 
-    vec3 col0 = RGBtoYCoCgR(currentSample);
+    vec3 sample0 = RGBtoYCoCgR(currentSample);
 
-    vec3 col1 = sampleColor(ivec2(-1,  1));
-    vec3 col2 = sampleColor(ivec2( 0,  1));
-    vec3 col3 = sampleColor(ivec2( 1,  1));
-    vec3 col4 = sampleColor(ivec2(-1,  0));
-    vec3 col5 = sampleColor(ivec2( 1,  0));
-    vec3 col6 = sampleColor(ivec2(-1, -1));
-    vec3 col7 = sampleColor(ivec2( 0, -1));
-    vec3 col8 = sampleColor(ivec2( 1, -1));
+    vec3 sample1 = currentLoad(ivec2(-1,  1));
+    vec3 sample2 = currentLoad(ivec2( 0,  1));
+    vec3 sample3 = currentLoad(ivec2( 1,  1));
+    vec3 sample4 = currentLoad(ivec2(-1,  0));
+    vec3 sample5 = currentLoad(ivec2( 1,  0));
+    vec3 sample6 = currentLoad(ivec2(-1, -1));
+    vec3 sample7 = currentLoad(ivec2( 0, -1));
+    vec3 sample8 = currentLoad(ivec2( 1, -1));
 
-    // Variance clip
-    vec3 clipAvg = (col0 + col1 + col2 + col3 + col4 + col5 + col6 + col7 + col8) * rcp(9.0);
-    vec3 clipAvgSq = (col0 * col0 + col1 * col1 + col2 * col2 + col3 * col3 + col4 * col4 + col5 * col5 + col6 * col6 + col7 * col7 + col8 * col8) * rcp(9.0);
+    vec3 clipMin = minOf(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+    vec3 clipMax = maxOf(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
 
-    vec3 variance = sqrt(abs(clipAvgSq - clipAvg * clipAvg));
-    vec3 clipMin = min(clipAvg - variance, col0);
-    vec3 clipMax = max(clipAvg + variance, col0);
+    #ifdef TAA_VARIANCE_CLIPPING
+        // Variance clip
+        vec3 clipAvg = (sample0 + sample1 + sample2 + sample3 + sample4 + sample5 + sample6 + sample7 + sample8) * rcp(9.0);
+        vec3 clipAvg2 = (sample0 * sample0 + sample1 * sample1 + sample2 * sample2 + sample3 * sample3 + sample4 * sample4 + sample5 * sample5 + sample6 * sample6 + sample7 * sample7 + sample8 * sample8) * rcp(9.0);
 
-    #ifdef TAA_SHARPEN
-        vec3 previousSample = textureCatmullRomFast(colortex1, previousCoord, TAA_SHARPNESS).rgb;
-    #else
-        vec3 previousSample = texture(colortex1, previousCoord).rgb;
+        vec3 variance = sqrt(abs(clipAvg2 - clipAvg * clipAvg)) * TAA_AGGRESSION;
+        clipMin = min(clipAvg - variance, clipMin);
+        clipMax = max(clipAvg + variance, clipMax);
     #endif
 
-    previousSample = RGBtoYCoCgR(previousSample);
-    previousSample = clipAABB(clipMin, clipMax, previousSample);
+    #ifdef TAA_SHARPEN
+        vec3 prevSample = textureCatmullRomFast(colortex1, prevCoord, TAA_SHARPNESS).rgb;
+    #else
+        vec3 prevSample = texture(colortex1, prevCoord).rgb;
+    #endif
 
-    previousSample = YCoCgRtoRGB(previousSample);
+    prevSample = RGBtoYCoCgR(prevSample);
+    prevSample = clipAABB(clipMin, clipMax, prevSample);
 
-    float blendWeight = 0.97;
-    vec2 pixelVelocity = 1.0 - abs(fract(previousCoord * viewSize) * 2.0 - 1.0);
+    prevSample = YCoCgRtoRGB(prevSample);
+
+    vec2 pixelVelocity = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+    float blendWeight = TAA_BLEND_WEIGHT;
     blendWeight *= sqrt(pixelVelocity.x * pixelVelocity.y) * 0.25 + 0.75;
 
-    return invReinhard(mix(reinhard(currentSample), reinhard(previousSample), blendWeight));
+    return invReinhard(mix(reinhard(currentSample), reinhard(prevSample), blendWeight));
 }
 
 //======// Main //================================================================================//
@@ -201,10 +209,14 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
     float depth = sampleDepth(screenTexel);
-
-    vec3 closestFragment = GetClosestFragment(screenTexel, depth);
-    vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
-
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+
+    #ifdef TAA_CLOSEST_FRAGMNET
+        vec3 closestFragment = GetClosestFragment(screenTexel, depth);
+        vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
+    #else
+        vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
+    #endif
+
     temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
 }
