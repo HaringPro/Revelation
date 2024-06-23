@@ -154,21 +154,6 @@ void main() {
 		// vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
 		// vec4 specTex = vec4(unpackUnorm2x8(gbufferData1.z), unpackUnorm2x8(gbufferData1.w));
 
-		float LdotV = dot(worldLightVector, -worldDir);
-		float NdotL = dot(worldNormal, worldLightVector);
-
-		// Sunlight
-		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
-
-		vec3 shadow = vec3(0.0);
-		vec3 diffuseBRDF = vec3(1.0);
-		vec3 specularBRDF = vec3(0.0);
-
-		float distortFactor;
-		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
-
-		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
-
 		#ifdef TAA_ENABLED
 			float dither = BlueNoiseTemporal(screenTexel);
 		#else
@@ -187,6 +172,21 @@ void main() {
 			#endif
 		} else depth += 0.38;
 
+		// Sunlight
+		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
+
+		float LdotV = dot(worldLightVector, -worldDir);
+		float NdotL = dot(worldNormal, worldLightVector);
+
+		vec3 shadow = vec3(0.0);
+		vec3 diffuseBRDF = vec3(1.0);
+		vec3 specularBRDF = vec3(0.0);
+
+		float distortFactor;
+		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
+
+		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
+
 		float sssAmount = 0.0;
 		switch (materialID) {
 			case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
@@ -201,6 +201,9 @@ void main() {
 				break;
 			case 38u: case 51u: // Strong SSS
 				sssAmount = 0.8;
+				break;
+			case 40u: // Particles
+				sssAmount = 0.35;
 				break;
 		}
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
@@ -222,16 +225,17 @@ void main() {
 			if (maxOf(shadow) > 1e-6) {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-				float NdotH = (NdotL + NdotV) * halfwayNorm;
+				float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
+				NdotV = max(NdotV, 1e-3);
 
 				shadow *= sunlightMult;
 				#ifdef SCREEN_SPACE_SHADOWS
 					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither, sssAmount);
 				#endif
 
-				diffuseBRDF *= mix(DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
-				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(1.), .04);
+				diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
+				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
 			}
 		}
 

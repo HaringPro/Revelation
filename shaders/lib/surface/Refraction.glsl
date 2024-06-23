@@ -42,7 +42,7 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 		vec3 nv = normalize(gbufferModelView[1].xyz);
 
 		refractCoord = nv.xy - waveNormalView.xy;
-		refractCoord *= saturate(transparentDepth / (1.0 - viewPos.z)) * REFRACTION_STRENGTH * 0.2;
+		refractCoord *= saturate(transparentDepth / (1.0 - viewPos.z)) * REFRACTION_STRENGTH * 0.1;
 		refractCoord += screenCoord;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);

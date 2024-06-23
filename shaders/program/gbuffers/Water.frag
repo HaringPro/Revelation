@@ -107,6 +107,10 @@ void main() {
 		// albedo = sceneOut = vec4(0.0, 0.0, 0.0, 1e-2);
 
 		normalOut = normalize(tbnMatrix * normalOut);
+
+		// Water normal clamp
+		vec3 worldDir = normalize(gbufferModelViewInverse[3].xyz + cameraPosition - minecraftPos);
+		normalOut = normalize(normalOut + 2.0 * tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], worldDir))));
 		sceneOut = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
 	} else {
 		albedo = texture(tex, texCoord) * tint;
@@ -119,9 +123,8 @@ void main() {
 
 	//==// Translucent lighting //================================================================//
 	#ifdef TRANSLUCENT_LIGHTING
-		vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos.xyz;
-		vec3 worldDir = normalize(worldPos);
-		worldPos += gbufferModelViewInverse[3].xyz;
+		vec3 worldPos = minecraftPos - cameraPosition;
+		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(normalOut, worldLightVector);
@@ -208,5 +211,5 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(normalOut));
-	gbufferOut0.w = gbufferOut0.z;
+	// gbufferOut0.w = gbufferOut0.z;
 }

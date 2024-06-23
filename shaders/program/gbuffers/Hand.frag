@@ -45,5 +45,5 @@ void main() {
 	gbufferOut0.y = 1.1 * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	gbufferOut0.w = gbufferOut0.z;
+	// gbufferOut0.w = gbufferOut0.z;
 }

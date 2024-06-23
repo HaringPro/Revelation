@@ -29,9 +29,15 @@ vec3 GetFlatNormal(in vec4 data) {
 	return decodeUnitVector(unpackUnorm2x8(data.z));
 }
 
-vec3 GetWorldNormal(in vec4 data) {
-	return decodeUnitVector(unpackUnorm2x8(data.w));
-}
+#if defined MC_NORMAL_MAP
+	vec3 GetWorldNormal(in vec4 data) {
+		return decodeUnitVector(unpackUnorm2x8(data.w));
+	}
+#else
+	vec3 GetWorldNormal(in vec4 data) {
+		return decodeUnitVector(unpackUnorm2x8(data.z));
+	}
+#endif
 
 float GetLinearDepth(in ivec2 texel) {
     return (near * far) / (sampleDepth(texel) * (near - far) + far);

@@ -42,7 +42,7 @@ void main() {
 	gbufferOut0.y = 2.1 * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	gbufferOut0.w = gbufferOut0.z;
+	// gbufferOut0.w = gbufferOut0.z;
 
     gbufferOut1.x = packUnorm2x8(albedo.rg);
     gbufferOut1.y = packUnorm2x8(albedo.ba);

@@ -21,7 +21,7 @@ vec3 WorldToShadowScreenSpaceBias(in vec3 worldPos, in vec3 worldNormal, out flo
 	shadowViewNormal.z = -shadowViewNormal.z;
 
 	distortFactor = DistortionFactor(shadowClipPos.xy);
-	shadowClipPos += shadowViewNormal * 4e-3 * distortFactor; // Normal bias
+	shadowClipPos += shadowViewNormal * 2e-3 * distortFactor; // Normal bias
 	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
 }
 
@@ -61,7 +61,7 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 }
 
 vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
-	shadowScreenPos.z -= 4e-5 * (1.0 - dither);
+	shadowScreenPos.z -= 4e-5 * (1.0 + dither);
 
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 
@@ -112,7 +112,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 
 	float shadow = 1.0;
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {
-        if (rayPos.z < 0.0 || rayPos.z - rayStep.z > 1.0) break;
+        if (rayPos.z < 0.0 || rayPos.z > 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
 			float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 

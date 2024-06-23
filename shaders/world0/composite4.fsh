@@ -96,6 +96,10 @@ void main() {
 	float depth = GetDepthFix(screenTexel);
 	float sDepth = GetDepthSoildFix(screenTexel);
 
+	#ifdef BORDER_FOG
+		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
+	#endif
+
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
@@ -173,7 +177,7 @@ void main() {
 	}
 
 	#ifdef BORDER_FOG
-		if (depth + isEyeInWater < 1.0) {
+		if (doBorderFog) {
 			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
 			density *= exp2(-6.0 * curve(saturate(worldDir.y * 3.0)));
 

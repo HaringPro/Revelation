@@ -44,5 +44,5 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	gbufferOut0.w = gbufferOut0.z;
+	// gbufferOut0.w = gbufferOut0.z;
 }
