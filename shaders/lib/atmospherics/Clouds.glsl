@@ -56,7 +56,7 @@ float CloudPlaneDensity(in vec2 worldPos) {
 		cirrus += texture(noisetex, position + curve(cirrus * 0.2) * 0.3).x * weight;
 	}
 
-    cirrus = pow4(clamp(cirrus * 0.7 - saturate(localCoverage * 2.4 - 0.8) - 0.55, 0.0, 0.3) * cirrus);
+    cirrus = pow4(clamp(cirrus * 0.7 - saturate(localCoverage * 2.4 - 0.8) - 0.55, 0.0, 0.28) * cirrus);
 
 	return saturate(cirrus + sratocumulus);
 }

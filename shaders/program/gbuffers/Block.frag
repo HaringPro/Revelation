@@ -25,6 +25,10 @@ in vec4 viewPos;
 
 uniform sampler2D tex;
 
+#if defined MC_NORMAL_MAP
+	uniform sampler2D normals;
+#endif
+
 uniform mat4 gbufferModelViewInverse;
 
 uniform float frameTimeCounter;
@@ -90,7 +94,7 @@ void main() {
 			portalColor += texture(tex, endPortalLayer(portalCoord, float(i + 1))).rgb * COLORS[i];
 		}
 		albedo.rgb = portalColor;
-		// specularData = vec4(1.0, 0.04, vec2(254.0 / 255.0));
+		// specularTex = vec4(1.0, 0.04, vec2(254.0 / 255.0));
 	}
 
 	albedoOut = albedo;
@@ -99,5 +103,9 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	// gbufferOut0.w = gbufferOut0.z;
+	#if defined MC_NORMAL_MAP
+        vec3 normalTex = texture(normals, texCoord).rgb;
+        DecodeNormalTex(normalTex);
+		gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));
+	#endif
 }

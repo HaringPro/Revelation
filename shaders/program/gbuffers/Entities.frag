@@ -14,6 +14,10 @@ layout (location = 1) out vec4 gbufferOut0;
 
 uniform sampler2D tex;
 
+#if defined MC_NORMAL_MAP
+	uniform sampler2D normals;
+#endif
+
 uniform vec4 entityColor;
 
 //======// Input //===============================================================================//
@@ -50,5 +54,9 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	// gbufferOut0.w = gbufferOut0.z;
+	#if defined MC_NORMAL_MAP
+        vec3 normalTex = texture(normals, texCoord).rgb;
+        DecodeNormalTex(normalTex);
+		gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));
+	#endif
 }

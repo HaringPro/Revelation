@@ -14,6 +14,10 @@ layout (location = 2) out vec4 gbufferOut1;
 
 uniform sampler2D tex;
 
+#if defined MC_NORMAL_MAP
+	uniform sampler2D normals;
+#endif
+
 #include "/lib/utility/Uniform.glsl"
 
 //======// Input //===============================================================================//
@@ -94,32 +98,40 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 
 //======// Main //================================================================================//
 void main() {
-	vec3 normalOut;
+	vec3 worldNormal;
 	vec4 albedo;
 	if (materialID == 3u) { // water
 		vec3 minecraftPos = worldPos + cameraPosition;
 		#ifdef WATER_PARALLAX
-			normalOut = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix);
+			worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix);
 		#else
-			normalOut = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
+			worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 		#endif
 
-		gbufferOut1.x = packUnorm2x8(normalOut.xy * 0.5 + 0.5);
+		gbufferOut1.x = packUnorm2x8(worldNormal.xy * 0.5 + 0.5);
 		// albedo = sceneOut = vec4(0.0, 0.0, 0.0, 1e-2);
 
-		normalOut = normalize(tbnMatrix * normalOut);
+		worldNormal = tbnMatrix * worldNormal;
 
 		// Water normal clamp
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
-		normalOut = normalize(normalOut + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
-		sceneOut = CalculateSpecularReflections(normalOut, lightmap.y, viewPos.xyz);
+		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
+		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos.xyz);
 	} else {
 		albedo = texture(tex, texCoord) * tint;
 
 		if (albedo.a < 0.1) { discard; return; }
 
 		sceneOut = vec4(0.0);
-		normalOut = tbnMatrix[2];
+		#if defined MC_NORMAL_MAP
+			worldNormal = texture(normals, texCoord).rgb;
+			DecodeNormalTex(worldNormal);
+
+			worldNormal = tbnMatrix * worldNormal;
+			gbufferOut0.w = packUnorm2x8(encodeUnitVector(worldNormal));
+		#else
+			worldNormal = tbnMatrix[2];
+		#endif
 	}
 
 	//==// Translucent lighting //================================================================//
@@ -127,7 +139,7 @@ void main() {
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
 		float LdotV = dot(worldLightVector, -worldDir);
-		float NdotL = dot(normalOut, worldLightVector);
+		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
 		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
@@ -137,7 +149,7 @@ void main() {
 		float specularBRDF = 0.0;
 
 		float distortFactor;
-		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, normalOut, distortFactor);	
+		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
@@ -154,7 +166,7 @@ void main() {
 			shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 			if (maxOf(shadow) > 1e-6) {
-				float NdotV = saturate(dot(normalOut, -worldDir));
+				float NdotV = saturate(dot(worldNormal, -worldDir));
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
 				float NdotH = (NdotL + NdotV) * halfwayNorm;
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
@@ -176,12 +188,12 @@ void main() {
 				// Skylight
 				vec3 skylight = skyIlluminance * 0.75;
 				skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5 + 0.2);
-				skylight *= normalOut.y * 1.2 + 1.8;
+				skylight *= worldNormal.y * 1.2 + 1.8;
 
 				sceneOut.rgb += skylight * cube(lightmap.y);
 
 				// Bounced light
-				float bounce = CalculateFittedBouncedLight(normalOut);
+				float bounce = CalculateFittedBouncedLight(worldNormal);
 				bounce *= pow5(lightmap.y);
 				sceneOut.rgb += bounce * sunlightMult;
 			}
@@ -210,6 +222,5 @@ void main() {
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(normalOut));
-	// gbufferOut0.w = gbufferOut0.z;
+	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 }

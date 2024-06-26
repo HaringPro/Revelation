@@ -202,24 +202,29 @@ void main() {
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
 		float sssAmount = 0.0;
-		switch (materialID) {
-			case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
-				sssAmount = 0.55;
-				NdotL = worldLightVector.y;
-				break;
-			case 12u: // Leaves
-				sssAmount = 0.8;
-				break;
-			case 27u: case 37u: // Weak SSS
-				sssAmount = 0.5;
-				break;
-			case 38u: case 51u: // Strong SSS
-				sssAmount = 0.8;
-				break;
-			case 40u: // Particles
-				sssAmount = 0.35;
-				break;
-		}
+		#if SUBSERFACE_SCATTERING_MODE < 2
+			// Hard-coded sss amount for certain materials
+			switch (materialID) {
+				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
+					sssAmount = 0.55;
+					NdotL = worldLightVector.y;
+					break;
+				case 12u: // Leaves
+					sssAmount = 0.8;
+					break;
+				case 27u: case 37u: // Weak SSS
+					sssAmount = 0.5;
+					break;
+				case 38u: case 51u: // Strong SSS
+					sssAmount = 0.8;
+					break;
+				case 40u: // Particles
+					sssAmount = 0.35;
+					break;
+			}
+		#endif
+
+		// Remap sss amount to [0, 1] range
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
 
 		vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);

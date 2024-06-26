@@ -124,7 +124,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 			}
 		}
  
-		if (shadow < 1e-2) break;
+		if (shadow < 1e-3) break;
    }
 
 	return shadow;
