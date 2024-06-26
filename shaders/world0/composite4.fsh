@@ -13,7 +13,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -65,7 +65,7 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	if (skylight > 1e-3) {
 		if (isEyeInWater == 0) {
 			vec3 rayDirWorld = mat3(gbufferModelViewInverse) * rayDir;
-			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(rayDirWorld)).rgb;
+			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(rayDirWorld) + vec2(0.0, 0.5)).rgb;
 
 			reflection = skyRadiance * skylight;
 		}
@@ -76,7 +76,7 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 7e2);
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 8e2);
 	}
 
 	float NdotV = max(1e-6, dot(viewNormal, -viewDir));
@@ -179,7 +179,7 @@ void main() {
 	#ifdef BORDER_FOG
 		if (doBorderFog) {
 			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
-			density *= exp2(-6.0 * curve(saturate(worldDir.y * 3.0)));
+			density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
 
 			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
 			sceneOut = mix(sceneOut, skyRadiance, density);

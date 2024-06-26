@@ -69,14 +69,16 @@ vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
 	return coeff[0] * harmonics.x + coeff[1] * harmonics.y + coeff[2] * harmonics.z + coeff[3] * harmonics.w;
 }
 
+//================================================================================================//
+
 float viewerHeight = planetRadius + max(1.0, eyeAltitude);
 float horizonCos = sqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq) / viewerHeight;
 float horizonAngle = fastAcos(horizonCos);
 
-const float scale = oneMinus(4.0 / skyCaptureRes.x);
-const float offset = 2.0 / float(skyCaptureRes.x);
+const float scale = oneMinus(4.0 / skyViewRes.x);
+const float offset = 2.0 / float(skyViewRes.x);
 
-const vec2 cScale = vec2(skyCaptureRes.x / (skyCaptureRes.x + 1.0), 0.5);
+const vec2 cScale = vec2(skyViewRes.x / (skyViewRes.x + 1.0), 0.5);
 
 // Reference: https://sebh.github.io/publications/egsr2020.pdf
 vec3 ToSkyViewLutParams(in vec2 coord) {

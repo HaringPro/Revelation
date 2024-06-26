@@ -13,7 +13,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -30,5 +30,5 @@ uniform sampler2D colortex5;
 //======// Main //================================================================================//
 void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
-	exposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;
+	exposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 }

@@ -32,7 +32,6 @@ const float r240		= 0.00416666667;
 #define maxEps(x) 		max(x, 1e-6)
 #define saturate(x) 	clamp(x, 0.0, 1.0)
 #define clamp16f(x) 	clamp(x, 0.0, 65535.0)
-#define fastSign(x)		(saturate((x) * 1e35) * 2.0 - 1.0)
 
 #define transMAD(m, v)	(mat3(m) * (v) + (m)[3].xyz)
 #define diagonal2(m)	vec2((m)[0].x, (m)[1].y)
@@ -58,13 +57,13 @@ float cube(float x)   	{ return x * x * x; }
 vec2  cube(vec2 x)	  	{ return x * x * x; }
 vec3  cube(vec3 x)	  	{ return x * x * x; }
 
-float pow4(float x)   	{ return cube(x) * x; }
-vec3  pow4(vec3 x)	  	{ return cube(x) * x; }
+float pow4(float x)   	{ x *= x; return x * x; }
+vec3  pow4(vec3 x)	  	{ x *= x; return x * x; }
 
 float pow5(float x)   	{ return pow4(x) * x; }
 vec3  pow5(vec3 x)	  	{ return pow4(x) * x; }
 
-float pow16(float x)   	{ return sqr(pow4(x)); }
+float pow16(float x)	{ x *= x; x *= x; x *= x; return x * x; }
 
 float sqrt2(float c)  	{ return sqrt(sqrt(c)); }
 vec3  sqrt2(vec3 c)	  	{ return sqrt(sqrt(c)); }
@@ -79,7 +78,33 @@ float dotSelf(vec3 x) 	{ return dot(x, x); }
 vec2  sincos(float x)   { return vec2(sin(x), cos(x)); }
 vec2  cossin(float x)   { return vec2(cos(x), sin(x)); }
 
-float remap(float e0, float e1, float x) { return saturate((x - e0) / (e1 - e0)); }
+float remap(float e0, float e1, float x) { return saturate((x - e0) * rcp(e1 - e0)); }
+
+vec3 remap(float e0, float e1, vec3 x) { return saturate((x - e0) * rcp(e1 - e0)); }
+
+// float almostIdentity(float x, float m, float n) {
+//     if (x > m) return x;
+//     float a = 2.0 * n - m;
+//     float b = 2.0 * m - 3.0 * n;
+//     float t = x / m;
+//     return (a * t + b) * t * t + n;
+// }
+
+// float almostUnitIdentity(float x) {
+//     return x * x * (2.0 - x);
+// }
+
+float fastSign(float x) {
+    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+}
+
+vec2 fastSign(vec2 x) {
+    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+}
+
+vec3 fastSign(vec3 x) {
+    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+}
 
 // https://www.shadertoy.com/view/wlyXRt
 float fastSqrt(in float x) { return uintBitsToFloat((floatBitsToUint(x) >> 1) + 0x1FC00000u); }

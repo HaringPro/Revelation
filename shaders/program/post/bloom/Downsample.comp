@@ -19,7 +19,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 #define BLOOM_BLUR_SAMPLES 1 // [1 2 3 4 5 6 7 8]
 

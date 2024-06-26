@@ -36,6 +36,6 @@ void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	screenCoord = vaUV0;
 
-	directIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 0), 0).rgb;
-	skyIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 1), 0).rgb;
+	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
+	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 }

@@ -1,7 +1,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 #define WAVING_PLANTS
 

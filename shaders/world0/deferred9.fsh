@@ -15,7 +15,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -36,6 +36,8 @@ flat in vec3 blocklightColor;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D noisetex;
+
+uniform sampler3D colortex3; // Combined Atmospheric LUT
 
 uniform sampler2D colortex5; // Sky-View LUT
 
@@ -84,6 +86,8 @@ uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 
+uniform vec3 wind;
+
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferPreviousProjection;
@@ -105,7 +109,10 @@ uniform mat4 shadowModelView;
 #include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
+
 #include "/lib/atmospherics/Celestial.glsl"
+#include "/lib/atmospherics/Clouds.glsl"
 
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
@@ -135,13 +142,20 @@ void main() {
 
 	if (depth > 0.999999 + materialID) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
-		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
+		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
 		vec3 moonDisc = mix(albedo, GetLuminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
 		vec3 celestial = mix(RenderStars(worldDir), moonDisc, albedo.g > 0.06) + RenderSun(worldDir, worldSunVector);
 
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
-		sceneOut += transmittance * celestial;
+		sceneOut = skyRadiance + transmittance * celestial;
+
+		#ifdef CLOUDS_ENABLED
+			float dither = Bayer64Temporal(gl_FragCoord.xy);
+			vec4 cloudData = RenderClouds(worldDir, skyRadiance, dither);
+
+			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
+		#endif
 	} else {
 		sceneOut = vec3(0.0);
 		worldPos += gbufferModelViewInverse[3].xyz;
@@ -173,7 +187,7 @@ void main() {
 		} else depth += 0.38;
 
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
+		vec3 sunlightMult = fma(wetness, -29.0, 30.0) * directIlluminance;
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
@@ -245,7 +259,7 @@ void main() {
 			// Skylight
 			vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
 			skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5);
-			skylight *= worldNormal.y * 1.2 + 1.8;
+			skylight *= worldNormal.y * 1.6 + 2.4;
 
 			sceneOut += skylight * cube(lightmap.y) * ao;
 
@@ -268,6 +282,8 @@ void main() {
 				sceneOut += falloff * (ao * oneMinus(falloff) + falloff) * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS * blocklightColor;
 			}
 		#endif
+
+		sceneOut = max(sceneOut, vec3(MINIMUM_AMBIENT_BRIGHTNESS));
 
 		sceneOut *= albedo;
 

@@ -15,7 +15,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 #if defined VERTEX_SHADER
 
@@ -104,7 +104,7 @@ void main() {
         float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.36 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
-        float prevExposure = texelFetch(colortex5, ivec2(skyCaptureRes.x, 4), 0).x;
+        float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
         float fadedSpeed = targetExposure < prevExposure ? 3.0 : 1.5;
         exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime * EXPOSURE_SPEED));
@@ -141,6 +141,8 @@ flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D noisetex;
+
 uniform sampler3D colortex3; // Combined Atmospheric LUT
 
 uniform float nightVision;
@@ -148,21 +150,28 @@ uniform float wetness;
 uniform float eyeAltitude;
 
 uniform int moonPhase;
+uniform int frameCounter;
 
 uniform vec3 worldSunVector;
+uniform vec3 worldLightVector;
+uniform vec3 cameraPosition;
+
+uniform vec3 wind;
 
 //======// Function //============================================================================//
+
+#include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-//================================================================================================//
+#include "/lib/atmospherics/Clouds.glsl"
 
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	if (screenTexel.x == skyCaptureRes.x) {
+	if (screenTexel.x == skyViewRes.x) {
 		switch (screenTexel.y) {
             case 0:
                 skyViewOut = directIlluminance;
@@ -184,7 +193,7 @@ void main() {
                 skyViewOut.x = exposure;
                 break;
 		}
-	} else if (screenTexel.y <= skyCaptureRes.y) {
+	} else if (screenTexel.y <= skyViewRes.y) {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
@@ -192,8 +201,13 @@ void main() {
 	} else {
 		// Sky map with clouds
 
-		// vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		// skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
+		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
+		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
+
+		#ifdef CLOUDS_ENABLED
+            vec4 cloudData = RenderClouds(worldDir, skyViewOut, 0.5);
+            skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
+        #endif
 	}
 }
 

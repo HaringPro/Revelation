@@ -1,7 +1,7 @@
 
 // Precomputed atmospheric scattering from https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html
 
-#define PLANET_GROUND
+// #define PLANET_GROUND
 
 
 #define TRANSMITTANCE_TEXTURE_WIDTH     256.0

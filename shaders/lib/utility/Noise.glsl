@@ -21,6 +21,18 @@ float bayer32(vec2 a)  { return bayer8 (0.25  * a) * 0.0625   + bayer4(a); }
 float bayer64(vec2 a)  { return bayer8 (0.125 * a) * 0.015625 + bayer8(a); }
 float bayer128(vec2 a) { return bayer16(0.125 * a) * 0.015625 + bayer8(a); }
 
+float hash1(vec2 p) {
+	vec3 p3  = fract(vec3(p.xyx) * 443.897);
+    p3 += dot(p3, p3.zyx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+float hash1(vec3 p3) {
+	p3  = fract(p3 * 443.897);
+    p3 += dot(p3, p3.zyx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
 vec2 hash2(vec3 p3) {
 	p3 = fract(p3 * vec3(443.897, 441.423, 437.195));
 	p3 += dot(p3, p3.yzx + 19.19);
@@ -39,7 +51,7 @@ uint triple32(uint x) {
     return x;
 }
 
-//#if defined RANDOM_NOISE
+#if defined RANDOM_NOISE
 	uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
 	uint RandNext() { return randState = triple32(randState); }
 	//#define RandNext2()  	uvec2(RandNext(), RandNext())
@@ -49,7 +61,7 @@ uint triple32(uint x) {
 	#define RandNext2F() 	(vec2(RandNext()) / float(0xffffffffu))
 	//#define RandNext3F() 	(vec3(RandNext3()) / float(0xffffffffu))
 	//#define RandNext4F() 	(vec4(RandNext4()) / float(0xffffffffu))
-//#endif
+#endif
 
 // http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 const float PHI2 = 1.32471795724;

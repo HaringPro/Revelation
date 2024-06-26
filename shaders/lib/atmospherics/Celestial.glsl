@@ -7,13 +7,7 @@
 //================================================================================================//
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
-	//const float sunRadius = 1392082.56;
-	//const float sunDist = 149.6e6;
-
-	//const float sunAngularRadius = sunRadius / sunDist * 0.5;
-
-	//const vec3 sunIlluminance = vec3(1.0, 0.973, 0.961) * 126.6e3;
-	const vec3 sunIlluminance = vec3(1.474000,1.850400,1.911980) * 126.6e3;
+	const vec3 sunIlluminance = vec3(1.0, 0.92549, 0.87843) * 126.6e3;
 
     float cosTheta = dot(worldDir, sunVector);
     float centerToEdge = saturate(fastAcos(cosTheta) / sunAngularRadius);

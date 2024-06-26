@@ -13,7 +13,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 #define TONEMAP_OPERATOR AgX_Minimal // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 

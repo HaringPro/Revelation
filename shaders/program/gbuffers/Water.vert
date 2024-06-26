@@ -1,7 +1,7 @@
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -12,7 +12,7 @@ out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
-out vec3 minecraftPos;
+out vec3 worldPos;
 out vec4 viewPos;
 
 flat out vec3 directIlluminance;
@@ -38,7 +38,6 @@ attribute vec4 at_tangent;
 uniform sampler2D colortex5;
 
 uniform vec3 chunkOffset;
-uniform vec3 cameraPosition;
 
 uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
@@ -63,7 +62,7 @@ void main() {
 	materialID = uint(max(mc_Entity.x - 1e4, 2.0));
 
 	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
-	minecraftPos = transMAD(gbufferModelViewInverse, viewPos.xyz) + cameraPosition;
+	worldPos = transMAD(gbufferModelViewInverse, viewPos.xyz);
 
 	gl_Position = projectionMatrix * viewPos;
 
@@ -71,6 +70,6 @@ void main() {
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
 
-	directIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 0), 0).rgb;
-	skyIlluminance = texelFetch(colortex5, ivec2(skyCaptureRes.x, 1), 0).rgb;
+	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
+	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 }

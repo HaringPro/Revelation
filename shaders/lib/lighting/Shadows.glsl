@@ -61,7 +61,7 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 }
 
 vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
-	shadowScreenPos.z -= 4e-5 * (1.0 + dither);
+	shadowScreenPos.z -= 5e-5 * (1.0 + dither);
 
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 

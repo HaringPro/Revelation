@@ -17,7 +17,13 @@
 
 //======// Atmospherics //========================================================================//
 
-const ivec2 skyCaptureRes = ivec2(255, 192);
+const ivec2 skyViewRes = ivec2(255, 192);
+
+const float minCloudTransmittance = 0.05;
+const float minCloudAbsorption	  = 0.03;
+
+/* Clouds */
+	#define CLOUDS_ENABLED // Enables clouds
 
 //======// Lighting //============================================================================//
 
@@ -27,6 +33,7 @@ const ivec2 skyCaptureRes = ivec2(255, 192);
 	#define BLOCKLIGHT_TEMPERATURE 3000 // [1000 1500 2000 2300 2500 3000 3400 3500 4000 4500 5000 5500 6000]
 
 /* Lighting brightness */
+	#define MINIMUM_AMBIENT_BRIGHTNESS 0.00005 // Minimum brightness of the ambient light. [0.0 0.00001 0.00002 0.00003 0.00005 0.00007 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 	#define NIGHT_BRIGHTNESS 0.0005 // Brightness of the night. [0.0 0.00005 0.00007 0.0001 0.0002 0.0003 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 1.0]
 
 /* Ambient occlusion */

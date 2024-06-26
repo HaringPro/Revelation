@@ -21,7 +21,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
 
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Uniform //=============================================================================//
 
