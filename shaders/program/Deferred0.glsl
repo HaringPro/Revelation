@@ -71,8 +71,6 @@ float CalculateAverageLuminance() {
 
     const float minEV = -16.0;
     const float maxEV = 12.0;
-    const float EVrange = maxEV - minEV;
-    const float rEVrange = 1.0 / EVrange;
 
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
@@ -81,14 +79,14 @@ float CalculateAverageLuminance() {
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
-            total += (clamp(log2(luminance), minEV, maxEV) - minEV) * rEVrange * weight;
+            total += clamp(log2(luminance), minEV, maxEV) * weight;
             sumWeight += weight;
         }
 	}
 
     total /= sumWeight;
 
-	return exp2(-0.7 * (total * EVrange + minEV));
+	return exp2(-remap(maxEV, minEV, total) * total);
 }
 
 //======// Main //================================================================================//
@@ -103,7 +101,7 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateAverageLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.5 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.4 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
