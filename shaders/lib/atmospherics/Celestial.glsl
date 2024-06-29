@@ -11,14 +11,14 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 
     float cosTheta = dot(worldDir, sunVector);
     float centerToEdge = saturate(fastAcos(cosTheta) / sunAngularRadius);
-    if (cosTheta < cos(sunAngularRadius)) return vec3(0.0);
+    if (cosTheta >= cos(sunAngularRadius)) {
+        const vec3 alpha = vec3(0.429, 0.522, 0.614);
 
-	const vec3 alpha = vec3(0.429, 0.522, 0.614);
+        vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
+        vec3 finalLuminance = sunIlluminance / coneAngleToSolidAngle(sunAngularRadius) * factor;
 
-    vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
-    vec3 finalLuminance = sunIlluminance / coneAngleToSolidAngle(sunAngularRadius) * factor;
-
-    return finalLuminance;
+        return finalLuminance;
+    }
 }
 
 //================================================================================================//

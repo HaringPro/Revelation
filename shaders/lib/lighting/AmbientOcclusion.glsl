@@ -117,4 +117,12 @@
 
 		return visibility * rSliceCount;
 	}
+
+	vec3 GTAOMultiBounce(in float ao, in vec3 albedo) {
+		vec3 a = 2.0404 * albedo - 0.3324;
+		vec3 b = 4.7951 * albedo - 0.6417;
+		vec3 c = 2.7552 * albedo + 0.6903;
+
+		return max(vec3(ao), ((ao * a - b) * ao + c) * ao);
+	}
 #endif

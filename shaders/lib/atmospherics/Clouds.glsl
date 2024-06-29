@@ -30,29 +30,29 @@ float GetSmoothNoise(in vec2 coord) {
 }
 
 float CloudPlaneDensity(in vec2 worldPos) {
-	vec2 cloudWind = wind.xz * CLOUDS_WIND_SPEED;
-	float localCoverage = GetSmoothNoise(worldPos * 1e-4 - cloudWind);
+	vec2 wind = cloudWind.xz * CLOUDS_WIND_SPEED;
+	float localCoverage = GetSmoothNoise(worldPos * 1e-4 - wind);
 
 	/* Sratocumulus clouds */
-	vec2 position = worldPos * 6e-4 - cloudWind;
+	vec2 position = worldPos * 6e-4 - wind;
 
 	float sratocumulus = texture(noisetex, position * 0.005).z, weight = 0.5;
 
 	for (uint i = 0u; i < 6u; ++i, weight *= 0.5) {
 		sratocumulus += weight * textureLod(noisetex, position * 5e-3 + sratocumulus * 0.05, 0.0).x;
-		position = position * (3.0 + max0(float(i) - 4.0)) - cloudWind;
+		position = position * (3.0 + max0(float(i) - 4.0)) - wind;
 	}
 
-	sratocumulus = saturate(sratocumulus * 0.2 + localCoverage * 0.2 - 0.32) * 0.4;
+	sratocumulus = saturate(sratocumulus * 0.2 + localCoverage * 0.2 + wetness * 4e-2 - 0.32) * 0.4;
 
 	/* Cirrus clouds */
-	position = worldPos * 6e-7 - cloudWind * 6e-3;
+	position = worldPos * 6e-7 - wind * 6e-3;
 	weight = 0.5;
 	float cirrus = texture(noisetex, position).x;
 
 	for (uint i = 1u; i < 6u; ++i, weight *= 0.5) {
 		position *= vec2(2.0, 3.0) + vec2(i & 1u, i & 0u);
-        position -= cloudWind * 6e-3;
+        position -= wind * 6e-3;
 		cirrus += texture(noisetex, position + curve(cirrus * 0.2) * 0.3).x * weight;
 	}
 
@@ -63,65 +63,65 @@ float CloudPlaneDensity(in vec2 worldPos) {
 
 vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in float LdotV, in float lightNoise, in vec4 phases) {
 	float density = CloudPlaneDensity(worldPos);
-	if (density < 1e-6) return vec4(0.0);
+	if (density > 1e-6) {
+		// Siggraph 2017's new formula
+		float opticalDepth = density * stepT;
+		float absorption = oneMinus(max(fastExp(-opticalDepth), fastExp(-opticalDepth * 0.25) * 0.7));
 
-	// Siggraph 2017's new formula
-	float opticalDepth = density * stepT;
-	float absorption = oneMinus(max(fastExp(-opticalDepth), fastExp(-opticalDepth * 0.25) * 0.7));
-
-	float rayLength = 24.0;
-	vec2 rayPos = worldPos;
-	vec3 rayStep = vec3(worldLightVector.xz, 1.0) * rayLength;
-	// float lightNoise = hash1(worldPos);
-
-	opticalDepth = 0.0;
-	// Compute the optical depth of sunlight through clouds
-	for (uint i = 0u; i < 4u; ++i, rayPos += rayStep.xy) {
-		float density = CloudPlaneDensity(rayPos + rayStep.xy * lightNoise);
-		if (density < 1e-6) continue;
-
-		rayStep *= 2.0;
-
-		opticalDepth += density * rayStep.z;
-	} opticalDepth = min(opticalDepth, 16.0);
-
-	// Compute sunlight muti-scattering
-	float scatteringSun =  fastExp(-opticalDepth * 1.0)  * phases.x;
-		  scatteringSun += fastExp(-opticalDepth * 0.4)  * phases.y;
-		  scatteringSun += fastExp(-opticalDepth * 0.15) * phases.z;
-		  scatteringSun += fastExp(-opticalDepth * 0.05) * phases.w;
-
-	#if 0
-		rayLength = 40.0;
-		rayStep = vec3(worldDir, 1.0) * rayLength;
+		float rayLength = 24.0;
+		vec2 rayPos = worldPos;
+		vec3 rayStep = vec3(worldLightVector.xz, 1.0) * rayLength;
+		// float lightNoise = hash1(worldPos);
 
 		opticalDepth = 0.0;
-		// Compute the optical depth of skylight through clouds
-		for (uint i = 0u; i < 2u; ++i, worldPos += rayStep.xy) {
-			float density = CloudPlaneDensity(worldPos + rayStep.xy * lightNoise);
+		// Compute the optical depth of sunlight through clouds
+		for (uint i = 0u; i < 4u; ++i, rayPos += rayStep.xy) {
+			float density = CloudPlaneDensity(rayPos + rayStep.xy * lightNoise);
 			if (density < 1e-6) continue;
 
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		}
-	#else
-		opticalDepth = density * 2e2;
-	#endif
+		} opticalDepth = min(opticalDepth, 16.0);
 
-	// Compute skylight muti-scattering
-	float scatteringSky = fastExp(-opticalDepth * 0.1);
-	scatteringSky += 0.2 * fastExp(-opticalDepth * 0.02);
+		// Compute sunlight muti-scattering
+		float scatteringSun =  fastExp(-opticalDepth * 1.0)  * phases.x;
+			scatteringSun += fastExp(-opticalDepth * 0.4)  * phases.y;
+			scatteringSun += fastExp(-opticalDepth * 0.15) * phases.z;
+			scatteringSun += fastExp(-opticalDepth * 0.05) * phases.w;
 
-	// Compute powder effect
-	float powder = 2.0 * fastExp(-density * 50.0) * oneMinus(fastExp(-density * 1e2));
-	// powder = mix(powder, 1.0, sqr(LdotV * 0.5 + 0.5));
+		#if 0
+			rayLength = 40.0;
+			rayStep = vec3(worldDir, 1.0) * rayLength;
 
-	vec3 scattering = scatteringSun * 240.0 * directIlluminance;
-	scattering += scatteringSky * 4.0 * skyIlluminance;
-	scattering *= oneMinus(0.7 * wetness) * powder * absorption;
+			opticalDepth = 0.0;
+			// Compute the optical depth of skylight through clouds
+			for (uint i = 0u; i < 2u; ++i, worldPos += rayStep.xy) {
+				float density = CloudPlaneDensity(worldPos + rayStep.xy * lightNoise);
+				if (density < 1e-6) continue;
 
-	return vec4(scattering, absorption);
+				rayStep *= 2.0;
+
+				opticalDepth += density * rayStep.z;
+			}
+		#else
+			opticalDepth = density * 2e2;
+		#endif
+
+		// Compute skylight muti-scattering
+		float scatteringSky = fastExp(-opticalDepth * 0.1);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.02);
+
+		// Compute powder effect
+		float powder = 2.0 * fastExp(-density * 40.0) * oneMinus(fastExp(-density * 80.0));
+		// powder = mix(powder, 1.0, sqr(LdotV * 0.5 + 0.5));
+
+		vec3 scattering = scatteringSun * 200.0 * directIlluminance;
+		scattering += scatteringSky * 3.0 * skyIlluminance;
+		scattering *= oneMinus(0.7 * wetness) * powder * absorption;
+
+		return vec4(scattering, absorption);
+	}
 }
 
 //================================================================================================//
@@ -156,7 +156,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
 			// Compute aerial perspective
             if (sampleTemp.a > minCloudAbsorption) {
 				vec3 airTransmittance;
-				vec3 aerialPerspective = GetSkyRadianceToPoint(atmosphereModel, cloudPos - cameraPosition, worldSunVector, airTransmittance) * 20.0;
+				vec3 aerialPerspective = GetSkyRadianceToPoint(atmosphereModel, cloudPos - cameraPosition, worldSunVector, airTransmittance) * 12.0;
 				sampleTemp.rgb *= airTransmittance;
 				sampleTemp.rgb += aerialPerspective * sampleTemp.a;
             }

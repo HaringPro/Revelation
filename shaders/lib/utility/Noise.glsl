@@ -1,4 +1,3 @@
-
 const int noiseTextureResolution = 256;
 const float noiseTexturePixelSize = 1.0 / noiseTextureResolution;
 
@@ -91,11 +90,19 @@ float BlueNoise(in ivec2 texel) {
 }
 
 float BlueNoiseTemporal(in ivec2 texel) {
-	return R1(frameCounter % 256, texelFetch(noisetex, texel & 255, 0).a);
+	#ifdef TAA_ENABLED
+		return R1(frameCounter % 256, texelFetch(noisetex, texel & 255, 0).a);
+	#else
+		return texelFetch(noisetex, texel & 255, 0).a;
+	#endif
 }
 
 float Bayer64Temporal(in vec2 coord) {
-	return R1(frameCounter % 256, bayer64(coord));
+	#ifdef TAA_ENABLED
+		return R1(frameCounter % 256, bayer64(coord));
+	#else
+		return bayer8 (0.125 * a) * 0.015625 + bayer8(a);
+	#endif
 }
 
 float InterleavedGradientNoise(in vec2 coord) {
@@ -103,5 +110,9 @@ float InterleavedGradientNoise(in vec2 coord) {
 }
 
 float InterleavedGradientNoiseTemporal(in vec2 coord) {
-	return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y + 0.00623715 * (frameCounter & 63)));
+	#ifdef TAA_ENABLED
+		return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y + 0.00623715 * (frameCounter & 63)));
+	#else
+		return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
+	#endif
 }

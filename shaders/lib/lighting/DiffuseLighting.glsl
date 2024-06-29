@@ -89,7 +89,8 @@ vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 albedoRaw, in 
 	// Lightning bolt
 		case 60u:
 			return vec4(vec3(2.0), 0.0);
+	// Default
+		default:
+			return vec4(vec3(0.0), 1.0);
 	}
-
-	return vec4(vec3(0.0), 1.0);
 }

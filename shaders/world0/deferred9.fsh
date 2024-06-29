@@ -86,7 +86,7 @@ uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 
-uniform vec3 wind;
+uniform vec3 cloudWind;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
@@ -164,42 +164,13 @@ void main() {
 		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
 		// vec3 flatNormal = GetFlatNormal(screenTexel);
 		vec3 worldNormal = GetWorldNormal(gbufferData0);
+		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		// vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
 		// vec4 specTex = vec4(unpackUnorm2x8(gbufferData1.z), unpackUnorm2x8(gbufferData1.w));
 
-		#ifdef TAA_ENABLED
-			float dither = BlueNoiseTemporal(screenTexel);
-		#else
-			float dither = BlueNoise(screenTexel);
-		#endif
-
-		float ao = 1.0;
-		if (depth > 0.56) {
-			#if AO_ENABLED > 0
-				vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
-				#if AO_ENABLED == 1
-					ao = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
-				#else
-					ao = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
-				#endif
-			#endif
-		} else depth += 0.38;
-
-		// Sunlight
-		vec3 sunlightMult = fma(wetness, -29.0, 30.0) * directIlluminance;
-
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
-
-		vec3 shadow = vec3(0.0);
-		vec3 diffuseBRDF = vec3(1.0);
-		vec3 specularBRDF = vec3(0.0);
-
-		float distortFactor;
-		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
-
-		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
 		float sssAmount = 0.0;
 		#if SUBSERFACE_SCATTERING_MODE < 2
@@ -227,43 +198,88 @@ void main() {
 		// Remap sss amount to [0, 1] range
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
 
-		vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
+		float dither = BlueNoiseTemporal(screenTexel);
 
-		// Subsurface scattering
-		if (sssAmount > 1e-4) {
-			vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
-			// subsurfaceScattering *= eyeSkylightFix;
-			sceneOut += subsurfaceScattering * sunlightMult * ao;
-		}
-
-		// Shadows
-		if (NdotL > 1e-3) {
-			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
-
-			if (maxOf(shadow) > 1e-6) {
-				float NdotV = saturate(dot(worldNormal, -worldDir));
-				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-				float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
-				float LdotH = LdotV * halfwayNorm + halfwayNorm;
-				NdotV = max(NdotV, 1e-3);
-
-				shadow *= sunlightMult;
-				#ifdef SCREEN_SPACE_SHADOWS
-					shadow *= ScreenSpaceShadow(viewPos, screenPos, dither, sssAmount);
+		// Ambient occlusion
+		float ao = 1.0;
+		if (depth > 0.56) {
+			#if AO_ENABLED > 0
+				#if AO_ENABLED == 1
+					ao = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+				#else
+					ao = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
 				#endif
+			#endif
+		} else depth += 0.38;
 
-				diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
-				specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
+		// Sunlight
+		vec3 sunlightMult = fma(wetness, -28.0, 30.0) * directIlluminance;
+
+		vec3 shadow = vec3(0.0);
+		vec3 diffuseBRDF = vec3(1.0);
+		vec3 specularBRDF = vec3(0.0);
+
+		float distortFactor;
+		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
+
+		float distanceFade = sqr(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
+
+        if (distanceFade < 1e-6 && max(NdotL, sssAmount) > 1e-3) {
+			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
+
+			// Subsurface scattering
+			if (sssAmount > 1e-4) {
+				vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
+				// subsurfaceScattering *= eyeSkylightFix;
+				sceneOut += subsurfaceScattering * sunlightMult * ao;
 			}
+
+			// Shadows
+			if (NdotL > 1e-3) {
+				float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
+				shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+
+				if (maxOf(shadow) > 1e-6) {
+					shadow *= sunlightMult;
+					#ifdef SCREEN_SPACE_SHADOWS
+						shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+					#endif
+					// shadow = shadow * oneMinus(distanceFade) + distanceFade;
+
+					float NdotV = saturate(dot(worldNormal, -worldDir));
+					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+					float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
+					float LdotH = LdotV * halfwayNorm + halfwayNorm;
+					NdotV = max(NdotV, 1e-3);
+
+					diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
+					specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
+				}
+			}
+		} else if (NdotL > 1e-3) {
+			shadow = sunlightMult;
+			#ifdef SCREEN_SPACE_SHADOWS
+				shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+			#endif
+
+			float NdotV = saturate(dot(worldNormal, -worldDir));
+			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+			float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
+			float LdotH = LdotV * halfwayNorm + halfwayNorm;
+			NdotV = max(NdotV, 1e-3);
+
+			diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
+			specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
 		}
 
+		// Sunlight diffuse
 		sceneOut += shadow * diffuseBRDF;
 
 		if (lightmap.y > 1e-5) {
 			// Skylight
 			vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-			skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5);
+			skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5);
 			skylight *= worldNormal.y * 1.6 + 2.4;
 
 			sceneOut += skylight * cube(lightmap.y) * ao;
@@ -288,8 +304,10 @@ void main() {
 			}
 		#endif
 
+		// Minimal ambient light
 		sceneOut = max(sceneOut, vec3(MINIMUM_AMBIENT_BRIGHTNESS));
 
+		// Apply albedo
 		sceneOut *= albedo;
 
 		// Specular highlights

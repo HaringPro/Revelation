@@ -26,7 +26,7 @@ float FresnelDielectric(in float cosTheta, in float f0) {
     float cosR = 1.0 - sqr(sqrt(1.0 - sqr(cosTheta)) * rcp(max(f0, 1e-16)));
     if (cosR < 0.0) return 1.0;
 
-    cosR = sqrt(cosR);
+    cosR *= inversesqrt(cosR);
     float a = f0 * cosTheta;
     float b = f0 * cosR;
     float r1 = (a - cosR) / (a + cosR);
@@ -39,7 +39,7 @@ float FresnelDielectricN(in float cosTheta, in float n) {
     float cosR = sqr(n) + sqr(cosTheta) - 1.0;
     if (cosR < 0.0) return 1.0;
 
-    cosR = sqrt(cosR);
+    cosR *= inversesqrt(cosR);
     float a = n * cosTheta;
     float b = n * cosR;
     float r1 = (a - cosR) / (a + cosR);
@@ -144,4 +144,24 @@ vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
     // Transform the halfway direction back to hemiellispoid configuation
     // This gives the final sampled normal
     return normalize(vec3(roughness * halfway.xy, halfway.z));
+}
+
+vec3 importanceSampleCosine(in vec3 normal, in vec2 xy) {
+    float phi = TAU * xy.y;
+
+    float cosTheta = sqrt(xy.x);
+    float sinTheta = sqrt(1.0 - xy.x);
+    vec3 sampleHemisphere = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+
+    // Orient sample into world space
+    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, normal));
+    vec3 bitangent = cross(normal, tangent);
+
+    vec3 sampleWorld = vec3(0.0);
+    sampleWorld += sampleHemisphere.x * tangent;
+    sampleWorld += sampleHemisphere.y * bitangent;
+    sampleWorld += sampleHemisphere.z * normal;
+
+    return sampleWorld;
 }

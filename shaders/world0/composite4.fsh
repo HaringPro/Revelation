@@ -28,9 +28,10 @@ in vec2 screenCoord;
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
-//======// Attribute //===========================================================================//
-
 //======// Uniform //=============================================================================//
+
+uniform sampler2D colortex11;
+uniform sampler2D colortex12;
 
 #include "/lib/utility/Uniform.glsl"
 
@@ -83,6 +84,30 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	float brdf = FresnelDielectricN(NdotV, GLASS_REFRACT_IOR);
 
 	return vec4(reflection, brdf);
+}
+
+mat2x3 VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
+	ivec2 bias = ivec2(coord + frameCounter) % 2;
+	ivec2 texel = ivec2(coord * 0.5) + bias * 2;
+
+	const ivec2 offset[4] = ivec2[4](
+		ivec2(-2,-2), ivec2(-2, 0),
+		ivec2( 0, 0), ivec2( 0,-2)
+	);
+
+	float sigmaZ = 64.0 / linearDepth;
+	mat2x3 total = mat2x3(0.0);
+	float sumWeight = 0.0;
+
+	for (uint i = 0u; i < 4u; ++i) {
+		ivec2 sampleTexel = texel + offset[i];
+		float sampleDepth = ScreenToLinearDepth(sampleDepth(sampleTexel * 2));
+		float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
+		total += mat2x3(texelFetch(colortex11, sampleTexel, 0).rgb, texelFetch(colortex12, sampleTexel, 0).rgb) * weight;
+		sumWeight += weight;
+	}
+
+	return total / sumWeight;
 }
 
 //======// Main //================================================================================//
@@ -145,12 +170,7 @@ void main() {
 
 	float LdotV = dot(worldLightVector, worldDir);
 
-	bloomyFogTrans = 1.0;
-	if (isEyeInWater == 1) {
-		mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), viewDistance, LdotV);
-		sceneOut = sceneOut * waterFog[1] + waterFog[0];
-		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
-	} else if (waterMask) {
+	if (waterMask && isEyeInWater == 0) {
 		float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
 		mat2x3 waterFog = CalculateWaterFog(lightmap.y, max(transparentDepth, waterDepth), LdotV);
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
@@ -186,6 +206,26 @@ void main() {
 		}
 	#endif
 
+	bloomyFogTrans = 1.0;
+	#ifdef VOLUMETRIC_FOG
+		if (isEyeInWater == 0) {
+			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
+			sceneOut = sceneOut * volFogData[1] + volFogData[0];
+			bloomyFogTrans = min(bloomyFogTrans, dot(volFogData[1], vec3(0.333333)));
+		}
+	#endif
+
+	if (isEyeInWater == 1) {
+		#ifdef UW_VOLUMETRIC_FOG
+			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
+			sceneOut = sceneOut * volFogData[1] + volFogData[0];
+			bloomyFogTrans = min(bloomyFogTrans, dot(volFogData[1], vec3(0.333333)));
+		#else
+			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), viewDistance, LdotV);
+			sceneOut = sceneOut * waterFog[1] + waterFog[0];
+			bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
+		#endif
+	}
 
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;

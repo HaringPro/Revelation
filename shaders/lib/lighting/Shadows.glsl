@@ -6,22 +6,18 @@ const float shadowDistanceRenderMul = 1.0; // [-1.0 1.0]
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float	shadowDistance	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
 
-const float realShadowMapRes = shadowMapResolution * MC_SHADOW_QUALITY;
+const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 
 //================================================================================================//
 
 #include "ShadowDistortion.glsl"
 
-vec3 WorldToShadowScreenSpaceBias(in vec3 worldPos, in vec3 worldNormal, out float distortFactor) {
+vec3 WorldToShadowScreenSpace(in vec3 worldPos, out float distortFactor) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
-	vec3 shadowViewNormal = normalize(mat3(shadowModelView) * worldNormal);
-	shadowViewNormal.z = -shadowViewNormal.z;
-
 	distortFactor = DistortionFactor(shadowClipPos.xy);
-	shadowClipPos += shadowViewNormal * 2e-3 * distortFactor; // Normal bias
 	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
 }
 
@@ -43,14 +39,14 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	const vec2 angleStep = cossin(TAU * 0.125);
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
 	for (uint i = 0u; i < 9u; ++i, rot *= rotStep) {
-		float fi = float(i) + dither;
-		vec2 sampleCoord = shadowScreenPos.xy + rot * sqrt(fi * 0.125);
+		float radius = (float(i) + dither) * 0.125;
+		vec2 sampleCoord = shadowScreenPos.xy + rot * radius * inversesqrt(radius);
 
-		float depthSample = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
-		float weight = step(depthSample, shadowScreenPos.z);
+		float sampleDepth = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
+		float weight = step(sampleDepth, shadowScreenPos.z);
 
-		sssDepth += max0(shadowScreenPos.z - depthSample);
-		searchDepth += depthSample * weight;
+		sssDepth += max0(shadowScreenPos.z - sampleDepth);
+		searchDepth += sampleDepth * weight;
 		sumWeight += weight;
 	}
 
@@ -71,8 +67,8 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 	const vec2 angleStep = cossin(TAU * 0.125);
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, rot *= rotStep) {
-		float fi = float(i) + dither;
-		vec2 sampleCoord = shadowScreenPos.xy + rot * sqrt(fi * rSteps);
+		float radius = (float(i) + dither) * rSteps;
+		vec2 sampleCoord = shadowScreenPos.xy + rot * radius * inversesqrt(radius);
 
 		float sampleDepth1 = textureLod(shadowtex1, vec3(sampleCoord, shadowScreenPos.z), 0).x;
 
@@ -91,20 +87,21 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in float sssAmount) {
-	vec3 viewlightVector = mat3(gbufferModelView) * worldLightVector;
+float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
+	vec3 lightDir = mat3(gbufferModelView) * worldLightVector;
 
-    vec3 position = ViewToScreenSpace(viewlightVector * -viewPos.z + viewPos);
-    vec3 screenDir = normalize(position - rayPos);
-    screenDir *= minOf((step(0.0, screenDir) - rayPos) / screenDir);
+	float NdotL = dot(lightDir, viewNormal);
+	lightDir += viewNormal * 2e-4 / max(sqr(NdotL), 1e-3); // Light direction bias
+
+    vec3 endPos = ViewToScreenSpace(lightDir * -viewPos.z + viewPos);
+    vec3 rayStep = normalize(endPos - rayPos);
+    rayStep *= minOf((step(0.0, rayStep) - rayPos) / rayStep);
 
     rayPos.xy *= viewSize;
-    screenDir.xy *= viewSize;
+    rayStep.xy *= viewSize;
 
-	vec2 absScreenDir = abs(screenDir.xy);
-    screenDir *= mix(1.0 / absScreenDir.x, 1.0 / absScreenDir.y, absScreenDir.y > absScreenDir.x);
+    rayStep *= 4.0 / maxOf(abs(rayStep.xy));
 
-    vec3 rayStep = screenDir * 3.0;
 	rayPos += rayStep * (dither + 1.0);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
@@ -112,7 +109,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in float dither, in flo
 
 	float shadow = 1.0;
     for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {
-        if (rayPos.z < 0.0 || rayPos.z > 1.0) break;
+        if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
 			float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 

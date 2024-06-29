@@ -57,7 +57,7 @@
 */
 
 float rgbToSaturation(in vec3 rgb) {
-  return (max(maxOf(rgb), 1e-10) - max(minOf(rgb), 1e-10)) / max(maxOf(rgb), 1e-2);
+	return (max(maxOf(rgb), 1e-10) - max(minOf(rgb), 1e-10)) / max(maxOf(rgb), 1e-2);
 }
 
 // Returns a geometric hue angle in degrees (0-360) based on RGB values

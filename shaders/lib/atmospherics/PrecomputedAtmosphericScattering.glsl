@@ -73,7 +73,7 @@ struct AtmosphereParameters {
 
 AtmosphereParameters atmosphereModel = AtmosphereParameters(
     // The solar irradiance at the top of the atmosphere.
-    vec3(1.474000,1.850400,1.911980),
+    vec3(0.9420, 1.0269, 1.0242),
     // The sun's angular radius. Warning: the implementation uses approximations
     // that are valid only if this angle is smaller than 0.1 radians.
 //    0.004675,
@@ -136,7 +136,7 @@ float ClampRadius(/*AtmosphereParameters atmosphere, */float r) {
 }
 
 float SafeSqrt(float a) {
-    return sqrt(max0(a));
+    return a * inversesqrt(max0(a));
 }
 
 //--// Intersections //-------------------------------------------------------//

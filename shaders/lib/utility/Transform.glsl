@@ -1,4 +1,3 @@
-
 vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
 	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);

@@ -60,7 +60,7 @@ uniform vec3 worldSunVector;
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-float CalculateWeightedLuminance() {
+float CalculateAverageLuminance() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
 
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
@@ -71,6 +71,8 @@ float CalculateWeightedLuminance() {
 
     const float minEV = -16.0;
     const float maxEV = 12.0;
+    const float EVrange = maxEV - minEV;
+    const float rEVrange = 1.0 / EVrange;
 
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
@@ -79,14 +81,14 @@ float CalculateWeightedLuminance() {
 
             float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
-            total += clamp(log2(luminance), minEV, maxEV) * weight;
+            total += (clamp(log2(luminance), minEV, maxEV) - minEV) * rEVrange * weight;
             sumWeight += weight;
         }
 	}
 
     total /= sumWeight;
 
-	return exp2(total * -0.7);
+	return exp2(-0.7 * (total * EVrange + minEV));
 }
 
 //======// Main //================================================================================//
@@ -99,15 +101,15 @@ void main() {
 	directIlluminance = sunIlluminance + moonIlluminance;
 
  	#ifdef AUTO_EXPOSURE
-		exposure = CalculateWeightedLuminance();
+		exposure = CalculateAverageLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.36 * exposure;
+        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.5 * exposure;
         // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
         float fadedSpeed = targetExposure < prevExposure ? 3.0 : 1.5;
-        exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime * EXPOSURE_SPEED));
+        exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime * EXPOSURE_SPEED));
 	#else
 		exposure = exp2(-MANUAL_EXPOSURE_VALUE);
 	#endif
@@ -156,7 +158,7 @@ uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 cameraPosition;
 
-uniform vec3 wind;
+uniform vec3 cloudWind;
 
 //======// Function //============================================================================//
 
@@ -197,12 +199,12 @@ void main() {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
+		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
 	} else {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 20.0;
+		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
 
 		#ifdef CLOUDS_ENABLED
             vec4 cloudData = RenderClouds(worldDir, skyViewOut, 0.5);

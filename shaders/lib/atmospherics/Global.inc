@@ -50,7 +50,7 @@ vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {
 
 	if (delta < 0.0) return vec2(-1.0);
 
-	delta = sqrt(delta);
+	delta *= inversesqrt(delta);
 
 	return vec2(-delta, delta) - PdotD;
 }

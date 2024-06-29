@@ -18,17 +18,17 @@ vec3 agxDefaultContrastApprox_6th(vec3 x) {
 
 // Mean error^2: 1.85907662e-06
 vec3 agxDefaultContrastApprox_7th(vec3 x) {
-  vec3 x2 = x * x;
-  vec3 x4 = x2 * x2;
-  
-  return - 17.86     * x4 * x2 * x
-         + 78.01     * x4 * x2
-         - 126.7     * x4 * x
-         + 92.06     * x4
-         - 28.72     * x2 * x
-         + 4.361     * x2
-         - 0.1718    * x
-         + 0.002857;
+    vec3 x2 = x * x;
+    vec3 x4 = x2 * x2;
+
+    return - 17.86     * x4 * x2 * x
+           + 78.01     * x4 * x2
+           - 126.7     * x4 * x
+           + 92.06     * x4
+           - 28.72     * x2 * x
+           + 4.361     * x2
+           - 0.1718    * x
+           + 0.002857;
 }
 // vec3 agx(vec3 val) {
 //     const mat3 agx_mat = mat3(

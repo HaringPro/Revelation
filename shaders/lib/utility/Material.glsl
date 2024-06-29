@@ -1,10 +1,9 @@
-
 float IORFromF0(in float f0) {
-	float sqrtF0 = sqrt(f0);
+	float sqrtF0 = f0 * inversesqrt(f0);
 	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
 }
 vec3 IORFromF0(in vec3 f0) {
-	vec3 sqrtF0 = sqrt(f0);
+	vec3 sqrtF0 = f0 * inversesqrt(f0);
 	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
 }
 

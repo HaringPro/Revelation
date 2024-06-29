@@ -71,7 +71,7 @@ void main() {
 
 			shadowcolor0Out = vec3(sqrt2(caustics));
 			shadowcolor1Out.xy = encodeUnitVector(normal);
-			// shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
+			shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
 		#else
 			shadowcolor0Out = vec3(0.8);
 			shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);

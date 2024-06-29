@@ -11,17 +11,20 @@
 
 	Pipeline configuration
 
-	const int 	colortex0Format 			= R11F_G11F_B10F;	// Scene data
-	const int 	colortex1Format 			= R11F_G11F_B10F;	// Scene history
-	const int 	colortex2Format 			= RGBA16F;			// Temp data
-//	const int 	colortex3Format 			= RGBA8;			// Transparent albedo
-	const int 	colortex4Format 			= R11F_G11F_B10F;	// Reprojected scene history
-	const int 	colortex5Format 			= R11F_G11F_B10F;	// Sky-View LUT, light colors
-	const int 	colortex6Format 			= RGB8;				// Albedo
-	const int 	colortex7Format 			= RGBA16;			// Gbuffer data 0
-	const int 	colortex8Format 			= RGBA16;			// Gbuffer data 1
-	const int 	colortex10Format 			= R11F_G11F_B10F;	// Transmittance-View LUT, cloud shadow map
-	const int 	colortex15Format 			= RGB16;			// FSR EASU output
+
+	const int 	colortex0Format 			= R11F_G11F_B10F;
+	const int 	colortex1Format 			= R11F_G11F_B10F;
+	const int 	colortex2Format 			= RGBA16F;
+//	const int 	colortex3Format 			= RGBA16F;
+	const int 	colortex4Format 			= R11F_G11F_B10F;
+	const int 	colortex5Format 			= R11F_G11F_B10F;
+	const int 	colortex6Format 			= RGB8;
+	const int 	colortex7Format 			= RGBA16;
+	const int 	colortex8Format 			= RGBA16;
+	const int 	colortex10Format 			= R11F_G11F_B10F;
+	const int 	colortex11Format 			= RGB16F;
+	const int 	colortex12Format 			= RGB8;
+	const int 	colortex15Format 			= RGB16;
 
 	const bool	colortex0Clear				= false;
 	const bool 	colortex1Clear				= false;
@@ -33,6 +36,8 @@
 	const bool	colortex7Clear				= true;
 	const bool	colortex8Clear				= true;
 	const bool 	colortex10Clear				= false;
+	const bool 	colortex11Clear				= false;
+	const bool 	colortex12Clear				= false;
 	const bool 	colortex15Clear				= false;
 
 	const float shadowIntervalSize 			= 2.0;
@@ -44,6 +49,25 @@
 	const float drynessHalflife				= 60.0;
 
 	const bool 	shadowHardwareFiltering1 	= true;
+
+--------------------------------------------------------------------------------
+
+	Buffer table
+
+
+	Buffer 0:	Full res  		- Scene data
+	Buffer 1:	Full res  		- Scene history
+	Buffer 2:	Full res  		- Specular reflections of water, lighting of glass
+	Buffer 3:	Full res  		- Temp data
+	Buffer 4:	Half res  		- Reprojected scene history
+	Buffer 5:	256x384   		- Sky-View LUT, light colors
+	Buffer 6:	Full res  		- Albedo
+	Buffer 7:	Full res  		- Gbuffer data 0
+	Buffer 8:	Full res  		- Gbuffer data 1
+	Buffer 10:	256x384	  		- Transmittance-View LUT, cloud shadow map
+	Buffer 11:	Half res  		- Volumetric fog scattering
+	Buffer 12:	Half res  		- Volumetric fog transmittance
+	Buffer 15:	Double res		- FSR EASU output
 
 --------------------------------------------------------------------------------
 */

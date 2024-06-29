@@ -1,4 +1,3 @@
-
 #define sampleDepth(texel) texelFetch(depthtex0, texel, 0).x
 #define sampleDepthSoild(texel) texelFetch(depthtex1, texel, 0).x
 

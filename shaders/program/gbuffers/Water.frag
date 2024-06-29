@@ -149,7 +149,8 @@ void main() {
 		float specularBRDF = 0.0;
 
 		float distortFactor;
-		vec3 shadowScreenPos = WorldToShadowScreenSpaceBias(worldPos, worldNormal, distortFactor);	
+		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 

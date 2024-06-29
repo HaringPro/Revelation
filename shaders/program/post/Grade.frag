@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Combine bloom and fog, apply exposure, color grading and etc.
+	Pass: Combine bloom and fog, apply exposure, color grading, vignetting, etc.
 
 --------------------------------------------------------------------------------
 */
@@ -56,12 +56,6 @@ vec2 CalculateTileOffset(in const int lod) {
 	return lodMult * 12.0 * viewPixelSize + offset;
 }
 
-vec3 BloomTileUpsample(in vec2 screenCoord, in const int lod) {
-    vec2 coord = screenCoord * exp2(-float(lod + 1)) + CalculateTileOffset(lod);
-
-    return textureBicubic(colortex0, coord).rgb;
-}
-
 void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	vec3 bloomData = vec3(0.0);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
@@ -70,7 +64,8 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	float sumWeight = 0.0;
 
 	for (int i = 0; i < 7; ++i) {
-		vec3 sampleTile = BloomTileUpsample(screenCoord, i);
+    	vec2 sampleCoord = screenCoord * exp2(-float(i + 1)) + CalculateTileOffset(i);
+		vec3 sampleTile = textureBicubic(colortex0, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
 		sumWeight += weight;
@@ -92,13 +87,11 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 
 	if (wetnessCustom > 1e-2) {
 		float rain = texelFetch(colortex3, texel, 0).x * RAIN_VISIBILITY;
-		image = image * oneMinus(rain) + bloomData * rain;
+		image = image * oneMinus(rain) + bloomData * rain * 1.3;
 	}
 }
 
-
 //================================================================================================//
-
 
 const mat3 sRGBtoXYZ = mat3(
 	vec3(0.4124564, 0.3575761, 0.1804375),
@@ -148,11 +141,12 @@ vec3 Uchimura(in vec3 x) {
 	return linearToSRGB(x);
 }
 
+// Lottes 2016, "Advanced Techniques and Optimization of HDR Color Pipelines"
 // https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf
 vec3 Lottes(in vec3 x) {
 	x *= 2.0;
 
-	const vec3 a      = vec3(1.3);
+	const vec3 a      = vec3(1.4);
 	const vec3 d      = vec3(0.95);
 	const vec3 hdrMax = vec3(8.0);
 	const vec3 midIn  = vec3(0.2);

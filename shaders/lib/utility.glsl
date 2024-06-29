@@ -65,8 +65,8 @@ vec3  pow5(vec3 x)	  	{ return pow4(x) * x; }
 
 float pow16(float x)	{ x *= x; x *= x; x *= x; return x * x; }
 
-float sqrt2(float c)  	{ return sqrt(sqrt(c)); }
-vec3  sqrt2(vec3 c)	  	{ return sqrt(sqrt(c)); }
+float sqrt2(float c)  	{ return sqrt(c * inversesqrt(c)); }
+vec3  sqrt2(vec3 c)	  	{ return sqrt(c * inversesqrt(c)); }
 
 float curve(float x)  	{ return sqr(x) * (3.0 - 2.0 * x); }
 vec2  curve(vec2 x)	  	{ return sqr(x) * (3.0 - 2.0 * x); }
@@ -80,7 +80,7 @@ vec2  cossin(float x)   { return vec2(cos(x), sin(x)); }
 
 float remap(float e0, float e1, float x) { return saturate((x - e0) * rcp(e1 - e0)); }
 
-vec3 remap(float e0, float e1, vec3 x) { return saturate((x - e0) * rcp(e1 - e0)); }
+vec3  remap(float e0, float e1, vec3 x)  { return saturate((x - e0) * rcp(e1 - e0)); }
 
 // float almostIdentity(float x, float m, float n) {
 //     if (x > m) return x;
