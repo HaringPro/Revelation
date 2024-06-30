@@ -26,8 +26,8 @@ float CalculateFittedBouncedLight(in vec3 normal) {
 
 float CalculateBlocklightFalloff(in float blocklight) {
 	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
-	blocklight += saturate(blocklight * 1.5 - 0.5);
-	return saturate(curve(blocklight * 0.5) * fade);
+	blocklight += fastSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
+	return blocklight * 0.5 * fade;
 }
 
 vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 albedoRaw, in vec3 worldPos, in vec3 blocklightColor) {

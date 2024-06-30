@@ -66,7 +66,7 @@ void main() {
 		return;
 	}
 
-    tbnMatrix[2] = normalize(normalMatrix * vaNormal);
+    tbnMatrix[2] = mat3(shadowModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#ifdef SHADOW_BACKFACE_CULLING
 		if (tbnMatrix[2].z < 0.0) {
 			gl_Position = vec4(-1.0);
@@ -78,7 +78,7 @@ void main() {
 
 	isWater = 0;
 	if (int(mc_Entity.x) == 10003) {
-		tbnMatrix[0] = normalize(normalMatrix * at_tangent.xyz);
+		tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 
 		isWater = 1;

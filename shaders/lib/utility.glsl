@@ -29,6 +29,7 @@ const float r240		= 0.00416666667;
 #define oneMinus(x) 	(1.0 - (x))
 #define fastExp(x) 		exp2((x) * rLOG2)
 #define max0(x) 		max(x, 0.0)
+#define min1(x) 		min(x, 1.0)
 #define maxEps(x) 		max(x, 1e-6)
 #define saturate(x) 	clamp(x, 0.0, 1.0)
 #define clamp16f(x) 	clamp(x, 0.0, 65535.0)

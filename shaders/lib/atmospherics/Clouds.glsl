@@ -84,7 +84,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 			opticalDepth += density * rayStep.z;
 		} opticalDepth = min(opticalDepth, 16.0);
 
-		// Compute sunlight muti-scattering
+		// Compute sunlight multi-scattering
 		float scatteringSun =  fastExp(-opticalDepth * 1.0)  * phases.x;
 			scatteringSun += fastExp(-opticalDepth * 0.4)  * phases.y;
 			scatteringSun += fastExp(-opticalDepth * 0.15) * phases.z;
@@ -108,7 +108,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 			opticalDepth = density * 2e2;
 		#endif
 
-		// Compute skylight muti-scattering
+		// Compute skylight multi-scattering
 		float scatteringSky = fastExp(-opticalDepth * 0.1);
 		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.02);
 
@@ -117,8 +117,8 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 		// powder = mix(powder, 1.0, sqr(LdotV * 0.5 + 0.5));
 
 		vec3 scattering = scatteringSun * 200.0 * directIlluminance;
-		scattering += scatteringSky * 3.0 * skyIlluminance;
-		scattering *= oneMinus(0.7 * wetness) * powder * absorption;
+		scattering += scatteringSky * 2.0 * skyIlluminance;
+		scattering *= oneMinus(0.6 * wetness) * powder * absorption;
 
 		return vec4(scattering, absorption);
 	}

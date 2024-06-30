@@ -155,6 +155,7 @@ void main() {
 		sDepth = sampleDepthSoild(refractTexel);
 
 		gbufferData0 = texelFetch(colortex7, refractTexel, 0);
+		viewPos = ScreenToViewSpace(vec3(refractCoord, depth));
 		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
 	} else {
 		refractCoord = screenCoord;
@@ -211,7 +212,7 @@ void main() {
 		if (isEyeInWater == 0) {
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
 			sceneOut = sceneOut * volFogData[1] + volFogData[0];
-			bloomyFogTrans = min(bloomyFogTrans, dot(volFogData[1], vec3(0.333333)));
+			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
 		}
 	#endif
 
@@ -219,7 +220,7 @@ void main() {
 		#ifdef UW_VOLUMETRIC_FOG
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
 			sceneOut = sceneOut * volFogData[1] + volFogData[0];
-			bloomyFogTrans = min(bloomyFogTrans, dot(volFogData[1], vec3(0.333333)));
+			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
 		#else
 			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), viewDistance, LdotV);
 			sceneOut = sceneOut * waterFog[1] + waterFog[0];

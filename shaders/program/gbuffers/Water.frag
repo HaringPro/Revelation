@@ -69,8 +69,8 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(rayDirWorld) + vec2(0.0, 0.5)).rgb;
 
 			reflection = skyRadiance * skylight;
-		} else /* if (materialID == 3u)  */{
-			reflection = skyIlluminance * 5e-3 / (vec3(WATER_ABSORPTION_R, WATER_ABSORPTION_G, WATER_ABSORPTION_B) + 1e-2);
+		// } else /* if (materialID == 3u)  */{
+		// 	reflection = skyIlluminance * 5e-3 / (vec3(WATER_ABSORPTION_R, WATER_ABSORPTION_G, WATER_ABSORPTION_B) + 1e-2);
 		}
 	}
 
@@ -142,7 +142,7 @@ void main() {
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -23.5, 24.0) * directIlluminance;
+		vec3 sunlightMult = fma(wetness, -28.0, 30.0) * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		float diffuseBRDF = fastSqrt(NdotL) * rPI;
@@ -175,7 +175,7 @@ void main() {
 				shadow *= sunlightMult;
 				// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
 
-				specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.002), materialID == 3u ? 0.02 : 0.04);
+				specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
 			}
 		}
 

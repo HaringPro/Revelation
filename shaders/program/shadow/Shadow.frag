@@ -40,6 +40,8 @@ uniform sampler2D tex;
 #ifdef WATER_CAUSTICS
 	uniform sampler2D noisetex;
 
+	uniform vec3 cameraPosition;
+
 	uniform float frameTimeCounter;
 	uniform float far;
 
@@ -61,7 +63,7 @@ void main() {
 			vec3 wavesNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 			vec3 normal = tbnMatrix * wavesNormal;
 
-			vec3 oldPos = viewPos;
+			vec3 oldPos = minecraftPos;
 			vec3 newPos = oldPos + fastRefract(vec3(0.0, 0.0, -1.0), normal, 1.0 / WATER_REFRACT_IOR) * 2.0;
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));

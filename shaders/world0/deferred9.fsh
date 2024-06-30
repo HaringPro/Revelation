@@ -177,11 +177,11 @@ void main() {
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
-					sssAmount = 0.55;
+					sssAmount = 0.45;
 					NdotL = worldLightVector.y;
 					break;
 				case 12u: // Leaves
-					sssAmount = 0.8;
+					sssAmount = 0.85;
 					break;
 				case 27u: case 37u: // Weak SSS
 					sssAmount = 0.5;
@@ -213,7 +213,7 @@ void main() {
 		} else depth += 0.38;
 
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -28.0, 30.0) * directIlluminance;
+		vec3 sunlightMult = fma(wetness, -30.0, 32.0) * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		vec3 diffuseBRDF = vec3(1.0);

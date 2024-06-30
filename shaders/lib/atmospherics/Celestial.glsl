@@ -17,7 +17,7 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
         vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
         vec3 finalLuminance = sunIlluminance / coneAngleToSolidAngle(sunAngularRadius) * factor;
 
-        return min(finalLuminance, 2e5); // Prevent overflow
+        return min(finalLuminance, 1e5); // Prevent overflow
     }
 }
 
