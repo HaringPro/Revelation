@@ -24,6 +24,27 @@ const float minCloudAbsorption	  = 0.03;
 
 /* Clouds */
 	#define CLOUDS_ENABLED // Enables clouds
+	// #define CLOUD_SHADOWS // Enables cloud shadows
+
+/* Fog */
+	// #define BORDER_FOG // Enables border fog
+	#define BORDER_FOG_FALLOFF 12.0 // Falloff of the border fog. [0.0 0.5 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0]
+
+	#define VOLUMETRIC_FOG // Enables volumetric fog
+	#define VOLUMETRIC_FOG_SAMPLES 18 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
+	#define FOG_QUALITY 1 // [0 1]
+
+	// #define COLORED_VOLUMETRIC_FOG // Enables volumetric fog stained glass tint
+	#define TIME_FADE // Reduces fog density at noon
+
+	#define FOG_MIE_DENSITY 0.0044 // Mie scattering density
+	#define FOG_RAYLEIGH_DENSITY 0.0001 // Rayleigh scattering density
+	#define FOG_MIE_DENSITY_RAIN_MULTIPLIER 5.0 // Mie scattering density multiplier when raining
+	#define SEA_LEVEL 63.0 // Sea level. [0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0 41.0 42.0 43.0 44.0 45.0 46.0 47.0 48.0 49.0 50.0 51.0 52.0 53.0 54.0 55.0 56.0 57.0 58.0 59.0 60.0 61.0 62.0 63.0 64.0 65.0 66.0 67.0 68.0 69.0 70.0 71.0 72.0 73.0 74.0 75.0 76.0 77.0 78.0 79.0 80.0 81.0 82.0 83.0 84.0 85.0 86.0 87.0 88.0 89.0 90.0 91.0 92.0 93.0 94.0 95.0 96.0 97.0 98.0 99.0 100.0 101.0 102.0 103.0 104.0 105.0 106.0 107.0 108.0 109.0 110.0 111.0 112.0 113.0 114.0 115.0 116.0 117.0 118.0 119.0 120.0 121.0 122.0 123.0 124.0 125.0 126.0 127.0 128.0 129.0 130.0 131.0 132.0 133.0 134.0 135.0 136.0 137.0 138.0 139.0 140.0 141.0 142.0 143.0 144.0 145.0 146.0 147.0 148.0 149.0 150.0 151.0 152.0 153.0 154.0 155.0 156.0 157.0 158.0 159.0 160.0 161.0 162.0 163.0 164.0 165.0 166.0 167.0 168.0 169.0 170.0 171.0 172.0 173.0 174.0 175.0 176.0 177.0 178.0 179.0 180.0 181.0 182.0 183.0 184.0 185.0 186.0 187.0 188.0 189.0 190.0 191.0 192.0 193.0 194.0 195.0 196.0 197.0 198.0 199.0 200.0 201.0 202.0 203.0 204.0 205.0 206.0 207.0 208.0 209.0 210.0 211.0 212.0 213.0 214.0 215.0 216.0 217.0 218.0 219.0 220.0 221.0 222.0 223.0 224.0 225.0 226.0 227.0 228.0 229.0 230.0 231.0 232.0 233.0 234.0 235.0 236.0 237.0 238.0 239.0 240.0 241.0 242.0 243.0 244.0 245.0 246.0 247.0 248.0 249.0 250.0 251.0 252.0 253.0 254.0 255.0]
+
+	#define UW_VOLUMETRIC_FOG // Enables underwater volumetric fog
+	#define UW_VOLUMETRIC_FOG_DENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
+	#define UW_VOLUMETRIC_FOG_SAMPLES 20 // Sample count of underwater volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
 //======// Lighting //============================================================================//
 
@@ -43,6 +64,7 @@ const float minCloudAbsorption	  = 0.03;
 	#define COLORED_SHADOWS // Enables colored shadows
 
 	#define SCREEN_SPACE_SHADOWS // Enables screen space shadows
+	#define SCREEN_SPACE_SHADOWS_SAMPLES 12 // Sample count of screen space shadows. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
 	// #define SHADOW_BACKFACE_CULLING // Enables backface culling for shadows
 
@@ -61,29 +83,9 @@ const float minCloudAbsorption	  = 0.03;
 	#define WATER_ABSORPTION_G 0.1  // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 	#define WATER_ABSORPTION_B 0.05 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
-	#define TRANSLUCENT_LIGHTING // Enables translucent lighting
+	// #define TRANSLUCENT_LIGHTING // Enables translucent lighting
 	#define TRANSLUCENT_LIGHTING_BLEND_FACTOR 0.25 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 	#define GLASS_REFRACT_IOR 1.5 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
-
-/* Fog */
-	// #define BORDER_FOG // Enables border fog
-	#define BORDER_FOG_FALLOFF 12.0 // Falloff of the border fog. [0.0 0.5 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0]
-
-	#define VOLUMETRIC_FOG // Enables volumetric fog
-	#define VOLUMETRIC_FOG_SAMPLES 18 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
-	#define FOG_QUALITY 1 // [0 1]
-
-	// #define COLORED_VOLUMETRIC_FOG // Enables volumetric fog stained glass tint
-	#define TIME_FADE // Reduces fog density at noon
-
-	#define FOG_MIE_DENSITY 0.003 // Mie scattering density
-	#define FOG_RAYLEIGH_DENSITY 0.0004 // Rayleigh scattering density
-	#define FOG_MIE_DENSITY_RAIN_MULTIPLIER 6.0 // Mie scattering density multiplier when raining
-	#define SEA_LEVEL 63.0 // Sea level. [0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0 41.0 42.0 43.0 44.0 45.0 46.0 47.0 48.0 49.0 50.0 51.0 52.0 53.0 54.0 55.0 56.0 57.0 58.0 59.0 60.0 61.0 62.0 63.0 64.0 65.0 66.0 67.0 68.0 69.0 70.0 71.0 72.0 73.0 74.0 75.0 76.0 77.0 78.0 79.0 80.0 81.0 82.0 83.0 84.0 85.0 86.0 87.0 88.0 89.0 90.0 91.0 92.0 93.0 94.0 95.0 96.0 97.0 98.0 99.0 100.0 101.0 102.0 103.0 104.0 105.0 106.0 107.0 108.0 109.0 110.0 111.0 112.0 113.0 114.0 115.0 116.0 117.0 118.0 119.0 120.0 121.0 122.0 123.0 124.0 125.0 126.0 127.0 128.0 129.0 130.0 131.0 132.0 133.0 134.0 135.0 136.0 137.0 138.0 139.0 140.0 141.0 142.0 143.0 144.0 145.0 146.0 147.0 148.0 149.0 150.0 151.0 152.0 153.0 154.0 155.0 156.0 157.0 158.0 159.0 160.0 161.0 162.0 163.0 164.0 165.0 166.0 167.0 168.0 169.0 170.0 171.0 172.0 173.0 174.0 175.0 176.0 177.0 178.0 179.0 180.0 181.0 182.0 183.0 184.0 185.0 186.0 187.0 188.0 189.0 190.0 191.0 192.0 193.0 194.0 195.0 196.0 197.0 198.0 199.0 200.0 201.0 202.0 203.0 204.0 205.0 206.0 207.0 208.0 209.0 210.0 211.0 212.0 213.0 214.0 215.0 216.0 217.0 218.0 219.0 220.0 221.0 222.0 223.0 224.0 225.0 226.0 227.0 228.0 229.0 230.0 231.0 232.0 233.0 234.0 235.0 236.0 237.0 238.0 239.0 240.0 241.0 242.0 243.0 244.0 245.0 246.0 247.0 248.0 249.0 250.0 251.0 252.0 253.0 254.0 255.0]
-
-	#define UW_VOLUMETRIC_FOG // Enables underwater volumetric fog
-	#define UW_VOLUMETRIC_FOG_DENSITY 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
-	#define UW_VOLUMETRIC_FOG_SAMPLES 22 // Sample count of underwater volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
 /* Weather */
 	#define RAIN_VISIBILITY	0.25 // Visibility of the rain. [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
@@ -106,6 +108,11 @@ const float minCloudAbsorption	  = 0.03;
 	#ifndef SPECULAR_MAPPING
 		#undef MC_SPECULAR_MAP
 	#endif
+
+	#define ROUGH_REFLECTIONS // Enables rough reflections
+	#define ROUGH_REFLECTIONS_THRESHOLD 0.005 // Threshold for rough reflections. [0.0001 0.0002 0.0005 0.0007 0.001 0.002 0.005 0.007 0.01 0.02 0.05 0.07 0.1 0.2 0.5]
+
+	#define REFLECTION_FILTER // Enables reflection filter
 
 	#define EMISSION_MODE 0 // [0 1 2]
 	#define EMISSION_BRIGHTNESS 1.5 // Brightness of emissive. [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0 20.5 21.0 21.5 22.0 22.5 23.0 23.5 24.0 24.5 25.0]
@@ -137,9 +144,10 @@ const float minCloudAbsorption	  = 0.03;
 	#define AUTO_EXPOSURE // Enables auto exposure
 	#define AUTO_EXPOSURE_LOD 6 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16]
 
+	#define ISO 100.0 // ISO value. [100.0 200.0 320.0 400.0 500.0 640.0 800.0 1000.0 1250.0 1600.0 2000.0 2500.0 3200.0 4000.0 5000.0 6400.0 8000.0 10000.0 12800.0 16000.0 20000.0 25600.0 32000.0 40000.0 51200.0 64000.0 80000.0]
+	#define AUTO_EV_BIAS 0.0 // [-2.0 -1.9 -1.8 -1.7 -1.6 -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 	#define EXPOSURE_SPEED 1.0 // Speed of the exposure. [0.1 0.2 0.3 0.5 0.7 1.0 1.3 1.6 2.0 2.5 3.0 5.0 7.0 10.0]
-	#define AUTO_EXPOSURE_BIAS 0.0 // [-2.0 -1.9 -1.8 -1.7 -1.6 -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-	#define MANUAL_EXPOSURE_VALUE 12.0 // [0.1 0.3 0.5 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 14.0 16.0 18.0 20.0 25.0 30.0 40.0 50.0]
+	#define MANUAL_EV 12.0 // [0.1 0.3 0.5 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 14.0 16.0 18.0 20.0 25.0 30.0 40.0 50.0]
 
 /* FidelityFX */
 	// #define FSR_ENABLED // Enables AMD FidelityFX Super Resolution

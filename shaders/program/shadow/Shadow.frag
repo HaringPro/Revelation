@@ -40,7 +40,7 @@ uniform sampler2D tex;
 #ifdef WATER_CAUSTICS
 	uniform sampler2D noisetex;
 
-	uniform vec3 cameraPosition;
+	uniform vec3 worldLightVector;
 
 	uniform float frameTimeCounter;
 	uniform float far;
@@ -64,19 +64,19 @@ void main() {
 			vec3 normal = tbnMatrix * wavesNormal;
 
 			vec3 oldPos = minecraftPos;
-			vec3 newPos = oldPos + fastRefract(vec3(0.0, 0.0, -1.0), normal, 1.0 / WATER_REFRACT_IOR) * 2.0;
+			vec3 newPos = oldPos + fastRefract(worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.4;
+			float caustics = inversesqrt(oldArea / newArea) * 0.3;
 
-			shadowcolor0Out = vec3(sqrt2(caustics));
-			shadowcolor1Out.xy = encodeUnitVector(normal);
+			shadowcolor0Out = vec3(fastSqrt(fastSqrt(caustics)));
+			// shadowcolor1Out.xy = encodeUnitVector(normal);
 			shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
 		#else
 			shadowcolor0Out = vec3(0.8);
-			shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+			// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 		#endif
 	} else {
 		vec4 albedo = texture(tex, texCoord);
@@ -86,10 +86,10 @@ void main() {
 			shadowcolor0Out = albedo.rgb * tint;
 		} else {
 			albedo.a = fastSqrt(fastSqrt(albedo.a));
-			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint, albedo.a);
+			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint * 0.8, albedo.a);
 		}
-		shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+		// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 	}
 
-	shadowcolor1Out.z = lightmap.y;
+	// shadowcolor1Out.z = lightmap.y;
 }

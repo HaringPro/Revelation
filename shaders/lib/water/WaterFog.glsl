@@ -8,8 +8,8 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 	vec3 transmittance = fastExp(-waterExtinction * fogDensity);
 
 	float phase = HenyeyGreensteinPhase(LdotV, 0.7) + 0.1 * rPI;
-	vec3 scattering = 0.3 * oneMinus(wetnessCustom * 0.8) * directIlluminance * phase;
-	scattering *= fastExp(-waterExtinction * 5.0);
+	const vec3 sunTransmittance = fastExp(-waterExtinction * 5.0);
+	vec3 scattering = 0.3 * oneMinus(wetnessCustom * 0.8) * directIlluminance * phase * sunTransmittance;
 	scattering += 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 	scattering *= oneMinus(transmittance) * skylight / waterExtinction;
 

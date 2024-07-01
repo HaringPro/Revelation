@@ -51,7 +51,7 @@ void main() {
 
 	mat2x3 fogExtinctionCoeff = mat2x3(
 		vec3(FOG_MIE_DENSITY),
-		vec3(0.32, 0.45, 1.0) * FOG_RAYLEIGH_DENSITY
+		vec3(5.802, 13.558, 33.1) * FOG_RAYLEIGH_DENSITY
 	);
 
 	#ifdef TIME_FADE
@@ -60,7 +60,7 @@ void main() {
 	#endif
 
 	mat2x3 fogScatteringCoeff = mat2x3(
-		fogExtinctionCoeff[0] * (0.9 - wetness * 0.5),
+		fogExtinctionCoeff[0] * (0.9 - wetness * 0.4),
 		fogExtinctionCoeff[1]
 	);
 

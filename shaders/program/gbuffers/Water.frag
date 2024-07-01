@@ -142,14 +142,14 @@ void main() {
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -28.0, 30.0) * directIlluminance;
+		vec3 sunlightMult = 30.0 * oneMinus(wetness * 0.96) * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		float diffuseBRDF = fastSqrt(NdotL) * rPI;
 		float specularBRDF = 0.0;
 
 		float distortFactor;
-		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+		vec3 normalOffset = tbnMatrix[2] * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));

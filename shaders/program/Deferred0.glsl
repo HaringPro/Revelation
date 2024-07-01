@@ -13,6 +13,8 @@
 --------------------------------------------------------------------------------
 */
 
+#define CLOUD_LIGHTING
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -38,8 +40,8 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D colortex1; // Sceen history
 uniform sampler3D colortex3; // Combined Atmospheric LUT
-uniform sampler2D colortex4; // Projected sceen history
 uniform sampler2D colortex5;
 
 uniform int moonPhase;
@@ -64,29 +66,26 @@ float CalculateAverageLuminance() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
 
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
-    vec2 pixelSize = 0.5 / vec2(tileSteps);
+    vec2 pixelSize = 1.0 / vec2(tileSteps);
 
     float total = 0.0;
     float sumWeight = 0.0;
 
-    const float minEV = -16.0;
-    const float maxEV = 12.0;
-
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
-            float luminance = GetLuminance(textureLod(colortex4, uv, AUTO_EXPOSURE_LOD).rgb);
+            float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = 1.0 - curve(length(uv * 4.0 - 1.0));
+            float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
 
-            total += clamp(log2(luminance), minEV, maxEV) * weight;
+            total += log2(luminance) * weight;
             sumWeight += weight;
         }
 	}
 
     total /= sumWeight;
 
-	return exp2(-remap(2.0, -3.0, total) * 0.75 * total);
+	return exp2(total);
 }
 
 //======// Main //================================================================================//
@@ -101,15 +100,17 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateAverageLuminance();
 
-        float targetExposure = exp2(AUTO_EXPOSURE_BIAS) * 0.3 * exposure;
-        // float targetExposure = exp2(AUTO_EXPOSURE_BIAS) / (0.8 - 0.002 * fastExp(-exposure * rcp(K * 1e-2 * (0.8 - 0.002))));
+        const float K = 12.5;
+        const float cal = K / ISO;
+        const float m = 3.0, r = m - 0.005;
+        float targetExposure = exp2(AUTO_EV_BIAS) / (m - r * fastExp(-exposure * rcp(cal * r)));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
         float fadedSpeed = targetExposure < prevExposure ? 4.0 : 2.5;
         exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime * EXPOSURE_SPEED));
 	#else
-		exposure = exp2(-MANUAL_EXPOSURE_VALUE);
+		exposure = exp2(-MANUAL_EV);
 	#endif
 }
 
@@ -155,8 +156,6 @@ uniform int frameCounter;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 cameraPosition;
-
-uniform vec3 cloudWind;
 
 //======// Function //============================================================================//
 

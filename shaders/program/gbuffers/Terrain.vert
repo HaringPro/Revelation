@@ -95,14 +95,6 @@ void main() {
 		worldPos.xyz -= cameraPosition;
 	#endif
 
-	// if (materialID > 0u) { materialID = max(materialID, 6u); }
-	// #ifdef GENERAL_GRASS_FIX
-	// else if (abs(vaNormal.x) > 0.01 && abs(vaNormal.x) < 0.99 ||
-	// 		 abs(vaNormal.y) > 0.01 && abs(vaNormal.y) < 0.99 ||
-	// 		 abs(vaNormal.z) > 0.01 && abs(vaNormal.z) < 0.99
-	// 		) materialID = 6u;
-	// #endif
-
 	// minecraftPos = worldPos.xyz;
 
 	gl_Position = projectionMatrix * gbufferModelView * worldPos;

@@ -5,6 +5,8 @@
 #define CLOUDS_WIND_SPEED 0.005 // Wind speed of clouds. [0.0 0.0001 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0 45.0 50.0]
 #define CLOUD_PLANE_ALTITUDE 3000.0 // Altitude of planar clouds. [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 2500.0 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0 10500.0 11000.0 11500.0 12000.0]
 
+uniform vec3 cloudWind;
+
 //================================================================================================//
 
 void ToPlanetCurvePos(inout vec3 pos) {
@@ -126,6 +128,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 
 //================================================================================================//
 
+#if defined CLOUD_LIGHTING
 vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
     vec4 cloudData = vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -178,4 +181,17 @@ vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
 	// Remap cloud transmittance
     cloudData.a = remap(minCloudTransmittance, 1.0, cloudData.a);
     return cloudData;
+}
+#endif
+
+//================================================================================================//
+
+float CalculateCloudShadow(in vec3 worldPos) {
+    vec3 planeOrigin = worldPos + vec3(0.0, planetRadius, 0.0);
+    vec2 planePos = RaySphereIntersection(planeOrigin, worldLightVector, planetRadius + CLOUD_PLANE_ALTITUDE).y * worldLightVector.xz + worldPos.xz;
+
+    float cloudDensity = CloudPlaneDensity(planePos) * 8.0;
+    // cloudDensity = mix(0.4, cloudDensity, saturate(fastSqrt(abs(worldLightVector.y) * 2.0)));
+
+    return exp2(-2e2 * saturate(cloudDensity * cloudDensity));
 }

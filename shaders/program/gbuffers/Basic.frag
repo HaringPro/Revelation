@@ -14,10 +14,6 @@ layout (location = 1) out vec4 gbufferOut0;
 flat in vec4 tint;
 in vec2 lightmap;
 
-//======// Uniform //=============================================================================//
-
-uniform int renderStage;
-
 //======// Function //============================================================================//
 
 float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }

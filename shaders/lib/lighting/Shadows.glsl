@@ -64,7 +64,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 	vec3 result = vec3(0.0);
 
 	vec2 rot = cossin(dither * TAU) * penumbraScale;
-	const vec2 angleStep = cossin(TAU * 0.125);
+	const vec2 angleStep = cossin(TAU * rSteps);
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, rot *= rotStep) {
 		float radius = (float(i) + dither) * rSteps;
@@ -100,7 +100,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
     rayPos.xy *= viewSize;
     rayStep.xy *= viewSize;
 
-    rayStep *= 4.0 / maxOf(abs(rayStep.xy));
+	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
+    rayStep *= stepSize / maxOf(abs(rayStep.xy));
 
 	rayPos += rayStep * (dither + 1.0);
 
@@ -108,7 +109,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
     float absorption = step(1e-4, sssAmount) * exp2(-oneMinus(sssAmount) * length(viewPos) * 0.75);
 
 	float shadow = 1.0;
-    for (uint i = 0u; i < 12u; ++i, rayPos += rayStep) {
+    for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
         if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
 			float sampleDepth = sampleDepth(ivec2(rayPos.xy));

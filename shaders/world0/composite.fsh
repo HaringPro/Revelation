@@ -8,6 +8,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass: Compute volumetric fog
+
 --------------------------------------------------------------------------------
 */
 
@@ -50,6 +52,9 @@ uniform vec3 fogWind;
 #include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
+#ifdef CLOUD_SHADOWS
+	#include "/lib/atmospherics/Clouds.glsl"
+#endif
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 70.0);
 
@@ -70,25 +75,25 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 3.0);
+		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 2.0);
 	}
 #elif FOG_QUALITY == 1
 	/* Medium */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		vec2 density = exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 3.0);
+		vec2 density = exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 2.0);
 
 		rayPos *= 0.07;
 		rayPos += fogWind;
 		float noise = Calculate3DNoise(rayPos) * 3.0;
 		noise -= Calculate3DNoise(rayPos * 4.0 + fogWind);
 
-		density.x *= max0(noise * 8.0 - 4.5);
+		density.x *= saturate(noise * 8.0 - 6.0) * 2.0;
 
 		return density;
 	}
 #endif
 
-mat2x3 CalculateVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
+mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 	float rayLength = min(length(worldPos), far);
 
 	uint steps = uint(VOLUMETRIC_FOG_SAMPLES * 0.4 + rayLength * 0.1);
@@ -128,7 +133,7 @@ mat2x3 CalculateVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dithe
 
 		vec2 density = CalculateFogDensity(rayPos) * stepLength;
 
-		if (density.x + density.y < 1e-6) continue; // Faster than maxOf()
+		if (dot(density, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
 
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -150,6 +155,11 @@ mat2x3 CalculateVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dithe
 			}
 		#endif
 
+		#ifdef CLOUD_SHADOWS
+			float cloudShadow = CalculateCloudShadow(rayPos);
+			sampleShadow *= cloudShadow * cloudShadow * cloudShadow;
+		#endif
+
 		vec3 opticalDepth = fogCoeff[0] * density;
 		vec3 stepTransmittance = fastExp(-opticalDepth);
 
@@ -161,7 +171,7 @@ mat2x3 CalculateVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dithe
 
 		transmittance *= stepTransmittance;
 
-		if (transmittance.x + transmittance.y + transmittance.z < 1e-4) break; // Faster than maxOf()
+		if (dot(transmittance, vec3(1.0)) < 1e-4) break; // Faster than maxOf()
 	}
 
 	vec3 scattering = scatteringSun * 16.0 * directIlluminance;
@@ -187,7 +197,7 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = CalculateVolumetricFog(worldPos, worldDir, dither);
+			mat2x3 volFogData = AirVolumetricFog(worldPos, worldDir, dither);
 
 			scatteringOut = volFogData[0];
 			transmittanceOut = volFogData[1];

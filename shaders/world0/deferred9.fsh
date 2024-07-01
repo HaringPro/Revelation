@@ -13,6 +13,8 @@
 --------------------------------------------------------------------------------
 */
 
+#define CLOUD_LIGHTING
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -86,8 +88,6 @@ uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 
-uniform vec3 cloudWind;
-
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferPreviousProjection;
@@ -101,6 +101,8 @@ uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelView;
 
 //======// Struct //==============================================================================//
+
+#include "/lib/utility/Material.glsl"
 
 //======// Function //============================================================================//
 
@@ -162,12 +164,18 @@ void main() {
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
-		// vec3 flatNormal = GetFlatNormal(screenTexel);
-		vec3 worldNormal = GetWorldNormal(gbufferData0);
+		vec3 flatNormal = GetFlatNormal(gbufferData0);
+		#if defined MC_NORMAL_MAP
+			vec3 worldNormal = GetWorldNormal(gbufferData0);
+		#else
+			vec3 worldNormal = flatNormal;
+		#endif
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		// vec4 gbufferData1 = texelFetch(colortex4, screenTexel, 0);
 		// vec4 specTex = vec4(unpackUnorm2x8(gbufferData1.z), unpackUnorm2x8(gbufferData1.w));
+
+		Material material = Material(1.0, 0.0, 0.04, 0.0, false, false);
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
@@ -212,15 +220,22 @@ void main() {
 			#endif
 		} else depth += 0.38;
 
+		// Cloud shadows
+		#ifdef CLOUD_SHADOWS
+			float cloudShadow = CalculateCloudShadow(worldPos + cameraPosition);
+		#else
+			float cloudShadow = 1.0 - wetness * 0.96;
+		#endif
+
 		// Sunlight
-		vec3 sunlightMult = fma(wetness, -30.0, 32.0) * directIlluminance;
+		vec3 sunlightMult = 30.0 * cloudShadow * directIlluminance;
 
 		vec3 shadow = vec3(0.0);
 		vec3 diffuseBRDF = vec3(1.0);
 		vec3 specularBRDF = vec3(0.0);
 
 		float distortFactor;
-		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+		vec3 normalOffset = flatNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
 		float distanceFade = sqr(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
@@ -253,8 +268,8 @@ void main() {
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 					NdotV = max(NdotV, 1e-3);
 
-					diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
-					specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
+					diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.75);
+					specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 				}
 			}
 		} else if (NdotL > 1e-3) {
@@ -269,8 +284,8 @@ void main() {
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
 
-			diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, 1., albedo), vec3(rPI), sssAmount * 0.75);
-			specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(1.), .04);
+			diffuseBRDF *= mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.75);
+			specularBRDF = vec3(SPECULAR_HIGHLIGHT_BRIGHTNESS) * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 		}
 
 		// Sunlight diffuse

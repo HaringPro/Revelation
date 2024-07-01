@@ -142,14 +142,15 @@ float FastAcos(in float x) {
 
 #if defined MC_NORMAL_MAP
 	void DecodeNormalTex(inout vec3 normalTex) {
-        if (all(lessThan(normalTex, vec3(0.003)))) return;
-		normalTex = normalTex * 2.0 - 1.0 + r255;
-		#if TEXTURE_FORMAT == 0
-			normalTex.z = sqrt(saturate(oneMinus(dotSelf(normalTex.xy))));
-		#else
-			normalTex = normalize(normalTex);
-		#endif
-		//normalTex.xy = max0(abs(normalTex.xy) - r255) * fastSign(normalTex.xy);
+        if (any(greaterThan(normalTex, vec3(0.003)))) {
+			normalTex = normalTex * 2.0 - 1.0 + r255;
+			#if TEXTURE_FORMAT == 0
+				normalTex.z = sqrt(saturate(oneMinus(dotSelf(normalTex.xy))));
+			#else
+				normalTex = normalize(normalTex);
+			#endif
+    		normalTex.xy = uintBitsToFloat(floatBitsToUint(max0(abs(normalTex.xy) - r255)) ^ (floatBitsToUint(normalTex.xy) & 0x80000000u));
+		}
 	}
 #endif
 
@@ -159,7 +160,7 @@ float FastAcos(in float x) {
 // Intuitive, fast, and has very little error.
 vec2 encodeUnitVector(in vec3 vector) {
 	// Scale down to octahedron, project onto XY plane
-	vector.xy /= abs(vector.x) + abs(vector.y) + abs(vector.z);
+    vector.xy /= dot(vec3(1.0), abs(vector));
 	// Reflect -Z hemisphere folds over the diagonals
 	vec2 encoded = vector.z <= 0.0 ? (1.0 - abs(vector.yx)) * vec2(vector.x >= 0.0 ? 1.0 : -1.0, vector.y >= 0.0 ? 1.0 : -1.0) : vector.xy;
 	// Scale to [0, 1]
@@ -168,7 +169,7 @@ vec2 encodeUnitVector(in vec3 vector) {
 
 vec3 decodeUnitVector(in vec2 encoded) {
 	// Scale to [-1, 1]
-	encoded = (encoded - 0.5) * 2.0;
+	encoded = encoded * 2.0 - 1.0;
 	// Exctract Z component
 	vec3 vector = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
 	// Reflect -Z hemisphere folds over the diagonals

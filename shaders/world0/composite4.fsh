@@ -8,6 +8,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass: Compute refraction, combine translucent, reflections and fog
+
 --------------------------------------------------------------------------------
 */
 
@@ -185,7 +187,7 @@ void main() {
 			// Glass tint
 			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 			translucents.a = fastSqrt(fastSqrt(translucents.a));
-			sceneOut *= cube((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
+			sceneOut *= cube((1.0 - translucents.a + saturate(translucents.rgb) * 0.8) * translucents.a);
 
 			// Specular reflections of glass
 			vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
