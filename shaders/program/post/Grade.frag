@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Combine bloom and fog, apply exposure, color grading, vignetting, etc.
+	Pass: Combine bloom and fog, apply exposure, color-grading, vignetting, etc.
 
 --------------------------------------------------------------------------------
 */
@@ -15,12 +15,12 @@
 
 #include "/lib/Utility.glsl"
 
-#define TONEMAP_OPERATOR AgX_Minimal // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
+#define TONEMAP_OPERATOR AcademyFit // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
 #define BLOOM_INTENSITY 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
 
 #define PURKINJE_SHIFT // Enable purkinje shift effect
-#define PURKINJE_SHIFT_STRENGTH 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define PURKINJE_SHIFT_STRENGTH 0.4 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 // #define VIGNETTE_ENABLED
 #define VIGNETTE_STRENGTH 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
@@ -40,7 +40,7 @@ flat in float exposure;
 uniform sampler2D colortex0; // Bloom tiles
 uniform sampler2D colortex1; // HDR scene image
 uniform sampler2D colortex3; // Rain alpha
-uniform sampler2D colortex6; // Bloomy fog transmittance
+uniform sampler2D colortex7; // Bloomy fog transmittance
 
 uniform float aspectRatio;
 uniform float wetnessCustom;
@@ -53,7 +53,7 @@ vec2 CalculateTileOffset(in const int lod) {
 	vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
 	vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
 
-	return lodMult * 12.0 * viewPixelSize + offset;
+	return lodMult * 16.0 * viewPixelSize + offset;
 }
 
 void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
@@ -80,7 +80,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	image = mix(image, bloomData, bloomIntensity);
 
 	#ifdef BLOOMY_FOG
-		float fogTransmittance = texelFetch(colortex6, texel, 0).x;
+		float fogTransmittance = texelFetch(colortex7, texel, 0).x;
 
 		image = mix(bloomData, image, saturate(fogTransmittance));
 	#endif
@@ -178,7 +178,7 @@ void main() {
 	// Purkinje shift
 	#ifdef PURKINJE_SHIFT
 		float luma = dot(HDRImage, vec3(0.25, 0.4, 0.35));
-		float purkinjeFactor = exp2(-2e2 / PURKINJE_SHIFT_STRENGTH * luma) * exposure / (exposure + 1.0);
+		float purkinjeFactor = exp2(-4e2 / PURKINJE_SHIFT_STRENGTH * luma) * exposure / (exposure + 1.0);
 		HDRImage = mix(HDRImage, vec3(0.7, 1.1, 1.5) * luma, purkinjeFactor);
 	#endif
 

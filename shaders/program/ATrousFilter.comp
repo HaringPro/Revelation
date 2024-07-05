@@ -1,0 +1,171 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: À-Trous wavelet filter for indirect lighting
+	Reference:  https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering://svgf_preprint.pdf
+                https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
+
+--------------------------------------------------------------------------------
+*/
+
+// #extension GL_NV_compute_shader_derivatives : enable
+
+layout (local_size_x = 32, local_size_y = 32) in;
+const vec2 workGroupsRender = vec2(0.5f, 0.5f);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Output //==============================================================================//
+
+layout (rgba16f) restrict uniform image2D colorimg2;
+
+//======// Uniform //=============================================================================//
+
+uniform sampler2D colortex13; // Previous indirect light
+
+uniform sampler2D depthtex0;
+
+uniform mat4 gbufferProjectionInverse;
+
+uniform vec2 viewSize;
+uniform vec2 taaOffset;
+
+uniform int frameCounter;
+
+//======// Function //============================================================================//
+
+vec3 ScreenToViewSpace(in vec3 screenPos) {
+	vec3 NDCPos = screenPos * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCPos.xy -= taaOffset;
+	#endif
+	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
+	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+
+	return viewPos;
+}
+
+uint triple32(uint x) {
+    // https://nullprogram.com/blog/2018/07/31/
+    x ^= x >> 17;
+    x *= 0xed5ad4bbu;
+    x ^= x >> 11;
+    x *= 0xac4c1b51u;
+    x ^= x >> 15;
+    x *= 0x31848babu;
+    x ^= x >> 14;
+    return x;
+}
+
+uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
+uint RandNext() { return randState = triple32(randState); }
+#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
+
+float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
+    // const float kernel[2] = float[2](1.0, 0.3);
+	const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
+
+	float variance = 0.0;
+	for (int x = -1; x <= 1; ++x) {
+		for (int y = -1; y <= 1; ++y) {
+			ivec2 varianceTexel = texel + ivec2(x, y);
+			if (clamp(varianceTexel, ivec2(0), maxLimit) == varianceTexel) {
+				float weight = kernel[abs(x)][abs(y)];
+
+				variance += imageLoad(colorimg2, varianceTexel).a * weight;
+			}
+		}
+	}
+
+	return variance * 8.0;
+}
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+
+	float depth = texelFetch(depthtex0, texel * 2, 0).x;
+	if (depth < 1.0) {
+		ivec2 shift = ivec2(viewSize.x * 0.5, 0);
+        ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+
+		vec4 normalDepthData = texelFetch(colortex13, texel + shift, 0);
+		// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
+
+		const ivec2 offset[8] = {
+			ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
+			ivec2(-1,  0), 				 ivec2(1,  0),
+			ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
+		};
+
+		// 0.0625 0.125 0.0625
+		// 0.125  0.25  0.125
+		// 0.0625 0.125 0.0625
+		// 3×3 kernel used multiple times in the algorithm
+
+		const float kernel[8] = {0.0625, 0.125, 0.0625, 0.125, 0.125, 0.0625, 0.125, 0.0625};
+
+		// 1/16 1/4 1/16
+		// 1/4  3/8  1/4
+		// 1/16 1/4 1/16
+		// const float h[8] = {1.0 / 16.0, 1.0 / 4.0, 1.0 / 16.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 16.0, 1.0 / 4.0, 1.0 / 16.0};
+
+		// 5x5 A-Trous kernel
+    	// float h[25] = {1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0,
+        //             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
+        //             3.0 / 128.0, 3.0 / 32.0, 9.0 / 64.0, 3.0 / 32.0, 3.0 / 128.0,
+        //             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
+        //             1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0};
+
+		// float sumWeight = 0.25;
+		float sumWeight = 0.1;
+
+		vec4 indirectCurrent = imageLoad(colorimg2, texel);
+		float centerLuma = GetLuminance(indirectCurrent.rgb);
+		indirectCurrent *= sumWeight;
+
+		float variance = CalculateVariance(texel, maxLimit);
+		vec2 offsetScale = (RandNext2F() + 0.5) * FILTER_SIZE;
+
+		for (uint i = 0u; i < 8u; ++i) {
+			ivec2 offset = offset[i];
+			ivec2 sampleTexel = texel + ivec2(offset * offsetScale);
+			// ivec2 offset = ivec2(x, y) * FILTER_SIZE;
+			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
+				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
+
+				vec4 sampleLight = imageLoad(colorimg2, sampleTexel);
+				float sampleLuma = GetLuminance(sampleLight.rgb);
+
+				// float weight = exp2(-dotSelf(offset));
+				// float weight = kernel[abs(x)] * kernel[abs(y)];
+				float weight = kernel[i];
+
+				// wN = max(0, N0 · N1) ^ σN
+				weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)));
+
+				// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
+				// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
+				weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * 0.1 * inversesqrt(float(FILTER_SIZE)));
+
+				// wL = exp(−|L0 − L1| / (σLvar + ε))
+				weight *= fastExp(-abs(sampleLuma - centerLuma) / (4.0 * variance + 1e-6));
+
+				indirectCurrent.rgb += sampleLight.rgb * weight;
+				indirectCurrent.a += sampleLight.a * weight * weight; // Sample variance
+				sumWeight += weight;
+			}
+		}
+
+		indirectCurrent /= sumWeight;
+		indirectCurrent.a /= sumWeight; // Sample variance
+		imageStore(colorimg2, texel, indirectCurrent);
+	}
+}

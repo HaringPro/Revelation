@@ -4,9 +4,9 @@
 
 ## Features
 * High quality atmospheric system: precomputed atmospheric scattering, clouds, volumetric fog and so on
-* Advanced lighting stuff: PCSS, screen-space shadows, subsurface scattering, SH skylight, GTAO, etc.
+* Advanced lighting stuff: PCSS, screen-space shadows, subsurface scattering, SH skylight, SSPT, GTAO, etc.
 * Various camera effects: bloom, auto-exposure, vignette and more
-* Post-Processing: TAA, CAS and color-grading
+* Post-Processing: TAA, CAS, FSR 1.0 and color-grading
 * PBR resource pack support
 * Screen-space reflections and refractions
 * Fancy water and foliage rendering

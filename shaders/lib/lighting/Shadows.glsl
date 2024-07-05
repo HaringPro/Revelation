@@ -76,7 +76,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 		ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
 		float sampleDepth0 = step(shadowScreenPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
 		if (sampleDepth0 != sampleDepth1) {
-			result += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+			result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
 		} else 
 	#endif
 		{ result += sampleDepth1; }
@@ -103,10 +103,10 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
     rayStep *= stepSize / maxOf(abs(rayStep.xy));
 
-	rayPos += rayStep * (dither + 1.0);
+	rayPos += rayStep * (dither + 1.0 - sssAmount);
 
 	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
-    float absorption = step(1e-4, sssAmount) * exp2(-oneMinus(sssAmount) * length(viewPos) * 0.75);
+    float absorption = step(1e-4, sssAmount) * exp2(-oneMinus(sssAmount) * length(viewPos));
 
 	float shadow = 1.0;
     for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {

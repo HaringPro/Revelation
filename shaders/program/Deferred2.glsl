@@ -6,6 +6,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+	Pass:
+
 --------------------------------------------------------------------------------
 */
 
@@ -40,4 +42,5 @@ uniform sampler2D sampler2;
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 }

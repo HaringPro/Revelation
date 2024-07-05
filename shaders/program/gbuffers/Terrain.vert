@@ -3,7 +3,7 @@
 
 #include "/lib/Utility.glsl"
 
-#define WAVING_PLANTS
+#define WAVING_FOILAGE // Enables waving foilage effect
 
 //======// Output //==============================================================================//
 
@@ -66,7 +66,7 @@ void main() {
 
 	materialID = uint(max0(mc_Entity.x - 1e4));
 
-	#ifdef WAVING_PLANTS
+	#ifdef WAVING_FOILAGE
 		worldPos.xyz += cameraPosition;
 
 		float windIntensity = cube(saturate(lightmap.y * 1.5 - 0.5)) * fma(wetnessCustom, 0.2, 0.1);

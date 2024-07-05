@@ -312,7 +312,7 @@ vec4 GetScatteringTextureUvwzFromRMuMuSNu(
             float d_min = r - atmosphere_bottom_radius;
             float d_max = rho;
             u_mu = 0.5 - 0.5 * GetTextureCoordFromUnitRange(d_max == d_min ? 0.0 : (d - d_min) / (d_max - d_min), SCATTERING_TEXTURE_MU_SIZE * 0.5);
-        }else{
+        } else {
             // Distance to the top atmosphere boundary for the ray (r,mu), and its
             // minimum and maximum values over all mu - obtained for (r,1) and
             // (r,mu_horizon).
@@ -441,8 +441,7 @@ vec3 GetSkyRadiance(
                 float r = length(planet_surface);
                 float mu_s = dot(planet_surface, sun_direction) / r;
 
-                vec3 sky_irradiance = GetIrradiance(r, mu_s);
-                sky_irradiance += GetIrradiance(r, -mu_s) * moonlightFactor;
+                vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightFactor;
                 vec3 sun_irradiance = atmosphere.solar_irradiance * GetTransmittanceToSun(r, mu_s);
 
                 float d = distance(camera, planet_surface);

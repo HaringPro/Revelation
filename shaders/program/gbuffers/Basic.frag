@@ -25,7 +25,7 @@ void main() {
 
 	albedoOut = tint.rgb;
 
-	const uint materialID = 1u;
+	uint materialID = lightmap.x > 0.999 ? 20u : 0u;
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 }

@@ -30,7 +30,7 @@ vec3 ScreenToViewSpace(in vec2 coord) {
 
 float ScreenToViewDepth(in float depth) {
     depth = depth * 2.0 - 1.0;
-    return 1.0 / (depth * gbufferProjectionInverse[2][3] + gbufferProjectionInverse[3][3]);
+    return -1.0 / (depth * gbufferProjectionInverse[2][3] + gbufferProjectionInverse[3][3]);
 }
 
 vec3 ViewToScreenSpaceRaw(in vec3 viewPos) {

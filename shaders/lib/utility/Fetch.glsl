@@ -17,11 +17,11 @@ float GetDepthSoildFix(in ivec2 texel) {
 }
 
 // vec3 GetFlatNormal(in ivec2 texel) {
-// 	return decodeUnitVector(unpackUnorm2x8(texelFetch(colortex7, texel, 0).z));
+// 	return decodeUnitVector(unpackUnorm2x8(sampleGbufferData0(texel).z));
 // }
 
 // vec3 GetWorldNormal(in ivec2 texel) {
-// 	return decodeUnitVector(unpackUnorm2x8(texelFetch(colortex7, texel, 0).w));
+// 	return decodeUnitVector(unpackUnorm2x8(sampleGbufferData0(texel).w));
 // }
 
 vec3 GetFlatNormal(in vec4 data) {

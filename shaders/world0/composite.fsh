@@ -212,4 +212,7 @@ void main() {
 			transmittanceOut = volFogData[1];
 		}
 	#endif
+
+	// Apply bayer dithering to reduce banding artifacts
+	transmittanceOut += (dither - 0.5) * r255;
 }

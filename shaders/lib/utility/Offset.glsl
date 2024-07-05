@@ -1,3 +1,8 @@
+const ivec2 offset2x2[4] = ivec2[4](
+	ivec2(0, 0), ivec2(1, 0),
+	ivec2(0, 1), ivec2(1, 1)
+);
+
 const ivec2 offset3x3[9] = ivec2[9](
     ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
     ivec2(-1,  0), ivec2(0,  0), ivec2(1,  0),

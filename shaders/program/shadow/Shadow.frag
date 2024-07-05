@@ -35,8 +35,6 @@ flat in mat3 tbnMatrix;
 
 uniform sampler2D tex;
 
-//======// Function //============================================================================//
-
 #ifdef WATER_CAUSTICS
 	uniform sampler2D noisetex;
 
@@ -44,6 +42,8 @@ uniform sampler2D tex;
 
 	uniform float frameTimeCounter;
 	uniform float far;
+
+//======// Function //============================================================================//
 
 	#include "/lib/water/WaterWave.glsl"
 
@@ -69,7 +69,7 @@ void main() {
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.3;
+			float caustics = inversesqrt(oldArea / newArea) * 0.4;
 
 			shadowcolor0Out = vec3(fastSqrt(fastSqrt(caustics)));
 			// shadowcolor1Out.xy = encodeUnitVector(normal);
@@ -86,7 +86,7 @@ void main() {
 			shadowcolor0Out = albedo.rgb * tint;
 		} else {
 			albedo.a = fastSqrt(fastSqrt(albedo.a));
-			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint * 0.8, albedo.a);
+			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint, albedo.a);
 		}
 		// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 	}

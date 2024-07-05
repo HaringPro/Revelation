@@ -1,6 +1,7 @@
 
 #if AO_ENABLED == 1
-	// Screen space ambient occlusion
+	/* Screen-Space Ambient Occlusion */
+
 	#define SSAO_SAMPLES 6 // [1 2 3 4 5 6 7 8 9 10 12 16 18 20 22 24 26 28 30 32 48 64]
 	#define SSAO_STRENGTH 1.0 // [0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 
@@ -41,7 +42,8 @@
 	}
 
 #elif AO_ENABLED == 2
-	// Ground-truth ambient occlusion
+	/* Ground-Truth Ambient Occlusion */
+
 	// Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 
 	#define GTAO_SLICES	3 // [1 2 3 4 5 6 8 10 12 15 17 20]

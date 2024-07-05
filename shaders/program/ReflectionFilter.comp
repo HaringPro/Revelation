@@ -1,0 +1,36 @@
+
+
+vec4 ReflectionFilter(in ivec2 texel, in vec4 total, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float size, in vec2 dither) {
+    float smoothness = 1.0 - fastSqrtN1(roughness);
+    float linearDepth = GetLinearDepth(texel);
+    float NdotV = saturate(dot(-worldDir, worldNormal));
+
+    float coordOffset = 8.0 * size * min(roughness * 20.0, 1.0) * oneMinus(fastExp(-fastSqrt(total.a) * 50.0));
+    coordOffset *= total.a * 0.8 + 0.2;
+
+    float sharpenWeight = total.a * 0.475 + 0.025;
+    float roughnessInv = 1e2 / max(roughness, 1e-4);
+
+    total.rgb = pow(dotSelf(total.rgb), 0.5 * sharpenWeight) * normalize(maxEps(total.rgb));
+    float sumWeight = 1.0;
+
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = clamp(texel + ivec2((offset3x3N[i] + dither) * coordOffset), ivec2(0), ivec2(viewSize) - 1);
+
+        vec4 sampleData = imageLoad(colorimg2, sampleTexel);
+
+        float sampleLinerDepth = GetLinearDepth(sampleTexel);
+
+        float weight =  pow(maxEps(dot(worldNormal, GetWorldNormal(sampleTexel))), roughnessInv) *
+                        fastExp(-abs(total.a - sampleData.a) * smoothness) *
+                        fastExp(-abs(sampleLinerDepth - linearDepth) * 2.0 * NdotV * inversesqrt(coordOffset));
+
+        total += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
+        sumWeight += weight;
+    }
+
+    total /= sumWeight;
+    total.rgb = pow(dotSelf(total.rgb), 0.5 / sharpenWeight) * normalize(maxEps(total.rgb));
+
+    return total;
+}

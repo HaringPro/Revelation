@@ -46,7 +46,7 @@ uniform vec2 viewPixelSize;
         vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
         vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
 
-        return lodMult * 12.0 * viewPixelSize + offset;
+        return lodMult * 16.0 * viewPixelSize + offset;
     }
 #endif
 
@@ -71,11 +71,12 @@ vec3 CalculateBloomTile(in vec2 uv) {
 void main() {
     vec2 interpolatedUV = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
 
-    if (any(greaterThan(interpolatedUV, viewSize - 0.5))) return;
-
     vec2 srcUV = interpolatedUV * viewPixelSize + CalculateTileOffset(DOWNSAMPLE_LEVEL - 1);
-	vec3 bloomTile = CalculateBloomTile(srcUV);
 
-	vec2 dstTexel = gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
-    imageStore(colorimg0, ivec2(dstTexel), vec4(bloomTile, 1.0));
+	if (clamp(srcUV, viewPixelSize, 1.0 - viewPixelSize) == srcUV) {
+		vec3 bloomTile = CalculateBloomTile(srcUV);
+
+		vec2 dstTexel = gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
+		imageStore(colorimg0, ivec2(dstTexel), vec4(bloomTile, 1.0));
+	}
 }

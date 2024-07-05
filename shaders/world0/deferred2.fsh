@@ -39,6 +39,8 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
+uniform sampler2D colortex2; // Current indirect light
+
 uniform sampler3D colortex3; // Combined Atmospheric LUT
 
 uniform sampler2D colortex5; // Sky-View LUT
@@ -123,6 +125,7 @@ uniform mat4 shadowModelView;
 	#include "/lib/lighting/AmbientOcclusion.glsl"
 #endif
 
+#include "/lib/utility/Offset.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -147,7 +150,8 @@ void main() {
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
 		vec3 moonDisc = mix(albedo, GetLuminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
-		vec3 celestial = mix(RenderStars(worldDir), moonDisc, albedo.g > 0.06) + RenderSun(worldDir, worldSunVector);
+		vec3 celestial = mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)) // Use bvec3 to avoid errors with some drivers
+		 + RenderSun(worldDir, worldSunVector);
 
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut = skyRadiance + transmittance * celestial;
@@ -262,8 +266,8 @@ void main() {
 					#endif
 					// shadow = shadow * oneMinus(distanceFade) + distanceFade;
 
-					float NdotV = saturate(dot(worldNormal, -worldDir));
 					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+					float NdotV = saturate(dot(worldNormal, -worldDir));
 					float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 					NdotV = max(NdotV, 1e-3);
@@ -278,8 +282,8 @@ void main() {
 				shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
 			#endif
 
-			float NdotV = saturate(dot(worldNormal, -worldDir));
 			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+			float NdotV = saturate(dot(worldNormal, -worldDir));
 			float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
@@ -291,26 +295,46 @@ void main() {
 		// Sunlight diffuse
 		sceneOut += shadow * diffuseBRDF;
 
-		if (lightmap.y > 1e-5) {
-			// Skylight
-			vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-			skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5);
-			skylight *= worldNormal.y * 1.6 + 2.4;
+		// Skylight and bounced light
+		#ifndef SSPT_ENABLED
+			if (lightmap.y > 1e-5) {
+				// Skylight
+				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
+				skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5);
+				skylight *= worldNormal.y * 1.6 + 2.4;
 
-			sceneOut += skylight * cube(lightmap.y) * ao;
+				sceneOut += skylight * cube(lightmap.y) * ao;
 
-			// Bounced light
-			float bounce = CalculateFittedBouncedLight(worldNormal);
-			bounce *= pow5(lightmap.y);
-			sceneOut += bounce * sunlightMult * ao;
-		}
+				// Bounced light
+				float bounce = CalculateFittedBouncedLight(worldNormal);
+				bounce *= pow5(lightmap.y);
+				sceneOut += bounce * sunlightMult * ao;
+			}
+		#endif
+
+		// Global illumination
+		// #ifdef SSPT_ENABLED
+		// 	#ifdef SVGF_ENABLED
+		// 		sceneOut += SpatialFilter(worldNormal, length(viewPos), NdotV) * (ao * 0.6 + 0.4);
+		// 	#else
+		// 		sceneOut += texelFetch(colortex2, screenTexel / 2, 0).rgb * (ao * 0.6 + 0.4);
+		// 	#endif
+		// #endif
 
 		// Emissive & Blocklight
 		vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos, blocklightColor);
-		if (emissive.a * lightmap.x > 1e-5) {
-			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
-		}
+		#ifdef SSPT_ENABLED
+			float albedoLuma = saturate(dot(albedo, vec3(0.45)));
+
+			vec3 emissionAlbedo = normalize(maxEps(albedo));
+			emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), fastSqrt(albedoLuma));
+			emissive.rgb *= emissionAlbedo * 1.5;
+		#else
+			if (emissive.a * lightmap.x > 1e-5) {
+				lightmap.x = CalculateBlocklightFalloff(lightmap.x);
+				sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
+			}
+		#endif
 		sceneOut += emissive.rgb * EMISSION_BRIGHTNESS;
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {

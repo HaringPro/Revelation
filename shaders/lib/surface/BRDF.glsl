@@ -4,7 +4,7 @@
 // https://schuttejoe.github.io/post/disneybsdf/
 
 
-//--// Fresnel //-------------------------------------------------------------//
+//======// Fresnel //=============================================================================//
 
 // Schlick 近似算法
 float FresnelSchlick(in float cosTheta, in float f0) {
@@ -60,13 +60,13 @@ vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
     return saturate(0.5 * (r1 + r2));
 }
 
-//--// Distribution GGX //----------------------------------------------------//
+//======// Distribution GGX //====================================================================//
 
 float DistributionGGX(in float NdotH, in float alpha2) {
 	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH * NdotH);
 }
 
-//--// Smith GGX //-----------------------------------------------------------//
+//======// Smith GGX //===========================================================================//
 
 // float lambda(in float cosTheta, in float alpha2) {
 //     return (sqrt(alpha2 + oneMinus(alpha2) * cosTheta * cosTheta) / cosTheta - 1.0) * 0.5;
@@ -96,7 +96,7 @@ float G2SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
     return 2.0 * NdotL * NdotV * rcp(NdotL * sqrt(alpha2 + oneMinus(alpha2) * NdotV * NdotV) + NdotV * sqrt(alpha2 + oneMinus(alpha2) * NdotL * NdotL));
 }
 
-//------------------------------------------------------------------------------------------------//
+//================================================================================================//
 
 float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in float f0) {
 	if (alpha2 < 1e-6) return 0.0;
@@ -125,6 +125,8 @@ vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float Ndot
 
     return (multi * albedo + single) * NdotL;
 }
+
+//================================================================================================//
 
 // https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {

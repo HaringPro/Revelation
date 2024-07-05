@@ -148,5 +148,6 @@ void main() {
 		}
 	#endif
 
+	// Apply bayer dithering to reduce banding artifacts
 	finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * r255;
 }

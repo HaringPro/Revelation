@@ -76,7 +76,7 @@ float CalculateAverageLuminance() {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
             float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = 1.0 - curve(length(uv * 2.0 - 1.0));
+            float weight = exp2(-0.4 * dotSelf(uv * 2.0 - 1.0));
 
             total += log2(luminance) * weight;
             sumWeight += weight;
@@ -102,13 +102,13 @@ void main() {
 
         const float K = 12.5;
         const float cal = K / ISO;
-        const float m = 3.0, r = m - 0.005;
+        const float m = 3.0, r = m - 0.01;
         float targetExposure = exp2(AUTO_EV_BIAS) / (m - r * fastExp(-exposure * rcp(cal * r)));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
-        float fadedSpeed = targetExposure < prevExposure ? 4.0 : 2.5;
-        exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime * EXPOSURE_SPEED));
+        float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+        exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime));
 	#else
 		exposure = exp2(-MANUAL_EV);
 	#endif

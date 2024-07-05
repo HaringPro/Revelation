@@ -22,6 +22,8 @@ uniform int heldItemId2;
 uniform int heldBlockLightValue2;
 uniform int moonPhase;
 
+uniform bool worldTimeChanged;
+
 uniform float frameTime;
 uniform float frameTimeCounter;
 uniform float nightVision;

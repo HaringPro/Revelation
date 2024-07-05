@@ -19,7 +19,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,6 */
+/* RENDERTARGETS: 0,7 */
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out float bloomyFogTrans;
 
@@ -173,6 +173,7 @@ void main() {
 
 	float LdotV = dot(worldLightVector, worldDir);
 
+	// Water fog
 	if (waterMask && isEyeInWater == 0) {
 		float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
 		mat2x3 waterFog = CalculateWaterFog(lightmap.y, max(transparentDepth, waterDepth), LdotV);
@@ -187,7 +188,7 @@ void main() {
 			// Glass tint
 			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 			translucents.a = fastSqrt(fastSqrt(translucents.a));
-			sceneOut *= cube((1.0 - translucents.a + saturate(translucents.rgb) * 0.8) * translucents.a);
+			sceneOut *= pow4((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
 
 			// Specular reflections of glass
 			vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
@@ -199,6 +200,7 @@ void main() {
 		sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 	}
 
+	// Border fog
 	#ifdef BORDER_FOG
 		if (doBorderFog) {
 			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
@@ -210,6 +212,8 @@ void main() {
 	#endif
 
 	bloomyFogTrans = 1.0;
+
+	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
@@ -218,6 +222,7 @@ void main() {
 		}
 	#endif
 
+	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));

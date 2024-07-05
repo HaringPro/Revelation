@@ -1,3 +1,6 @@
+#if 0
+/* Reflective Shadow Maps */
+// Referrence: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
 
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
@@ -32,10 +35,10 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 
 	vec3 shadowNormal = mat3(shadowModelView) * worldNormal;
 
-	vec2 scale = GI_RADIUS * diagonal2(shadowProjection);
-	const float sqRadius = GI_RADIUS * GI_RADIUS;
-	const float rSteps = 1.0 / float(GI_SAMPLES);
-	const float falloffScale = 12.0 / GI_RADIUS;
+	vec2 scale = RSM_RADIUS * diagonal2(shadowProjection);
+	const float sqRadius = RSM_RADIUS * RSM_RADIUS;
+	const float rSteps = 1.0 / float(RSM_SAMPLES);
+	const float falloffScale = 12.0 / RSM_RADIUS;
 
 	float skyLightmap = texelFetch(colortex7, ivec2(gl_FragCoord.xy * 2.0), 0).g;
 
@@ -44,7 +47,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	vec2 rot = sincos(dither * 64.0) * scale;
 	dither *= rSteps;
 
-	for (uint i = 0u; i < GI_SAMPLES; ++i, rot *= goldenRotate) {
+	for (uint i = 0u; i < RSM_SAMPLES; ++i, rot *= goldenRotate) {
 		float sampleRad 			= float(i) * rSteps + dither;
 
 		vec2 sampleCoord 			= shadowScreenPos.xy + rot * sampleRad;
@@ -74,7 +77,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 
 		float skylightWeight 		= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
 
-		// vec3 albedo 				= SRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
+		// vec3 albedo 				= sRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
 		vec3 albedo 				= pow(texelFetch(shadowcolor0, sampleTexel, 0).rgb, vec3(2.2));
 
 		total += albedo * falloff * diffuse * bounce * skylightWeight;
@@ -83,4 +86,270 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	total *= sqRadius * rSteps;
 
 	return total;
+}
+#endif
+
+/* Screen-Space Path Tracing */
+
+#define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+
+#define SSPT_SPP 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
+#define SSPT_BOUNCES 1 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
+
+#define SSPT_FALLOFF 0.1 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
+
+/***************************************************************************
+ # Copyright (c) 2015-21, NVIDIA CORPORATION. All rights reserved.
+ #
+ # Redistribution and use in source and binary forms, with or without
+ # modification, are permitted provided that the following conditions
+ # are met:
+ #  * Redistributions of source code must retain the above copyright
+ #    notice, this list of conditions and the following disclaimer.
+ #  * Redistributions in binary form must reproduce the above copyright
+ #    notice, this list of conditions and the following disclaimer in the
+ #    documentation and/or other materials provided with the distribution.
+ #  * Neither the name of NVIDIA CORPORATION nor the names of its
+ #    contributors may be used to endorse or promote products derived
+ #    from this software without specific prior written permission.
+ #
+ # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY
+ # EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ # EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ # PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ # PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **************************************************************************/
+
+/** Utility functions for Morton codes.
+    This is using the usual bit twiddling. See e.g.: https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
+
+    The interleave functions are named based to their output size in bits.
+    The deinterleave functions are named based on their input size in bits.
+    So, deinterleave_16bit(interleave_16bit(x)) == x should hold true.
+
+    TODO: Make this a host/device shared header, ensure code compiles on the host.
+    TODO: Add optimized 8-bit and 2x8-bit interleaving functions.
+    TODO: Use NvApi intrinsics to optimize the code on NV.
+*/
+
+/** 32-bit bit interleave (Morton code).
+    \param[in] v 16-bit values in the LSBs of each component (higher bits don't matter).
+    \return 32-bit value.
+*/
+uint interleave_32bit(uvec2 v)
+{
+    uint x = v.x & 0x0000ffffu;              // x = ---- ---- ---- ---- fedc ba98 7654 3210
+    uint y = v.y & 0x0000ffffu;
+
+    x = (x | (x << 8)) & 0x00FF00FFu;        // x = ---- ---- fedc ba98 ---- ---- 7654 3210
+    x = (x | (x << 4)) & 0x0F0F0F0Fu;        // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
+    x = (x | (x << 2)) & 0x33333333u;        // x = --fe --dc --ba --98 --76 --54 --32 --10
+    x = (x | (x << 1)) & 0x55555555u;        // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+
+    y = (y | (y << 8)) & 0x00FF00FFu;
+    y = (y | (y << 4)) & 0x0F0F0F0Fu;
+    y = (y | (y << 2)) & 0x33333333u;
+    y = (y | (y << 1)) & 0x55555555u;
+
+    return x | (y << 1);
+}
+
+/** Generates a pair of 32-bit pseudorandom numbers based on a pair of 32-bit values.
+
+    The code uses a 64-bit block cipher, the Tiny Encryption Algorithm (TEA) by Wheeler et al., 1994.
+    The 128-bit key is fixed and adapted from here: https://www.ibiblio.org/e-notes/webcl/mc.htm.
+    This function can be useful for seeding other pseudorandom number generators.
+
+    \param[in] v0 The first value (low dword of the block).
+    \param[in] v1 The second value (high dword of the block).
+    \param[in] iterations Number of iterations (the authors recommend 16 at a minimum).
+    \return Two pseudorandom numbers (the block cipher of (v0,v1)).
+*/
+uvec2 blockCipherTEA(uint v0, uint v1)
+{
+    uint sum = 0u;
+    const uint delta = 0x9e3779b9u;
+    const uint k[4] = uint[4](0xa341316cu, 0xc8013ea4u, 0xad90777du, 0x7e95761eu); // 128-bit key.
+    for (int i = 0; i < 16; i++)
+    {
+        sum += delta;
+        v0 += ((v1 << 4) + k[0]) ^ (v1 + sum) ^ ((v1 >> 5) + k[1]);
+        v1 += ((v0 << 4) + k[2]) ^ (v0 + sum) ^ ((v0 >> 5) + k[3]);
+    }
+    return uvec2(v0, v1);
+}
+
+struct NoiseGenerator{
+    uint currentNum;
+};
+
+float nextFloat(inout NoiseGenerator noiseGenerator) {
+    const uint A = 1664525u;
+    const uint C = 1013904223u;
+    noiseGenerator.currentNum = (A * noiseGenerator.currentNum + C);
+    return float(noiseGenerator.currentNum >> 8) / 16777216.0;
+}
+
+vec2 nextVec2(inout NoiseGenerator noiseGenerator) {
+    vec2 noise;
+    noise.x = nextFloat(noiseGenerator);
+    noise.y = nextFloat(noiseGenerator);
+    return noise;
+}
+
+NoiseGenerator initNoiseGenerator(uvec2 texelIndex, uint frameIndex) {
+    uint seed = blockCipherTEA(interleave_32bit(texelIndex), frameIndex).x;
+    return NoiseGenerator(seed);
+}
+
+vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
+	if (viewDir.z > -viewPos.z) return vec3(1.5);
+
+	vec3 position = ViewToScreenSpace(viewDir * -viewPos.z + viewPos);
+	vec3 screenDir = normalize(position - rayPos);
+
+	float stepLength = minOf((step(0.0, screenDir) - rayPos) / screenDir) * rcp(16.0);
+
+	vec3 rayStep = screenDir * stepLength;
+	rayPos += rayStep * dither;
+
+	rayPos.xy *= viewSize;
+	rayStep.xy *= viewSize;
+
+	float depthTolerance = max(exp2(2e-2 * viewPos.z - 10.0), -viewDir.z);
+
+	for (uint i = 0u; i < 16u; ++i, rayPos += rayStep){
+		if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
+			float sampleDepth = texelFetch(depthtex0, ivec2(rayPos.xy), 0).x;
+
+			if (sampleDepth < rayPos.z) {
+				// float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
+				// float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
+				// if (abs(sampleDepthLinear - traceDepthLinear) / traceDepthLinear < 0.1) return vec3(rayPos.xy, sampleDepth);
+				if (rayPos.z - sampleDepth < depthTolerance) return vec3(rayPos.xy, sampleDepth);
+			}
+		}
+	}
+
+	return vec3(1.5);
+}
+
+float CalculateBlocklightFalloff(in float blocklight) {
+	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
+	blocklight += fastSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
+	return blocklight * 0.5 * fade;
+}
+
+vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap, in float dither) {
+	lightmap.x = CalculateBlocklightFalloff(lightmap.x) * 0.0;
+	lightmap.y *= lightmap.y * lightmap.y * 0.7;
+    vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
+	vec3 viewDir = normalize(viewPos);
+
+    NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
+	const float g = PI * PI;
+
+	vec3 total = vec3(0.0);
+	const float f0 = 0.04;
+
+	float maxSqLen = sqr(viewPos.z) * 0.2;
+
+	#if SSPT_BOUNCES > 1 && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+    for (uint i = 0u; i < SSPT_SPP; ++i) {
+		vec3 hitViewDir = viewDir;
+		vec3 hitPos = screenPos;
+		vec3 hitWorldNormal = worldNormal;
+		vec3 hitViewNormal = viewNormal;
+		vec3 hitBrdf = vec3(1.0);
+
+		for (uint j = 0u; j < SSPT_BOUNCES; ++j) {
+			vec3 sampleDir = importanceSampleCosine(hitWorldNormal, nextVec2(noiseGenerator));
+
+			hitViewDir = normalize(mat3(gbufferModelView) * sampleDir);
+
+			float NdotL = dot(hitViewNormal, hitViewDir);
+			if (dot(hitViewNormal, hitViewDir) < 0.0) hitViewDir = -hitViewDir;
+
+			hitPos = sampleRaytrace(viewPos, hitViewDir, dither, hitPos);
+
+			float NdotV = maxEps(dot(hitViewNormal, hitViewDir));
+
+			// hitBrdf *= FresnelSchlick(NdotV, f0);
+			hitBrdf *= 0.1;
+
+			if (hitPos.z < 1.0) {
+				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
+				#else
+					vec3 sampleLight = texelFetch(colortex0, ivec2(hitPos.xy), 0).rgb;
+				#endif
+
+				hitWorldNormal = GetWorldNormal(sampleGbufferData0(ivec2(hitPos.xy)));
+				hitViewNormal = mat3(gbufferModelView) * hitWorldNormal;
+
+				hitPos.xy *= viewPixelSize;
+				vec3 diff = ScreenToViewSpace(hitPos) - viewPos;
+
+				float diffSqLen = dotSelf(diff);
+				if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
+					float NdotL = saturate(dot(hitViewNormal, diff * inversesqrt(diffSqLen)));
+					brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
+				}
+
+				total += sampleLight * hitBrdf * exp2(-sqrt(diffSqLen) * SSPT_FALLOFF);;
+			} else if (lightmap.y + lightmap.x > 1e-3) {
+				float groundOcclusion = fastExp(-max0(-sampleDir.y) * g);
+				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
+				total += (skyRadiance.rgb * lightmap.y * groundOcclusion + lightmap.x) * hitBrdf;
+			}
+		}
+	}
+	#else		
+	for (uint i = 0u; i < SSPT_SPP; ++i) {
+			vec3 sampleDir = importanceSampleCosine(worldNormal, nextVec2(noiseGenerator));
+
+			vec3 rayDir = normalize(mat3(gbufferModelView) * sampleDir);
+
+			float NdotL = dot(viewNormal, rayDir);
+			if (dot(viewNormal, rayDir) < 0.0) rayDir = -rayDir;
+
+			vec3 hitPos = sampleRaytrace(viewPos, rayDir, dither, screenPos);
+
+			float NdotV = maxEps(dot(viewNormal, rayDir));
+
+			// float brdf = FresnelSchlick(NdotV, f0);
+			float brdf = 0.1;
+
+			if (hitPos.z < 1.0) {
+				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
+				#else
+					vec3 sampleLight = texelFetch(colortex0, ivec2(hitPos.xy), 0).rgb;
+				#endif
+
+				hitPos.xy *= viewPixelSize;
+				vec3 diff = ScreenToViewSpace(hitPos) - viewPos;
+
+				float diffSqLen = dotSelf(diff);
+				if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
+					float NdotL = saturate(dot(viewNormal, diff * inversesqrt(diffSqLen)));
+					brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
+				}
+
+				total += sampleLight * brdf * exp2(-sqrt(diffSqLen) * SSPT_FALLOFF);;
+			} else if (lightmap.y + lightmap.x > 1e-3) {
+				float groundOcclusion = fastExp(-max0(-sampleDir.y) * g);
+				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
+				total += (skyRadiance.rgb * lightmap.y * groundOcclusion + lightmap.x) * brdf;
+			}
+		}
+	#endif
+
+	return total * 20.0 * rcp(float(SSPT_SPP));
 }

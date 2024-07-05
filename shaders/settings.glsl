@@ -26,6 +26,10 @@ const float minCloudAbsorption	  = 0.03;
 	#define CLOUDS_ENABLED // Enables clouds
 	// #define CLOUD_SHADOWS // Enables cloud shadows
 
+	#ifndef CLOUDS_ENABLED
+		#undef CLOUD_SHADOWS
+	#endif
+
 /* Fog */
 	// #define BORDER_FOG // Enables border fog
 	#define BORDER_FOG_FALLOFF 12.0 // Falloff of the border fog. [0.0 0.5 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0]
@@ -56,6 +60,10 @@ const float minCloudAbsorption	  = 0.03;
 /* Lighting brightness */
 	#define MINIMUM_AMBIENT_BRIGHTNESS 0.00005 // Minimum brightness of the ambient light. [0.0 0.00001 0.00002 0.00003 0.00005 0.00007 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 	#define NIGHT_BRIGHTNESS 0.0005 // Brightness of the night. [0.0 0.00005 0.00007 0.0001 0.0002 0.0003 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 1.0]
+
+/* Global illumination */
+	// #define SSPT_ENABLED // Enables screen-space path tracing
+	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
 
 /* Ambient occlusion */
 	#define AO_ENABLED 1 // Enables ambient occlusion. [0 1 2]
@@ -115,7 +123,7 @@ const float minCloudAbsorption	  = 0.03;
 	#define REFLECTION_FILTER // Enables reflection filter
 
 	#define EMISSION_MODE 0 // [0 1 2]
-	#define EMISSION_BRIGHTNESS 1.5 // Brightness of emissive. [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0 20.5 21.0 21.5 22.0 22.5 23.0 23.5 24.0 24.5 25.0]
+	#define EMISSION_BRIGHTNESS 1.0 // Brightness of emissive. [0.0 0.1 0.2 0.3 0.5 0.6 0.7 0.8 0.9 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0 20.5 21.0 21.5 22.0 22.5 23.0 23.5 24.0 24.5 25.0]
 
 	#define SUBSERFACE_SCATTERING_MODE 0 // [0 1 2]
 	#define SUBSERFACE_SCATTERING_STRENTGH 1.0 // Strength of subsurface scattering. [0.0 0.01 0.02 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
@@ -146,7 +154,8 @@ const float minCloudAbsorption	  = 0.03;
 
 	#define ISO 100.0 // ISO value. [100.0 200.0 320.0 400.0 500.0 640.0 800.0 1000.0 1250.0 1600.0 2000.0 2500.0 3200.0 4000.0 5000.0 6400.0 8000.0 10000.0 12800.0 16000.0 20000.0 25600.0 32000.0 40000.0 51200.0 64000.0 80000.0]
 	#define AUTO_EV_BIAS 0.0 // [-2.0 -1.9 -1.8 -1.7 -1.6 -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-	#define EXPOSURE_SPEED 1.0 // Speed of the exposure. [0.1 0.2 0.3 0.5 0.7 1.0 1.3 1.6 2.0 2.5 3.0 5.0 7.0 10.0]
+	#define EXPOSURE_SPEED_DOWN 2.5 // Bright to dim speed. [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0 150.0 160.0 170.0 180.0 190.0 200.0]
+	#define EXPOSURE_SPEED_UP 4.0 // Dim to bright speed. [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0 110.0 120.0 130.0 140.0 150.0 160.0 170.0 180.0 190.0 200.0]
 	#define MANUAL_EV 12.0 // [0.1 0.3 0.5 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 14.0 16.0 18.0 20.0 25.0 30.0 40.0 50.0]
 
 /* FidelityFX */
