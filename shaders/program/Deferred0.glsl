@@ -42,7 +42,7 @@ in vec2 vaUV0;
 
 uniform sampler2D colortex1; // Sceen history
 uniform sampler3D colortex3; // Combined Atmospheric LUT
-uniform sampler2D colortex5;
+uniform sampler2D colortex5; // Previous exposure
 
 uniform int moonPhase;
 
@@ -62,11 +62,25 @@ uniform vec3 worldSunVector;
 #include "/lib/atmospherics/Global.inc"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-float CalculateAverageLuminance() {
+#define HISTOGRAM_AE // Enables auto exposure histogram
+
+#define HISTOGRAM_BIN_COUNT 32 // [8 16 32 64 128 256 512 1024]
+#define HISTOGRAM_MIN_EV -20.0 // [-24.0 -20.0 -16.0 -12.0 -8.0 -4.0 -2.0 -1.0 0.0 1.0 2.0 4.0 8.0 12.0 16.0 20.0 24.0]
+#define HISTOGRAM_LOWER_BOUND 0.8 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
+#define HISTOGRAM_UPPER_BOUND 0.9 // [0.5 0.6 0.7 0.8 0.9 1.0]
+
+float CalculateAutoExposure() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
 
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
     vec2 pixelSize = 1.0 / vec2(tileSteps);
+
+    #ifdef HISTOGRAM_AE
+        float lumBucket[HISTOGRAM_BIN_COUNT];
+
+        // Initialize luminance bucket
+        for (uint i = 0u; i < HISTOGRAM_BIN_COUNT; ++i) lumBucket[i] = 0.0;
+    #endif
 
     float total = 0.0;
     float sumWeight = 0.0;
@@ -76,14 +90,44 @@ float CalculateAverageLuminance() {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
             float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = exp2(-0.4 * dotSelf(uv * 2.0 - 1.0));
+            float weight = exp2(-0.2 * dotSelf(uv * 2.0 - 1.0));
 
-            total += log2(luminance) * weight;
+            #ifdef HISTOGRAM_AE
+                lumBucket[clamp(int(log2(luminance) - HISTOGRAM_MIN_EV), 0, HISTOGRAM_BIN_COUNT - 1)] += weight;
+            #else
+                total += log2(luminance) * weight;
+            #endif
             sumWeight += weight;
         }
 	}
 
-    total /= sumWeight;
+    #ifdef HISTOGRAM_AE
+        float sumWeightInv = 1.0 / sumWeight;
+
+        float prefix = 0.0;
+        vec2 lum = vec2(0.0), weight = vec2(0.0);
+        uint i = 0u;
+        for (; i < HISTOGRAM_BIN_COUNT; ++i) {
+            prefix += lumBucket[i] * sumWeightInv;
+            if (prefix > HISTOGRAM_LOWER_BOUND) {
+                weight.x = prefix - HISTOGRAM_LOWER_BOUND;
+                lum.x = float(i) * weight.x;
+                break;
+            }
+        }
+        for (; i < HISTOGRAM_BIN_COUNT; ++i) {
+            prefix += lumBucket[i] * sumWeightInv;
+            if (prefix > HISTOGRAM_UPPER_BOUND) {
+                weight.y = prefix - HISTOGRAM_UPPER_BOUND;
+                lum.y = float(i) * weight.y;
+                break;
+            }
+        }
+
+        total = (lum.x + lum.y) / (weight.x + weight.y) + HISTOGRAM_MIN_EV;
+    #else
+        total /= sumWeight;
+    #endif
 
 	return exp2(total);
 }
@@ -98,7 +142,7 @@ void main() {
 	directIlluminance = sunIlluminance + moonIlluminance;
 
  	#ifdef AUTO_EXPOSURE
-		exposure = CalculateAverageLuminance();
+		exposure = CalculateAutoExposure();
 
         const float K = 12.5;
         const float cal = K / ISO;

@@ -344,7 +344,7 @@ void main() {
 		#endif
 
 		// Minimal ambient light
-		sceneOut = max(sceneOut, vec3(MINIMUM_AMBIENT_BRIGHTNESS));
+		sceneOut = max(sceneOut, vec3(MINIMUM_AMBIENT_BRIGHTNESS * ao));
 
 		// Apply albedo
 		sceneOut *= albedo;
