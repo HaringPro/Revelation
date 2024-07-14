@@ -1,6 +1,34 @@
 //--// AgX Minimal //---------------------------------------------------------//
 
-// From https://www.shadertoy.com/view/mdcSDH
+// From https://iolite-engine.com/blog_posts/minimal_agx_implementation
+
+// MIT License
+//
+// Copyright (c) 2024 Missing Deadlines (Benjamin Wrensch)
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+// All values used to derive this implementation are sourced from Troy’s initial AgX implementation/OCIO config file available here:
+//   https://github.com/sobotka/AgX
+
+// 0: Default, 1: Golden, 2: Punchy, 3: Custom
+#define AGX_LOOK 3 // [0 1 2 3]
 
 // Mean error^2: 3.6705141e-06
 vec3 agxDefaultContrastApprox_6th(vec3 x) {
@@ -30,112 +58,121 @@ vec3 agxDefaultContrastApprox_7th(vec3 x) {
            - 0.1718    * x
            + 0.002857;
 }
-// vec3 agx(vec3 val) {
-//     const mat3 agx_mat = mat3(
-//         0.842479062253094, 0.0423282422610123, 0.0423756549057051,
-//         0.0784335999999992,  0.878468636469772,  0.0784336,
-//         0.0792237451477643, 0.0791661274605434, 0.879142973793104);
-        
-//     //const float min_ev = -12.47393f;
-//     //const float max_ev = 4.026069f;
-//     const float min_ev = -8.0;
-//     const float max_ev = 6.0;
 
-//     // Input transform
-//     val = agx_mat * val * 7.0;
-
-//     // Log2 space encoding
-//     val = clamp(log2(val), min_ev, max_ev);
-//     val = (val - min_ev) / (max_ev - min_ev);
-
-//     // Apply sigmoid function approximation
-//     val = agxDefaultContrastApprox(val);
-
-//     return val;
-// }
-
-// vec3 agxEotf(vec3 val) {
-//     const mat3 agx_mat_inv = mat3(
-//         1.19687900512017, -0.0528968517574562, -0.0529716355144438,
-//         -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
-//         -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
-        
-//     // Undo input transform
-//     val = agx_mat_inv * val;
-
-//     // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
-//     //val = pow(val, vec3(2.2));
-//     //val = SRGBtoLinear(val);
-
-//     return val;
-// }
-
-// vec3 agxLook(vec3 val) {
-//     float luma = GetLuminance(val);
-
-//     // Default
-//     vec3 offset = vec3(0.0);
- 
-//     #if AGX_LOOK == 1
-//         // Golden
-//         vec3 slope = vec3(1.0, 0.9, 0.5);
-//         vec3 power = vec3(0.8);
-//         float sat = 0.8;
-//     #elif AGX_LOOK == 2
-//     // Punchy
-//         vec3 slope = vec3(1.0);
-//         vec3 power = vec3(1.35, 1.35, 1.35);
-//         float sat = 1.4;
-//     #else
-//     // Default
-//         vec3 slope = vec3(1.0);
-//         vec3 power = vec3(1.0);
-//         float sat = 1.0;
-//     #endif
-
-//     // ASC CDL
-//     val = pow(val * slope + offset, power);
-//     val = luma + sat * (val - luma);
-// }
-
-vec3 AgX_Minimal(in vec3 val) {
-    val *= 2.0;
-
+vec3 agx(vec3 val) {
     const mat3 agx_mat = mat3(
-        0.842479062253094, 0.0423282422610123, 0.0423756549057051,
-        0.0784335999999992,  0.878468636469772,  0.0784336,
-        0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+    0.842479062253094, 0.0423282422610123, 0.0423756549057051,
+    0.0784335999999992,  0.878468636469772,  0.0784336,
+    0.0792237451477643, 0.0791661274605434, 0.879142973793104);
 
-	val *= mat3(0.99999976, -1.26657e-7, -1.29064e-9, 1.67316e-8, 0.99999976, -5.32026e-9, -0.00725587, 6.47740e-9, 1.00725580);
+    // const float min_ev = -12.47393f;
+    // const float max_ev = 4.026069f;
+    const float min_ev = -8.48;
+    const float max_ev = 5.52;
 
-    //const float min_ev = -12.47393f;
-    //const float max_ev = 4.026069f;
-    const float min_ev = -6.0;
-    const float max_ev = 6.0;
-
-    // Input transform
+    // Input transform (inset)
     val = agx_mat * val;
 
     // Log2 space encoding
-    val = clamp(log2(val * 5.5), min_ev, max_ev);
+    val = clamp(log2(val * 5.0), min_ev, max_ev);
     val = (val - min_ev) / (max_ev - min_ev);
 
     // Apply sigmoid function approximation
     val = agxDefaultContrastApprox_7th(val);
 
-    //const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
-    //float luma = dot(val, lw);
-    //float luma = GetLuminance(val);
-
-    const mat3 agx_mat_inv = mat3(
-        1.19687900512017, -0.0528968517574562, -0.0529716355144438,
-        -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
-        -0.0990297440797205, -0.0989611768448433, 1.15107367264116
-    );
-
-    // Undo input transform
-    return agx_mat_inv * val;
+    return val;
 }
+
+vec3 agxEotf(vec3 val) {
+    const mat3 agx_mat_inv = mat3(
+    1.19687900512017, -0.0528968517574562, -0.0529716355144438,
+    -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
+    -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
+
+    // Inverse input transform (outset)
+    val = agx_mat_inv * val;
+
+    // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
+    // NOTE: We're linearizing the output here. Comment/adjust when
+    // *not* using a sRGB render target
+    // val = pow(val, vec3(2.2));
+
+    return val;
+}
+
+vec3 agxLook(vec3 val) {
+    const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+    float luma = dot(val, lw);
+
+    // Default
+    vec3 slope = vec3(1.0);
+    vec3 power = vec3(1.0);
+    float sat = 1.0;
+
+    #if AGX_LOOK == 1
+        // Golden
+        slope = vec3(1.0, 0.9, 0.5);
+        power = vec3(0.8);
+        sat = 0.8;
+    #elif AGX_LOOK == 2
+        // Punchy
+        power = vec3(1.35);
+        sat = 1.4;
+    #elif AGX_LOOK == 3
+        // Custom
+        slope = vec3(1.1);
+        power = vec3(1.3);
+    #endif
+
+    // ASC CDL
+    val = pow(val * slope, power);
+    return luma + sat * (val - luma);
+}
+
+vec3 AgX_Minimal(in vec3 value) {
+    value = agx(value);
+    value = agxLook(value); // Optional
+    return agxEotf(value);
+}
+
+// vec3 AgX_Minimal(in vec3 val) {
+//     val *= 2.0;
+
+//     const mat3 agx_mat = mat3(
+//         0.842479062253094, 0.0423282422610123, 0.0423756549057051,
+//         0.0784335999999992,  0.878468636469772,  0.0784336,
+//         0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+
+// 	val *= mat3(0.99999976, -1.26657e-7, -1.29064e-9, 1.67316e-8, 0.99999976, -5.32026e-9, -0.00725587, 6.47740e-9, 1.00725580);
+
+//     //const float min_ev = -12.47393f;
+//     //const float max_ev = 4.026069f;
+//     const float min_ev = -6.0;
+//     const float max_ev = 6.0;
+
+//     // Input transform
+//     val = agx_mat * val;
+
+//     // Log2 space encoding
+//     val = clamp(log2(val * 5.5), min_ev, max_ev);
+//     val = (val - min_ev) / (max_ev - min_ev);
+
+//     // Apply sigmoid function approximation
+//     val = agxDefaultContrastApprox_7th(val);
+
+//     //const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+//     //float luma = dot(val, lw);
+//     //float luma = GetLuminance(val);
+
+//     const mat3 agx_mat_inv = mat3(
+//         1.19687900512017, -0.0528968517574562, -0.0529716355144438,
+//         -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
+//         -0.0990297440797205, -0.0989611768448433, 1.15107367264116
+//     );
+
+//     // Undo input transform
+//     return agx_mat_inv * val;
+// }
 
 
 //--// AgX Full //------------------------------------------------------------//
@@ -154,7 +191,7 @@ const mat3 LINEAR_SRGB_TO_LINEAR_REC2020 = mat3(
 	vec3( 0.043313, 0.011362, 0.895595 ));
 
 
-const float slope = 2.4;
+const float slope = 2.0;
 const float toe_power = 3.0;
 const float shoulder_power = 3.25;
 
@@ -241,7 +278,7 @@ float equation_scale(float x_pivot, float y_pivot, float slope_pivot, float powe
 }
 
 float equation_hyperbolic(float x, float power) {
-    return x / pow(1.0 + pow(x, power), 1.0 / power);
+    return x * pow(1.0 + pow(x, power), -1.0 / power);
 }
 
 float equation_term(float x, float x_pivot, float slope_pivot, float scale) {
@@ -249,7 +286,7 @@ float equation_term(float x, float x_pivot, float slope_pivot, float scale) {
 }
 
 float equation_curve(float x, float x_pivot, float y_pivot, float slope_pivot, float toe_power, float shoulder_power, float scale) {
-    if(scale < 0.0) {
+    if (scale < 0.0) {
         return scale * equation_hyperbolic(equation_term(x, x_pivot, slope_pivot, scale), toe_power) + y_pivot;
     } else {
         return scale * equation_hyperbolic(equation_term(x,x_pivot,slope_pivot,scale), shoulder_power) + y_pivot;
@@ -309,7 +346,5 @@ vec3 AgX_Full(in vec3 rgb) {
     rgb = sRGBtoLinear(rgb);
     rgb = LINEAR_REC2020_TO_LINEAR_SRGB * rgb;
 
-    rgb = linearToSRGB(rgb);
-
-    return rgb;
+    return linearToSRGB(rgb);
 }

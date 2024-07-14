@@ -194,6 +194,7 @@ void main() {
 
 	// Tone mapping
 	LDRImageOut = TONEMAP_OPERATOR(HDRImage);
+	// LDRImageOut = gl_FragCoord.x * viewPixelSize.x > 0.5 ? TONEMAP_OPERATOR(HDRImage) : None(HDRImage);
 
 	// LDR range clamp
 	LDRImageOut = saturate(LDRImageOut);
