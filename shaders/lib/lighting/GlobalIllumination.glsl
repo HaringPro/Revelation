@@ -223,7 +223,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	rayPos.xy *= viewSize;
 	rayStep.xy *= viewSize;
 
-	float depthTolerance = max(exp2(2e-2 * viewPos.z - 10.0), -viewDir.z);
+	float depthTolerance = max(exp2(2e-2 * viewPos.z - 10.0), rayStep.z * 12.0);
 
 	for (uint i = 0u; i < 16u; ++i, rayPos += rayStep){
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {

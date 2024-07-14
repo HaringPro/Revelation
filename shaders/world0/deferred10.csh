@@ -68,21 +68,25 @@ uniform mat4 gbufferModelView;
 
 		float sumWeight = 0.1;
 
-		vec3 total = imageLoad(colorimg2, texel).rgb * sumWeight;
+		vec3 total = imageLoad(colorimg2, texel).rgb;
+		float centerLuma = GetLuminance(total);
+		total *= sumWeight;
+
 		ivec2 shift = ivec2(viewWidth * 0.5, 0);
         ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
 		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 offset = offset3x3N[i];
-			ivec2 sampleTexel = texel + offset;
+			ivec2 sampleTexel = texel + offset3x3N[i];
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
+				vec3 sampleLight = imageLoad(colorimg2, sampleTexel).rgb;
+
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
-				float weight = exp2(-dotSelf(offset) * 0.1);
-				weight *= exp2(-distance(prevData.a, viewDistance) * 0.1 * NdotV);
-				weight *= pow16(max0(dot(prevData.rgb, worldNormal)));
+				float weight = pow16(max0(dot(prevData.rgb, worldNormal)));
+				weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
+				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.2);
 
-				total += imageLoad(colorimg2, sampleTexel).rgb * weight;
+				total += sampleLight * weight;
 				sumWeight += weight;
 			}
 		}
