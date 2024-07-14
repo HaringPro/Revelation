@@ -168,9 +168,9 @@ void main() {
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
-		vec3 flatNormal = GetFlatNormal(gbufferData0);
+		vec3 flatNormal = FetchFlatNormal(gbufferData0);
 		#if defined MC_NORMAL_MAP
-			vec3 worldNormal = GetWorldNormal(gbufferData0);
+			vec3 worldNormal = FetchWorldNormal(gbufferData0);
 		#else
 			vec3 worldNormal = flatNormal;
 		#endif

@@ -13,9 +13,8 @@
 --------------------------------------------------------------------------------
 */
 
+layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(1.0f, 1.0f);
-
-layout (local_size_x = 8, local_size_y = 8) in;
 
 //======// Utility //=============================================================================//
 
@@ -23,7 +22,7 @@ layout (local_size_x = 8, local_size_y = 8) in;
 
 //======// Output //==============================================================================//
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg0; // Scene color
 
 //======// Uniform //=============================================================================//
 
@@ -71,11 +70,12 @@ uniform mat4 gbufferModelView;
 
 		vec3 total = imageLoad(colorimg2, texel).rgb * sumWeight;
 		ivec2 shift = ivec2(viewWidth * 0.5, 0);
+        ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
 		for (uint i = 0u; i < 8u; ++i) {
 			ivec2 offset = offset3x3N[i];
 			ivec2 sampleTexel = texel + offset;
-			if (clamp(sampleTexel, ivec2(0), ivec2(viewSize * 0.5) - 1) == sampleTexel) {
+			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
 				float weight = exp2(-dotSelf(offset) * 0.1);
@@ -100,8 +100,13 @@ void main() {
 	float depth = sampleDepth(screenTexel);
 
 	if (depth < 1.0) {
-		vec3 albedo = sRGBtoLinear(texelFetch(colortex6, screenTexel, 0).rgb);
-		vec3 sceneOut = imageLoad(colorimg0, screenTexel).rgb;
+		#ifdef DEBUG_GI
+			vec3 albedo = vec3(1.0);
+			vec3 sceneOut = vec3(0.0);
+		#else
+			vec3 albedo = sRGBtoLinear(texelFetch(colortex6, screenTexel, 0).rgb);
+			vec3 sceneOut = imageLoad(colorimg0, screenTexel).rgb;
+		#endif
 
 		// Global illumination
 		#ifdef SVGF_ENABLED
@@ -113,7 +118,7 @@ void main() {
 
 			vec4 gbufferData0 = sampleGbufferData0(screenTexel);
 
-			vec3 worldNormal = GetWorldNormal(gbufferData0);
+			vec3 worldNormal = FetchWorldNormal(gbufferData0);
 			float NdotV = saturate(dot(worldNormal, -worldDir));
 
 			sceneOut += SpatialFilter(worldNormal, length(viewPos), NdotV) * albedo;
@@ -125,5 +130,6 @@ void main() {
 		// sceneOut = max(sceneOut, albedo * MINIMUM_AMBIENT_BRIGHTNESS);
 
 		imageStore(colorimg0, screenTexel, vec4(sceneOut, 1.0));
+		// imageStore(colorimg2, screenTexel, vec4(0.0)); // Clear for next pass
 	}
 }

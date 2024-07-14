@@ -119,7 +119,7 @@ void main() {
         float depth = sampleDepth(currentTexel);
 
         if (depth < 1.0) {
-            vec3 worldNormal = GetWorldNormal(sampleGbufferData0(currentTexel));
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
             vec4 indirectCurrent = vec4(vec3(0.0), 1.0);
             vec4 indirectHistory = indirectCurrent;
 
@@ -199,7 +199,7 @@ void main() {
         if (depth < 1.0) {
             // depth += 0.38 * step(depth, 0.56);
 
-            vec3 worldNormal = GetWorldNormal(sampleGbufferData0(currentTexel));
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
             float viewDepth = ScreenToViewDepth(depth);
 
             imageStore(colorimg13, screenTexel, vec4(worldNormal, viewDepth));

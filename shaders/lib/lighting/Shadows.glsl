@@ -51,7 +51,7 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.4);
+	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.2);
 
 	return vec2(searchDepth * shadowProjection[0].x, sssDepth * shadowProjectionInverse[2].z);
 }
@@ -91,7 +91,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 	vec3 lightDir = mat3(gbufferModelView) * worldLightVector;
 
 	float NdotL = dot(lightDir, viewNormal);
-	lightDir += viewNormal * 2e-4 / max(sqr(NdotL), 1e-3); // Light direction bias
+	viewPos += length(viewPos) * viewNormal * 3e-4 / maxEps(sqr(NdotL));
 
     vec3 endPos = ViewToScreenSpace(lightDir * -viewPos.z + viewPos);
     vec3 rayStep = normalize(endPos - rayPos);

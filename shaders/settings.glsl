@@ -72,7 +72,7 @@ const float minCloudAbsorption	  = 0.03;
 	#define COLORED_SHADOWS // Enables colored shadows
 
 	#define SCREEN_SPACE_SHADOWS // Enables screen space shadows
-	#define SCREEN_SPACE_SHADOWS_SAMPLES 12 // Sample count of screen space shadows. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
+	#define SCREEN_SPACE_SHADOWS_SAMPLES 16 // Sample count of screen space shadows. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
 	// #define SHADOW_BACKFACE_CULLING // Enables backface culling for shadows
 
@@ -173,5 +173,6 @@ const float minCloudAbsorption	  = 0.03;
 	#define DEBUG_NORMALS 0 // [0 1 2]
 	// #define DEBUG_DEPTH 0 // [0 1 2]
 	// #define DEBUG_BLOOM_TILES
+	// #define DEBUG_GI
 
 #endif

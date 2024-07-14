@@ -2,7 +2,7 @@
 
 vec4 ReflectionFilter(in ivec2 texel, in vec4 total, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float size, in vec2 dither) {
     float smoothness = 1.0 - fastSqrtN1(roughness);
-    float linearDepth = GetLinearDepth(texel);
+    float linearDepth = FetchLinearDepth(texel);
     float NdotV = saturate(dot(-worldDir, worldNormal));
 
     float coordOffset = 8.0 * size * min(roughness * 20.0, 1.0) * oneMinus(fastExp(-fastSqrt(total.a) * 50.0));
@@ -19,9 +19,9 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 total, in float roughness, in vec3
 
         vec4 sampleData = imageLoad(colorimg2, sampleTexel);
 
-        float sampleLinerDepth = GetLinearDepth(sampleTexel);
+        float sampleLinerDepth = FetchLinearDepth(sampleTexel);
 
-        float weight =  pow(maxEps(dot(worldNormal, GetWorldNormal(sampleTexel))), roughnessInv) *
+        float weight =  pow(maxEps(dot(worldNormal, FetchWorldNormal(sampleTexel))), roughnessInv) *
                         fastExp(-abs(total.a - sampleData.a) * smoothness) *
                         fastExp(-abs(sampleLinerDepth - linearDepth) * 2.0 * NdotV * inversesqrt(coordOffset));
 

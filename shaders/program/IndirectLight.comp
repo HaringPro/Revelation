@@ -11,9 +11,8 @@
 --------------------------------------------------------------------------------
 */
 
+layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(0.5f, 0.5f);
-
-layout (local_size_x = 8, local_size_y = 8) in;
 
 //======// Utility //=============================================================================//
 
@@ -48,7 +47,7 @@ void main() {
 
 	if (depth < 1.0) {
 		vec4 gbufferData0 = sampleGbufferData0(currentTexel);
-		vec3 worldNormal = GetWorldNormal(gbufferData0);
+		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
 		vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
 		vec3 screenPos = vec3(screenCoord * 2.0, depth);

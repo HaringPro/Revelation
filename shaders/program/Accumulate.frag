@@ -221,7 +221,7 @@ void main() {
         momentsHistory = vec2(0.0);
 
         if (depth < 1.0) {
-            vec3 worldNormal = GetWorldNormal(sampleGbufferData0(currentTexel));
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
 
             vec3 screenPos = vec3(currentCoord, depth);
             vec3 viewPos = ScreenToViewSpace(screenPos);
@@ -248,7 +248,7 @@ void main() {
         if (depth < 1.0) {
             // depth += 0.38 * step(depth, 0.56);
 
-            vec3 worldNormal = GetWorldNormal(sampleGbufferData0(currentTexel));
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
             float viewDistance = length(ScreenToViewSpace(vec3(currentCoord - vec2(1.0, 0.0), depth)));
 
             indirectHistory = vec4(worldNormal, viewDistance);

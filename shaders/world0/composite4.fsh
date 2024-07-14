@@ -120,8 +120,8 @@ void main() {
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
-	float depth = GetDepthFix(screenTexel);
-	float sDepth = GetDepthSoildFix(screenTexel);
+	float depth = FetchDepthFix(screenTexel);
+	float sDepth = FetchDepthSoildFix(screenTexel);
 
 	#ifdef BORDER_FOG
 		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
@@ -135,7 +135,7 @@ void main() {
 	float transparentDepth = distance(viewPos, sViewPos);
 
 	vec4 gbufferData1 = texelFetch(colortex8, screenTexel, 0);
-	vec3 worldNormal = GetWorldNormal(gbufferData0);
+	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 	vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 	vec2 refractCoord;
@@ -238,7 +238,7 @@ void main() {
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;
 	#elif DEBUG_NORMALS == 2
-		sceneOut = GetFlatNormal(gbufferData0) * 0.5 + 0.5;
+		sceneOut = FetchFlatNormal(gbufferData0) * 0.5 + 0.5;
 	// #elif DEBUG_DEPTH == 1
 	// 	sceneOut = vec3(depth);
 	// #elif DEBUG_DEPTH == 2

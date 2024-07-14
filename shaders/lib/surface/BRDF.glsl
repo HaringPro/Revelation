@@ -148,6 +148,16 @@ vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
     return normalize(vec3(roughness * halfway.xy, halfway.z));
 }
 
+vec3 sampleCosineVector(in vec3 vector, in vec2 xy) {
+    float phi = TAU * xy.x;
+    float cosTheta = xy.y * 2.0 - 1.0;
+    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
+    vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
+
+	vec3 cosineVector = normalize(vector + hemisphere);
+	return dot(cosineVector, vector) < 0.0 ? -cosineVector : cosineVector;
+}
+
 vec3 importanceSampleCosine(in vec3 normal, in vec2 xy) {
     float phi = TAU * xy.y;
 
