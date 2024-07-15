@@ -349,5 +349,9 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 		}
 	#endif
 
-	return total * 24.0 * rcp(float(SSPT_SPP));
+	#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+		return total * 24.0 * rcp(float(SSPT_SPP));
+	#else
+		return total * 48.0 * rcp(float(SSPT_SPP));
+	#endif
 }

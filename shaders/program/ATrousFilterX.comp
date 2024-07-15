@@ -84,7 +84,7 @@ float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
 		}
 	}
 
-	return variance * 8.0;
+	return variance;
 }
 
 //======// Main //================================================================================//
@@ -113,11 +113,12 @@ void main() {
 		indirectCurrent *= sumWeight;
 
 		float variance = CalculateVariance(texel, maxLimit);
-		vec2 offsetScale = (RandNext2F() + 0.5) * FILTER_SIZE;
+		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
+    	ivec2 randOffset = ivec2((RandNext2F() - 0.5) * FILTER_SIZE);
 
 		for (uint i = 0u; i < 4u; ++i) {
-			ivec2 offset = offset[i];
-			ivec2 sampleTexel = texel + ivec2(offset * offsetScale);
+			ivec2 offset = offset[i] * FILTER_SIZE + randOffset;
+			ivec2 sampleTexel = texel + offset;
 			// ivec2 offset = ivec2(x, y) * FILTER_SIZE;
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
 				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
@@ -125,9 +126,9 @@ void main() {
 				vec4 sampleLight = imageLoad(colorimg2, sampleTexel);
 				float sampleLuma = GetLuminance(sampleLight.rgb);
 
-				float weight = exp2(-dotSelf(offset));
+				// float weight = exp2(-dotSelf(offset));
 				// float weight = kernel[abs(x)] * kernel[abs(y)];
-				// float weight = kernel[i];
+				float weight = kernel[i];
 
 				// wN = max(0, N0 · N1) ^ σN
 				weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)));
@@ -137,7 +138,7 @@ void main() {
 				weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * inversesqrt(float(FILTER_SIZE)));
 
 				// wL = exp(−|L0 − L1| / (σLvar + ε))
-				weight *= fastExp(-abs(sampleLuma - centerLuma) / (4.0 * variance + 1e-6));
+				weight *= fastExp(-abs(sampleLuma - centerLuma) * variancePhi);
 
 				indirectCurrent.rgb += sampleLight.rgb * weight;
 				indirectCurrent.a += sampleLight.a * weight * weight; // Sample variance

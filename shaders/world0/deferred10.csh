@@ -59,7 +59,6 @@ uniform mat4 gbufferModelView;
 
 #include "/lib/utility/Transform.glsl"
 #include "/lib/utility/Fetch.glsl"
-
 #include "/lib/utility/Offset.glsl"
 
 #ifdef SVGF_ENABLED

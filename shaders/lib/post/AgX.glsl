@@ -104,24 +104,25 @@ vec3 agxLook(vec3 val) {
     const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
     float luma = dot(val, lw);
 
-    // Default
-    vec3 slope = vec3(1.0);
-    vec3 power = vec3(1.0);
-    float sat = 1.0;
-
-    #if AGX_LOOK == 1
+    #if AGX_LOOK == 0
+        // Default
+        const vec3 slope = vec3(1.0);
+        const vec3 power = vec3(1.0);
+        const float sat = 1.0;
+    #elif AGX_LOOK == 1
         // Golden
-        slope = vec3(1.0, 0.9, 0.5);
-        power = vec3(0.8);
-        sat = 0.8;
+        const vec3 slope = vec3(1.0, 0.9, 0.5);
+        const vec3 power = vec3(0.8);
+        const float sat = 0.8;
     #elif AGX_LOOK == 2
         // Punchy
-        power = vec3(1.35);
-        sat = 1.4;
-    #elif AGX_LOOK == 3
+        const vec3 power = vec3(1.35);
+        const float sat = 1.4;
+    #else
         // Custom
-        slope = vec3(1.1);
-        power = vec3(1.3);
+        const vec3 slope = vec3(1.1);
+        const vec3 power = vec3(1.3);
+        const float sat = 1.0;
     #endif
 
     // ASC CDL

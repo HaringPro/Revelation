@@ -41,8 +41,8 @@ float CloudPlaneDensity(in vec2 worldPos) {
 	float sratocumulus = texture(noisetex, position * 0.005).z, weight = 0.5;
 
 	for (uint i = 0u; i < 6u; ++i, weight *= 0.5) {
-		sratocumulus += weight * textureLod(noisetex, position * 5e-3 + sratocumulus * 0.05, 0.0).x;
-		position = position * (3.0 + max0(float(i) - 4.0)) - wind;
+		sratocumulus += weight * textureLod(noisetex, position * 5e-3, 0.0).x;
+		position = position * (3.0 + sratocumulus) + sratocumulus * 3.0 - wind;
 	}
 
 	sratocumulus = saturate(sratocumulus * 0.2 + localCoverage * 0.2 + wetness * 4e-2 - 0.32) * 0.4;
