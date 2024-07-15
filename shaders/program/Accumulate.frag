@@ -20,7 +20,7 @@
 #define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 #define SSPT_SAMPLER colortex2
-#define SSPT_VARIANCE_SCALE 0.01
+#define SSPT_VARIANCE_SCALE 0.001
 
 //======// Output //==============================================================================//
 
@@ -102,6 +102,8 @@ vec4 SpatialColor(in ivec2 texel) {
             }
         }
     }
+
+    momentsHistory = vec2(luma, sqLuma);
     return vec4(indirectData, abs(sqLuma - luma * luma));
 }
 
@@ -197,9 +199,6 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     } else {
         indirectCurrent = SpatialColor(screenTexel);
         indirectHistory.rgb = indirectCurrent.rgb;
-
-        float luminance = GetLuminance(indirectCurrent.rgb);
-        momentsHistory = vec2(luminance, luminance * luminance);
     }
 }
 
@@ -260,9 +259,6 @@ void main() {
             if (saturate(prevCoord) != prevCoord || worldTimeChanged || depth < 0.56) {
                 indirectCurrent = SpatialColor(screenTexel);
                 indirectHistory.rgb = indirectCurrent.rgb;
-
-                float luminance = GetLuminance(indirectCurrent.rgb);
-                momentsHistory = vec2(luminance, luminance * luminance);
             } else {
                 prevCoord *= 0.5;
                 TemporalFilter(screenTexel, prevCoord, viewPos);
