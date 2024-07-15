@@ -62,7 +62,7 @@ uniform mat4 gbufferModelView;
 #include "/lib/utility/Offset.glsl"
 
 #ifdef SVGF_ENABLED
-	vec3 SpatialFilter(in vec3 worldNormal, in float viewDistance, in float NdotV) {
+	vec3 SpatialUpscale3x3(in vec3 worldNormal, in float viewDistance, in float NdotV) {
 		ivec2 texel = ivec2(gl_GlobalInvocationID.xy / 2);
 
 		float sumWeight = 0.1;
@@ -83,16 +83,47 @@ uniform mat4 gbufferModelView;
 
 				float weight = pow16(max0(dot(prevData.rgb, worldNormal)));
 				weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
-				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.2);
+				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
 
 				total += sampleLight * weight;
 				sumWeight += weight;
 			}
 		}
 
-		total /= sumWeight;
+		return total / sumWeight;
+	}
 
-		return total;
+	vec3 SpatialUpscale5x5(in vec3 worldNormal, in float viewDistance, in float NdotV) {
+		ivec2 texel = ivec2(gl_GlobalInvocationID.xy / 2);
+
+		float sumWeight = 0.2;
+
+		vec3 total = imageLoad(colorimg2, texel).rgb;
+		float centerLuma = GetLuminance(total);
+		total *= sumWeight;
+
+		ivec2 shift = ivec2(viewWidth * 0.5, 0);
+        ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+
+		for (uint i = 0u; i < 24u; ++i) {
+			ivec2 sampleTexel = texel + offset5x5N[i];
+			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
+				vec3 sampleLight = imageLoad(colorimg2, sampleTexel).rgb;
+
+				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
+
+				float weight = pow16(max0(dot(prevData.rgb, worldNormal)));
+				weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
+				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
+
+				if (weight < 1e-5) continue;
+
+				total += sampleLight * weight;
+				sumWeight += weight;
+			}
+		}
+
+		return total / sumWeight;
 	}
 #endif
 
@@ -124,7 +155,7 @@ void main() {
 			vec3 worldNormal = FetchWorldNormal(gbufferData0);
 			float NdotV = saturate(dot(worldNormal, -worldDir));
 
-			sceneOut += SpatialFilter(worldNormal, length(viewPos), NdotV) * albedo;
+			sceneOut += SpatialUpscale5x5(worldNormal, length(viewPos), NdotV) * albedo;
 		#else
 			sceneOut += imageLoad(colorimg2, screenTexel / 2).rgb * albedo;
 		#endif

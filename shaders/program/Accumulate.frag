@@ -178,7 +178,8 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         prevMoments /= sumWeight;
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
-        indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel, 0).rgb;
+        // indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel, 0).rgb;
+        indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, gl_FragCoord.xy * viewPixelSize).rgb;
 
         indirectHistory.a = min(++prevLight.a, SSPT_MAX_BLENDED_FRAMES);
         float alpha = rcp(indirectHistory.a + 1.0);
@@ -264,7 +265,7 @@ void main() {
                 TemporalFilter(screenTexel, prevCoord, viewPos);
             }
 
-            indirectCurrent.a = sqrt(maxEps(indirectCurrent.a)) * SSPT_VARIANCE_SCALE;
+            indirectCurrent.a = max(1e-7, indirectCurrent.a * SSPT_VARIANCE_SCALE);
         }
     } else {
         currentCoord -= vec2(1.0, 0.0);

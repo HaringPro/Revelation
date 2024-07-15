@@ -73,7 +73,7 @@ float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
 		}
 	}
 
-	return variance;
+	return variance * inversesqrt(max(1e-9, variance));
 }
 
 //======// Main //================================================================================//
