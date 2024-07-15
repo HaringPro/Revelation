@@ -197,6 +197,9 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     } else {
         indirectCurrent = SpatialColor(screenTexel);
         indirectHistory.rgb = indirectCurrent.rgb;
+
+        float luminance = GetLuminance(indirectCurrent.rgb);
+        momentsHistory = vec2(luminance, luminance * luminance);
     }
 }
 
@@ -257,6 +260,9 @@ void main() {
             if (saturate(prevCoord) != prevCoord || worldTimeChanged || depth < 0.56) {
                 indirectCurrent = SpatialColor(screenTexel);
                 indirectHistory.rgb = indirectCurrent.rgb;
+
+                float luminance = GetLuminance(indirectCurrent.rgb);
+                momentsHistory = vec2(luminance, luminance * luminance);
             } else {
                 prevCoord *= 0.5;
                 TemporalFilter(screenTexel, prevCoord, viewPos);

@@ -15,7 +15,7 @@
 
 // #extension GL_NV_compute_shader_derivatives : enable
 
-layout (local_size_x = 32, local_size_y = 32) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 //======// Utility //=============================================================================//
@@ -41,17 +41,6 @@ uniform int frameCounter;
 
 //======// Function //============================================================================//
 
-vec3 ScreenToViewSpace(in vec3 screenPos) {
-	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
-		NDCPos.xy -= taaOffset;
-	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
-
-	return viewPos;
-}
-
 uint triple32(uint x) {
     // https://nullprogram.com/blog/2018/07/31/
     x ^= x >> 17;
@@ -68,7 +57,7 @@ uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalI
 uint RandNext() { return randState = triple32(randState); }
 #define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
 
-float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
+float CalculateVariance(in ivec2 texel, in ivec2 shift, in ivec2 maxLimit) {
     // const float kernel[2] = float[2](1.0, 0.3);
 	const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
@@ -79,7 +68,7 @@ float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
 			if (clamp(varianceTexel, ivec2(0), maxLimit) == varianceTexel) {
 				float weight = kernel[abs(x)][abs(y)];
 
-				variance += imageLoad(colorimg2, varianceTexel).a * weight;
+				variance += imageLoad(colorimg2, varianceTexel + shift).a * weight;
 			}
 		}
 	}
@@ -108,11 +97,11 @@ void main() {
 
 		float sumWeight = 0.1;
 
-		vec4 indirectCurrent = imageLoad(colorimg2, texel);
+		vec4 indirectCurrent = imageLoad(colorimg2, texel + shift);
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
 		indirectCurrent *= sumWeight;
 
-		float variance = CalculateVariance(texel, maxLimit);
+		float variance = CalculateVariance(texel, shift, maxLimit);
 		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
     	ivec2 randOffset = ivec2((RandNext2F() - 0.5) * FILTER_SIZE);
 
@@ -123,7 +112,7 @@ void main() {
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
 				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
 
-				vec4 sampleLight = imageLoad(colorimg2, sampleTexel);
+				vec4 sampleLight = imageLoad(colorimg2, sampleTexel + shift);
 				float sampleLuma = GetLuminance(sampleLight.rgb);
 
 				// float weight = exp2(-dotSelf(offset));

@@ -15,7 +15,7 @@
 
 // #extension GL_NV_compute_shader_derivatives : enable
 
-layout (local_size_x = 32, local_size_y = 32) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 //======// Utility //=============================================================================//
@@ -40,17 +40,6 @@ uniform vec2 taaOffset;
 uniform int frameCounter;
 
 //======// Function //============================================================================//
-
-vec3 ScreenToViewSpace(in vec3 screenPos) {
-	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
-		NDCPos.xy -= taaOffset;
-	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
-
-	return viewPos;
-}
 
 uint triple32(uint x) {
     // https://nullprogram.com/blog/2018/07/31/
@@ -148,6 +137,6 @@ void main() {
 
 		indirectCurrent /= sumWeight;
 		indirectCurrent.a /= sumWeight; // Sample variance
-		imageStore(colorimg2, texel, indirectCurrent);
+		imageStore(colorimg2, texel + shift, indirectCurrent);
 	}
 }

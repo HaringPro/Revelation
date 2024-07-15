@@ -253,7 +253,11 @@ struct Trace {
 
 vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap, in float dither) {
 	lightmap.x = CalculateBlocklightFalloff(lightmap.x) * SSPT_BLENDED_LIGHTMAP;
-	lightmap.y *= lightmap.y * lightmap.y * rPI;
+	#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+		lightmap.y *= lightmap.y * lightmap.y * rPI;
+	#else
+		lightmap.y *= lightmap.y * lightmap.y * 0.2;
+	#endif
     vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 	vec3 viewDir = normalize(viewPos);
 
