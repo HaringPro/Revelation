@@ -96,7 +96,7 @@ uniform mat4 gbufferModelView;
 	vec3 SpatialUpscale5x5(in vec3 worldNormal, in float viewDistance, in float NdotV) {
 		ivec2 texel = ivec2(gl_GlobalInvocationID.xy / 2);
 
-		float sumWeight = 0.2;
+		float sumWeight = 0.1;
 
 		vec3 total = imageLoad(colorimg2, texel).rgb;
 		float centerLuma = GetLuminance(total);

@@ -1,5 +1,5 @@
 #version 450 compatibility
 
-#define FILTER_SIZE 4
+#define FILTER_SIZE 8
 
 #include "/program/ATrousFilterX.comp"

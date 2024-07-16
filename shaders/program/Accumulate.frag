@@ -20,7 +20,7 @@
 #define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 #define SSPT_SAMPLER colortex2
-#define SSPT_VARIANCE_SCALE 0.001
+#define SSPT_VARIANCE_SCALE 0.02
 
 //======// Output //==============================================================================//
 
@@ -45,9 +45,9 @@ uniform vec2 prevTaaOffset;
 #include "/lib/utility/Noise.glsl"
 #include "/lib/utility/Offset.glsl"
 
-#if AO_ENABLED > 0
-	#include "/lib/lighting/AmbientOcclusion.glsl"
-#endif
+// #if AO_ENABLED > 0
+// 	#include "/lib/lighting/AmbientOcclusion.glsl"
+// #endif
 
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
@@ -178,8 +178,8 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         prevMoments /= sumWeight;
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
-        // indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel, 0).rgb;
-        indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, gl_FragCoord.xy * viewPixelSize).rgb;
+        indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel, 0).rgb;
+        // indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, gl_FragCoord.xy * viewPixelSize).rgb;
 
         indirectHistory.a = min(++prevLight.a, SSPT_MAX_BLENDED_FRAMES);
         float alpha = rcp(indirectHistory.a + 1.0);
@@ -265,7 +265,7 @@ void main() {
                 TemporalFilter(screenTexel, prevCoord, viewPos);
             }
 
-            indirectCurrent.a = max(1e-7, indirectCurrent.a * SSPT_VARIANCE_SCALE);
+            indirectCurrent.a = maxEps(indirectCurrent.a * SSPT_VARIANCE_SCALE);
         }
     } else {
         currentCoord -= vec2(1.0, 0.0);

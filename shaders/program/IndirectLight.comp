@@ -31,6 +31,7 @@ restrict writeonly uniform image2D colorimg2;
 #include "/lib/utility/Transform.glsl"
 #include "/lib/utility/Fetch.glsl"
 #include "/lib/utility/Noise.glsl"
+#include "/lib/utility/Offset.glsl"
 
 #include "/lib/atmospherics/Global.inc"
 
@@ -38,11 +39,24 @@ restrict writeonly uniform image2D colorimg2;
 
 #include "/lib/lighting/GlobalIllumination.glsl"
 
+float GetClosestDepth(in ivec2 texel) {
+    float depth = sampleDepth(texel);
+
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = offset3x3N[i] * 2 + texel;
+        float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
+        depth = min(depth, sampleDepth);
+    }
+
+    return depth;
+}
+
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
     ivec2 currentTexel = screenTexel * 2;
+	// float depth = GetClosestDepth(currentTexel);
 	float depth = sampleDepth(currentTexel);
 
 	if (depth < 1.0) {

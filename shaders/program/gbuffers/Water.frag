@@ -18,6 +18,10 @@ uniform sampler2D tex;
 	uniform sampler2D normals;
 #endif
 
+#if defined MC_SPECULAR_MAP
+    uniform sampler2D specular;
+#endif
+
 #include "/lib/utility/Uniform.glsl"
 
 //======// Input //===============================================================================//

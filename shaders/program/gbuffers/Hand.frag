@@ -28,6 +28,10 @@ uniform sampler2D tex;
 	uniform sampler2D normals;
 #endif
 
+#if defined MC_SPECULAR_MAP
+    uniform sampler2D specular;
+#endif
+
 //======// Function //============================================================================//
 
 float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }

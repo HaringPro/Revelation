@@ -194,7 +194,7 @@ float nextFloat(inout NoiseGenerator noiseGenerator) {
     const uint A = 1664525u;
     const uint C = 1013904223u;
     noiseGenerator.currentNum = (A * noiseGenerator.currentNum + C);
-    return float(noiseGenerator.currentNum >> 8) / 16777216.0;
+    return float(noiseGenerator.currentNum >> 8) * rcp(16777216.0);
 }
 
 vec2 nextVec2(inout NoiseGenerator noiseGenerator) {
@@ -315,7 +315,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 	}
 	#else		
 	for (uint i = 0u; i < SSPT_SPP; ++i) {
-			vec3 sampleDir = importanceSampleCosine(worldNormal, nextVec2(noiseGenerator));
+			vec3 sampleDir = sampleCosineVector(worldNormal, nextVec2(noiseGenerator));
 
 			vec3 rayDir = normalize(mat3(gbufferModelView) * sampleDir);
 

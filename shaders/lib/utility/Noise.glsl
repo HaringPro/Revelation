@@ -116,3 +116,12 @@ float InterleavedGradientNoiseTemporal(in vec2 coord) {
 		return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 	#endif
 }
+
+// From Peter Shirley's 'Realistic Ray Tracing (2nd Edition)' book, pg. 60
+float TentFilter(in float x) {
+	return (x < 0.5) ? sqrt(2.0 * x) - 1.0 : 1.0 - sqrt(2.0 - (2.0 * x));
+}
+
+vec2 TentFilter(in vec2 x) {
+	return vec2(TentFilter(x.x), TentFilter(x.y));
+}
