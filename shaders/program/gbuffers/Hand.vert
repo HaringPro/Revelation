@@ -55,7 +55,7 @@ void main() {
 	// vec4 worldPos = gbufferModelViewInverse * viewPos;
 
     tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
 		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 	#endif

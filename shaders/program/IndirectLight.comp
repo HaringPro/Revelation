@@ -20,7 +20,7 @@ const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 //======// Output //==============================================================================//
 
-restrict writeonly uniform image2D colorimg2;
+restrict writeonly uniform image2D colorimg3;
 
 //======// Uniform //=============================================================================//
 
@@ -56,8 +56,8 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
     ivec2 currentTexel = screenTexel * 2;
-	// float depth = GetClosestDepth(currentTexel);
-	float depth = sampleDepth(currentTexel);
+	float depth = GetClosestDepth(currentTexel);
+	// float depth = sampleDepth(currentTexel);
 
 	if (depth < 1.0) {
 		vec4 gbufferData0 = sampleGbufferData0(currentTexel);
@@ -69,6 +69,6 @@ void main() {
 
 		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 
-		imageStore(colorimg2, screenTexel, vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, BlueNoiseTemporal(currentTexel)), 1.0));
+		imageStore(colorimg3, screenTexel, vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, BlueNoiseTemporal(currentTexel)), 1.0));
 	}
 }

@@ -26,7 +26,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0; // Scene color
 
 //======// Uniform //=============================================================================//
 
-layout (rgba16f) restrict readonly uniform image2D colorimg2; // Current indirect light
+layout (rgba16f) restrict readonly uniform image2D colorimg3; // Current indirect light
 
 uniform sampler2D colortex6; // Albedo
 uniform sampler2D colortex7; // Gbuffer data 0
@@ -67,7 +67,7 @@ uniform mat4 gbufferModelView;
 
 		float sumWeight = 0.1;
 
-		vec3 total = imageLoad(colorimg2, texel).rgb;
+		vec3 total = imageLoad(colorimg3, texel).rgb;
 		float centerLuma = GetLuminance(total);
 		total *= sumWeight;
 
@@ -77,7 +77,7 @@ uniform mat4 gbufferModelView;
 		for (uint i = 0u; i < 8u; ++i) {
 			ivec2 sampleTexel = texel + offset3x3N[i];
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
-				vec3 sampleLight = imageLoad(colorimg2, sampleTexel).rgb;
+				vec3 sampleLight = imageLoad(colorimg3, sampleTexel).rgb;
 
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
@@ -98,7 +98,7 @@ uniform mat4 gbufferModelView;
 
 		float sumWeight = 0.1;
 
-		vec3 total = imageLoad(colorimg2, texel).rgb;
+		vec3 total = imageLoad(colorimg3, texel).rgb;
 		float centerLuma = GetLuminance(total);
 		total *= sumWeight;
 
@@ -108,7 +108,7 @@ uniform mat4 gbufferModelView;
 		for (uint i = 0u; i < 24u; ++i) {
 			ivec2 sampleTexel = texel + offset5x5N[i];
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
-				vec3 sampleLight = imageLoad(colorimg2, sampleTexel).rgb;
+				vec3 sampleLight = imageLoad(colorimg3, sampleTexel).rgb;
 
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
@@ -138,7 +138,7 @@ void main() {
 			vec3 albedo = vec3(1.0);
 			vec3 sceneOut = vec3(0.0);
 		#else
-			vec3 albedo = sRGBtoLinear(texelFetch(colortex6, screenTexel, 0).rgb);
+			vec3 albedo = sRGBtoLinear(sampleAlbedo(screenTexel));
 			vec3 sceneOut = imageLoad(colorimg0, screenTexel).rgb;
 		#endif
 
@@ -157,13 +157,12 @@ void main() {
 
 			sceneOut += SpatialUpscale5x5(worldNormal, length(viewPos), NdotV) * albedo;
 		#else
-			sceneOut += imageLoad(colorimg2, screenTexel / 2).rgb * albedo;
+			sceneOut += imageLoad(colorimg3, screenTexel / 2).rgb * albedo;
 		#endif
 
 		// Minimal ambient light
 		// sceneOut = max(sceneOut, albedo * MINIMUM_AMBIENT_BRIGHTNESS);
 
 		imageStore(colorimg0, screenTexel, vec4(sceneOut, 1.0));
-		// imageStore(colorimg2, screenTexel, vec4(0.0)); // Clear for next pass
 	}
 }

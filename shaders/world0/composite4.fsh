@@ -32,12 +32,16 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex11;
-uniform sampler2D colortex12;
+uniform sampler2D colortex11; // Volumetric Fog scattering
+uniform sampler2D colortex12; // Volumetric Fog transmittance
+
+uniform sampler2D colortex13; // Previous indirect light
 
 #include "/lib/utility/Uniform.glsl"
 
 //======// Struct //==============================================================================//
+
+#include "/lib/utility/Material.glsl"
 
 //======// Function //============================================================================//
 
@@ -46,6 +50,8 @@ uniform sampler2D colortex12;
 #include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.inc"
+
+#include "/lib/SpatialUpscale.glsl"
 
 #include "/lib/surface/ScreenSpaceRaytracer.glsl"
 
@@ -88,35 +94,11 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	return vec4(reflection, brdf);
 }
 
-mat2x3 VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
-	ivec2 bias = ivec2(coord + frameCounter) % 2;
-	ivec2 texel = ivec2(coord * 0.5) + bias * 2;
-
-	const ivec2 offset[4] = ivec2[4](
-		ivec2(-2,-2), ivec2(-2, 0),
-		ivec2( 0, 0), ivec2( 0,-2)
-	);
-
-	float sigmaZ = 64.0 / linearDepth;
-	mat2x3 total = mat2x3(0.0);
-	float sumWeight = 0.0;
-
-	for (uint i = 0u; i < 4u; ++i) {
-		ivec2 sampleTexel = texel + offset[i];
-		float sampleDepth = ScreenToLinearDepth(sampleDepth(sampleTexel * 2));
-		float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
-		total += mat2x3(texelFetch(colortex11, sampleTexel, 0).rgb, texelFetch(colortex12, sampleTexel, 0).rgb) * weight;
-		sumWeight += weight;
-	}
-
-	return total / sumWeight;
-}
-
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
-	vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+	float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
@@ -134,7 +116,7 @@ void main() {
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
 
-	vec4 gbufferData1 = texelFetch(colortex8, screenTexel, 0);
+	vec4 gbufferData1 = sampleGbufferData1(screenTexel);
 	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 	vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
@@ -148,13 +130,13 @@ void main() {
 			refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, transparentDepth);
 		#endif
 		refractTexel = rawCoord(refractCoord);
-		if (sampleDepthSoild(refractTexel) < depth) {
+		if (sampleDepthSolid(refractTexel) < depth) {
 			refractCoord = screenCoord;
 			refractTexel = screenTexel;
 		}
 
 		depth = sampleDepth(refractTexel);
-		sDepth = sampleDepthSoild(refractTexel);
+		sDepth = sampleDepthSolid(refractTexel);
 
 		gbufferData0 = texelFetch(colortex7, refractTexel, 0);
 		viewPos = ScreenToViewSpace(vec3(refractCoord, depth));
@@ -168,48 +150,76 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
-	worldPos += gbufferModelViewInverse[3].xyz;
-
 
 	float LdotV = dot(worldLightVector, worldDir);
 
-	// Water fog
-	if (waterMask && isEyeInWater == 0) {
-		float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
-		mat2x3 waterFog = CalculateWaterFog(lightmap.y, max(transparentDepth, waterDepth), LdotV);
-		sceneOut = sceneOut * waterFog[1] + waterFog[0];
-	}
+	if (depth < 1.0) {
+		worldPos += gbufferModelViewInverse[3].xyz;
 
-	if (waterMask || materialID == 2u) {
-		// Specular reflections of water and lighting of glass
-		vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
-		sceneOut += (blendedData.rgb - sceneOut) * blendedData.a;
-		if (materialID == 2u) {
-			// Glass tint
-			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
-			translucents.a = fastSqrt(fastSqrt(translucents.a));
-			sceneOut *= pow4((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+			Material material = GetMaterialData(specularTex);
+		#endif
 
-			// Specular reflections of glass
-			vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
+		vec3 albedo = sRGBtoLinear(sampleAlbedo(refractTexel));
+		#ifdef SSPT_ENABLED
+			#ifdef SVGF_ENABLED
+				float NdotV = saturate(dot(worldNormal, -worldDir));
+				sceneOut += SpatialUpscale5x5(refractTexel / 2, worldNormal, viewDistance, NdotV)
+			#else
+				sceneOut += texelFetch(colortex3, refractTexel / 2, 0).rgb
+			#endif
+			#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+				* albedo * oneMinus(material.metalness);
+			#else
+				* albedo;
+			#endif
+		#endif
+
+		// Water fog
+		if (waterMask && isEyeInWater == 0) {
+			float waterDepth = distance(ScreenToViewSpace(vec3(refractCoord, depth)), ScreenToViewSpace(vec3(refractCoord, sDepth)));
+			mat2x3 waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
+			sceneOut = sceneOut * waterFog[1] + waterFog[0];
+		}
+
+		if (waterMask || materialID == 2u) {
+			// Specular reflections of water and lighting of glass
+			vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
+			sceneOut += (blendedData.rgb - sceneOut) * blendedData.a;
+			if (materialID == 2u) {
+				// Glass tint
+				vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+				translucents.a = fastSqrt(fastSqrt(translucents.a));
+				sceneOut *= pow4((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
+
+				// Specular reflections of glass
+				vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, viewPos);
+				sceneOut += (reflections.rgb - sceneOut) * reflections.a;
+			}
+		} else if (materialID == 51u) {
+			// Specular reflections of slime
+			vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, viewPos);
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
-	} else if (materialID == 51u) {
-		// Specular reflections of slime
-		vec4 reflections = CalculateSpecularReflections(viewNormal, lightmap.y, screenPos, viewPos);
-		sceneOut += (reflections.rgb - sceneOut) * reflections.a;
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+			else if (material.hasReflections) {
+				vec4 reflectionData = texelFetch(colortex2, refractTexel, 0);
+				sceneOut += reflectionData.rgb * mix(vec3(1.0), albedo, material.metalness);
+			}
+		#endif
+
+		// Border fog
+		#ifdef BORDER_FOG
+			if (doBorderFog) {
+				float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
+				density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
+
+				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
+				sceneOut = mix(sceneOut, skyRadiance, density);
+			}
+		#endif
 	}
-
-	// Border fog
-	#ifdef BORDER_FOG
-		if (doBorderFog) {
-			float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
-			density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
-
-			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
-			sceneOut = mix(sceneOut, skyRadiance, density);
-		}
-	#endif
 
 	bloomyFogTrans = 1.0;
 

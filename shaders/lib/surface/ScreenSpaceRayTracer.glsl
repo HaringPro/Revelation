@@ -6,6 +6,8 @@
 #define RAYTRACE_REFINEMENT_STEPS 6 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
 
 bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, const in uint steps, inout vec3 rayPos) {
+	if (viewDir.z > -viewPos.z) return false;
+
     const float rSteps = 1.0 / float(steps);
 
     vec3 endPos = ViewToScreenSpace(viewDir * abs(viewPos.z) + viewPos);
@@ -38,7 +40,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
             if (rayPos.z >= 1.0) break;
         #endif
 
-        float sampleDepth = sampleDepthSoild(ivec2(rayPos.xy));
+        float sampleDepth = sampleDepthSolid(ivec2(rayPos.xy));
 
         rayStep = screenDir * clamp((sampleDepth - rayPos.z) * stepWeight, minLength, rSteps);
         rayPos += rayStep;
@@ -51,7 +53,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
 
                     rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
 
-                    sampleDepth = sampleDepthSoild(ivec2(rayPos.xy));
+                    sampleDepth = sampleDepthSolid(ivec2(rayPos.xy));
                 }
             #endif
             // float sampleDepthLinear = GetDepthLinear(sampleDepth);

@@ -14,6 +14,14 @@ out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
+#if defined PARALLAX
+	out vec2 tileCoord;
+	flat out vec2 tileScale;
+	flat out vec2 tileOffset;
+
+	out vec3 tangentViewDir;
+#endif
+
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -27,18 +35,18 @@ in vec3 vaNormal;
 #endif
 
 attribute vec4 mc_Entity;
-attribute vec4 mc_midTexCoord;
+attribute vec2 mc_midTexCoord;
 attribute vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
+
+uniform sampler2D noisetex;
 
 uniform vec3 chunkOffset;
 
 uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-
-uniform sampler2D noisetex;
 
 uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
@@ -59,7 +67,7 @@ void main() {
 	vec4 worldPos = gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 
     tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
 		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 	#endif
@@ -95,7 +103,14 @@ void main() {
 		worldPos.xyz -= cameraPosition;
 	#endif
 
-	// minecraftPos = worldPos.xyz;
+	#if defined PARALLAX
+		vec2 minMidCoord = texCoord - mc_midTexCoord;
+		tileCoord = fastSign(minMidCoord) * 0.5 + 0.5;
+		tileScale = abs(minMidCoord) * 2.0;
+		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
+
+		tangentViewDir = normalize(worldPos.xyz) * tbnMatrix;
+	#endif
 
 	gl_Position = projectionMatrix * gbufferModelView * worldPos;
 

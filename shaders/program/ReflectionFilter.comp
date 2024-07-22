@@ -1,36 +1,120 @@
+/*
+--------------------------------------------------------------------------------
 
+	Revelation Shaders
 
-vec4 ReflectionFilter(in ivec2 texel, in vec4 total, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float size, in vec2 dither) {
-    float smoothness = 1.0 - fastSqrtN1(roughness);
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: Reflection Filter
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0f, 1.0f);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Output //==============================================================================//
+
+layout (rgba16f) restrict uniform image2D colorimg2;
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/utility/Uniform.glsl"
+
+//======// Struct //==============================================================================//
+
+#include "/lib/utility/Material.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Offset.glsl"
+
+uint triple32(uint x) {
+    // https://nullprogram.com/blog/2018/07/31/
+    x ^= x >> 17;
+    x *= 0xed5ad4bbu;
+    x ^= x >> 11;
+    x *= 0xac4c1b51u;
+    x ^= x >> 15;
+    x *= 0x31848babu;
+    x ^= x >> 14;
+    return x;
+}
+
+uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
+uint RandNext() { return randState = triple32(randState); }
+#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
+
+vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
+    float smoothness = 1.0 - fastSqrt(roughness);
     float linearDepth = FetchLinearDepth(texel);
     float NdotV = saturate(dot(-worldDir, worldNormal));
 
-    float coordOffset = 8.0 * size * min(roughness * 20.0, 1.0) * oneMinus(fastExp(-fastSqrt(total.a) * 50.0));
-    coordOffset *= total.a * 0.8 + 0.2;
+    float offsetScale = filterSize * min(roughness * 20.0, 1.0);
+    offsetScale *= fastExp(-oneMinus(reflectionData.a) * 0.2);
 
-    float sharpenWeight = total.a * 0.475 + 0.025;
-    float roughnessInv = 1e2 / max(roughness, 1e-4);
+	const vec2 angle = cossin(hPI);
+	const mat2 rot = mat2(angle, -angle.y, angle.x);
 
-    total.rgb = pow(dotSelf(total.rgb), 0.5 * sharpenWeight) * normalize(maxEps(total.rgb));
+    vec2 tangent = normalize(cross(worldNormal, worldDir).xy);
+    vec2 bitangent = tangent * rot;
+    tangent *= (0.2 + 0.8 * NdotV) * offsetScale;
+    bitangent *= (1.5 - 0.5 * NdotV) * offsetScale;
+
+    const float sharpenWeight = 0.5;
+    float roughnessInv = 80.0 / max(roughness, 1e-4);
+
+    reflectionData.rgb = pow(dotSelf(reflectionData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(reflectionData.rgb));
     float sumWeight = 1.0;
 
     for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = clamp(texel + ivec2((offset3x3N[i] + dither) * coordOffset), ivec2(0), ivec2(viewSize) - 1);
+        vec2 offset = offset3x3N[i] + randOffset;
+        ivec2 sampleTexel = clamp(texel + ivec2(tangent * offset.x + bitangent * offset.y), ivec2(0), ivec2(viewSize) - 1);
 
         vec4 sampleData = imageLoad(colorimg2, sampleTexel);
 
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
 
-        float weight =  pow(maxEps(dot(worldNormal, FetchWorldNormal(sampleTexel))), roughnessInv) *
-                        fastExp(-abs(total.a - sampleData.a) * smoothness) *
-                        fastExp(-abs(sampleLinerDepth - linearDepth) * 2.0 * NdotV * inversesqrt(coordOffset));
+        float weight =  pow(max0(dot(worldNormal, FetchWorldNormal(sampleGbufferData0(sampleTexel)))), roughnessInv) *
+                        fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) *
+                        fastExp(-abs(sampleLinerDepth - linearDepth) * 2.0 * NdotV * inversesqrt(offsetScale));
 
-        total += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
+        reflectionData += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
         sumWeight += weight;
     }
 
-    total /= sumWeight;
-    total.rgb = pow(dotSelf(total.rgb), 0.5 / sharpenWeight) * normalize(maxEps(total.rgb));
+    reflectionData /= sumWeight;
+    reflectionData.rgb = pow(dotSelf(reflectionData.rgb), 0.5 / sharpenWeight) * normalize(maxEps(reflectionData.rgb));
 
-    return total;
+    return reflectionData;
+}
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
+
+    vec4 reflectionData = imageLoad(colorimg2, screenTexel);
+
+    #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+        vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+        vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+        Material material = GetMaterialData(specularTex);
+
+        if (material.hasReflections && material.isRough) {
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(screenTexel));
+            vec3 screenPos = vec3(vec2(gl_GlobalInvocationID.xy) * viewPixelSize, sampleDepth(screenTexel));
+            vec3 viewPos = ScreenToViewSpace(screenPos);
+            vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+            reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, FILTER_SIZE, RandNext2F() - 0.5);
+        }
+    #endif
+
+    imageStore(colorimg2, screenTexel, reflectionData);
 }

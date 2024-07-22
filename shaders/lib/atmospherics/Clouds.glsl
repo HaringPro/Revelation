@@ -35,17 +35,17 @@ float CloudPlaneDensity(in vec2 worldPos) {
 	vec2 wind = cloudWind.xz * CLOUDS_WIND_SPEED;
 	float localCoverage = GetSmoothNoise(worldPos * 1e-4 - wind);
 
-	/* Sratocumulus clouds */
+	/* Stratocumulus clouds */
 	vec2 position = worldPos * 6e-4 - wind;
 
-	float sratocumulus = texture(noisetex, position * 0.005).z, weight = 0.5;
+	float stratocumulus = texture(noisetex, position * 0.005).z, weight = 0.5;
 
 	for (uint i = 0u; i < 6u; ++i, weight *= 0.5) {
-		sratocumulus += weight * textureLod(noisetex, position * 5e-3, 0.0).x;
-		position = position * (3.0 + sratocumulus) + sratocumulus * 3.0 - wind;
+		stratocumulus += weight * textureLod(noisetex, position * 5e-3, 0.0).x;
+		position = position * (3.0 + stratocumulus) + stratocumulus * 4.0 - wind;
 	}
 
-	sratocumulus = saturate(sratocumulus * 0.2 + localCoverage * 0.2 + wetness * 4e-2 - 0.32) * 0.4;
+	stratocumulus = saturate(stratocumulus * 0.2 + localCoverage * 0.2 + wetness * 4e-2 - 0.32) * 0.4;
 
 	/* Cirrus clouds */
 	position = worldPos * 6e-7 - wind * 6e-3;
@@ -60,7 +60,7 @@ float CloudPlaneDensity(in vec2 worldPos) {
 
     cirrus = pow4(clamp(cirrus * 0.7 - saturate(localCoverage * 2.4 - 0.8) - 0.55, 0.0, 0.28) * cirrus);
 
-	return saturate(cirrus + sratocumulus);
+	return saturate(cirrus + stratocumulus);
 }
 
 vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in float LdotV, in float lightNoise, in vec4 phases) {

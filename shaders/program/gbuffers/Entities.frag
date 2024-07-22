@@ -8,17 +8,21 @@
 /* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out vec4 gbufferOut0;
-// layout (location = 2) out vec2 gbufferOut1;
+
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+/* RENDERTARGETS: 6,7,8 */
+layout (location = 2) out vec2 gbufferOut1;
+#endif
 
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;
 
-#if defined MC_NORMAL_MAP
+#if defined NORMAL_MAPPING
 	uniform sampler2D normals;
 #endif
 
-#if defined MC_SPECULAR_MAP
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
     uniform sampler2D specular;
 #endif
 
@@ -58,9 +62,15 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
         vec3 normalTex = texture(normals, texCoord).rgb;
         DecodeNormalTex(normalTex);
 		gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));
+	#endif
+	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+		vec4 specularTex = texture(specular, texCoord);
+
+		gbufferOut1.x = packUnorm2x8(specularTex.rg);
+		gbufferOut1.y = packUnorm2x8(specularTex.ba);
 	#endif
 }

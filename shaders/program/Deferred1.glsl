@@ -22,7 +22,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 layout (rgba16f, location = 0) restrict uniform image2D colorimg0; //
 layout (rgba16f, location = 1) restrict uniform image2D colorimg1; //
-layout (rgba16f, location = 2) restrict uniform image2D colorimg2; //
+layout (rgba16f, location = 2) restrict uniform image2D colorimg3; //
 
 //======// Uniform //=============================================================================//
 

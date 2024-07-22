@@ -28,11 +28,6 @@ vec3 ScreenToViewSpace(in vec2 coord) {
 	return viewPos;
 }
 
-float ScreenToViewDepth(in float depth) {
-    depth = depth * 2.0 - 1.0;
-    return -1.0 / (depth * gbufferProjectionInverse[2][3] + gbufferProjectionInverse[3][3]);
-}
-
 vec3 ViewToScreenSpaceRaw(in vec3 viewPos) {
 	vec3 NDCPos = projMAD(gbufferProjection, viewPos) / -viewPos.z;
 
@@ -56,6 +51,14 @@ vec3 Reproject(in vec3 screenPos) {
 	position = projMAD(gbufferPreviousProjection, position) / -position.z; // To previous frame's NDC space
 
     return position * 0.5 + 0.5;
+}
+
+float ScreenToViewDepth(in float depth) {
+	return gbufferProjection[3].z / (gbufferProjection[2].z + (depth * 2.0 - 1.0));
+}
+
+float ViewToScreenDepth(in float depth) {
+	return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
 }
 
 float ScreenToLinearDepth(in float depth) {

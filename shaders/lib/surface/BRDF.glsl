@@ -110,7 +110,7 @@ float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float Ndot
     // 几何衰减
     float G = G2SmithGGX(NdotV, NdotL, alpha2);
 
-	return F * D * G / (4.0/*  * NdotL */ * NdotV);
+	return min(F * D * G / (4.0/*  * NdotL */ * NdotV), 1e3); // Prevent overflow
 }
 
 vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {

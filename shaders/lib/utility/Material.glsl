@@ -23,16 +23,14 @@ struct Material {
 	float emissiveness;
 	bool hasReflections;
 	bool isRough;
-	#if defined MC_SPECULAR_MAP
+	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		bool isHardcodedMetal;
 		mat2x3 hardcodedMetalCoeff;
 	#endif
 };
 
-#define EMISSIVE_CURVE 2.2 // [1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0]
-
 // https://shaderlabs.org/wiki/LabPBR_Material_Standard
-#if defined MC_SPECULAR_MAP
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 	const mat2x3 GetMetalCoeff[8] = mat2x3[8](
 							//--// N //--//				 //--// K //--//
 		mat2x3(vec3(2.91140, 2.94970, 2.58450), vec3(3.0893, 2.9318, 2.7670)), // 230: 铁 - Iron
@@ -44,13 +42,11 @@ struct Material {
 		mat2x3(vec3(2.37570, 2.08470, 1.84530), vec3(4.2655, 3.7153, 3.1365)), // 236: 铂 - Platinum
 		mat2x3(vec3(0.15943, 0.14512, 0.13547), vec3(3.9291, 3.1900, 2.3808))  // 237: 银 - Silver
 	);
-#endif
 
-Material GetMaterialData(in vec4 specTex) {
-	Material material;
+	Material GetMaterialData(in vec4 specTex) {
+		Material material;
 
-	material.roughness = sqr(1.0 - specTex.r);
-	#if defined MC_SPECULAR_MAP
+		material.roughness = sqr(1.0 - specTex.r);
 		material.isHardcodedMetal = false;
 
 		#if TEXTURE_FORMAT == 0
@@ -65,22 +61,24 @@ Material GetMaterialData(in vec4 specTex) {
 				material.metalness = 1.0;
 				material.f0 = 0.91;
 			}
-			material.emissiveness = specTex.a * step(specTex.a, 0.999);
+			#if defined SPECULAR_LIGHTING
+				material.emissiveness = specTex.a * step(specTex.a, 0.999);
+			#endif
 		#else
 			material.metalness = specTex.g;
 			material.f0 = specTex.g * 0.96 + 0.04;
-			material.emissiveness = specTex.b;
+			#if defined SPECULAR_LIGHTING
+				material.emissiveness = specTex.b;
+			#endif
 		#endif
 
-		material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE);
-	#else
-		material.metalness = 0.0;
-		material.f0 = specTex.g;
-		material.emissiveness = 0.0;
-	#endif
+		#if defined SPECULAR_LIGHTING
+			material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+		#endif
 
-	material.hasReflections = specTex.r + material.metalness > 1e-3;
-	material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
+		material.hasReflections = max0(0.5 - material.roughness) + material.metalness > 1e-3;
+		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
 
-	return material;
-}
+		return material;
+	}
+#endif

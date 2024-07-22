@@ -47,10 +47,10 @@ void main() {
 	vec4 worldPos = gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition, 1.0);
 
     float windPos = dot(worldPos.xyz + cameraPosition, vec3(2.0));
-    float wind = fma(sin(windPos + frameTimeCounter * 0.1), 0.2, 0.2);
+    float wind = fma(sin(windPos + frameTimeCounter * 0.1), 0.25, 0.2);
 	const float windAngle = 3.1415926535898 / 60.0;
 
-    worldPos.xz -= worldPos.y * wind * vec2(cos(windAngle), sin(windAngle));
+    worldPos.xz += worldPos.y * wind * vec2(cos(windAngle), sin(windAngle));
     gl_Position = projectionMatrix * gbufferModelView * worldPos;
 
     #ifdef TAA_ENABLED

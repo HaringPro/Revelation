@@ -14,11 +14,11 @@ layout (location = 2) out vec4 gbufferOut1;
 
 uniform sampler2D tex;
 
-#if defined MC_NORMAL_MAP
+#if defined NORMAL_MAPPING
 	uniform sampler2D normals;
 #endif
 
-#if defined MC_SPECULAR_MAP
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
     uniform sampler2D specular;
 #endif
 
@@ -127,7 +127,7 @@ void main() {
 		if (albedo.a < 0.1) { discard; return; }
 
 		sceneOut = vec4(0.0);
-		#if defined MC_NORMAL_MAP
+		#if defined NORMAL_MAPPING
 			worldNormal = texture(normals, texCoord).rgb;
 			DecodeNormalTex(worldNormal);
 
@@ -142,33 +142,28 @@ void main() {
 	#ifdef TRANSLUCENT_LIGHTING
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
-		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Sunlight
 		vec3 sunlightMult = 30.0 * oneMinus(wetness * 0.96) * directIlluminance;
 
-		vec3 shadow = vec3(0.0);
-		float diffuseBRDF = fastSqrt(NdotL) * rPI;
-		float specularBRDF = 0.0;
-
-		float distortFactor;
-		vec3 normalOffset = tbnMatrix[2] * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
-		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
+		vec3 sunlightDiffuse = vec3(0.0);
+		vec3 specularHighlight = vec3(0.0);
 
 		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
-		#ifdef TAA_ENABLED
-			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
-		#else
-			float dither = InterleavedGradientNoise(gl_FragCoord.xy);
-		#endif
-
 		// Shadows
 		if (NdotL > 1e-3) {
+			float distortFactor;
+			vec3 normalOffset = tbnMatrix[2] * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
+
+			float LdotV = dot(worldLightVector, -worldDir);
+			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+
 			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+			vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 			if (maxOf(shadow) > 1e-6) {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
@@ -177,9 +172,9 @@ void main() {
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 				shadow *= sunlightMult;
-				// diffuseBRDF *= DiffuseHammon(LdotV, max(NdotV, 1e-3), NdotL, NdotH, 0.01, albedo.rgb);
 
-				specularBRDF = 2.0 * SpecularBRDF(LdotH, max(NdotV, 1e-3), NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
+				sunlightDiffuse = shadow * fastSqrt(NdotL) * rPI;
+				specularHighlight = shadow * 2.0 * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
 			}
 		}
 
@@ -187,7 +182,7 @@ void main() {
 			gbufferOut1.x = packUnorm2x8(albedo.rg);
 			gbufferOut1.y = packUnorm2x8(albedo.ba);
 
-			sceneOut.rgb += shadow * diffuseBRDF;
+			sceneOut.rgb += sunlightDiffuse;
 
 			if (lightmap.y > 1e-5) {
 				// Skylight
@@ -204,17 +199,12 @@ void main() {
 			}
 
 			if (lightmap.x > 1e-5) sceneOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
-			// if (materialID != 3u) {
-			// 	sceneOut.rgb *= albedo.rgb;
-			// 	// sceneOut.rgb += (reflections.rgb - sceneOut.rgb) * reflections.a;
-			// }
-			// albedo.a = sqrt2(albedo.a);
-			// shadow /= cube(1.0 - albedo.a + saturate(albedo.rgb * albedo.a) * albedo.a);
+
 			sceneOut.a = fastSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
 		}
 
 		// Specular highlights
-		sceneOut.rgb += shadow * specularBRDF;
+		sceneOut.rgb += specularHighlight;
 		sceneOut.rgb /= maxEps(sceneOut.a);
 	#else
 		if (materialID != 3u) {

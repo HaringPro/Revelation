@@ -35,7 +35,6 @@ uniform sampler2D colortex5;
 
 uniform float wetness;
 uniform float wetnessCustom;
-uniform float lightningFlashing;
 uniform float timeNoon;
 uniform float timeMidnight;
 uniform float timeSunrise;

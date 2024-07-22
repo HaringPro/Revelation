@@ -8,7 +8,11 @@
 /* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec3 albedoOut;
 layout (location = 1) out vec4 gbufferOut0;
-// layout (location = 2) out vec2 gbufferOut1;
+
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+/* RENDERTARGETS: 6,7,8 */
+layout (location = 2) out vec2 gbufferOut1;
+#endif
 
 //======// Uniform //=============================================================================//
 
@@ -44,5 +48,7 @@ void main() {
 	gbufferOut0.y = float(materialID + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
-	// gbufferOut0.w = gbufferOut0.z;
+	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+		gbufferOut1 = vec2(0.0);
+	#endif
 }

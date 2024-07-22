@@ -17,7 +17,7 @@ float CalculateFittedBouncedLight(in vec3 normal) {
 	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
 	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
 
-	return bounce * (2.0 - bounce) * 3e-2;
+	return fastSqrt(bounce) * 5e-2;
 }
 
 //================================================================================================//

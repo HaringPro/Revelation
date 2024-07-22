@@ -1,7 +1,9 @@
 #define sampleDepth(texel) texelFetch(depthtex0, texel, 0).x
-#define sampleDepthSoild(texel) texelFetch(depthtex1, texel, 0).x
+#define sampleDepthSolid(texel) texelFetch(depthtex1, texel, 0).x
 
 #define sampleSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
+
+#define sampleAlbedo(texel) texelFetch(colortex6, texel, 0).rgb
 #define sampleGbufferData0(texel) texelFetch(colortex7, texel, 0)
 #define sampleGbufferData1(texel) texelFetch(colortex8, texel, 0)
 
@@ -29,7 +31,7 @@ vec3 FetchFlatNormal(in vec4 data) {
 }
 
 vec3 FetchWorldNormal(in vec4 data) {
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
 		return decodeUnitVector(unpackUnorm2x8(data.w));
 	#else
 		return decodeUnitVector(unpackUnorm2x8(data.z));
@@ -41,5 +43,5 @@ float FetchLinearDepth(in ivec2 texel) {
 }
 
 float FetchLinearDepthSolid(in ivec2 texel) {
-    return (near * far) / (sampleDepthSoild(texel) * (near - far) + far);
+    return (near * far) / (sampleDepthSolid(texel) * (near - far) + far);
 }

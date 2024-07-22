@@ -5,7 +5,7 @@ mat3 CalculateTBN(in vec3 position, in vec2 uv) {
 
 	vec3 normal = normalize(cross(deltaPos1, deltaPos2));
 
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
         vec3 deltaPos1Perp = cross(normal, deltaPos1);
         vec3 deltaPos2Perp = cross(deltaPos2, normal);
 

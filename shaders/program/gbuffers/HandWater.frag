@@ -23,11 +23,11 @@ in vec4 viewPos;
 
 uniform sampler2D tex;
 
-#if defined MC_NORMAL_MAP
+#if defined NORMAL_MAPPING
 	uniform sampler2D normals;
 #endif
 
-#if defined MC_SPECULAR_MAP
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
     uniform sampler2D specular;
 #endif
 
@@ -50,7 +50,7 @@ void main() {
 	gbufferOut0.y = 2.1 * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
-	#if defined MC_NORMAL_MAP
+	#if defined NORMAL_MAPPING
         vec3 normalTex = texture(normals, texCoord).rgb;
         DecodeNormalTex(normalTex);
 		gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));

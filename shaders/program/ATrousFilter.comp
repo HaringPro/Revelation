@@ -24,7 +24,7 @@ const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 //======// Output //==============================================================================//
 
-layout (rgba16f) restrict uniform image2D colorimg2;
+layout (rgba16f) restrict uniform image2D colorimg3;
 
 //======// Uniform //=============================================================================//
 
@@ -79,7 +79,7 @@ float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
 			if (clamp(varianceTexel, ivec2(0), maxLimit) == varianceTexel) {
 				float weight = kernel[abs(x)][abs(y)];
 
-				variance += imageLoad(colorimg2, varianceTexel).a * weight;
+				variance += imageLoad(colorimg3, varianceTexel).a * weight;
 			}
 		}
 	}
@@ -127,22 +127,21 @@ void main() {
 		// float sumWeight = 0.25;
 		float sumWeight = 0.1;
 
-		vec4 indirectCurrent = imageLoad(colorimg2, texel);
+		vec4 indirectCurrent = imageLoad(colorimg3, texel);
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
 		indirectCurrent *= sumWeight;
 
 		float variance = CalculateVariance(texel, maxLimit);
 		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
-    	ivec2 randOffset = ivec2((RandNext2F() - 0.5) * FILTER_SIZE);
+
+		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * FILTER_SIZE);
 
 		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 offset = offset[i] * FILTER_SIZE + randOffset;
-			ivec2 sampleTexel = texel + offset;
-			// ivec2 offset = ivec2(x, y) * FILTER_SIZE;
+			ivec2 sampleTexel = randTexel + offset[i] * FILTER_SIZE;
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
 				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
 
-				vec4 sampleLight = imageLoad(colorimg2, sampleTexel);
+				vec4 sampleLight = imageLoad(colorimg3, sampleTexel);
 				float sampleLuma = GetLuminance(sampleLight.rgb);
 
 				// float weight = exp2(-dotSelf(offset));
@@ -167,6 +166,6 @@ void main() {
 
 		indirectCurrent /= sumWeight;
 		indirectCurrent.a /= sumWeight; // Sample variance
-		imageStore(colorimg2, texel, indirectCurrent);
+		imageStore(colorimg3, texel, indirectCurrent);
 	}
 }

@@ -15,7 +15,7 @@
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= R11F_G11F_B10F;
 	const int 	colortex2Format 			= RGBA16F;
-//	const int 	colortex3Format 			= R11F_G11F_B10F;
+	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
 	const int 	colortex5Format 			= R11F_G11F_B10F;
 	const int 	colortex6Format 			= RGB8;
@@ -31,12 +31,12 @@
 	const bool	colortex0Clear				= false;
 	const bool 	colortex1Clear				= false;
 	const bool	colortex2Clear				= true;
-//	const bool	colortex3Clear				= false;
+	const bool	colortex3Clear				= true;
 	const bool	colortex4Clear				= false;
 	const bool  colortex5Clear				= false;
 	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= true;
-	const bool	colortex8Clear				= true;
+	const bool	colortex8Clear				= false;
 	const bool 	colortex10Clear				= false;
 	const bool 	colortex11Clear				= false;
 	const bool 	colortex12Clear				= false;
@@ -62,8 +62,8 @@
 	|———————————————|———————————————|———————————————————————————
 	|	colortex0	|	Full res  	|	Scene data
 	|	colortex1	|	Full res  	|	Scene history
-	|	colortex2	|	Full res  	|	(Indirect light ->) Specular reflections of water, lighting of glass
-	|	colortex3	|	Full res  	|	Temp data
+	|	colortex2	|	Full res  	|	Specular reflections, lighting of glass
+	|	colortex3	|	Full res  	|	Current indirect light
 	|	colortex4	|	Half res  	|	Reprojected scene history
 	|	colortex5	|	256x384   	|	Sky-View LUT, light colors
 	|	colortex6	|	Full res  	|	Albedo

@@ -140,7 +140,7 @@ float FastAcos(in float x) {
 }
 */
 
-#if defined MC_NORMAL_MAP
+#if defined NORMAL_MAPPING
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (any(greaterThan(normalTex, vec3(0.003)))) {
 			normalTex = normalTex * 2.0 - 1.0 + r255;
@@ -193,6 +193,8 @@ vec2 unpackUnorm2x8(in float pack) {
 	vec2 xy; xy.x = modf(pack * 65535.0 / 256.0, xy.y);
 	return xy * vec2(256.0 * r255, r255);
 }
+float unpackUnorm2x8X(in float pack) { return fract(pack * 65535.0 / 256.0) * 256.0 / 255.0; }
+float unpackUnorm2x8Y(in float pack) { return floor(pack * 65535.0 / 256.0) / 255.0; }
 
 vec3 linearToSRGB(in vec3 color) {
 	return mix(color * 12.92, 1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055, lessThan(vec3(0.0031308), color));

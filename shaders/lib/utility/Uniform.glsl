@@ -38,7 +38,6 @@ uniform float sunAngle;
 uniform float eyeAltitude;
 uniform float biomeSnowySmooth;
 uniform float eyeSkylightFix;
-uniform float lightningFlashing;
 uniform float worldTimeCounter;
 uniform float timeNoon;
 uniform float timeMidnight;
