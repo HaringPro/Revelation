@@ -200,6 +200,7 @@ uniform int frameCounter;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 cameraPosition;
+uniform vec3 lightningShading;
 
 //======// Function //============================================================================//
 

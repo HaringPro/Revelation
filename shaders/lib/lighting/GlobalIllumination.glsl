@@ -29,7 +29,7 @@ vec2 DistortShadowScreenPos(in vec2 shadowPos) {
 vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	vec3 total = vec3(0.0);
 
-	const float realShadowMapRes = shadowMapResolution * MC_SHADOW_QUALITY;
+	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
 	vec3 shadowScreenPos = WorldToShadowScreenPos(worldPos);
 
@@ -93,10 +93,10 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 
 // #define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
 
-#define SSPT_SPP 1 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
-#define SSPT_BOUNCES 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
+#define SSPT_SPP 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
+#define SSPT_BOUNCES 1 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
 
-#define SSPT_FALLOFF 0.1 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
+#define SSPT_FALLOFF 0.3 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define SSPT_BLENDED_LIGHTMAP 0.0 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 
 /***************************************************************************
@@ -223,14 +223,15 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	rayPos.xy *= viewSize;
 	rayStep.xy *= viewSize;
 
-	float depthTolerance = max(exp2(2e-2 * viewPos.z - 10.0), rayStep.z * 12.0);
-
 	for (uint i = 0u; i < 16u; ++i, rayPos += rayStep){
-		if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
-			float sampleDepth = sampleDepth(ivec2(rayPos.xy));
-			float diff = rayPos.z - sampleDepth;
+		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
+		float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 
-			if (clamp(diff, 0.0, depthTolerance) == diff) return vec3(rayPos.xy, sampleDepth);
+		if (sampleDepth < rayPos.z) {
+			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
+			float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
+
+			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
 		}
 	}
 
@@ -284,7 +285,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			float NdotV = maxEps(dot(target.viewNormal, target.viewDir));
 
-			target.brdf *= FresnelSchlick(NdotV, f0) * 3.0;
+			target.brdf *= FresnelSchlick(NdotV, f0) * PI;
 			// target.brdf *= 0.1;
 
 			if (target.screenPos.z < 1.0) {
@@ -301,12 +302,12 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				vec3 diff = ScreenToViewSpace(target.screenPos) - viewPos;
 
 				float diffSqLen = dotSelf(diff);
-				if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-					float NdotL = saturate(dot(target.viewNormal, diff * inversesqrt(diffSqLen)));
-					target.brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
-				}
+				// if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
+				// 	float NdotL = saturate(dot(target.viewNormal, diff * inversesqrt(diffSqLen)));
+				// 	target.brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
+				// }
 
-				total += sampleLight * target.brdf * exp2(-sqrt(diffSqLen) * SSPT_FALLOFF);;
+				total += sampleLight * target.brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
 				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
 				total += (skyRadiance.rgb * lightmap.y + lightmap.x) * target.brdf;
@@ -327,7 +328,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			float NdotV = maxEps(dot(viewNormal, rayDir));
 
-			float brdf = FresnelSchlick(NdotV, f0) * 3.0;
+			float brdf = FresnelSchlick(NdotV, f0) * PI;
 			// float brdf = 0.1;
 
 			if (hitPos.z < 1.0) {
@@ -341,12 +342,12 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				vec3 diff = ScreenToViewSpace(hitPos) - viewPos;
 
 				float diffSqLen = dotSelf(diff);
-				if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-					float NdotL = saturate(dot(viewNormal, diff * inversesqrt(diffSqLen)));
-					brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
-				}
+				// if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
+				// 	float NdotL = saturate(dot(viewNormal, diff * inversesqrt(diffSqLen)));
+				// 	brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
+				// }
 
-				total += sampleLight * brdf * exp2(-sqrt(diffSqLen) * SSPT_FALLOFF);;
+				total += sampleLight * brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
 				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
 				total += (skyRadiance.rgb * lightmap.y + lightmap.x) * brdf;
@@ -357,6 +358,6 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 	#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
 		return total * 8.0 * rcp(float(SSPT_SPP));
 	#else
-		return total * 12.0 * rcp(float(SSPT_SPP));
+		return total * 16.0 * rcp(float(SSPT_SPP));
 	#endif
 }

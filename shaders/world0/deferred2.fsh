@@ -86,10 +86,6 @@ uniform float eyeAltitude;
 uniform float biomeSnowySmooth;
 uniform float eyeSkylightFix;
 uniform float worldTimeCounter;
-uniform float timeNoon;
-uniform float timeMidnight;
-uniform float timeSunrise;
-uniform float timeSunset;
 
 uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
@@ -99,6 +95,7 @@ uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
+uniform vec3 lightningShading;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
@@ -271,7 +268,7 @@ void main() {
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
-					sssAmount = 0.6;
+					sssAmount = 0.55;
 					worldNormal = vec3(0.1, 0.8, 0.1);
 					break;
 				case 12u: // Leaves
@@ -405,7 +402,7 @@ void main() {
 			if (lightmap.y > 1e-5) {
 				// Skylight
 				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-				skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5);
+				skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5) + lightningShading * 1e-3;
 				skylight *= worldNormal.y * 2.0 + 3.0;
 
 				sceneOut += skylight * lightmap.y * ao;

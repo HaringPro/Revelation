@@ -15,6 +15,8 @@
 #define INFO Alpha // [Alpha Beta Release]
 #define AUTHOR HaringPro
 
+// #define VOXEL_BRANCH
+
 //======// Environment //=========================================================================//
 
 const ivec2 skyViewRes = ivec2(255, 192);
@@ -162,6 +164,11 @@ const float minCloudAbsorption	  = 0.03;
 	// #define TAA_SHARPEN // Sharpens the image when applying TAA
 	#define TAA_SHARPNESS 0.7 // Sharpness of the TAA sharpening. [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
+/* Motion Blur */
+	#define MOTION_BLUR // Enables motion blur
+	#define MOTION_BLUR_SAMPLES 6 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24]
+	#define MOTION_BLUR_STRENGTH 0.6 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.2 1.4 1.5 1.7 2.0 2.5 3.0 3.5 4.0 4.5 5.0 7.0 10.0 12.0 14.0 16.0 18.0 20.0]
+
 /* Bloom */
 	#define BLOOM_ENABLED // Enables bloom
 	#define BLOOMY_FOG // Enables bloomy fog
@@ -192,5 +199,6 @@ const float minCloudAbsorption	  = 0.03;
 	// #define DEBUG_DEPTH 0 // [0 1 2]
 	// #define DEBUG_BLOOM_TILES
 	// #define DEBUG_GI
+	// #define DEBUG_SKY_COLOR
 
 #endif

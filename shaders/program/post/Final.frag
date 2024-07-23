@@ -42,6 +42,8 @@ uniform sampler2D colortex8; // LDR scene image
 
 uniform vec2 viewPixelSize;
 
+uniform vec3 skyColor;
+
 //======// Function //============================================================================//
 
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
@@ -146,6 +148,10 @@ void main() {
 		} else {
 			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 		}
+	#endif
+
+	#ifdef DEBUG_SKY_COLOR
+		if (all(lessThan(gl_FragCoord.xy * viewPixelSize, vec2(0.4)))) finalOut = skyColor;
 	#endif
 
 	// Apply bayer dithering to reduce banding artifacts

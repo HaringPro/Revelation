@@ -38,7 +38,11 @@ flat in float exposure;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex0; // Bloom tiles
-uniform sampler2D colortex1; // HDR scene image
+#ifdef MOTION_BLUR
+	uniform sampler2D colortex4; // Motion blur output
+#else
+	uniform sampler2D colortex1; // TAA output
+#endif
 uniform sampler2D colortex7; // Bloomy fog transmittance
 uniform sampler2D colortex9; // Rain alpha
 
@@ -168,7 +172,11 @@ vec3 Lottes(in vec3 x) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
+	#ifdef MOTION_BLUR
+		vec3 HDRImage = texelFetch(colortex4, screenTexel, 0).rgb;
+	#else
+		vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
+	#endif
 
 	// Bloom and fog
 	#ifdef BLOOM_ENABLED

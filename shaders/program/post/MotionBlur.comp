@@ -1,0 +1,70 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+const vec2 workGroupsRender = vec2(1.0f, 1.0f);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Output //==============================================================================//
+
+restrict writeonly uniform image2D colorimg4; // Motion blur output
+
+//======// Uniform //=============================================================================//
+
+uniform sampler2D colortex1; // TAA output
+uniform sampler2D colortex2; // Velocity
+
+uniform vec2 viewSize;
+uniform vec2 viewPixelSize;
+
+//======// Function //============================================================================//
+
+float InterleavedGradientNoise(in vec2 coord) {
+    return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
+}
+
+vec3 MotionBlur(in ivec2 texel) {
+	vec2 velocity = texelFetch(colortex2, texel, 0).xy;
+	float r = length(velocity);
+
+	if (r < 1e-6) return texelFetch(colortex1, texel, 0).rgb;
+
+	const float s = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES);
+	velocity *= s / (1.0 + r) * viewSize;
+
+	float dither = InterleavedGradientNoise(vec2(texel));
+
+    vec2 sampleCoord = vec2(texel) + velocity * dither;
+	sampleCoord -= velocity * MOTION_BLUR_SAMPLES * 0.5;
+
+	vec3 total = vec3(0.0);
+	uint sumWeight = 0u;
+
+	for (uint i = 0u; i < MOTION_BLUR_SAMPLES; ++i, sampleCoord += velocity) {
+		if (clamp(sampleCoord, vec2(0.0), viewSize - 1.0) == sampleCoord) {
+			total += texelFetch(colortex1, ivec2(sampleCoord), 0).rgb;
+			++sumWeight;
+		}
+	}
+
+	return total * rcp(float(sumWeight));
+}
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
+
+    imageStore(colorimg4, screenTexel, vec4(MotionBlur(screenTexel), 1.0));
+}

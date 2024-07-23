@@ -21,6 +21,11 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec3 temporalOut;
 
+#ifdef MOTION_BLUR
+/* RENDERTARGETS: 0,1,2 */
+layout (location = 2) out vec2 velocityOut;
+#endif
+
 //======// Uniform //=============================================================================//
 
 uniform sampler2D depthtex0;
@@ -218,5 +223,9 @@ void main() {
         vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
     #endif
 
-    temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
+    #ifdef MOTION_BLUR
+        velocityOut = velocity;
+    #endif
+
+    temporalOut = CalculateTAA(screenCoord, velocity);
 }

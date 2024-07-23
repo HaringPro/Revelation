@@ -2,16 +2,22 @@
 #define PCF_SAMPLES 16 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 48 64]
 
 const float shadowDistanceRenderMul = 1.0; // [-1.0 1.0]
+const float	shadowDistance = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
 
-const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
-const float	shadowDistance	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
-
-const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
-
+#if defined VOXEL_BRANCH
+    #include "/lib/voxel/Constants.glsl"
+#else
+	const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
+	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
+#endif
 
 //================================================================================================//
 
-#include "ShadowDistortion.glsl"
+#if defined VOXEL_BRANCH
+    #include "/lib/voxel/shadow/ShadowDistortion.glsl"
+#else
+	#include "ShadowDistortion.glsl"
+#endif
 
 vec3 WorldToShadowScreenSpace(in vec3 worldPos, out float distortFactor) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);

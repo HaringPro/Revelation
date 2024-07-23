@@ -1,3 +1,9 @@
 #version 450 compatibility
 
-#include "/program/shadow/Shadow.vert"
+#include "/settings.glsl"
+
+#if defined VOXEL_BRANCH
+    #include "/lib/voxel/shadow/Shadow.vert"
+#else
+    #include "/program/shadow/Shadow.vert"
+#endif

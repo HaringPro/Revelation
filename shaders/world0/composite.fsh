@@ -58,12 +58,20 @@ uniform vec3 fogWind;
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 70.0);
 
-const int shadowMapResolution = 2048; // [1024 2048 4096 8192 16384 32768]
-const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
+#if defined VOXEL_BRANCH
+    #include "/lib/voxel/Constants.glsl"
+#else
+	const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
+	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
+#endif
 
 //================================================================================================//
 
-#include "/lib/lighting/ShadowDistortion.glsl"
+#if defined VOXEL_BRANCH
+    #include "/lib/voxel/shadow/ShadowDistortion.glsl"
+#else
+	#include "/lib/lighting/ShadowDistortion.glsl"
+#endif
 
 vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);

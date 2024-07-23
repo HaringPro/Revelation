@@ -119,7 +119,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 		// powder = mix(powder, 1.0, sqr(LdotV * 0.5 + 0.5));
 
 		vec3 scattering = scatteringSun * 200.0 * directIlluminance;
-		scattering += scatteringSky * 2.0 * skyIlluminance;
+		scattering += scatteringSky * 2.0 * (skyIlluminance + lightningShading * powder * 7e-3);
 		scattering *= oneMinus(0.6 * wetness) * powder * absorption;
 
 		return vec4(scattering, absorption);

@@ -1,3 +1,3 @@
 #version 450 compatibility
 
-#include "/program/post/Temporal.comp"
+#include "/program/post/MotionBlur.comp"
