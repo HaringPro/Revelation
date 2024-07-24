@@ -5,8 +5,6 @@
 
 //======// Output //==============================================================================//
 
-flat out mat3 tbnMatrix;
-
 out vec4 tint;
 out vec2 texCoord;
 out vec2 lightmap;
@@ -57,12 +55,6 @@ void main() {
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
 	// vec4 worldPos = gbufferModelViewInverse * viewPos;
-
-    tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
-	#if defined NORMAL_MAPPING
-		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
-	#endif
 
 	materialID = uint(blockEntityId - 10000);
 }

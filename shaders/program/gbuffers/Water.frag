@@ -103,7 +103,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 //======// Main //================================================================================//
 void main() {
 	vec3 worldNormal;
-	vec4 albedo;
 	if (materialID == 3u) { // water
 		vec3 minecraftPos = worldPos + cameraPosition;
 		#ifdef WATER_PARALLAX
@@ -122,11 +121,13 @@ void main() {
 		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
 		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos.xyz);
 	} else {
-		albedo = texture(tex, texCoord) * tint;
+		vec4 albedo = texture(tex, texCoord) * tint;
 
 		if (albedo.a < 0.1) { discard; return; }
 
-		sceneOut = vec4(0.0);
+		sceneOut.rgb = vec3(0.0);
+		sceneOut.a = fastSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
+
 		#if defined NORMAL_MAPPING
 			worldNormal = texture(normals, texCoord).rgb;
 			DecodeNormalTex(worldNormal);
@@ -136,6 +137,9 @@ void main() {
 		#else
 			worldNormal = tbnMatrix[2];
 		#endif
+
+		gbufferOut1.x = packUnorm2x8(albedo.rg);
+		gbufferOut1.y = packUnorm2x8(albedo.ba);
 	}
 
 	//==// Translucent lighting //================================================================//
@@ -179,9 +183,6 @@ void main() {
 		}
 
 		if (materialID != 3u) {
-			gbufferOut1.x = packUnorm2x8(albedo.rg);
-			gbufferOut1.y = packUnorm2x8(albedo.ba);
-
 			sceneOut.rgb += sunlightDiffuse;
 
 			if (lightmap.y > 1e-5) {
@@ -199,18 +200,11 @@ void main() {
 			}
 
 			if (lightmap.x > 1e-5) sceneOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
-
-			sceneOut.a = fastSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
 		}
 
 		// Specular highlights
 		sceneOut.rgb += specularHighlight;
 		sceneOut.rgb /= maxEps(sceneOut.a);
-	#else
-		if (materialID != 3u) {
-			gbufferOut1.x = packUnorm2x8(albedo.rg);
-			gbufferOut1.y = packUnorm2x8(albedo.ba);
-		}
 	#endif
 	//============================================================================================//
 

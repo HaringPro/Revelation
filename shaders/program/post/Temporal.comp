@@ -6,12 +6,12 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: Temporal Anti-Aliasing and buffer clear
+    Pass: Temporal Anti-Aliasing
 
 --------------------------------------------------------------------------------
 */
 
-layout (local_size_x = 8, local_size_y = 8) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 
 const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
@@ -21,11 +21,15 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 //======// Output //==============================================================================//
 
-layout (r11f_g11f_b10f, location = 0) restrict uniform image2D colorimg0; // Scene data
-layout (r11f_g11f_b10f, location = 1) restrict uniform image2D colorimg1; // Scene history
+restrict writeonly uniform image2D colorimg1; // Scene history
+
+#ifdef MOTION_BLUR
+    restrict writeonly uniform image2D colorimg2; // Velocity output
+#endif
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D colortex0; // Scene data
 uniform sampler2D colortex1; // Scene history
 
 uniform sampler2D depthtex0;
@@ -149,7 +153,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define currentLoad(offset) RGBtoYCoCgR(imageLoad(colorimg0, texel + offset).rgb);
+#define currentLoad(offset) RGBtoYCoCgR(sampleSceneColor(texel + offset));
 
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
@@ -157,7 +161,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
 
-    vec3 currentSample = imageLoad(colorimg0, texel).rgb;
+    vec3 currentSample = sampleSceneColor(texel);
     vec2 prevCoord = screenCoord - velocity;
 
     if (saturate(prevCoord) != prevCoord) return currentSample;
@@ -208,21 +212,19 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-    #ifdef TAA_ENABLED
-        float depth = sampleDepth(screenTexel);
-        vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+    float depth = sampleDepth(screenTexel);
+    vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
 
-        #ifdef TAA_CLOSEST_FRAGMNET
-            vec3 closestFragment = GetClosestFragment(screenTexel, depth);
-            vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
-        #else
-            vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
-        #endif
-
-        imageStore(colorimg1, screenTexel, vec4(CalculateTAA(screenCoord, velocity), 1.0));
+    #ifdef TAA_CLOSEST_FRAGMNET
+        vec3 closestFragment = GetClosestFragment(screenTexel, depth);
+        vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
     #else
-        imageStore(colorimg1, screenTexel, vec4(imageLoad(colorimg0, screenTexel).rgb, 1.0));
+        vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
     #endif
 
-	// imageStore(colorimg0, screenTexel, vec4(0.0));
+    #ifdef MOTION_BLUR
+        imageStore(colorimg2, screenTexel, vec4(velocity, 0.0, 1.0));
+    #endif
+
+    imageStore(colorimg1, screenTexel, vec4(CalculateTAA(screenCoord, velocity), 1.0));
 }

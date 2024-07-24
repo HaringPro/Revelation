@@ -60,7 +60,7 @@ void main() {
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
     if (saturate(previousCoord) == previousCoord) {
-        vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
+        vec3 reprojectedHistory = textureSmoothFilter(colortex1, previousCoord).rgb;
         imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
     }
 }

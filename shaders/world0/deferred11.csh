@@ -8,7 +8,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Compute specular reflections (and clear colorimg3)
+	Pass: Compute specular reflections
 
 --------------------------------------------------------------------------------
 */
@@ -203,7 +203,6 @@ void main() {
 			vec4 reflectionData = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, skyLightmap, dither);
 
 			imageStore(colorimg3, screenTexel, reflectionData);
-		} else
+		}
 	#endif
-	{ imageStore(colorimg3, screenTexel, vec4(0.0)); }
 }

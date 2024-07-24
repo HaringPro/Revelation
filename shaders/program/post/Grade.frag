@@ -37,12 +37,12 @@ flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex0; // Bloom tiles
 #ifdef MOTION_BLUR
-	uniform sampler2D colortex4; // Motion blur output
+	uniform sampler2D colortex0; // Motion blur output
 #else
 	uniform sampler2D colortex1; // TAA output
 #endif
+uniform sampler2D colortex4; // Bloom tiles
 uniform sampler2D colortex7; // Bloomy fog transmittance
 uniform sampler2D colortex9; // Rain alpha
 
@@ -69,7 +69,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 
 	for (int i = 0; i < 7; ++i) {
     	vec2 sampleCoord = screenCoord * exp2(-float(i + 1)) + CalculateTileOffset(i);
-		vec3 sampleTile = textureBicubic(colortex0, sampleCoord).rgb;
+		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
 		sumWeight += weight;
@@ -173,7 +173,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	#ifdef MOTION_BLUR
-		vec3 HDRImage = texelFetch(colortex4, screenTexel, 0).rgb;
+		vec3 HDRImage = texelFetch(colortex0, screenTexel, 0).rgb;
 	#else
 		vec3 HDRImage = texelFetch(colortex1, screenTexel, 0).rgb;
 	#endif

@@ -16,8 +16,6 @@ layout (location = 2) out vec2 gbufferOut1;
 
 //======// Input //===============================================================================//
 
-flat in mat3 tbnMatrix;
-
 in vec4 tint;
 in vec2 texCoord;
 in vec2 lightmap;
@@ -77,6 +75,8 @@ vec2 endPortalLayer(in vec2 coord, in float layer) {
 	return (4.5 - layer * 0.25) * (rotate * coord) + offset;
 }
 
+#include "/lib/surface/ManualTBN.glsl"
+
 //======// Main //================================================================================//
 void main() {
 	vec4 albedo = texture(tex, texCoord) * tint;
@@ -109,6 +109,8 @@ void main() {
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
+
+	mat3 tbnMatrix = CalculateTBNMatrix(viewPos.xyz, texCoord);
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 	#if defined NORMAL_MAPPING

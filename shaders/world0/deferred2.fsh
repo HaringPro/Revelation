@@ -9,6 +9,7 @@
 	Apache License 2.0
 
 	Pass: Deferred lighting and sky rendering
+		  Compute specular reflections
 
 --------------------------------------------------------------------------------
 */
@@ -260,7 +261,7 @@ void main() {
 			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
-			Material material = Material(materialID == 51u ? 0.005 : 1.0, 0.0, 0.04, 0.0, false, false);
+			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.04, 0.0, false, false);
 		#endif
 
 		float sssAmount = 0.0;
@@ -463,7 +464,7 @@ void main() {
 			sceneOut *= oneMinus(material.metalness);
 
 			// Specular reflections
-			if (material.hasReflections) reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
+			if (material.hasReflections && materialID != 46u && materialID != 51u) reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
 		#endif
 
 		// Specular highlights

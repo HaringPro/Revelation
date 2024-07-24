@@ -1,3 +1,0 @@
-#version 450 compatibility
-
-#include "/lib/voxel/shadow/Shadow.geom"

@@ -110,10 +110,10 @@ void main() {
 		float variance = CalculateVariance(texel, shift, maxLimit);
 		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
 
-		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * FILTER_SIZE);
+		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * ATROUS_FILTER_SIZE);
 
 		for (uint i = 0u; i < 4u; ++i) {
-			ivec2 sampleTexel = randTexel + offset[i] * FILTER_SIZE;
+			ivec2 sampleTexel = randTexel + offset[i] * ATROUS_FILTER_SIZE;
 			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
 				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
 
@@ -129,7 +129,7 @@ void main() {
 
 				// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
 				// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
-				weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * inversesqrt(float(FILTER_SIZE)));
+				weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * inversesqrt(float(ATROUS_FILTER_SIZE)));
 
 				// wL = exp(−|L0 − L1| / (σLvar + ε))
 				weight *= fastExp(-abs(sampleLuma - centerLuma) * variancePhi);

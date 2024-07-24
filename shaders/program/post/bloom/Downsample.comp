@@ -15,7 +15,7 @@ layout (local_size_x = 8, local_size_y = 8) in;
 
 //======// Output //==============================================================================//
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
 
 //======// Utility //=============================================================================//
 
@@ -29,9 +29,8 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
 	uniform sampler2D colortex1; // TAA image output
 	#define sampleTile(uv) textureLod(colortex1, uv, 0.0).rgb
 #else
-	uniform sampler2D colortex0; // Bloom tile input
-	#define sampleTile(uv) textureLod(colortex0, uv, 0.0).rgb
-	// #define sampleTile(texel) imageLoad(colorimg0, texel).rgb
+	uniform sampler2D colortex4; // Bloom tile input
+	#define sampleTile(uv) textureLod(colortex4, uv, 0.0).rgb
 #endif
 
 uniform vec2 viewSize;
@@ -77,6 +76,6 @@ void main() {
 		vec3 bloomTile = CalculateBloomTile(srcUV);
 
 		vec2 dstTexel = gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
-		imageStore(colorimg0, ivec2(dstTexel), vec4(bloomTile, 1.0));
+		imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
 	}
 }

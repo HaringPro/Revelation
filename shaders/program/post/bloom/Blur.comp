@@ -15,7 +15,7 @@ const vec2 workGroupsRender = vec2(0.5f, 1.0f);
 
 //======// Output //==============================================================================//
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg0;
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
 
 shared vec3 sharedData[64 + 8];
 
@@ -23,9 +23,9 @@ shared vec3 sharedData[64 + 8];
 void main() {
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 
-	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg0, texel - OFFSET * 4).rgb;
+	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg4, texel - OFFSET * 4).rgb;
 	if (gl_LocalInvocationIndex < 8) {
-		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg0, texel + OFFSET * (64 - 4)).rgb;
+		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg4, texel + OFFSET * (64 - 4)).rgb;
 	}
 	barrier();
 
@@ -36,5 +36,5 @@ void main() {
 		bloomTiles += sharedData[gl_LocalInvocationIndex + i + 4].rgb * sumWeight[abs(i)];
 	}
 
-    imageStore(colorimg0, texel, vec4(bloomTiles, 1.0));
+    imageStore(colorimg4, texel, vec4(bloomTiles, 1.0));
 }

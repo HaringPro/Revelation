@@ -1,5 +1,5 @@
 #version 450 compatibility
 
-#define FILTER_SIZE 16
+#define ATROUS_FILTER_SIZE 16
 
 #include "/program/ATrousFilter.comp"

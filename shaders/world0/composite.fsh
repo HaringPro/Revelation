@@ -58,20 +58,12 @@ uniform vec3 fogWind;
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 70.0);
 
-#if defined VOXEL_BRANCH
-    #include "/lib/voxel/Constants.glsl"
-#else
-	const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
-	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
-#endif
+const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
+const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //================================================================================================//
 
-#if defined VOXEL_BRANCH
-    #include "/lib/voxel/shadow/ShadowDistortion.glsl"
-#else
-	#include "/lib/lighting/ShadowDistortion.glsl"
-#endif
+#include "/lib/lighting/ShadowDistortion.glsl"
 
 vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
@@ -203,23 +195,21 @@ void main() {
 
 	float dither = BlueNoiseTemporal(screenTexel);
 
+	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
+
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = AirVolumetricFog(worldPos, worldDir, dither);
-
-			scatteringOut = volFogData[0];
-			transmittanceOut = volFogData[1];
+			volFogData = AirVolumetricFog(worldPos, worldDir, dither);
 		}
 	#endif
-
 	#ifdef UW_VOLUMETRIC_FOG
 		if (isEyeInWater == 1) {
-			mat2x3 volFogData = UnderwaterVolumetricFog(worldPos, worldDir, dither);
-
-			scatteringOut = volFogData[0];
-			transmittanceOut = volFogData[1];
+			volFogData = UnderwaterVolumetricFog(worldPos, worldDir, dither);
 		}
 	#endif
+
+	scatteringOut = volFogData[0];
+	transmittanceOut = volFogData[1];
 
 	// Apply bayer dithering to reduce banding artifacts
 	transmittanceOut += (dither - 0.5) * r255;

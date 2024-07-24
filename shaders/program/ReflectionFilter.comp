@@ -112,7 +112,7 @@ void main() {
             vec3 screenPos = vec3(vec2(gl_GlobalInvocationID.xy) * viewPixelSize, sampleDepth(screenTexel));
             vec3 viewPos = ScreenToViewSpace(screenPos);
             vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
-            reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, FILTER_SIZE, RandNext2F() - 0.5);
+            reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, RandNext2F() - 0.5);
         }
     #endif
 

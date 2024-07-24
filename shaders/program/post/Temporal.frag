@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: Temporal Anti-Aliasing and buffer clear
+    Pass: Temporal Anti-Aliasing
 
 --------------------------------------------------------------------------------
 */
@@ -17,13 +17,12 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,1 */
-layout (location = 0) out vec3 sceneOut;
-layout (location = 1) out vec3 temporalOut;
+/* RENDERTARGETS: 1 */
+layout (location = 0) out vec3 temporalOut;
 
 #ifdef MOTION_BLUR
-/* RENDERTARGETS: 0,1,2 */
-layout (location = 2) out vec2 velocityOut;
+/* RENDERTARGETS: 1,2 */
+layout (location = 1) out vec2 velocityOut;
 #endif
 
 //======// Uniform //=============================================================================//
@@ -209,8 +208,6 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
 //======// Main //================================================================================//
 void main() {
-    sceneOut = vec3(0.0); // Clear colortex0 for bloom tile pass
-
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
     float depth = sampleDepth(screenTexel);

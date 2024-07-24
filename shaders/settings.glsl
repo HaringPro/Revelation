@@ -15,8 +15,6 @@
 #define INFO Alpha // [Alpha Beta Release]
 #define AUTHOR HaringPro
 
-// #define VOXEL_BRANCH
-
 //======// Environment //=========================================================================//
 
 const ivec2 skyViewRes = ivec2(255, 192);

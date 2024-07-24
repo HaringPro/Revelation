@@ -63,6 +63,7 @@ float CloudPlaneDensity(in vec2 worldPos) {
 	return saturate(cirrus + stratocumulus);
 }
 
+#if defined CLOUD_LIGHTING
 vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in float LdotV, in float lightNoise, in vec4 phases) {
 	float density = CloudPlaneDensity(worldPos);
 	if (density > 1e-6) {
@@ -128,7 +129,6 @@ vec4 RenderCloudPlane(in float stepT, in vec2 worldPos, in vec2 worldDir, in flo
 
 //================================================================================================//
 
-#if defined CLOUD_LIGHTING
 vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
     vec4 cloudData = vec4(0.0, 0.0, 0.0, 1.0);
 

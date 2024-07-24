@@ -1,4 +1,3 @@
-
 /*
 --------------------------------------------------------------------------------
 
@@ -9,8 +8,7 @@
 
 --------------------------------------------------------------------------------
 
-	- Pipeline configuration -
-
+	- Pipeline Configuration -
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= R11F_G11F_B10F;
@@ -56,27 +54,26 @@
 
 --------------------------------------------------------------------------------
 
-	- Buffer table -
+	- Buffer Table -
 
-	|	Buffer		|	Resolution	|	Usage
-	|———————————————|———————————————|———————————————————————————
-	|	colortex0	|	Full res  	|	Scene data
-	|	colortex1	|	Full res  	|	Scene history
-	|	colortex2	|	Full res  	|	Specular reflections, lighting of glass -> Motion vector
-	|	colortex3	|	1.0, 0.5  	|	Current indirect light
-	|	colortex4	|	Full res  	|	Reprojected scene history -> Motion blur output
-	|	colortex5	|	256x384   	|	Sky-View LUT, light colors
-	|	colortex6	|	Full res  	|	Albedo
-	|	colortex7	|	Full res  	|	Gbuffer data 0 -> Bloomy fog transmittance
-	|	colortex8	|	Full res  	|	Gbuffer data 1 -> Final output
-	|	colortex9	|	Full res	|	Rain
-	|	colortex10	|	256x384   	|	Transmittance-View LUT
-	|	colortex11	|	Half res  	|	Volumetric fog scattering
-	|	colortex12	|	Half res  	|	Volumetric fog transmittance
-	|	colortex13	|	1.0, 0.5	|	Indirect light history, frame index
-	|	colortex14	|	1.0, 0.5	|	Variance history
-	|	colortex15	|	Double res	|	FSR EASU output
-
+	|   Buffer		|   Format          |   Resolution	|   Usage
+	|———————————————|———————————————————|———————————————|———————————————————————————
+	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
+	|	colortex1	|   r11f_g11f_b10f  |	Full res  	|	Scene history
+	|	colortex2	|   rgba16f         |	Full res  	|	Specular reflections, lighting of glass -> Motion vector
+	|	colortex3	|   rgba16f         |	1.0, 0.5  	|	Current indirect light
+	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
+	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors
+	|	colortex6	|   rgb8            |	Full res  	|	Albedo
+	|	colortex7	|   rgba16          |	Full res  	|	Gbuffer data 0 -> Bloomy fog transmittance
+	|	colortex8	|   rgba16          |	Full res  	|	Gbuffer data 1 -> Final output
+	|	colortex9	|               	|	Full res	|	Rain
+	|	colortex10	|   r11f_g11f_b10f  |	256, 384   	|	Transmittance-View LUT
+	|	colortex11	|   rgb16f          |	Half res  	|	Volumetric fog scattering
+	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
+	|	colortex13	|   rgba16f         |	1.0, 0.5	|	Indirect light history, frame index
+	|	colortex14	|   rg16            |	1.0, 0.5	|	Variance history
+	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 
 --------------------------------------------------------------------------------
 */

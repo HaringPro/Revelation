@@ -6,6 +6,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
+    Pass: Motion Blur
+
 --------------------------------------------------------------------------------
 */
 
@@ -19,7 +21,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 //======// Output //==============================================================================//
 
-restrict writeonly uniform image2D colorimg4; // Motion blur output
+restrict writeonly uniform image2D colorimg0; // Motion blur output
 
 //======// Uniform //=============================================================================//
 
@@ -27,7 +29,6 @@ uniform sampler2D colortex1; // TAA output
 uniform sampler2D colortex2; // Velocity
 
 uniform vec2 viewSize;
-uniform vec2 viewPixelSize;
 
 //======// Function //============================================================================//
 
@@ -59,12 +60,12 @@ vec3 MotionBlur(in ivec2 texel) {
 		}
 	}
 
-	return total * rcp(float(sumWeight));
+	return total * rcp(float(sumWeight) + 1e-6);
 }
 
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-    imageStore(colorimg4, screenTexel, vec4(MotionBlur(screenTexel), 1.0));
+    imageStore(colorimg0, screenTexel, vec4(MotionBlur(screenTexel), 1.0));
 }

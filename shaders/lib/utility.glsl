@@ -229,7 +229,7 @@ vec3 blackbody(in float t) {
 }
 
 vec4 textureSmoothFilter(in sampler2D tex, in vec2 coord) {
-	// from https://iquilezles.org/www/articles/texture/texture.htm
+	// From https://iquilezles.org/www/articles/texture/texture.htm
 	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res + 0.5;
