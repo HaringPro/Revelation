@@ -158,8 +158,8 @@ void main() {
 				// wL = exp(−|L0 − L1| / (σLvar + ε))
 				weight *= fastExp(-abs(sampleLuma - centerLuma) * variancePhi);
 
-				indirectCurrent.rgb += sampleLight.rgb * weight;
-				indirectCurrent.a += sampleLight.a * weight * weight; // Sample variance
+				sampleLight.a *= weight; // Sample variance
+				indirectCurrent += sampleLight * weight;
 				sumWeight += weight;
 			}
 		}

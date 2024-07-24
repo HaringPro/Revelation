@@ -241,6 +241,8 @@ void main() {
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
 	}
 
+	// sceneOut = texelFetch(colortex3, screenTexel, 0).rgb;
+
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;
 	#elif DEBUG_NORMALS == 2
