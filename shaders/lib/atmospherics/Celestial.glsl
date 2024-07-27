@@ -23,16 +23,6 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 
 //================================================================================================//
 
-vec3 RenderMoonReflection(in vec3 worldDir, in vec3 sunVector) {
-	float cosTheta = dot(worldDir, -sunVector);
-
-	float disc = curve(saturate((cosTheta - 1.0 + 4e-3) * 3e2));
-
-	return vec3(0.76, 0.9, 1.1) * disc * 0.3;
-}
-
-//================================================================================================//
-
 mat3 RotateMatrix(in vec3 x, in vec3 y) {
     float d = dot(x, y);
     float id = 1.0 - d;
