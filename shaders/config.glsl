@@ -11,7 +11,7 @@
 	- Pipeline Configuration -
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;
-	const int 	colortex1Format 			= R11F_G11F_B10F;
+	const int 	colortex1Format 			= RGBA16F;
 	const int 	colortex2Format 			= RGBA16F;
 	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
@@ -30,7 +30,7 @@
 	const bool 	colortex1Clear				= false;
 	const bool	colortex2Clear				= true;
 	const bool	colortex3Clear				= true;
-	const bool	colortex4Clear				= false;
+	const bool	colortex4Clear				= true;
 	const bool  colortex5Clear				= false;
 	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= true;
@@ -59,7 +59,7 @@
 	|   Buffer		|   Format          |   Resolution	|   Usage
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
-	|	colortex1	|   r11f_g11f_b10f  |	Full res  	|	Scene history
+	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
 	|	colortex2	|   rgba16f         |	Full res  	|	Specular reflections, lighting of glass -> Motion vector
 	|	colortex3	|   rgba16f         |	1.0, 0.5  	|	Current indirect light
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles

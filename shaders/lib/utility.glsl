@@ -54,6 +54,8 @@ vec2  sqr(vec2 x)	  	{ return x * x; }
 vec3  sqr(vec3 x)	  	{ return x * x; }
 vec4  sqr(vec4 x)	  	{ return x * x; }
 
+float pow1d5(float x) 	{ return x * x * inversesqrt(x); }
+
 float cube(float x)   	{ return x * x * x; }
 vec2  cube(vec2 x)	  	{ return x * x * x; }
 vec3  cube(vec3 x)	  	{ return x * x * x; }
@@ -327,3 +329,14 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
     return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);
 }
 */
+
+#ifdef DEBUG_RESHADING
+	uniform float dyn_100;
+	uniform float dyn_101;
+	uniform float dyn_102;
+	uniform float dyn_103;
+	uniform float dyn_104;
+	uniform float dyn_105;
+	uniform float dyn_106;
+	uniform float dyn_107;
+#endif

@@ -45,7 +45,7 @@ flat in vec3 skyIlluminance;
 #include "/lib/utility/Fetch.glsl"
 #include "/lib/utility/Noise.glsl"
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 
 #include "/lib/water/WaterWave.glsl"
 // #include "/lib/water/WaterFog.glsl"

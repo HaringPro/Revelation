@@ -8,21 +8,22 @@ float GetSmoothNoise(in vec2 coord) {
 	return textureLod(noisetex, coord * rcp(256.0), 0.0).x;
 }
 
-// float CalculateWaterHeight(in vec2 position) {
-//     float wavesTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
+#if 0
+float CalculateWaterHeight(in vec2 position) {
+    float wavesTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
 
-// 	// Apply a large scale noise to the position to create a more stochastic looking wave
-// 	position += exp2(0.5 - 2.0 * pow5(1.0 - GetSmoothNoise(position * 0.15)));
+	// Apply a large scale noise to the position to create a more stochastic looking wave
+	position += exp2(0.5 - 2.0 * pow5(1.0 - GetSmoothNoise(position * 0.15)));
 
-//     float wave = GetSmoothNoise((position + wavesTime * 0.6) * vec2(0.9, 0.6));
-// 	wave += GetSmoothNoise((position + vec2(wavesTime, position.x + wavesTime * 0.6)) * vec2(1.2, 1.8)) * 0.6;
-// 	wave += GetSmoothNoise((position + vec2(wavesTime * 0.4, wavesTime - position.x * 0.7)) * vec2(2.0, 1.2)) * 0.3;
-// 	wave += GetSmoothNoise((position + vec2(wavesTime * 0.8, position.x * 0.5 + wavesTime * 0.2)) * vec2(3.2, 2.7)) * 0.16;
-// 	wave += GetSmoothNoise((position + vec2(wavesTime * 0.3, wavesTime - position.x * 0.3)) * vec2(4.4, 3.6)) * 0.1;
+    float wave = GetSmoothNoise((position + wavesTime * 0.6) * vec2(0.9, 0.6));
+	wave += GetSmoothNoise((position + vec2(wavesTime, position.x + wavesTime * 0.6)) * vec2(1.2, 1.8)) * 0.6;
+	wave += GetSmoothNoise((position + vec2(wavesTime * 0.4, wavesTime - position.x * 0.7)) * vec2(2.0, 1.2)) * 0.3;
+	wave += GetSmoothNoise((position + vec2(wavesTime * 0.8, position.x * 0.5 + wavesTime * 0.2)) * vec2(3.2, 2.7)) * 0.16;
+	wave += GetSmoothNoise((position + vec2(wavesTime * 0.3, wavesTime - position.x * 0.3)) * vec2(4.4, 3.6)) * 0.1;
 
-// 	return exp2(2.0 - wave * wave);
-// }
-
+	return exp2(2.0 - wave * wave);
+}
+#else
 float CalculateWaterHeight(in vec2 p) {
     float wavesTime = frameTimeCounter * WATER_WAVE_SPEED;
 	p.y *= 0.8;
@@ -37,6 +38,7 @@ float CalculateWaterHeight(in vec2 p) {
 
     return sin(wave * 1.2 * PI);
 }
+#endif
 
 // https://www.shadertoy.com/view/MdXyzX
 // Calculates wave value and its derivative, 
@@ -83,6 +85,8 @@ float getwaves(vec2 position) {
 	// calculate and return
 	return sumOfValues / sumOfWeights;
 }
+
+//================================================================================================//
 
 vec3 CalculateWaterNormal(in vec2 position) {
 	float wavesCenter = CalculateWaterHeight(position);

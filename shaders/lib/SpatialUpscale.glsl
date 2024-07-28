@@ -24,6 +24,8 @@
 	}
 #endif
 
+//================================================================================================//
+
 #if defined SSPT_ENABLED && defined SVGF_ENABLED
 	#include "/lib/utility/Offset.glsl"
 

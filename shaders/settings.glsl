@@ -20,7 +20,7 @@
 const ivec2 skyViewRes = ivec2(255, 192);
 
 const float minCloudTransmittance = 0.05;
-const float minCloudAbsorption	  = 0.03;
+const float minCloudAbsorption	  = 0.01;
 
 /* Clouds */
 	#define CLOUDS_ENABLED // Enables clouds
@@ -198,5 +198,6 @@ const float minCloudAbsorption	  = 0.03;
 	// #define DEBUG_BLOOM_TILES
 	// #define DEBUG_GI
 	// #define DEBUG_SKY_COLOR
+	// #define DEBUG_RESHADING
 
 #endif

@@ -103,7 +103,7 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 	#include "/lib/utility/Fetch.glsl"
 	#include "/lib/utility/Noise.glsl"
 
-	#include "/lib/atmospherics/Global.inc"
+	#include "/lib/atmospherics/Global.glsl"
 
 	#include "/lib/surface/BRDF.glsl"
 

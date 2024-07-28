@@ -128,7 +128,7 @@ vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float Ndot
 
 //================================================================================================//
 
-// https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
+// From https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
     // Transform viewer direction to the hemisphere configuration
     viewDir = normalize(vec3(roughness * viewDir.xy, viewDir.z));
@@ -176,4 +176,25 @@ vec3 importanceSampleCosine(in vec3 normal, in vec2 xy) {
     sampleWorld += sampleHemisphere.z * normal;
 
     return sampleWorld;
+}
+
+// From https://github.com/Jessie-LC/open-source-utility-code/blob/main/simple/misc.glsl
+vec3 rotate(vec3 vector, vec3 from, vec3 to) {
+	// where "from" and "to" are two unit vectors determining how far to rotate
+	// adapted version of https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+
+	float cosTheta = dot(from, to);
+	if (abs(cosTheta) >= 0.9999) { return cosTheta < 0.0 ? -vector : vector; }
+	vec3 axis = normalize(cross(from, to));
+
+	vec2 sc = vec2(sqrt(1.0 - cosTheta * cosTheta), cosTheta);
+	return sc.y * vector + sc.x * cross(axis, vector) + (1.0 - sc.y) * dot(axis, vector) * axis;
+}
+
+vec3 generateConeVector(vec3 vector, vec2 xy, float angle) {
+    xy.x *= TAU;
+    float cosAngle = cos(angle);
+    xy.y = xy.y * (1.0 - cosAngle) + cosAngle;
+    vec3 sphereCap = vec3(vec2(cos(xy.x), sin(xy.x)) * sqrt(1.0 - xy.y * xy.y), xy.y);
+    return rotate(sphereCap, vec3(0, 0, 1), vector);
 }

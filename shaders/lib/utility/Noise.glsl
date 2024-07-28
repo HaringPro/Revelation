@@ -101,7 +101,7 @@ float Bayer64Temporal(in vec2 coord) {
 	#ifdef TAA_ENABLED
 		return R1(frameCounter % 256, bayer64(coord));
 	#else
-		return bayer8 (0.125 * a) * 0.015625 + bayer8(a);
+		return bayer8(0.125 * coord) * 0.015625 + bayer8(coord);
 	#endif
 }
 

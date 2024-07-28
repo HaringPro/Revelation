@@ -57,7 +57,7 @@ uniform vec3 worldSunVector;
 
 //======// Function //============================================================================//
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
 #define HISTOGRAM_AE // Enables auto exposure histogram
@@ -158,6 +158,7 @@ void main() {
 
 #else
 
+#define PROGRAM_DEFERRED_0
 #define CLOUD_LIGHTING
 
 //======// Output //==============================================================================//
@@ -206,7 +207,7 @@ uniform vec3 lightningShading;
 
 #include "/lib/utility/Noise.glsl"
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
 #include "/lib/atmospherics/Clouds.glsl"

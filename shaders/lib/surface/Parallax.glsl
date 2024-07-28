@@ -29,6 +29,8 @@ vec3 CalculateParallax(in vec3 tangentViewDir, in mat2 texGrad, in float dither)
     return offsetCoord;
 }
 
+//================================================================================================//
+
 #ifdef PARALLAX_SHADOW
     float CalculateParallaxShadow(in vec3 tangentLightVector, in vec3 offsetCoord, in mat2 texGrad, in float dither) {
         float parallaxShadow = 1.0;

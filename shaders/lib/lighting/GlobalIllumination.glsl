@@ -89,6 +89,8 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 }
 #endif
 
+//================================================================================================//
+
 /* Screen-Space Path Tracing */
 
 // #define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
@@ -215,7 +217,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	vec3 position = ViewToScreenSpace(viewDir * -viewPos.z + viewPos);
 	vec3 screenDir = normalize(position - rayPos);
 
-	float stepLength = minOf((step(0.0, screenDir) - rayPos) / screenDir) * rcp(16.0);
+	float stepLength = minOf((step(0.0, screenDir) - rayPos) / screenDir) * rcp(15.0);
 
 	vec3 rayStep = screenDir * stepLength;
 	rayPos += rayStep * dither;
@@ -223,7 +225,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	rayPos.xy *= viewSize;
 	rayStep.xy *= viewSize;
 
-	for (uint i = 0u; i < 16u; ++i, rayPos += rayStep){
+	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep){
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 		float sampleDepth = sampleDepth(ivec2(rayPos.xy));
 

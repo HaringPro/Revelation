@@ -49,7 +49,7 @@ uniform sampler2D colortex13; // Previous indirect light
 #include "/lib/utility/Fetch.glsl"
 #include "/lib/utility/Noise.glsl"
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 
 #include "/lib/SpatialUpscale.glsl"
 

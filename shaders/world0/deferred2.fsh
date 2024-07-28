@@ -120,7 +120,7 @@ uniform mat4 shadowModelView;
 #include "/lib/utility/Fetch.glsl"
 #include "/lib/utility/Noise.glsl"
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
 #include "/lib/atmospherics/Celestial.glsl"
@@ -312,7 +312,7 @@ void main() {
 
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
-			float cloudShadow = CalculateCloudShadow(worldPos + cameraPosition);
+			float cloudShadow = CalculateCloudShadows(worldPos + cameraPosition);
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;
 		#endif
@@ -441,7 +441,7 @@ void main() {
 		#endif
 
 		#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
-			sceneOut += material.emissiveness * dot(albedo, vec3(0.5));
+			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
 		#endif
 
 		// Handheld light

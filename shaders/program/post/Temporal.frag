@@ -224,5 +224,5 @@ void main() {
         velocityOut = velocity;
     #endif
 
-    temporalOut = CalculateTAA(screenCoord, velocity);
+    temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
 }

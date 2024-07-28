@@ -75,7 +75,7 @@ void main() {
 	if (clamp(srcUV, viewPixelSize, 1.0 - viewPixelSize) == srcUV) {
 		vec3 bloomTile = CalculateBloomTile(srcUV);
 
-		vec2 dstTexel = gl_GlobalInvocationID.xy + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
+		vec2 dstTexel = vec2(gl_GlobalInvocationID.xy) + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
 		imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
 	}
 }

@@ -10,6 +10,8 @@ vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
     return dir * eta - normal * (sqrt(k) + NdotD * eta);
 }
 
+//================================================================================================//
+
 #ifdef RAYTRACED_REFRACTION
 
 vec2 CalculateRefractCoord(in vec3 viewPos, in vec3 viewNormal, in vec3 hitPos) {

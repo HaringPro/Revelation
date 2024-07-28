@@ -51,7 +51,7 @@ uniform vec3 fogWind;
 #include "/lib/utility/Fetch.glsl"
 #include "/lib/utility/Noise.glsl"
 
-#include "/lib/atmospherics/Global.inc"
+#include "/lib/atmospherics/Global.glsl"
 #ifdef CLOUD_SHADOWS
 	#include "/lib/atmospherics/Clouds.glsl"
 #endif
@@ -156,7 +156,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 		#endif
 
 		#ifdef CLOUD_SHADOWS
-			float cloudShadow = CalculateCloudShadow(rayPos);
+			float cloudShadow = CalculateCloudShadows(rayPos);
 			sampleShadow *= cloudShadow * cloudShadow * cloudShadow;
 		#endif
 

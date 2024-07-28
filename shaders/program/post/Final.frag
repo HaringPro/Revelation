@@ -27,11 +27,11 @@ out vec3 finalOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex0; // Bloom tiles
+// uniform sampler2D colortex0;
 // uniform sampler2D colortex1; // Scene history
 // uniform sampler2D colortex2;
 // uniform sampler2D colortex3;
-// uniform sampler2D colortex4; // Projected scene history
+uniform sampler2D colortex4; // Bloom tiles
 // uniform sampler2D colortex5;
 // uniform sampler2D colortex6;
 // uniform sampler2D colortex7;
@@ -137,7 +137,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	#ifdef DEBUG_BLOOM_TILES
-		finalOut = texelFetch(colortex0, screenTexel, 0).rgb;
+		finalOut = texelFetch(colortex4, screenTexel, 0).rgb;
 	#else
 		if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
 			finalOut = FidelityFX_CAS(screenTexel);

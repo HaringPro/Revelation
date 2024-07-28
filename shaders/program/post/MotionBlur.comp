@@ -60,7 +60,7 @@ vec3 MotionBlur(in ivec2 texel) {
 		}
 	}
 
-	return total * rcp(float(sumWeight) + 1e-6);
+	return total * rcp(max(float(sumWeight), 1.0));
 }
 
 //======// Main //================================================================================//
