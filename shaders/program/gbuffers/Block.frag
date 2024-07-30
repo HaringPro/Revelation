@@ -81,6 +81,8 @@ vec2 endPortalLayer(in vec2 coord, in float layer) {
 void main() {
 	vec4 albedo = texture(tex, texCoord) * tint;
 
+	mat3 tbnMatrix = CalculateTBNMatrix(viewPos.xyz, texCoord);
+
 	if (albedo.a < 0.1) { discard; return; }
 
 	#ifdef WHITE_WORLD
@@ -109,8 +111,6 @@ void main() {
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;
-
-	mat3 tbnMatrix = CalculateTBNMatrix(viewPos.xyz, texCoord);
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 	#if defined NORMAL_MAPPING

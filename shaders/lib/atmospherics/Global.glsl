@@ -133,7 +133,9 @@ vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
 
 //================================================================================================//
 
-float viewerHeight = planetRadius + max(1.0, eyeAltitude);
+#define VIEWER_BASE_ALTITUDE 64.0 // [0.0 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0 262144.0 524288.0 1048576.0 2097152.0 4194304.0 8388608.0 16777216.0 33554432.0 67108864.0 134217728.0 268435456.0 536870912.0 1073741824.0]
+
+float viewerHeight = planetRadius + max(1.0, eyeAltitude + VIEWER_BASE_ALTITUDE);
 float horizonCos = rcp(viewerHeight * inversesqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq));
 float horizonAngle = fastAcos(horizonCos);
 

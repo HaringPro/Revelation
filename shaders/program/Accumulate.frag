@@ -20,7 +20,7 @@
 #define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 #define SSPT_SAMPLER colortex3
-#define SSPT_VARIANCE_SCALE 0.01
+#define SSPT_VARIANCE_SCALE 0.02
 
 //======// Output //==============================================================================//
 
@@ -141,7 +141,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     float cameraMovement = length(mat3(gbufferModelView) * (cameraPosition - previousCameraPosition));
     float currViewDistance = length(viewPos);
 
-    prevCoord += (prevTaaOffset - taaOffset) * 0.15;
+    prevCoord += (prevTaaOffset - taaOffset) * 0.125;
 
     // Bilinear filter
     vec2 prevTexel = prevCoord * viewSize - vec2(0.5);

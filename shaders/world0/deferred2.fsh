@@ -402,7 +402,7 @@ void main() {
 
 			if (blockerSearch.y > -4.0) {
 				// Screen-space subsurface scattering for plants
-				float subsurfaceScattering = SUBSERFACE_SCATTERING_BRIGHTNESS * 0.1;
+				float subsurfaceScattering = SUBSERFACE_SCATTERING_BRIGHTNESS * 0.06;
 				subsurfaceScattering *= eyeSkylightFix * ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, 0.6);
 				sceneOut += subsurfaceScattering * sunlightMult * ao;
 			}

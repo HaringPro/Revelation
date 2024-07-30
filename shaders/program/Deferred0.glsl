@@ -135,7 +135,7 @@ void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	screenCoord = vaUV0;
 
-	vec3 camera = vec3(0.0, viewerHeight, 0.0);
+	vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
 	skyIlluminance = GetSunAndSkyIrradiance(atmosphereModel, camera, worldSunVector, sunIlluminance, moonIlluminance);
 	directIlluminance = sunIlluminance + moonIlluminance;
 
