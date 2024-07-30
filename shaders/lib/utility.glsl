@@ -142,6 +142,15 @@ float FastAcos(in float x) {
 }
 */
 
+vec2 ToSphereMap(in vec3 dir) {
+    return vec2(atan(-dir.x, -dir.z) * rTAU + 0.5, fastAcos(dir.y) * rPI);
+}
+
+vec3 FromSphereMap(in vec2 coord) {
+    coord.y *= PI;
+    return vec3(sincos(coord.x * TAU) * sin(coord.y), cos(coord.y)).xzy;
+}
+
 #if defined NORMAL_MAPPING
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (any(greaterThan(normalTex, vec3(0.003)))) {

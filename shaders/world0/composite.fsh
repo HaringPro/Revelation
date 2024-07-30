@@ -75,7 +75,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 2.0);
+		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(1.0, 2.0));
 	}
 #elif FOG_QUALITY == 1
 	/* Medium */

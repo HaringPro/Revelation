@@ -177,105 +177,109 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
     return newMin + (saturate((value - orignalMin) / (orignalMax - orignalMin)) * (newMax - newMin));
 }
 
-float CloudVolumeDensity(in vec3 worldPos, in uint octCount) {
-	float localCoverage = texture(noisetex, worldPos.xz * 2e-7 - cloudWind.xz * 1e-5).y;
-	localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
-	if (localCoverage < 0.3) return 0.0;
+#ifdef CLOUD_CUMULUS_3D_FBM_WIP
+	float CloudVolumeDensity(in vec3 worldPos, in uint octCount) {
+		float localCoverage = texture(noisetex, worldPos.xz * 2e-7 - cloudWind.xz * 1e-5).y;
+		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.55 - 0.55)) * 0.7 + 0.3;
+		if (localCoverage < 0.3) return 0.0;
 
-	// Remap the altitude of the clouds to the range of [0, 1]
-	float normalizedAltitude = saturate((worldPos.y - cumulusAltitude) * rcp(cumulusThickness));
+		vec3 shift = CLOUD_WIND_SPEED * cloudWind * 0.4;
+		vec3 position = worldPos * 4e-4 - shift;
 
-	//======// FBM cloud shape //=================================================//
-	vec3 shift = CLOUD_WIND_SPEED * cloudWind * 0.4;
-	vec3 position = worldPos * 4e-4 - shift;
-
-	#ifdef CLOUD_CUMULUS_3D_FBM_WIP
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.16);
 		float shape = lowFreqNoises.g * 0.625 + lowFreqNoises.b * 0.25 + lowFreqNoises.a * 0.125;
 
 		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape);
 
-		if (shape > 1e-5) {
+		// Remap the height of the clouds to the range of [0, 1]
+		float heightFraction = saturate((worldPos.y - cumulusAltitude) * rcp(cumulusThickness));
+
+		// Use two remap functions to carve out the gradient shape
+		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
+
+		shape *= gradienShape * cumulusCoverage * localCoverage;
+		shape -= heightFraction * 0.22 + 0.64;
+
+		if (shape > 1e-6 && octCount > 3u) {
+			vec2 curl = texture(noisetex, position.xz * 0.1).xy;
+			position.xy += curl * 4e-2 * oneMinus(heightFraction);
+
 			vec3 worley = texture(colortex15, position * 6.0).rgb;
 			float detail = worley.r * 0.625 + worley.g * 0.25 + worley.b * 0.125;
-			detail = mix(1.0 - detail, detail, saturate(1.1 - normalizedAltitude * 2.0));
+			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
 
-			shape = remap(detail * 0.2 + 0.35, 1.0, shape);
+			shape = remap(detail * 0.06, 1.0, shape);
 		}
 
-		float density = shape * 1.2 - 0.2;
-	#else
+		return saturate(shape * 4.0);
+	}
+#else
+	float CloudVolumeDensity(in vec3 worldPos, in uint octCount) {
+		float localCoverage = texture(noisetex, worldPos.xz * 2e-7 - cloudWind.xz * 1e-5).y;
+		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
+		if (localCoverage < 0.3) return 0.0;
+
+		//======// FBM cloud shape //=================================================//
+		vec3 shift = CLOUD_WIND_SPEED * cloudWind * 0.4;
+		vec3 position = worldPos * 4e-4 - shift;
+
 		float density = 0.36 / float(octCount) - 0.76, weight = 1.0;
 
 		for (uint i = 0u; i < octCount; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
 			position = position * 3.0 - shift;
 		}
-	#endif
 
-	if (density < 1e-6) return 0.0;
-	//============================================================================//
+		if (density < 1e-6) return 0.0;
+		//============================================================================//
 
-	// Use two remap functions to carve out the gradient shape
-	float gradienShape = saturate(normalizedAltitude * 6.0) * oneMinus(saturate((normalizedAltitude - 0.8) * 5.0));
+		// Remap the height of the clouds to the range of [0, 1]
+		float heightFraction = saturate((worldPos.y - cumulusAltitude) * rcp(cumulusThickness));
 
-	// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
+		// Use two remap functions to carve out the gradient shape
+		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
 
-	density *= gradienShape * cumulusCoverage * localCoverage;
-	density -= normalizedAltitude * 0.5 + 0.2;
+		// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
 
-	return saturate(density * 3.2);
-}
+		density *= gradienShape * cumulusCoverage * localCoverage;
+		density -= heightFraction * 0.5 + 0.2;
 
-float CloudVolumeDensitySmooth(in vec3 worldPos) {
-	float localCoverage = texture(noisetex, worldPos.xz * 2e-7 - cloudWind.xz * 1e-5).y;
-	localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
-	if (localCoverage < 0.3) return 0.0;
+		return saturate(density * 3.2);
+	}
 
-	// Remap the altitude of the clouds to the range of [0, 1]
-	float normalizedAltitude = saturate((worldPos.y - cumulusAltitude) * rcp(cumulusThickness));
+	float CloudVolumeDensitySmooth(in vec3 worldPos) {
+		float localCoverage = texture(noisetex, worldPos.xz * 2e-7 - cloudWind.xz * 1e-5).y;
+		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
+		if (localCoverage < 0.3) return 0.0;
 
-	//======// FBM cloud shape //=================================================//
-	vec3 shift = CLOUD_WIND_SPEED * cloudWind * 0.4;
-	vec3 position = worldPos * 4e-4 - shift;
+		//======// FBM cloud shape //=================================================//
+		vec3 shift = CLOUD_WIND_SPEED * cloudWind * 0.4;
+		vec3 position = worldPos * 4e-4 - shift;
 
-	#ifdef CLOUD_CUMULUS_3D_FBM_WIP
-		vec4 lowFreqNoises = texture(depthtex2, position * 0.16);
-		float shape = lowFreqNoises.g * 0.625 + lowFreqNoises.b * 0.25 + lowFreqNoises.a * 0.125;
-
-		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape);
-
-		// if (shape > 1e-5) {
-		// 	vec3 worley = texture(colortex15, position * 6.0).rgb;
-		// 	float detail = worley.r * 0.625 + worley.g * 0.25 + worley.b * 0.125;
-		// 	detail = mix(1.0 - detail, detail, saturate(1.1 - normalizedAltitude * 2.0));
-
-		// 	shape = remap(detail * 0.2 + 0.35, 1.0, shape);
-		// }
-
-		float density = shape * 1.2 - 0.2;
-	#else
 		float density = 0.36 / 4.0 - 0.76, weight = 1.0;
 
 		for (uint i = 0u; i < 4u; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
 			position = position * 3.0 - shift;
 		}
-	#endif
 
-	if (density < 1e-6) return 0.0;
-	//============================================================================//
+		if (density < 1e-6) return 0.0;
+		//============================================================================//
 
-	// Use two remap functions to carve out the gradient shape
-	float gradienShape = saturate(normalizedAltitude * 6.0) * oneMinus(saturate((normalizedAltitude - 0.8) * 5.0));
+		// Remap the height of the clouds to the range of [0, 1]
+		float heightFraction = saturate((worldPos.y - cumulusAltitude) * rcp(cumulusThickness));
 
-	// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
+		// Use two remap functions to carve out the gradient shape
+		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
 
-	density *= gradienShape * cumulusCoverage * localCoverage;
-	density -= normalizedAltitude * 0.5 + 0.2;
+		// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
 
-	return saturate(density * 3.2);
-}
+		density *= gradienShape * cumulusCoverage * localCoverage;
+		density -= heightFraction * 0.5 + 0.2;
+
+		return saturate(density * 3.2);
+	}
+#endif
 
 #if defined CLOUD_LIGHTING
 
@@ -288,7 +292,7 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
 	for (uint i = 0u; i < CLOUD_CUMULUS_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
         rayStep *= 2.0;
 
-		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, 5u);
+		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, max(2u, 6u - i));
 		if (density < 1e-5) continue;
 
         // opticalDepth += density * rayStep.w;
@@ -307,7 +311,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 	for (uint i = 0u; i < CLOUD_CUMULUS_SKYLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
         rayStep *= 2.0;
 
-		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, 3u);
+		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, max(2u, 4u - i));
 		if (density < 1e-5) continue;
 
         // opticalDepth += density * rayStep.w;
@@ -397,29 +401,31 @@ vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
 	float r = viewerHeight; // length(camera)
 	float mu = rayDir.y;	// dot(camera, rayDir) / r
 
-    bool groundIntersection = RayIntersectsGround(r, mu);
+    // bool groundIntersection = RayIntersectsGround(r, mu);
 
 	//================================================================================================//
 
 	// Compute volumetric clouds
 	#ifdef CLOUD_CUMULUS
 		if ((rayDir.y > 0.0 && eyeAltitude < cumulusAltitude) // Below clouds
-		|| (clamp(eyeAltitude, cumulusAltitude, cumulusMaxAltitude) == eyeAltitude) // In clouds
-		|| (groundIntersection && eyeAltitude > cumulusMaxAltitude)) { // Above clouds
+		 || (clamp(eyeAltitude, cumulusAltitude, cumulusMaxAltitude) == eyeAltitude) // In clouds
+		 || (rayDir.y < 0.0 && eyeAltitude > cumulusMaxAltitude)) { // Above clouds
 
 			// Compute cloud spherical shell intersection
 			vec2 intersection = RaySphericalShellIntersection(r, mu, planetRadius + cumulusAltitude, planetRadius + cumulusMaxAltitude);
 
 			if (intersection.y > 0.0) { // Intersect the volume
 
-				float stepLength = max0(intersection.y - intersection.x);
+				// Special treatment for the eye inside the volume
+				float isEyeInVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((cumulusAltitude - eyeAltitude + 50.0) * 3e-2));
+				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), isEyeInVolumeSmooth) - intersection.x);
 
 				#if defined PROGRAM_DEFERRED_0
 					uint raySteps = uint(CLOUD_CUMULUS_SAMPLES * 0.6);
 				#else
 					uint raySteps = CLOUD_CUMULUS_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(raySteps * oneMinus(abs(rayDir) * 0.4)); // Reduce ray steps for vertical rays
+					raySteps = uint(raySteps * (isEyeInVolumeSmooth + oneMinus(abs(rayDir) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
 				// const float nearStepSize = 3.0;
@@ -527,7 +533,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
 	// Compute planar clouds
 	#if defined CLOUD_STRATOCUMULUS || defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_PLANE_ALTITUDE) // Below clouds
-		|| (groundIntersection && eyeAltitude > CLOUD_PLANE_ALTITUDE)) { // Above clouds
+		 || (rayDir.y < 0.0 && eyeAltitude > CLOUD_PLANE_ALTITUDE)) { // Above clouds
 			vec2 cloudIntersection = RaySphereIntersection(r, mu, planetRadius + CLOUD_PLANE_ALTITUDE);
 			float cloudDistance = eyeAltitude > CLOUD_PLANE_ALTITUDE ? cloudIntersection.x : cloudIntersection.y;
 

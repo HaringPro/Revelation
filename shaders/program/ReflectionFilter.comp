@@ -84,7 +84,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 
         float weight =  pow(max0(dot(worldNormal, FetchWorldNormal(sampleGbufferData0(sampleTexel)))), roughnessInv) *
                         fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) *
-                        fastExp(-abs(sampleLinerDepth - linearDepth) * 2.0 * NdotV * inversesqrt(offsetScale));
+                        fastExp(-abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV);
 
         reflectionData += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
         sumWeight += weight;

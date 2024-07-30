@@ -36,7 +36,7 @@ const float minCloudAbsorption	  = 0.01;
 
 	#define VOLUMETRIC_FOG // Enables volumetric fog
 	#define VOLUMETRIC_FOG_SAMPLES 18 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
-	#define FOG_QUALITY 1 // [0 1]
+	#define FOG_QUALITY 0 // [0 1]
 
 	// #define COLORED_VOLUMETRIC_FOG // Enables volumetric fog stained glass tint
 	#define TIME_FADE // Reduces fog density at noon
@@ -78,7 +78,7 @@ const float minCloudAbsorption	  = 0.01;
 	#define BLOCKLIGHT_TEMPERATURE 3000 // [1000 1500 2000 2300 2500 3000 3400 3500 4000 4500 5000 5500 6000]
 
 /* Lighting brightness */
-	#define MINIMUM_AMBIENT_BRIGHTNESS 0.00005 // Minimum brightness of the ambient light. [0.0 0.00001 0.00002 0.00003 0.00005 0.00007 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+	#define MINIMUM_AMBIENT_BRIGHTNESS 0.00002 // Minimum brightness of the ambient light. [0.0 0.00001 0.00002 0.00003 0.00005 0.00007 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 	#define NIGHT_BRIGHTNESS 0.0005 // Brightness of the night. [0.0 0.00005 0.00007 0.0001 0.0002 0.0003 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 1.0]
 
 /* Global illumination */
@@ -147,19 +147,19 @@ const float minCloudAbsorption	  = 0.01;
 /* Subsurface Scattering */
 	#define SUBSERFACE_SCATTERING_MODE 0 // [0 1 2]
 	#define SUBSERFACE_SCATTERING_STRENTGH 1.0 // Strength of subsurface scattering. [0.0 0.01 0.02 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
-	#define SUBSERFACE_SCATTERING_BRIGHTNESS 4.0 // Brightness of subsurface scattering. [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0 20.5 21.0 21.5 22.0 22.5 23.0 23.5 24.0 24.5 25.0]
+	#define SUBSERFACE_SCATTERING_BRIGHTNESS 3.5 // Brightness of subsurface scattering. [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 16.5 17.0 17.5 18.0 18.5 19.0 19.5 20.0 20.5 21.0 21.5 22.0 22.5 23.0 23.5 24.0 24.5 25.0]
 
 //======// Post-Processing //=====================================================================//
 
 /* TAA */
 	#define TAA_ENABLED // Enables temporal Anti-Aliasing
 	#define TAA_CLOSEST_FRAGMNET // Caclulates the closest fragment for TAA. Improves ghosting in the motion objects
-	#define TAA_BLEND_WEIGHT 0.97 // Blend weight of the TAA. [0.8 0.81 0.82 0.83 0.84 0.85 0.86 0.87 0.88 0.89 0.9 0.91 0.92 0.93 0.94 0.95 0.96 0.97 0.98 0.99 0.995 0.999]
+	#define TAA_MAX_BLENDED_FRAMES 256.0 // Maximum number of blended frames for TAA. [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 	#define TAA_VARIANCE_CLIPPING // Enables TAA variance clipping
 	#define TAA_AGGRESSION 1.3 // Strictness of TAA variance clipping. [1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.8 1.85 1.9 1.95 2.0 2.05 2.1 2.15 2.2 2.25 2.3 2.35 2.4 2.45 2.5 2.55 2.6 2.65 2.7 2.75 2.8 2.85 2.9 2.95 3.0]
 
-	// #define TAA_SHARPEN // Sharpens the image when applying TAA
+	#define TAA_SHARPEN // Sharpens the image when applying TAA
 	#define TAA_SHARPNESS 0.7 // Sharpness of the TAA sharpening. [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 /* Motion Blur */

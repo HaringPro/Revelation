@@ -18,7 +18,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 1 */
-layout (location = 0) out vec3 temporalOut;
+layout (location = 0) out vec4 temporalOut;
 
 #ifdef MOTION_BLUR
 /* RENDERTARGETS: 1,2 */
@@ -156,13 +156,13 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 
-vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
+vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
 
     vec3 currentSample = sampleSceneColor(texel);
     vec2 prevCoord = screenCoord - velocity;
 
-    if (saturate(prevCoord) != prevCoord) return currentSample;
+    if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 0.0);
 
     vec3 sample0 = RGBtoYCoCgR(currentSample);
 
@@ -199,11 +199,17 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
     prevSample = YCoCgRtoRGB(prevSample);
 
-    vec2 pixelVelocity = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-    float blendWeight = TAA_BLEND_WEIGHT;
-    blendWeight *= sqrt(pixelVelocity.x * pixelVelocity.y) * 0.25 + 0.75;
+    float frameIndex = texelFetch(colortex1, rawCoord(prevCoord), 0).a;
+    frameIndex = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
 
-    return invReinhard(mix(reinhard(currentSample), reinhard(prevSample), blendWeight));
+    float blendWeight = frameIndex / (frameIndex + 1.0);
+
+    vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+    float offcenterWeight = sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.25 + 0.75;
+    blendWeight *= offcenterWeight;
+
+    currentSample = mix(reinhard(currentSample), reinhard(prevSample), blendWeight);
+    return vec4(invReinhard(currentSample), frameIndex * offcenterWeight);
 }
 
 //======// Main //================================================================================//

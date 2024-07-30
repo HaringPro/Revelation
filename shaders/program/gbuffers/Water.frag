@@ -169,7 +169,7 @@ void main() {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
 			vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
-			if (maxOf(shadow) > 1e-6) {
+			if (dot(shadow, vec3(1.0)) > 1e-6) {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
 				float NdotH = (NdotL + NdotV) * halfwayNorm;

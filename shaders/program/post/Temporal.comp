@@ -202,7 +202,7 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     prevSample = YCoCgRtoRGB(prevSample);
 
     vec2 pixelVelocity = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-    float blendWeight = TAA_BLEND_WEIGHT;
+    float blendWeight = TAA_MAX_BLENDED_FRAMES;
     blendWeight *= sqrt(pixelVelocity.x * pixelVelocity.y) * 0.25 + 0.75;
 
     return invReinhard(mix(reinhard(currentSample), reinhard(prevSample), blendWeight));
