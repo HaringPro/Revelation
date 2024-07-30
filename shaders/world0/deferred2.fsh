@@ -333,7 +333,7 @@ void main() {
 			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
 
 			// Subsurface scattering
-			if (sssAmount > 1e-4) {
+			if (sssAmount > 1e-3) {
 				vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 				// subsurfaceScattering *= eyeSkylightFix;
 				sceneOut += subsurfaceScattering * sunlightMult * ao;
@@ -394,10 +394,18 @@ void main() {
 			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 		} else if (sssPlant) {
-			// Screen-space subsurface scattering for plants
-			float subsurfaceScattering = ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, 0.6);
+			float distortFactor;
+			vec3 normalOffset = flatNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(worldLightVector.y));
+			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
-			sceneOut += subsurfaceScattering * SUBSERFACE_SCATTERING_BRIGHTNESS * 0.06 * sunlightMult * ao;
+			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
+
+			if (blockerSearch.y > -4.0) {
+				// Screen-space subsurface scattering for plants
+				float subsurfaceScattering = SUBSERFACE_SCATTERING_BRIGHTNESS * 0.1;
+				subsurfaceScattering *= eyeSkylightFix * ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, 0.6);
+				sceneOut += subsurfaceScattering * sunlightMult * ao;
+			}
 		}
 
 		// Sunlight diffuse

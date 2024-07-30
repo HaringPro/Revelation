@@ -127,7 +127,7 @@ float CloudPlaneDensity(in vec2 worldPos) {
 	#endif
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (density < 0.1) {
-		vec2 position = worldPos * 8e-5 - shift + curl;
+		vec2 position = worldPos * 9e-5 - shift + curl;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.7 + 0.1);
 		baseCoverage *= max0(1.07 - texture(noisetex, position * 0.003).y * 1.4);
