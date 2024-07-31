@@ -203,16 +203,14 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     }
 }
 
-float GetDepthMin(in vec2 coord) {
+float sampleDepthMin4x4(in vec2 coord) {
+	// 4x4 pixel neighborhood using textureGather
     vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
     vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
     vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
     vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
 
-    return min(
-        min(minOf(sampleDepth0), minOf(sampleDepth1)),
-        min(minOf(sampleDepth2), minOf(sampleDepth3))
-    );
+    return min(min(minOf(sampleDepth0), minOf(sampleDepth1)), min(minOf(sampleDepth2), minOf(sampleDepth3)));
 }
 
 float GetClosestDepth(in ivec2 texel) {
@@ -236,7 +234,7 @@ void main() {
 
 	if (currentCoord.x < 1.0) {
         // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
-        float depth = GetDepthMin(currentCoord);
+        float depth = sampleDepthMin4x4(currentCoord);
 
         indirectCurrent = vec4(vec3(0.0), 1.0);
         indirectHistory = indirectCurrent;
@@ -269,7 +267,7 @@ void main() {
         }
     } else {
         currentCoord -= vec2(1.0, 0.0);
-        float depth = GetDepthMin(currentCoord);
+        float depth = sampleDepthMin4x4(currentCoord);
 
         if (depth < 1.0) {
             // depth += 0.38 * step(depth, 0.56);

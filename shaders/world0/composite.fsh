@@ -174,8 +174,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 		if (dot(transmittance, vec3(1.0)) < 1e-4) break; // Faster than maxOf()
 	}
 
-	vec3 scattering = scatteringSun * 16.0 * directIlluminance;
-	scattering += scatteringSky * 0.6 * skyIlluminance;
+	vec3 scattering = scatteringSun * 18.0 * directIlluminance;
+	scattering += scatteringSky * skyIlluminance;
 	scattering *= eyeSkylightFix;
 
 	return mat2x3(scattering, transmittance);

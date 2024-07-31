@@ -15,8 +15,10 @@
 
 // #extension GL_NV_compute_shader_derivatives : enable
 
-layout (local_size_x = 16, local_size_y = 16) in;
+layout (local_size_x = 8, local_size_y = 8) in;
 const vec2 workGroupsRender = vec2(0.5f, 0.5f);
+
+shared float sharedVariance[10][10];
 
 //======// Utility //=============================================================================//
 
@@ -57,7 +59,7 @@ uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalI
 uint RandNext() { return randState = triple32(randState); }
 #define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
 
-float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
+float CalculateVariance(in ivec2 texel) {
     // const float kernel[2] = float[2](1.0, 0.3);
 	const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
@@ -65,20 +67,44 @@ float CalculateVariance(in ivec2 texel, in ivec2 maxLimit) {
 	for (int x = -1; x <= 1; ++x) {
 		for (int y = -1; y <= 1; ++y) {
 			ivec2 varianceTexel = texel + ivec2(x, y);
-			if (clamp(varianceTexel, ivec2(0), maxLimit) == varianceTexel) {
-				float weight = kernel[abs(x)][abs(y)];
+			float weight = kernel[abs(x)][abs(y)];
 
-				variance += imageLoad(colorimg3, varianceTexel).a * weight;
-			}
+			variance += sharedVariance[varianceTexel.x][varianceTexel.y] * weight;
 		}
 	}
 
 	return variance * inversesqrt(max(1e-7, variance));
 }
 
+void CollectSharedData() {
+    ivec2 sharedTexel = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - 1);
+
+    // Unroll the loop manually
+    uint i = gl_LocalInvocationIndex; {
+        float fi = (float(i) + 0.5) * rcp(10.0);
+        ivec2 index = ivec2(fract(fi) * 10.0, fi);
+
+        ivec2 sampleTexel = sharedTexel + index;
+
+        sharedVariance[index.x][index.y] = imageLoad(colorimg3, sampleTexel).a;
+    }
+    if (gl_LocalInvocationIndex < 36) {
+        float fi = (float(i + 64) + 0.5) * rcp(10.0);
+        ivec2 index = ivec2(fract(fi) * 10.0, fi);
+
+        ivec2 sampleTexel = sharedTexel + index;
+
+        sharedVariance[index.x][index.y] = imageLoad(colorimg3, sampleTexel).a;
+    }
+}
+
 //======// Main //================================================================================//
 void main() {
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+
+	CollectSharedData();
+    memoryBarrierShared();
+    barrier();
 
 	float depth = texelFetch(depthtex0, texel * 2, 0).x;
 	if (depth < 1.0) {
@@ -107,7 +133,7 @@ void main() {
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
 		indirectCurrent *= sumWeight;
 
-		float variance = CalculateVariance(texel, maxLimit);
+		float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + 1));
 		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
 
 		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * ATROUS_FILTER_SIZE);

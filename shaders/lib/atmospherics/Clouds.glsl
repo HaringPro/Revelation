@@ -387,7 +387,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 
 //================================================================================================//
 
-vec4 RenderClouds(in vec3 rayDir, in vec3 skyRadiance, in float dither) {
+vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
     vec4 cloudData = vec4(0.0, 0.0, 0.0, 1.0);
 	float LdotV = dot(worldLightVector, rayDir);
 

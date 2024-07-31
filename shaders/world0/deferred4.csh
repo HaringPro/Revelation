@@ -1,3 +1,3 @@
 #version 450 compatibility
 
-#include "/program/Accumulate.comp"
+#include "/program/IndirectLight.comp"

@@ -200,9 +200,9 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     prevSample = YCoCgRtoRGB(prevSample);
 
     float frameIndex = texelFetch(colortex1, rawCoord(prevCoord), 0).a;
-    frameIndex = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
 
-    float blendWeight = frameIndex / (frameIndex + 1.0);
+    float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
+    blendWeight /= blendWeight + 1.0;
 
     vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
     float offcenterWeight = sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.25 + 0.75;

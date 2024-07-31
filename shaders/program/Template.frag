@@ -11,22 +11,25 @@
 --------------------------------------------------------------------------------
 */
 
-layout (local_size_x = 8, local_size_y = 8) in;
-const vec2 workGroupsRender = vec2(1.0f, 1.0f);
-
 //======// Utility //=============================================================================//
 
-#include "/lib/utility.inc"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
-layout (rgba16f, location = 0) restrict uniform image2D colorimg0; //
-layout (rgba16f, location = 1) restrict uniform image2D colorimg1; //
-layout (rgba16f, location = 2) restrict uniform image2D colorimg3; //
+/* RENDERTARGETS: 0,1,2 */
+layout (location = 0) out vec4 output1;
+layout (location = 1) out vec4 output2;
+layout (location = 2) out vec4 output3;
+
+//======// Input //===============================================================================//
+
+in vec2 texCoord;
+
+//======// Attribute //===========================================================================//
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D sampler0;
 uniform sampler2D sampler1;
 uniform sampler2D sampler2;
 
@@ -38,7 +41,6 @@ uniform sampler2D sampler2;
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
-    vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
-	imageStore(colorimg0, screenTexel, vec4(texture(sampler0, texCoord).rgb, 1.0));
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 }

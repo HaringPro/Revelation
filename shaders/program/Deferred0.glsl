@@ -83,6 +83,7 @@ float CalculateAutoExposure() {
     float total = 0.0;
     float sumWeight = 0.0;
 
+    // Compute luminance for each tile
 	for (uint x = 0u; x < tileSteps.x; ++x) {
         for (uint y = 0u; y < tileSteps.y; ++y) {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
@@ -91,6 +92,7 @@ float CalculateAutoExposure() {
             float weight = exp2(-0.2 * dotSelf(uv * 2.0 - 1.0));
 
             #ifdef HISTOGRAM_AE
+                // Build luminance bucket
                 lumBucket[clamp(int(log2(luminance) - HISTOGRAM_MIN_EV), 0, HISTOGRAM_BIN_COUNT - 1)] += weight;
             #else
                 total += log2(luminance) * weight;
@@ -149,8 +151,10 @@ void main() {
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
-        float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-        exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime));
+        /* if (prevExposure > 1e-6)  */{
+            float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+            exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime));
+        }
 	#else
 		exposure = exp2(-MANUAL_EV);
 	#endif
@@ -182,8 +186,6 @@ flat in vec3 sunIlluminance;
 flat in vec3 moonIlluminance;
 
 flat in float exposure;
-
-//======// Attribute //===========================================================================//
 
 //======// Uniform //=============================================================================//
 
@@ -250,7 +252,7 @@ void main() {
 		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
 
 		#ifdef CLOUDS_ENABLED
-            vec4 cloudData = RenderClouds(worldDir, skyViewOut, 0.5);
+            vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
         #endif
 	}

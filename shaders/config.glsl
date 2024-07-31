@@ -19,11 +19,12 @@
 	const int 	colortex6Format 			= RGB8;
 	const int 	colortex7Format 			= RGBA16;
 	const int 	colortex8Format 			= RGBA16;
+	const int 	colortex9Format 			= RGBA16F;
 	const int 	colortex10Format 			= R11F_G11F_B10F;
 	const int 	colortex11Format 			= RGB16F;
 	const int 	colortex12Format 			= RGB8;
 	const int 	colortex13Format 			= RGBA16F;
-	const int 	colortex14Format 			= RG16;
+	const int 	colortex14Format 			= RGB16;
 	const int 	colortex15Format 			= RGB16;
 
 	const bool	colortex0Clear				= false;
@@ -35,6 +36,7 @@
 	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= true;
 	const bool	colortex8Clear				= false;
+	const bool	colortex9Clear				= false;
 	const bool 	colortex10Clear				= false;
 	const bool 	colortex11Clear				= false;
 	const bool 	colortex12Clear				= false;
@@ -61,18 +63,18 @@
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
 	|	colortex2	|   rgba16f         |	Full res  	|	Specular reflections, lighting of glass -> Motion vector
-	|	colortex3	|   rgba16f         |	1.0, 0.5  	|	Current indirect light
+	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors
 	|	colortex6	|   rgb8            |	Full res  	|	Albedo
 	|	colortex7	|   rgba16          |	Full res  	|	Gbuffer data 0 -> Bloomy fog transmittance
 	|	colortex8	|   rgba16          |	Full res  	|	Gbuffer data 1 -> Final output
-	|	colortex9	|               	|	Full res	|	Rain
+	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history -> Rain
 	|	colortex10	|   r11f_g11f_b10f  |	256, 384   	|	Transmittance-View LUT
 	|	colortex11	|   rgb16f          |	Half res  	|	Volumetric fog scattering
 	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
-	|	colortex13	|   rgba16f         |	1.0, 0.5	|	Indirect light history, frame index
-	|	colortex14	|   rg16            |	1.0, 0.5	|	Variance history
+	|	colortex13	|   rgba16f         |	Full res	|	Indirect light history, frame index
+	|	colortex14	|   rgb16           |	Full res	|	Variance history, depth history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 
 --------------------------------------------------------------------------------
