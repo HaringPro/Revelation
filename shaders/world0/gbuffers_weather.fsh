@@ -14,7 +14,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 9 */
-out float rainAlpha;
+out vec4 albedoOut;
 
 //======// Input //===============================================================================//
 
@@ -31,5 +31,5 @@ void main() {
 
     if (albedoAlpha < 0.1) discard;
 
-	rainAlpha = albedoAlpha * tint;
+	albedoOut.a = albedoAlpha * tint;
 }

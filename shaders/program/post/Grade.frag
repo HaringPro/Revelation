@@ -90,7 +90,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#endif
 
 	if (wetnessCustom > 1e-2) {
-		float rain = texelFetch(colortex9, texel, 0).x * RAIN_VISIBILITY;
+		float rain = texelFetch(colortex9, texel, 0).a * RAIN_VISIBILITY;
 		image = image * oneMinus(rain) + bloomData * rain * 1.3;
 	}
 }

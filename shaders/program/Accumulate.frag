@@ -27,7 +27,7 @@
 /* RENDERTARGETS: 3,13,14 */
 layout (location = 0) out vec4 indirectCurrent;
 layout (location = 1) out vec4 indirectHistory;
-layout (location = 2) out vec2 momentsHistory;
+layout (location = 2) out vec3 historyBuffer; // xy: moments history, z: inverse depth
 
 //======// Uniform //=============================================================================//
 
@@ -103,7 +103,7 @@ vec4 SpatialColor(in ivec2 texel) {
         }
     }
 
-    momentsHistory = vec2(luma, sqLuma);
+    historyBuffer.xy = vec2(luma, sqLuma);
     return vec4(indirectData, abs(sqLuma - luma * luma));
 }
 
@@ -189,13 +189,13 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         float luminance = GetLuminance(indirectCurrent.rgb);
 
         vec2 currMoments = vec2(luminance, luminance * luminance);
-        momentsHistory = mix(prevMoments, currMoments, alpha);
+        historyBuffer.xy = mix(prevMoments, currMoments, alpha);
 
         // See section 4.2 of the paper
         if (indirectHistory.a < 4.0) {
             indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
         } else {
-            indirectCurrent.a = abs(momentsHistory.y - momentsHistory.x * momentsHistory.x);
+            indirectCurrent.a = abs(historyBuffer.xy.y - historyBuffer.xy.x * historyBuffer.xy.x);
         }
     } else {
         indirectCurrent = SpatialColor(screenTexel);
@@ -228,55 +228,58 @@ float GetClosestDepth(in ivec2 texel) {
 //======// Main //================================================================================//
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-
-    if (currentCoord.y >= 1.0) discard;
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    #ifdef CTU_ENABLED
+        historyBuffer.z = 1.0 - sampleDepth(screenTexel);
+    #endif
 
-	if (currentCoord.x < 1.0) {
-        // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
-        float depth = sampleDepthMin4x4(currentCoord);
+    if (currentCoord.y < 1.0) {
+        if (currentCoord.x < 1.0) {
+            // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
+            float depth = sampleDepthMin4x4(currentCoord);
 
-        indirectCurrent = vec4(vec3(0.0), 1.0);
-        indirectHistory = indirectCurrent;
+            indirectCurrent = vec4(vec3(0.0), 1.0);
+            indirectHistory = indirectCurrent;
 
-        momentsHistory = vec2(0.0);
+            historyBuffer.xy = vec2(0.0);
 
-        if (depth < 1.0) {
-            ivec2 currentTexel = screenTexel * 2;
-            // currentTexel = ivec2(closestFragment.xy * viewSize);
-            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+            if (depth < 1.0) {
+                ivec2 currentTexel = screenTexel * 2;
+                // currentTexel = ivec2(closestFragment.xy * viewSize);
+                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
 
-            vec3 screenPos = vec3(currentCoord, depth);
-            vec3 viewPos = ScreenToViewSpace(screenPos);
+                vec3 screenPos = vec3(currentCoord, depth);
+                vec3 viewPos = ScreenToViewSpace(screenPos);
 
-            // #if AO_ENABLED == 1
-            //     float dither = BlueNoiseTemporal(currentTexel);
-            //     if (depth > 0.56) indirectCurrent.a = CalculateSSAO(screenPos.xy, viewPos, mat3(gbufferModelView) * worldNormal, dither);
-            // #endif
+                // #if AO_ENABLED == 1
+                //     float dither = BlueNoiseTemporal(currentTexel);
+                //     if (depth > 0.56) indirectCurrent.a = CalculateSSAO(screenPos.xy, viewPos, mat3(gbufferModelView) * worldNormal, dither);
+                // #endif
 
-            vec2 prevCoord = Reproject(screenPos).xy;
-            if (saturate(prevCoord) != prevCoord || worldTimeChanged || depth < 0.56) {
-                indirectCurrent = SpatialColor(screenTexel);
-                indirectHistory.rgb = indirectCurrent.rgb;
-            } else {
-                prevCoord *= 0.5;
-                TemporalFilter(screenTexel, prevCoord, viewPos);
+                vec2 prevCoord = Reproject(screenPos).xy;
+                if (saturate(prevCoord) != prevCoord || worldTimeChanged || depth < 0.56) {
+                    indirectCurrent = SpatialColor(screenTexel);
+                    indirectHistory.rgb = indirectCurrent.rgb;
+                } else {
+                    prevCoord *= 0.5;
+                    TemporalFilter(screenTexel, prevCoord, viewPos);
+                }
+
+                indirectCurrent.a = maxEps(indirectCurrent.a * SSPT_VARIANCE_SCALE);
             }
+        } else {
+            currentCoord -= vec2(1.0, 0.0);
+            float depth = sampleDepthMin4x4(currentCoord);
 
-            indirectCurrent.a = maxEps(indirectCurrent.a * SSPT_VARIANCE_SCALE);
-        }
-    } else {
-        currentCoord -= vec2(1.0, 0.0);
-        float depth = sampleDepthMin4x4(currentCoord);
+            if (depth < 1.0) {
+                // depth += 0.38 * step(depth, 0.56);
 
-        if (depth < 1.0) {
-            // depth += 0.38 * step(depth, 0.56);
+                ivec2 currentTexel = screenTexel * 2 - ivec2(viewWidth, 0);
+                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+                float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
 
-            ivec2 currentTexel = screenTexel * 2 - ivec2(viewWidth, 0);
-            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
-            float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
-
-            indirectHistory = vec4(worldNormal, viewDistance);
+                indirectHistory = vec4(worldNormal, viewDistance);
+            }
         }
     }
 }

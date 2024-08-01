@@ -29,9 +29,13 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 9,14 */
+/* RENDERTARGETS: 9 */
 layout (location = 0) out vec4 cloudOut;
-layout (location = 1) out vec3 historyBuffer;
+
+#if !defined SSPT_ENABLED || !defined SVGF_ENABLED
+/* RENDERTARGETS: 9,14 */
+layout (location = 1) out vec3 historyBuffer; // xy: moments history, z: inverse depth
+#endif
 
 //======// Uniform //=============================================================================//
 
@@ -117,8 +121,10 @@ void main() {
 
 	float depth = sampleDepth(screenTexel);
 
-	historyBuffer.rg = texelFetch(colortex14, screenTexel, 0).rg;
-	historyBuffer.b = 1.0 - depth;
+	#if !defined SSPT_ENABLED || !defined SVGF_ENABLED
+		historyBuffer.rg = texelFetch(colortex14, screenTexel, 0).rg;
+		historyBuffer.b = 1.0 - depth;
+	#endif
 
 	if (depth > 0.999999) {
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
@@ -137,7 +143,7 @@ void main() {
 			float blendWeight = 1.0 - rcp(max(frameIndex - cloudRenderArea, 1.0));
 
 			// Camera movement rejection
-			float cameraMovement = exp2(-24.0 * distance(cameraPosition, previousCameraPosition));
+			float cameraMovement = exp2(-20.0 * distance(cameraPosition, previousCameraPosition));
 			blendWeight *= cameraMovement * 0.5 + 0.5;
 
 			// Offcenter rejection

@@ -19,7 +19,6 @@
 	const int 	colortex6Format 			= RGB8;
 	const int 	colortex7Format 			= RGBA16;
 	const int 	colortex8Format 			= RGBA16;
-	const int 	colortex9Format 			= RGBA16F;
 	const int 	colortex10Format 			= R11F_G11F_B10F;
 	const int 	colortex11Format 			= RGB16F;
 	const int 	colortex12Format 			= RGB8;
@@ -36,7 +35,6 @@
 	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= true;
 	const bool	colortex8Clear				= false;
-	const bool	colortex9Clear				= false;
 	const bool 	colortex10Clear				= false;
 	const bool 	colortex11Clear				= false;
 	const bool 	colortex12Clear				= false;
@@ -53,7 +51,16 @@
 	const float drynessHalflife				= 60.0;
 
 	const bool 	shadowHardwareFiltering1 	= true;
+*/
 
+#ifdef CTU_ENABLED
+/*
+	const int 	colortex9Format 			= RGBA16F;
+	const bool	colortex9Clear				= false;
+*/
+#endif
+
+/*
 --------------------------------------------------------------------------------
 
 	- Buffer Table -
@@ -66,7 +73,7 @@
 	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors
-	|	colortex6	|   rgb8            |	Full res  	|	Albedo
+	|	colortex6	|   rgb8            |	Full res  	|	Solid albedo
 	|	colortex7	|   rgba16          |	Full res  	|	Gbuffer data 0 -> Bloomy fog transmittance
 	|	colortex8	|   rgba16          |	Full res  	|	Gbuffer data 1 -> Final output
 	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history -> Rain
@@ -74,7 +81,7 @@
 	|	colortex11	|   rgb16f          |	Half res  	|	Volumetric fog scattering
 	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
 	|	colortex13	|   rgba16f         |	Full res	|	Indirect light history, frame index
-	|	colortex14	|   rgb16           |	Full res	|	Variance history, depth history
+	|	colortex14	|   rgb16           |	Full res	|	Variance history, inverse depth history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 
 --------------------------------------------------------------------------------
