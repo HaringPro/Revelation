@@ -274,16 +274,14 @@ void main() {
 			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.04, 0.0, false, false);
 		#endif
 
-		float LdotV = dot(worldLightVector, -worldDir);
-		float NdotL = dot(worldNormal, worldLightVector);
-
 		float sssAmount = 0.0;
-		bool sssPlant = false;
 		#if SUBSERFACE_SCATTERING_MODE < 2
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
-					sssPlant = true;
+					sssAmount = 0.6;
+					worldNormal.y += 4.0;
+					worldNormal = normalize(worldNormal);
 					break;
 				case 12u: // Leaves
 					sssAmount = 0.85;
@@ -305,6 +303,9 @@ void main() {
 
 		// Remap sss amount to [0, 1] range
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
+
+		float LdotV = dot(worldLightVector, -worldDir);
+		float NdotL = dot(worldNormal, worldLightVector);
 
 		float dither = BlueNoiseTemporal(screenTexel);
 
@@ -375,7 +376,7 @@ void main() {
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 					NdotV = max(NdotV, 1e-3);
 
-					sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.75);
+					sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.8);
 					specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 					specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 				}
@@ -400,22 +401,9 @@ void main() {
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
 
-			sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.75);
+			sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.8);
 			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
-		} else if (sssPlant) {
-			float distortFactor;
-			vec3 normalOffset = flatNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(worldLightVector.y));
-			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
-
-			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
-
-			if (blockerSearch.y > -4.0) {
-				// Screen-space subsurface scattering for plants
-				float subsurfaceScattering = SUBSERFACE_SCATTERING_BRIGHTNESS * 0.06;
-				subsurfaceScattering *= eyeSkylightFix * ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, 0.6);
-				sceneOut += subsurfaceScattering * sunlightMult * ao;
-			}
 		}
 
 		// Sunlight diffuse

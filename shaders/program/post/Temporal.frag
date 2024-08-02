@@ -17,12 +17,13 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 1 */
+/* RENDERTARGETS: 1,4 */
 layout (location = 0) out vec4 temporalOut;
+layout (location = 1) out vec3 clearOut;
 
 #ifdef MOTION_BLUR
-/* RENDERTARGETS: 1,2 */
-layout (location = 1) out vec2 velocityOut;
+/* RENDERTARGETS: 1,4,2 */
+layout (location = 2) out vec2 velocityOut;
 #endif
 
 //======// Uniform //=============================================================================//
@@ -214,6 +215,8 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
 //======// Main //================================================================================//
 void main() {
+    clearOut = vec3(0.0); // Clear the output buffer for bloom tiles
+
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
     float depth = sampleDepth(screenTexel);

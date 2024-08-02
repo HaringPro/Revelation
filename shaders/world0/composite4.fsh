@@ -85,7 +85,8 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 6e2);
+		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 1e4;
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
 	float NdotV = max(1e-6, dot(viewNormal, -viewDir));
@@ -193,10 +194,10 @@ void main() {
 
 				// Specular reflections of glass
 				vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, rawViewPos);
-				sceneOut += (reflections.rgb - sceneOut) * reflections.a;
+				sceneOut += (reflections.rgb - sceneOut) * reflections.a * translucents.a;
 			}
 		} else if (materialID == 46u || materialID == 51u) {
-			// Specular reflections of slime
+			// Specular reflections of slime and ender portal
 			vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, rawViewPos);
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
