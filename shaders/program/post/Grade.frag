@@ -43,8 +43,8 @@ flat in float exposure;
 	uniform sampler2D colortex1; // TAA output
 #endif
 uniform sampler2D colortex4; // Bloom tiles
+uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex7; // Bloomy fog transmittance
-uniform sampler2D colortex9; // Rain alpha
 
 uniform float aspectRatio;
 uniform float wetnessCustom;
@@ -90,7 +90,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#endif
 
 	if (wetnessCustom > 1e-2) {
-		float rain = texelFetch(colortex9, texel, 0).a * RAIN_VISIBILITY;
+		float rain = texelFetch(colortex6, texel, 0).a * RAIN_VISIBILITY;
 		image = image * oneMinus(rain) + bloomData * rain * 1.3;
 	}
 }

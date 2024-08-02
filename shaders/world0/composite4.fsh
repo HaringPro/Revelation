@@ -85,7 +85,7 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 8e2);
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade * 6e2);
 	}
 
 	float NdotV = max(1e-6, dot(viewNormal, -viewDir));

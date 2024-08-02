@@ -46,7 +46,7 @@
 
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
-				float weight = pow16(max0(dot(prevData.rgb, worldNormal)));
+				float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
 				weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
 				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
 
