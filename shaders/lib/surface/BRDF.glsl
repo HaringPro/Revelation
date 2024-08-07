@@ -99,7 +99,8 @@ float G2SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
 //================================================================================================//
 
 float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in float f0) {
-	if (alpha2 < 1e-6) return 0.0;
+	// if (alpha2 < 1e-6) return 0.0;
+    alpha2 = max(alpha2, 1e-6);
 
     // 菲涅尔
     float F = FresnelSchlick(LdotH, f0);

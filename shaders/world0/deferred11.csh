@@ -169,7 +169,7 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 
 		// #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			if (material.isHardcodedMetal) {
-				brdf = FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
+				brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
 			} else if (material.metalness > 0.5) {
 				brdf *= FresnelSchlick(LdotH, material.f0);
 			} else

@@ -229,7 +229,7 @@ float GetClosestDepth(in ivec2 texel) {
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-    #ifdef CTU_ENABLED
+    #if defined CLOUDS_ENABLED && defined CTU_ENABLED
         historyBuffer.z = 1.0 - sampleDepth(screenTexel);
     #endif
 

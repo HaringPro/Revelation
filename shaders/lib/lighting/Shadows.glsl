@@ -33,12 +33,13 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 
 	float searchRadius = 2.0 * shadowProjection[0].x;
 
+	// dither = TentFilter(dither);
 	vec2 rot = cossin(dither * TAU) * searchRadius;
 	const vec2 angleStep = cossin(TAU * 0.125);
 	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
-	for (uint i = 0u; i < 9u; ++i, rot *= rotStep) {
+	for (uint i = 0u; i < 8u; ++i, rot *= rotStep) {
 		float radius = (float(i) + dither) * 0.125;
-		vec2 sampleCoord = shadowScreenPos.xy + rot * radius * inversesqrt(radius);
+		vec2 sampleCoord = shadowScreenPos.xy + rot * radius;
 
 		float sampleDepth = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
 		float weight = step(sampleDepth, shadowScreenPos.z);
@@ -86,12 +87,10 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 //================================================================================================//
 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
-	vec3 lightDir = mat3(gbufferModelView) * worldLightVector;
-
-	float NdotL = dot(lightDir, viewNormal);
+	float NdotL = dot(viewLightVector, viewNormal);
 	viewPos += length(viewPos) * viewNormal * 3e-4 / maxEps(sqr(NdotL));
 
-    vec3 endPos = ViewToScreenSpace(lightDir * -viewPos.z + viewPos);
+    vec3 endPos = ViewToScreenSpace(viewLightVector * -viewPos.z + viewPos);
     vec3 rayStep = normalize(endPos - rayPos);
     rayStep *= minOf((step(0.0, rayStep) - rayPos) / rayStep);
 

@@ -136,7 +136,8 @@ float ClampRadius(/*AtmosphereParameters atmosphere, */float r) {
 }
 
 float SafeSqrt(float a) {
-    return a * inversesqrt(max0(a));
+    a = max(a, 0.0);
+    return a * inversesqrt(a);
 }
 
 //--// Intersections //-------------------------------------------------------//

@@ -153,7 +153,7 @@ void main() {
 
         /* if (prevExposure > 1e-6)  */{
             float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-            exposure = mix(targetExposure, prevExposure, exp2(-fadedSpeed * frameTime));
+            exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime));
         }
 	#else
 		exposure = exp2(-MANUAL_EV);
@@ -239,13 +239,11 @@ void main() {
             case 4:
                 skyViewOut.x = exposure;
                 break;
-		}
-	} else if (screenTexel.y <= skyViewRes.y) {
-		// Raw sky map
 
-		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
-	} else {
+            default:
+                skyViewOut = vec3(0.0);
+		}
+	} else if (screenTexel.y > skyViewRes.y) {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
@@ -255,6 +253,11 @@ void main() {
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
         #endif
+	} else {
+		// Raw sky map
+
+		vec3 worldDir = ToSkyViewLutParams(screenCoord);
+		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
 	}
 }
 

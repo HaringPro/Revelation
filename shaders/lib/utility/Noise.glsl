@@ -38,8 +38,9 @@ vec2 hash2(vec3 p3) {
 	return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+// A perfect integer hash function from https://nullprogram.com/blog/2018/07/31/
 uint triple32(uint x) {
-    // https://nullprogram.com/blog/2018/07/31/
+	// exact bias: 0.020888578919738908
     x ^= x >> 17;
     x *= 0xed5ad4bbu;
     x ^= x >> 11;
@@ -51,18 +52,18 @@ uint triple32(uint x) {
 }
 
 #if defined RANDOM_NOISE
-uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
-uint RandNext() { return randState = triple32(randState); }
-//#define RandNext2()  	uvec2(RandNext(), RandNext())
-//#define RandNext3()  	uvec3(RandNext2(), RandNext())
-//#define RandNext4()  	uvec4(RandNext3(), RandNext())
-#define RandNextF()  	(float(RandNext()) / float(0xffffffffu))
-#define RandNext2F() 	(vec2(RandNext()) / float(0xffffffffu))
-//#define RandNext3F() 	(vec3(RandNext3()) / float(0xffffffffu))
-//#define RandNext4F() 	(vec4(RandNext4()) / float(0xffffffffu))
+	uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
+	uint RandNext() { return randState = triple32(randState); }
+	//#define RandNext2()  	uvec2(RandNext(), RandNext())
+	//#define RandNext3()  	uvec3(RandNext2(), RandNext())
+	//#define RandNext4()  	uvec4(RandNext3(), RandNext())
+	#define RandNextF()  	(float(RandNext()) / float(0xffffffffu))
+	#define RandNext2F() 	(vec2(RandNext()) / float(0xffffffffu))
+	//#define RandNext3F() 	(vec3(RandNext3()) / float(0xffffffffu))
+	//#define RandNext4F() 	(vec4(RandNext4()) / float(0xffffffffu))
 #endif
 
-// http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+// Rn sequence from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 const float PHI2 = 1.32471795724;
 const float PHI3 = 1.22074408460;
 

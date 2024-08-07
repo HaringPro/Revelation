@@ -98,6 +98,7 @@ uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
+uniform vec3 viewLightVector;
 uniform vec3 lightningShading;
 
 uniform mat4 gbufferProjection;
@@ -126,7 +127,7 @@ uniform mat4 shadowModelView;
 
 #include "/lib/atmospherics/Celestial.glsl"
 
-#ifndef CTU_ENABLED
+#if defined CLOUDS_ENABLED && !defined CTU_ENABLED
 	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 	#include "/lib/atmospherics/Clouds.glsl"
 #endif
@@ -201,7 +202,7 @@ uniform mat4 shadowModelView;
 
 		// #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			if (material.isHardcodedMetal) {
-				brdf = FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
+				brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
 			} else if (material.metalness > 0.5) {
 				brdf *= FresnelSchlick(LdotH, material.f0);
 			} else
@@ -279,7 +280,7 @@ void main() {
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
-					sssAmount = 0.6;
+					sssAmount = 0.55;
 					worldNormal.y += 4.0;
 					worldNormal = normalize(worldNormal);
 					break;
@@ -336,7 +337,10 @@ void main() {
 
 		float distanceFade = sqr(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
 
-        if (distanceFade < 1e-6 && max(NdotL, sssAmount) > 1e-3) {
+		bool doShadows = NdotL > 1e-3;
+		bool doSss = sssAmount > 1e-3;
+
+        if (distanceFade < 1e-6 && (doShadows || doSss)) {
 			float distortFactor;
 			vec3 normalOffset = flatNormal * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
@@ -344,21 +348,25 @@ void main() {
 			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
 
 			// Subsurface scattering
-			if (sssAmount > 1e-3) {
+			if (doSss) {
 				vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 				// subsurfaceScattering *= eyeSkylightFix;
 				sceneOut += subsurfaceScattering * sunlightMult * ao;
 			}
 
 			// Shadows
-			if (NdotL > 1e-3) {
+			if (doShadows) {
 				float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
 				vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
 				if (maxOf(shadow) > 1e-6) {
 					shadow *= sunlightMult;
 					#ifdef SCREEN_SPACE_SHADOWS
-						shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+						#if defined NORMAL_MAPPING
+							shadow *= ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
+						#else
+							shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+						#endif
 					#endif
 					// shadow = shadow * oneMinus(distanceFade) + distanceFade;
 
@@ -376,15 +384,19 @@ void main() {
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 					NdotV = max(NdotV, 1e-3);
 
-					sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.8);
+					sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.7);
 					specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 					specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 				}
 			}
-		} else if (NdotL > 1e-3) {
+		} else if (doShadows) {
 			vec3 shadow = sunlightMult;
 			#ifdef SCREEN_SPACE_SHADOWS
-				shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+				#if defined NORMAL_MAPPING
+					shadow *= ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
+				#else
+					shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+				#endif
 			#endif
 
 			// Apply parallax shadows
@@ -401,7 +413,7 @@ void main() {
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
 
-			sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.8);
+			sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.7);
 			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 		}

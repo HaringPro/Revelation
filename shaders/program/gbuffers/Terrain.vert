@@ -14,7 +14,7 @@ out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
-#if defined PARALLAX
+#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 	out vec2 tileCoord;
 	flat out vec2 tileScale;
 	flat out vec2 tileOffset;
@@ -103,7 +103,7 @@ void main() {
 		worldPos.xyz -= cameraPosition;
 	#endif
 
-	#if defined PARALLAX
+	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 		vec2 minMidCoord = texCoord - mc_midTexCoord;
 		tileCoord = fastSign(minMidCoord) * 0.5 + 0.5;
 		tileScale = abs(minMidCoord) * 2.0;

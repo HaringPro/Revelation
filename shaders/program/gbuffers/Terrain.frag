@@ -26,7 +26,7 @@ in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
 
-#if defined PARALLAX
+#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 	in vec2 tileCoord;
 	flat in vec2 tileScale;
 	flat in vec2 tileOffset;
@@ -46,7 +46,7 @@ uniform sampler2D tex;
     uniform sampler2D specular;
 #endif
 
-#if defined PARALLAX
+#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 	uniform mat4 gbufferModelView;
 	uniform mat4 gbufferProjection;
 
@@ -73,6 +73,37 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 	}
 
 	#include "/lib/surface/Parallax.glsl"
+#endif
+
+#ifdef AUTO_GENERATED_NORMAL
+	vec2 serializeCoord(in vec2 uv) {
+		return mix(1.0 - fract(uv), fract(uv), mod(floor(uv), 2.0));
+	}
+
+	#define sampleAlbedo(uv) texture(tex, tileOffset + tileScale * serializeCoord(uv))
+
+	vec3 AutoGenerateNormal() {
+		vec2 bias = (4.0 / AGN_RESOLUTION) / tileScale;
+
+		// Sample albedo
+		vec4 sampleR = sampleAlbedo(tileCoord + vec2(bias.x, 0.0));
+		vec4 sampleL = sampleAlbedo(tileCoord - vec2(bias.x, 0.0));
+		vec4 sampleU = sampleAlbedo(tileCoord + vec2(0.0, bias.y));
+		vec4 sampleD = sampleAlbedo(tileCoord - vec2(0.0, bias.y));
+
+		// Get heights from albedo luminance
+		float heightR = GetLuminance(sampleR.rgb * sampleR.a);
+		float heightL = GetLuminance(sampleL.rgb * sampleL.a);
+		float heightU = GetLuminance(sampleU.rgb * sampleU.a);
+		float heightD = GetLuminance(sampleD.rgb * sampleD.a);
+
+		// Get normal from height differences
+		float deltaX = (heightL - heightR) * AGN_STRENGTH;
+		float deltaY = (heightD - heightU) * AGN_STRENGTH;
+
+		// Normalize normal
+		return normalize(vec3(deltaX, deltaY, 0.75));
+	}
 #endif
 
 //======// Main //================================================================================//
@@ -108,13 +139,19 @@ void main() {
 					}
 				#endif
 				#ifdef PARALLAX_BASED_NORMAL
-					// Parallax-based normal from GeForceLegend
+					#define sampleHeight(uv) textureGrad(normals, OffsetCoord(uv), texGrad[0], texGrad[1]).w
+
 					vec2 bias = 1e-2 * tileScale;
-					float rD = textureGrad(normals, OffsetCoord(offsetCoord.xy + vec2(bias.x, 0.0)), texGrad[0], texGrad[1]).w;
-					float lD = textureGrad(normals, OffsetCoord(offsetCoord.xy - vec2(bias.x, 0.0)), texGrad[0], texGrad[1]).w;
-					float uD = textureGrad(normals, OffsetCoord(offsetCoord.xy + vec2(0.0, bias.y)), texGrad[0], texGrad[1]).w;
-					float dD = textureGrad(normals, OffsetCoord(offsetCoord.xy - vec2(0.0, bias.y)), texGrad[0], texGrad[1]).w;
-					normalTex.xyz = vec3((lD - rD), (dD - uD), step(abs(lD - rD) + abs(dD - uD), 1e-3));
+					float heightR = sampleHeight(offsetCoord.xy + vec2(bias.x, 0.0));
+					float heightL = sampleHeight(offsetCoord.xy - vec2(bias.x, 0.0));
+					float heightU = sampleHeight(offsetCoord.xy + vec2(0.0, bias.y));
+					float heightD = sampleHeight(offsetCoord.xy - vec2(0.0, bias.y));
+
+					float deltaX = (heightL - heightR) * 2.0;
+					float deltaY = (heightD - heightU) * 2.0;
+
+					vec3 pbN = vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-4));
+					normalTex.xyz = mix(pbN, normalTex.xyz, pbN.z);
 				#endif
 			}
 		} else {
@@ -126,8 +163,12 @@ void main() {
 		#define ReadTexture(tex) texture(tex, texCoord)
 
 		#if defined NORMAL_MAPPING
-			vec3 normalTex = ReadTexture(normals).xyz;
-			DecodeNormalTex(normalTex);
+			#ifdef AUTO_GENERATED_NORMAL
+				vec3 normalTex = AutoGenerateNormal();
+			#else
+				vec3 normalTex = ReadTexture(normals).xyz;
+				DecodeNormalTex(normalTex);
+			#endif
 			gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));
 		#endif
 	#endif
