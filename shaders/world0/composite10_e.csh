@@ -1,4 +1,4 @@
-#version 450 compatibility
+#version 450 core
 
 #define DOWNSAMPLE_LEVEL 5
 const vec2 workGroupsRender = vec2(0.015625f, 0.015625f);

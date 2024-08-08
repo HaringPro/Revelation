@@ -1,0 +1,110 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: Spatial upscale for indirect lighting
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0f, 1.0f);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Output //==============================================================================//
+
+layout (rgba16f) restrict uniform image2D colorimg3;
+
+//======// Uniform //=============================================================================//
+
+uniform sampler2D colortex7; // Gbuffer data 0
+
+uniform sampler2D colortex13; // Previous indirect light
+
+uniform sampler2D depthtex0;
+uniform sampler2D depthtex1;
+
+uniform float near;
+uniform float far;
+
+uniform float viewWidth;
+
+uniform vec2 viewPixelSize;
+uniform vec2 viewSize;
+uniform vec2 taaOffset;
+
+uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelViewInverse;
+
+//======// Function //============================================================================//
+
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Offset.glsl"
+
+vec3 ScreenToViewSpace(in vec3 screenPos) {
+	vec3 NDCPos = screenPos * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCPos.xy -= taaOffset;
+	#endif
+	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
+	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+
+	return viewPos;
+}
+
+vec3 SpatialUpscale5x5(in ivec2 texel, in vec3 worldNormal, in float viewDistance, in float NdotV) {
+	float sumWeight = 0.1;
+
+	vec3 total = imageLoad(colorimg3, texel).rgb;
+	float centerLuma = GetLuminance(total);
+	total *= sumWeight;
+
+	ivec2 shift = ivec2(viewWidth * 0.5, 0);
+	ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+
+	for (uint i = 0u; i < 24u; ++i) {
+		ivec2 sampleTexel = texel + offset5x5N[i];
+		if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
+			vec3 sampleLight = imageLoad(colorimg3, sampleTexel).rgb;
+
+			vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
+
+			float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
+			weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
+			weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
+
+			if (weight < 1e-5) continue;
+
+			total += sampleLight * weight;
+			sumWeight += weight;
+		}
+	}
+
+	return total / sumWeight;
+}
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
+
+	float depth = texelFetch(depthtex0, screenTexel, 0).x;
+	if (depth < 1.0) {
+		vec3 screenPos = vec3(vec2(gl_GlobalInvocationID.xy) * viewPixelSize, depth);
+		vec3 viewPos = ScreenToViewSpace(screenPos);
+
+		vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(screenTexel));
+
+		float NdotV = dot(worldNormal, mat3(gbufferModelViewInverse) * -normalize(viewPos));
+
+		vec3 indirectCurrent = SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV);
+
+		imageStore(colorimg3, screenTexel, vec4(indirectCurrent, 1.0));
+	}
+}

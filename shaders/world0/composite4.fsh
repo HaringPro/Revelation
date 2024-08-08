@@ -1,4 +1,4 @@
-#version 450 compatibility
+#version 450 core
 
 /*
 --------------------------------------------------------------------------------
@@ -12,6 +12,8 @@
 
 --------------------------------------------------------------------------------
 */
+
+#define PROGRAM_COMPOSITE_4
 
 //======// Utility //=============================================================================//
 
@@ -34,8 +36,6 @@ flat in vec3 skyIlluminance;
 
 uniform sampler2D colortex11; // Volumetric Fog scattering
 uniform sampler2D colortex12; // Volumetric Fog transmittance
-
-uniform sampler2D colortex13; // Previous indirect light
 
 #include "/lib/utility/Uniform.glsl"
 
@@ -160,21 +160,6 @@ void main() {
 			Material material = GetMaterialData(specularTex);
 		#endif
 
-		vec3 albedo = sRGBtoLinear(sampleAlbedo(refractTexel));
-		#ifdef SSPT_ENABLED
-			#ifdef SVGF_ENABLED
-				float NdotV = saturate(dot(worldNormal, -worldDir));
-				sceneOut += SpatialUpscale5x5(refractTexel / 2, worldNormal, viewDistance, NdotV)
-			#else
-				sceneOut += texelFetch(colortex3, refractTexel / 2, 0).rgb
-			#endif
-			#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-				* albedo * oneMinus(material.metalness);
-			#else
-				* albedo;
-			#endif
-		#endif
-
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
 			float waterDepth = distance(ScreenToViewDepth(depth), ScreenToViewDepth(sDepth));
@@ -203,7 +188,10 @@ void main() {
 		}
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			else if (material.hasReflections) {
+				// Specular reflections of other materials
 				vec4 reflectionData = texelFetch(colortex2, refractTexel, 0);
+				vec3 albedo = sRGBtoLinear(sampleAlbedo(refractTexel));
+
 				sceneOut += reflectionData.rgb * mix(vec3(1.0), albedo, material.metalness);
 			}
 		#endif
@@ -220,6 +208,7 @@ void main() {
 		#endif
 	}
 
+	// Initialize bloomyFogTrans
 	bloomyFogTrans = 1.0;
 
 	// Volumetric fog
@@ -241,8 +230,6 @@ void main() {
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
 	}
-
-	// sceneOut = texelFetch(colortex3, screenTexel, 0).rgb;
 
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;

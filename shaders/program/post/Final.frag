@@ -40,6 +40,7 @@ uniform sampler2D colortex8; // LDR scene image
 	uniform sampler2D colortex15; // FSR EASU output
 #endif
 
+uniform float sunAngle;
 uniform vec2 viewPixelSize;
 
 uniform vec3 skyColor;
@@ -147,6 +148,28 @@ void main() {
 			#endif
 		} else {
 			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
+		}
+	#endif
+
+	// Time display
+	#if 0
+		const int width = 30;
+		const int height = 200;
+		const int strokewidth = 3;
+		const ivec2 start = ivec2(60, 200);
+		const ivec2 end = start + ivec2(width, height);
+		const int center = (start.y + end.y) / 2;
+
+		if (clamp(screenTexel, start - strokewidth, end + strokewidth) == screenTexel) {
+			finalOut = vec3(0.0);
+			if (clamp(screenTexel, start, end) == screenTexel && clamp(screenTexel.y, center - 1, center + 1) != screenTexel.y) {
+				float t = 1.0 - sunAngle * 2.0 + step(0.5, sunAngle);
+				if (screenTexel.y > start.y + t * height) {
+					finalOut = sunAngle < 0.5 ? vec3(0.2, 0.7, 1.0) : vec3(0.08, 0.24, 0.4);
+				} else {
+					finalOut = vec3(1.0);
+				}
+			}
 		}
 	#endif
 

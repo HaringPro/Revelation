@@ -70,7 +70,7 @@
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
 	|	colortex2	|   rgba16f         |	Full res  	|	Specular reflections, lighting of glass -> Motion vector
-	|	colortex3	|   rgba16f         |	Full res  	|	Cloud data -> Current indirect light
+	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors, exposure
 	|	colortex6	|   rgba8           |	Full res  	|	Solid albedo, rain alpha
@@ -80,7 +80,7 @@
 	|	colortex10	|   r11f_g11f_b10f  |	256, 384   	|	Transmittance-View LUT
 	|	colortex11	|   rgb16f          |	Half res  	|	Volumetric fog scattering
 	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
-	|	colortex13	|   rgba16f         |	Full res	|	Indirect light history, frame index
+	|	colortex13	|   rgba16f         |	Full res	|	Cloud data -> Indirect light history, frame index
 	|	colortex14	|   rgb16           |	Full res	|	Variance history, inverse depth history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 

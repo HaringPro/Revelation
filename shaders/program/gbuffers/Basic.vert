@@ -52,7 +52,7 @@ void main() {
         else gl_Position.xyz *= NDCStart - vec3(lineOffset, 0.0);
 
         tint.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
-        lightmap = vec2(1.0);
+        lightmap = vec2(dot(tint.rgb, vec3(0.333333)));
     } else {
     	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
     }

@@ -1,4 +1,4 @@
-#version 450 compatibility
+#version 450 core
 
 /*
 --------------------------------------------------------------------------------
@@ -9,13 +9,14 @@
 	Apache License 2.0
 
 	Pass: Deferred lighting and sky rendering
+		  Store lighting data for global illumination
 		  Compute specular reflections
 
 --------------------------------------------------------------------------------
 */
 
 #define CLOUD_LIGHTING
-#define SPECULAR_LIGHTING
+#define PROGRAM_DEFERRED_10
 #define RANDOM_NOISE
 
 //======// Utility //=============================================================================//
@@ -24,12 +25,27 @@
 
 //======// Output //==============================================================================//
 
+#ifdef SSPT_ENABLED
+
+/* RENDERTARGETS: 0,3 */
+layout (location = 0) out vec3 sceneOut;
+layout (location = 1) out vec3 lightingOut;
+
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+/* RENDERTARGETS: 0,3,2 */
+layout (location = 2) out vec4 reflectionOut;
+#endif
+
+#else
+
 /* RENDERTARGETS: 0 */
 layout (location = 0) out vec3 sceneOut;
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 /* RENDERTARGETS: 0,2 */
 layout (location = 1) out vec4 reflectionOut;
+#endif
+
 #endif
 
 //======// Input //===============================================================================//
@@ -47,9 +63,11 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
-uniform sampler2D colortex2; // Current indirect light
+#if defined CLOUDS_ENABLED && !defined CTU_ENABLED
+	uniform sampler3D colortex0; // Combined Atmospheric LUT
+#endif
 
-uniform sampler3D colortex3; // Combined Atmospheric LUT
+uniform sampler2D colortex3; // Current indirect light
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 	uniform sampler2D colortex4; // Reprojected scene history
@@ -64,6 +82,8 @@ uniform sampler2D colortex8; // Gbuffer data 1
 uniform sampler2D colortex9; // Cloud history
 
 uniform sampler2D colortex10; // Transmittance-View LUT
+
+uniform sampler2D colortex13; // Previous indirect light
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -212,6 +232,8 @@ uniform mat4 shadowModelView;
 		return vec4(clamp16f(reflection) * brdf, targetDepth);
 	}
 #endif
+
+#include "/lib/SpatialUpscale.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -478,19 +500,36 @@ void main() {
 		// Minimal ambient light
 		sceneOut += vec3(0.77, 0.82, 1.0) * MINIMUM_AMBIENT_BRIGHTNESS * ao * (worldNormal.y * 0.4 + 0.6);
 
-		// Apply albedo
-		sceneOut *= albedo;
-
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			// Metallic
 			if (isEyeInWater == 0) material.metalness *= 0.2 * smoothstep(0.3, 0.8, lightmap.y) + 0.8;
-			sceneOut *= oneMinus(material.metalness);
+			albedo *= oneMinus(material.metalness);
 
 			// Specular reflections
 			if (material.hasReflections && materialID != 46u && materialID != 51u) reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
 		#endif
 
+		// Apply albedo
+		sceneOut *= albedo;
+
 		// Specular highlights
 		sceneOut += specularHighlight;
+
+		#ifdef SSPT_ENABLED
+			lightingOut = sceneOut;
+
+			#ifdef DEBUG_GI
+				sceneOut = vec3(0.0);
+				albedo = vec3(1.0);
+			#endif
+
+			// Global illumination
+			#ifdef SVGF_ENABLED
+				float NdotV = saturate(dot(worldNormal, -worldDir));
+				sceneOut += SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.3 + 0.7);
+			#else
+				sceneOut += texelFetch(colortex3, screenTexel / 2, 0).rgb * albedo * (ao * 0.3 + 0.7);
+			#endif
+		#endif
 	}
 }

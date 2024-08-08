@@ -43,7 +43,7 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex1; // Scene history
 
-uniform sampler2D colortex3; // Current clouds
+uniform sampler2D colortex13; // Current clouds
 uniform sampler2D colortex9; // Previous clouds
 
 uniform sampler2D colortex14; // Depth history
@@ -133,7 +133,7 @@ void main() {
 		if (saturate(prevCoord) != prevCoord // Offscreen invalidation
 		 || maxOf(textureGather(colortex14, prevCoord, 2)) > 1e-6 // Previous depth invalidation
 		 || worldTimeChanged) {
-			cloudOut = textureBicubic(colortex3, min(screenCoord * rcp(float(CLOUD_TEMPORAL_UPSCALING)), rcp(float(CLOUD_TEMPORAL_UPSCALING)) - viewPixelSize));
+			cloudOut = textureBicubic(colortex13, min(screenCoord * rcp(float(CLOUD_TEMPORAL_UPSCALING)), rcp(float(CLOUD_TEMPORAL_UPSCALING)) - viewPixelSize));
 		} else {
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
 
@@ -155,7 +155,7 @@ void main() {
 			// Checkerboard upscaling
 			if (screenTexel % CLOUD_TEMPORAL_UPSCALING == offset) {
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_TEMPORAL_UPSCALING, ivec2(0), ivec2(viewSize) / CLOUD_TEMPORAL_UPSCALING - 1);
-				cloudOut = mix(texelFetch(colortex3, currTexel, 0), prevData, blendWeight);
+				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, blendWeight);
 			} else cloudOut = prevData;
 		}
 	} else {

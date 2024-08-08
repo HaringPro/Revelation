@@ -38,8 +38,8 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler3D colortex0; // Combined Atmospheric LUT
 uniform sampler2D colortex1; // Sceen history
-uniform sampler3D colortex3; // Combined Atmospheric LUT
 uniform sampler2D colortex5; // Previous exposure
 
 uniform int moonPhase;
@@ -191,7 +191,7 @@ flat in float exposure;
 
 uniform sampler2D noisetex;
 
-uniform sampler3D colortex3; // Combined Atmospheric LUT
+uniform sampler3D colortex0; // Combined Atmospheric LUT
 
 uniform float nightVision;
 uniform float wetness;

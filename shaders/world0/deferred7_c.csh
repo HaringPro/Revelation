@@ -1,4 +1,4 @@
-#version 450 compatibility
+#version 450 core
 
 #define ATROUS_FILTER_SIZE 4
 

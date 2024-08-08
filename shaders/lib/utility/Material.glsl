@@ -61,18 +61,18 @@ struct Material {
 				material.metalness = 1.0;
 				material.f0 = 0.91;
 			}
-			#if defined SPECULAR_LIGHTING
+			#if defined PROGRAM_DEFERRED_10
 				material.emissiveness = specTex.a * step(specTex.a, 0.999);
 			#endif
 		#else
 			material.metalness = specTex.g;
 			material.f0 = specTex.g * 0.96 + 0.04;
-			#if defined SPECULAR_LIGHTING
+			#if defined PROGRAM_DEFERRED_10
 				material.emissiveness = specTex.b;
 			#endif
 		#endif
 
-		#if defined SPECULAR_LIGHTING
+		#if defined PROGRAM_DEFERRED_10
 			material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 		#endif
 

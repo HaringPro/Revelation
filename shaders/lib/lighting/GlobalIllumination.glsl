@@ -256,7 +256,7 @@ struct Trace {
 
 vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap, in float dither) {
 	lightmap.x = CalculateBlocklightFalloff(lightmap.x) * SSPT_BLENDED_LIGHTMAP;
-	lightmap.y *= lightmap.y * lightmap.y * rPI;
+	lightmap.y *= lightmap.y * 0.25;
 
     vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 	vec3 viewDir = normalize(viewPos);
@@ -288,7 +288,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			target.screenPos = sampleRaytrace(viewPos, target.viewDir, dither, target.screenPos);
 
 			if (target.screenPos.z < 1.0) {
-				vec3 sampleLight = texelFetch(colortex0, ivec2(target.screenPos.xy), 0).rgb;
+				vec3 sampleLight = texelFetch(colortex3, ivec2(target.screenPos.xy * 0.5), 0).rgb;
 
 				target.worldNormal = FetchWorldNormal(sampleGbufferData0(ivec2(target.screenPos.xy)));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
@@ -327,9 +327,9 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			if (hitPos.z < 1.0) {
 				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb * float(screenPos.z > 0.56);
 				#else
-					vec3 sampleLight = texelFetch(colortex0, ivec2(hitPos.xy), 0).rgb;
+					vec3 sampleLight = texelFetch(colortex3, ivec2(hitPos.xy * 0.5), 0).rgb;
 				#endif
 
 				hitPos.xy *= viewPixelSize;

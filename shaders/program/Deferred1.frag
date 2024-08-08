@@ -19,7 +19,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 3 */
+/* RENDERTARGETS: 13 */
 out vec4 cloudOut;
 
 //======// Input //===============================================================================//
@@ -31,7 +31,7 @@ flat in vec3 skyIlluminance;
 
 uniform sampler2D noisetex;
 
-uniform sampler3D colortex3; // Combined Atmospheric LUT
+uniform sampler3D colortex0; // Combined Atmospheric LUT
 
 uniform sampler2D depthtex0;
 

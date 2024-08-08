@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: Reproject scene history (half-res)
+    Pass: Reproject scene history and lighting data history (half-res)
 
 --------------------------------------------------------------------------------
 */
@@ -21,12 +21,16 @@ const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 //======// Output //==============================================================================//
 
 writeonly restrict uniform image2D colorimg4;
+#ifdef SSPT_ENABLED
+    writeonly restrict uniform image2D colorimg3;
+#endif
 
 //======// Uniform //=============================================================================//
 
 uniform sampler2D depthtex0;
 
 uniform sampler2D colortex1; // Scene history
+uniform sampler2D colortex3; // Lighting data history
 
 uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
@@ -59,8 +63,14 @@ void main() {
 	vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
-    if (saturate(previousCoord) == previousCoord) {
+    if (saturate(previousCoord) == previousCoord && depth > 0.56) {
         vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
         imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
+        #ifdef SSPT_ENABLED
+            reprojectedHistory = texture(colortex3, previousCoord).rgb;
+            imageStore(colorimg3, screenTexel, vec4(reprojectedHistory, 1.0));
+        } else {
+            imageStore(colorimg3, screenTexel, vec4(0.0));
+        #endif
     }
 }

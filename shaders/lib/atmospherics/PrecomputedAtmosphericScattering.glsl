@@ -208,7 +208,7 @@ vec3 GetTransmittanceToTopAtmosphereBoundary(
     float mu
     ) {
         vec2 uv = GetTransmittanceTextureUvFromRMu(r, mu);
-        return vec3(textureLod(colortex3, vec3(uv, 32.5 / 33.0), 0.0));
+        return vec3(textureLod(colortex0, vec3(uv, 32.5 / 33.0), 0.0));
 }
 
 vec3 GetTransmittance(
@@ -368,7 +368,7 @@ vec3 GetCombinedScattering(
         vec3 uvw0 = vec3((tex_x + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
         vec3 uvw1 = vec3((tex_x + 1.0 + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
 
-        vec4 combined_scattering = textureLod(colortex3, uvw0, 0.0) * oneMinus(lerp) + textureLod(colortex3, uvw1, 0.0) * lerp;
+        vec4 combined_scattering = textureLod(colortex0, uvw0, 0.0) * oneMinus(lerp) + textureLod(colortex0, uvw1, 0.0) * lerp;
 
         vec3 scattering = vec3(combined_scattering);
         single_mie_scattering = GetExtrapolatedSingleMieScattering(atmosphere, combined_scattering);
@@ -388,7 +388,7 @@ vec3 GetIrradiance(
         vec2 uv = vec2(GetCombinedTextureCoordFromUnitRange(x_mu_s, IRRADIANCE_TEXTURE_WIDTH, COMBINED_TEXTURE_WIDTH),
                        GetCombinedTextureCoordFromUnitRange(x_r, IRRADIANCE_TEXTURE_HEIGHT, COMBINED_TEXTURE_HEIGHT) + TRANSMITTANCE_TEXTURE_HEIGHT / COMBINED_TEXTURE_HEIGHT);
 
-        return vec3(textureLod(colortex3, vec3(uv, 32.5 / 33.0), 0.0));
+        return vec3(textureLod(colortex0, vec3(uv, 32.5 / 33.0), 0.0));
 }
 
 //--// Rendering //-----------------------------------------------------------//
