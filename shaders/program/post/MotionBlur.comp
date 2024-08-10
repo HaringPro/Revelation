@@ -37,14 +37,16 @@ float InterleavedGradientNoise(in vec2 coord) {
 }
 
 float calculateBlurStrength(float r, float maxStrength) {
-	return maxStrength * 1.0 / (1.0 + exp(-1.0 * (r)));
+	float strength = maxStrength * atan(20.0 * r);
+	if (strength > maxStrength) strength = maxStrength;
+	return strength;
 }
 
 vec3 MotionBlur(in ivec2 texel) {
 	vec2 velocity = texelFetch(colortex2, texel, 0).xy;
 	float r = length(velocity);
 
-	if (r < 1e-3) return texelFetch(colortex1, texel, 0).rgb;
+	if (r < 1e-6) return texelFetch(colortex1, texel, 0).rgb;
 
 	float blurStrength = calculateBlurStrength(r, MOTION_BLUR_STRENGTH);
 	const float s = blurStrength / float(MOTION_BLUR_SAMPLES);
