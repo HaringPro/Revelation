@@ -10,7 +10,7 @@ out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
-out vec4 viewPos;
+out vec3 viewPos;
 
 //======// Attribute //===========================================================================//
 
@@ -48,8 +48,8 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
-	gl_Position = projectionMatrix * viewPos;
+	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	gl_Position = projectionMatrix * vec4(viewPos, 1.0);
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

@@ -21,17 +21,17 @@ layout (location = 2) out vec2 gbufferOut1;
 
 flat in mat3 tbnMatrix;
 
-in vec4 tint;
+in vec3 tint;
 in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
 
 #if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	in vec2 tileCoord;
+	in vec2 tileBase;
 	flat in vec2 tileScale;
 	flat in vec2 tileOffset;
 
-	in vec3 tangentViewDir;
+	in vec3 tangentViewPos;
 #endif
 
 //======// Uniform //=============================================================================//
@@ -86,10 +86,10 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 		vec2 bias = (4.0 / AGN_RESOLUTION) / tileScale;
 
 		// Sample albedo
-		vec4 sampleR = sampleAlbedo(tileCoord + vec2(bias.x, 0.0));
-		vec4 sampleL = sampleAlbedo(tileCoord - vec2(bias.x, 0.0));
-		vec4 sampleU = sampleAlbedo(tileCoord + vec2(0.0, bias.y));
-		vec4 sampleD = sampleAlbedo(tileCoord - vec2(0.0, bias.y));
+		vec4 sampleR = sampleAlbedo(tileBase + vec2(bias.x, 0.0));
+		vec4 sampleL = sampleAlbedo(tileBase - vec2(bias.x, 0.0));
+		vec4 sampleU = sampleAlbedo(tileBase + vec2(0.0, bias.y));
+		vec4 sampleD = sampleAlbedo(tileBase - vec2(0.0, bias.y));
 
 		// Get heights from albedo luminance
 		float heightR = GetLuminance(sampleR.rgb * sampleR.a);
@@ -122,20 +122,23 @@ void main() {
 		#endif
 
 		if (normalTex.w < 0.999) {
+			vec2 texSize = vec2(atlasSize);
 			float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
-			vec3 offsetCoord = CalculateParallax(tangentViewDir, texGrad, dither);
+			float parallaxFade = exp2(-0.1 * max0(length(tangentViewPos) - 2.0));
+
+			vec3 offsetCoord = CalculateParallax(normalize(tangentViewPos), texSize, dither);
 			parallaxCoord = OffsetCoord(offsetCoord.xy);
 
 			normalTex = ReadTexture(normals);
 
 			DecodeNormalTex(normalTex.xyz);
 
-			if (offsetCoord.z < 0.999) {
+			if (offsetCoord.z < 0.999 && parallaxFade > 1e-5) {
 				#ifdef PARALLAX_DEPTH_WRITE
 					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) + oneMinus(offsetCoord.z) * PARALLAX_DEPTH);
 				#elif defined PARALLAX_SHADOW
 					if (dot(tbnMatrix[2], worldLightVector) > 1e-3) {
-						gbufferOut1.z = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, texGrad, dither);
+						gbufferOut1.z = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, texSize, dither) * parallaxFade;
 					}
 				#endif
 				#ifdef PARALLAX_BASED_NORMAL
@@ -150,8 +153,8 @@ void main() {
 					float deltaX = (heightL - heightR) * 2.0;
 					float deltaY = (heightD - heightU) * 2.0;
 
-					vec3 pbN = vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-4));
-					normalTex.xyz = mix(pbN, normalTex.xyz, pbN.z);
+					vec3 pbN = vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-3));
+					normalTex.xyz = mix(normalTex.xyz, pbN, parallaxFade * oneMinus(pbN.z));
 				#endif
 			}
 		} else {
@@ -173,15 +176,15 @@ void main() {
 		#endif
 	#endif
 
-	vec4 albedo = ReadTexture(tex) * tint;
+	vec4 albedo = ReadTexture(tex);
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	#ifdef WHITE_WORLD
-		albedo.rgb = vec3(1.0);
-	#endif
+	albedoOut = albedo.rgb * tint;
 
-	albedoOut = albedo.rgb;
+	#ifdef WHITE_WORLD
+		albedoOut = vec3(1.0);
+	#endif
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID + 0.1) * r255;

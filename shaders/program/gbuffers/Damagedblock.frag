@@ -19,4 +19,4 @@ void main() {
     if (albedo.a < 0.1) discard;
 
 	albedoOut = albedo.rgb;
-}	
+}

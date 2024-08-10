@@ -8,7 +8,7 @@
 /* RENDERTARGETS: 2,7,8 */
 layout (location = 0) out vec4 sceneOut;
 layout (location = 1) out vec4 gbufferOut0;
-layout (location = 2) out vec4 gbufferOut1;
+layout (location = 2) out vec2 gbufferOut1;
 
 //======// Uniform //=============================================================================//
 
@@ -34,7 +34,7 @@ in vec2 lightmap;
 flat in uint materialID;
 
 in vec3 worldPos;
-in vec4 viewPos;
+in vec3 viewPos;
 
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
@@ -85,7 +85,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 1e4;
+		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
 		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
@@ -120,7 +120,7 @@ void main() {
 		// Water normal clamp
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
-		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos.xyz);
+		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos);
 	} else {
 		vec4 albedo = texture(tex, texCoord) * tint;
 

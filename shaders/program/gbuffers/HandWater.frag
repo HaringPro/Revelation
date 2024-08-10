@@ -17,8 +17,6 @@ in vec4 tint;
 in vec2 texCoord;
 in vec2 lightmap;
 
-in vec4 viewPos;
-
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;

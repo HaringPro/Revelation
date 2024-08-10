@@ -75,7 +75,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(1.0, 2.0));
+		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0));
 	}
 #elif FOG_QUALITY == 1
 	/* Medium */
@@ -87,7 +87,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 		float noise = Calculate3DNoise(rayPos) * 3.0;
 		noise -= Calculate3DNoise(rayPos * 4.0 + fogWind);
 
-		density.x *= saturate(noise * 8.0 - 6.0) * 2.0;
+		density.x *= saturate(noise * 8.0 - 6.0) * 1.4;
 
 		return density;
 	}

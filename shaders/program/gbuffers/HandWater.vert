@@ -11,8 +11,6 @@ out vec4 tint;
 out vec2 texCoord;
 out vec2 lightmap;
 
-out vec4 viewPos;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -46,7 +44,7 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	vec4 viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 	gl_Position = projectionMatrix * viewPos;
 
 	#ifdef TAA_ENABLED

@@ -6,8 +6,6 @@
 
 out vec4 tint;
 out vec2 texCoord;
-out vec2 lightmap;
-flat out uint materialID;
 
 //======// Attribute //===========================================================================//
 

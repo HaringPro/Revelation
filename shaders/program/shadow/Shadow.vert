@@ -17,8 +17,8 @@
 
 out vec2 texCoord;
 out vec3 tint;
-out vec2 lightmap;
-out vec3 viewPos;
+// out vec2 lightmap;
+// out vec3 viewPos;
 out vec3 minecraftPos;
 
 flat out mat3 tbnMatrix;
@@ -84,10 +84,10 @@ void main() {
 		isWater = 1;
 	}
 
-	lightmap = saturate(vec2(vaUV2) * r240);
+	// lightmap = saturate(vec2(vaUV2) * r240);
 	texCoord = vaUV0;
 
-	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
 	minecraftPos = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;
 
 	gl_Position.xyz = DistortShadowSpace(projMAD(projectionMatrix, viewPos));

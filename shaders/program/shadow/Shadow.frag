@@ -21,10 +21,10 @@ layout (location = 1) out vec4 shadowcolor1Out;
 //======// Input //===============================================================================//
 
 in vec2 texCoord;
-in vec2 lightmap;
+// in vec2 lightmap;
 
 in vec3 tint;
-in vec3 viewPos;
+// in vec3 viewPos;
 in vec3 minecraftPos;
 
 flat in uint isWater;

@@ -85,7 +85,7 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 1e4;
+		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
 		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
@@ -190,9 +190,7 @@ void main() {
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
 				vec4 reflectionData = texelFetch(colortex2, refractTexel, 0);
-				vec3 albedo = sRGBtoLinear(sampleAlbedo(refractTexel));
-
-				sceneOut += reflectionData.rgb * mix(vec3(1.0), albedo, material.metalness);
+				sceneOut += reflectionData.rgb;
 			}
 		#endif
 
@@ -217,6 +215,7 @@ void main() {
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
 			sceneOut = sceneOut * volFogData[1] + volFogData[0];
 			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
+			bloomyFogTrans *= bloomyFogTrans;
 		}
 	#endif
 

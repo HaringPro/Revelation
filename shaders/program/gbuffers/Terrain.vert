@@ -9,17 +9,17 @@
 
 flat out mat3 tbnMatrix;
 
-out vec4 tint;
+out vec3 tint;
 out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
 
 #if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	out vec2 tileCoord;
+	out vec2 tileBase;
 	flat out vec2 tileScale;
 	flat out vec2 tileOffset;
 
-	out vec3 tangentViewDir;
+	out vec3 tangentViewPos;
 #endif
 
 //======// Attribute //===========================================================================//
@@ -59,7 +59,7 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor;
+	tint = vaColor.rgb;
 	texCoord = vaUV0;
 
 	lightmap = saturate(vec2(vaUV2) * r240);
@@ -103,13 +103,15 @@ void main() {
 		worldPos.xyz -= cameraPosition;
 	#endif
 
+	if (materialID < 1u && maxOf(abs(vaNormal)) < 0.99) materialID = 13u;
+
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 		vec2 minMidCoord = texCoord - mc_midTexCoord;
-		tileCoord = fastSign(minMidCoord) * 0.5 + 0.5;
+		tileBase = fastSign(minMidCoord) * 0.5 + 0.5;
 		tileScale = abs(minMidCoord) * 2.0;
 		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
 
-		tangentViewDir = normalize(worldPos.xyz) * tbnMatrix;
+		tangentViewPos = (worldPos.xyz - gbufferModelViewInverse[3].xyz) * tbnMatrix;
 	#endif
 
 	gl_Position = projectionMatrix * gbufferModelView * worldPos;

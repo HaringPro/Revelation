@@ -13,7 +13,7 @@ out vec2 lightmap;
 flat out uint materialID;
 
 out vec3 worldPos;
-out vec4 viewPos;
+out vec3 viewPos;
 
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
@@ -61,11 +61,10 @@ void main() {
 
 	materialID = uint(max(mc_Entity.x - 1e4, 2.0));
 
-	viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
-	worldPos = transMAD(gbufferModelViewInverse, viewPos.xyz);
+	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-	gl_Position = projectionMatrix * viewPos;
-
+	gl_Position = projectionMatrix * vec4(viewPos, 1.0);
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif

@@ -58,7 +58,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     float NdotV = saturate(dot(-worldDir, worldNormal));
 
     float offsetScale = filterSize * min(roughness * 20.0, 1.0);
-    offsetScale *= fastExp(-oneMinus(reflectionData.a) * 0.2);
+    offsetScale *= fastExp(-oneMinus(reflectionData.a) * 0.25);
 
 	const vec2 angle = cossin(hPI);
 	const mat2 rot = mat2(angle, -angle.y, angle.x);

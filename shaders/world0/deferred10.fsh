@@ -501,12 +501,15 @@ void main() {
 		sceneOut += vec3(0.77, 0.82, 1.0) * MINIMUM_AMBIENT_BRIGHTNESS * ao * (worldNormal.y * 0.4 + 0.6);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			// Metallic
-			if (isEyeInWater == 0) material.metalness *= 0.2 * smoothstep(0.3, 0.8, lightmap.y) + 0.8;
-			albedo *= oneMinus(material.metalness);
+			if (material.hasReflections && materialID != 46u && materialID != 51u) {
+				// Specular reflections
+				reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
+				reflectionOut.rgb *= mix(vec3(1.0), albedo, material.metalness);
 
-			// Specular reflections
-			if (material.hasReflections && materialID != 46u && materialID != 51u) reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
+				// Metallic
+				if (isEyeInWater == 0) material.metalness *= 0.2 * smoothstep(0.3, 0.8, lightmap.y) + 0.8;
+				albedo *= oneMinus(material.metalness);
+			}
 		#endif
 
 		// Apply albedo
