@@ -230,7 +230,7 @@ void main() {
     #endif
 
     #ifdef MOTION_BLUR
-        velocityOut = velocity;
+        velocityOut = depth < 0.56 ? velocity * 0.2 : velocity;
     #endif
 
     temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));

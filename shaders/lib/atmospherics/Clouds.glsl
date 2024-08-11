@@ -227,7 +227,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 		for (uint i = 0u; i < octCount; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
-			position = position * 3.0 - shift;
+			position = position * (2.8 + 0.6 * fastSqrt(float(i))) - shift;
 		}
 
 		if (density < 1e-6) return 0.0;
@@ -260,7 +260,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 		for (uint i = 0u; i < 4u; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
-			position = position * 3.0 - shift;
+			position = position * (2.8 + 0.6 * fastSqrt(float(i))) - shift;
 		}
 
 		if (density < 1e-6) return 0.0;
@@ -458,7 +458,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					#if defined PROGRAM_DEFERRED_0
 						float density = CloudVolumeDensity(rayPos, 4u);
 					#else
-						float density = CloudVolumeDensity(rayPos, min(6u, uint(4.0 + inversesqrt(radius) * 120.0)));
+						float density = CloudVolumeDensity(rayPos, 5u);
 					#endif
 
 					if (density < 1e-5) continue;

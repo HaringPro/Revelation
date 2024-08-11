@@ -151,9 +151,11 @@ void main() {
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
-        if (prevExposure > 1e-8) {
+        /* if (prevExposure > 1e-8)  */{
             float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
             exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime));
+        // } else {
+        //     exposure = targetExposure;
         }
 	#else
 		exposure = exp2(-MANUAL_EV);

@@ -28,6 +28,7 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 uniform sampler2D colortex1; // TAA output
 uniform sampler2D colortex2; // Velocity
 
+uniform float frameTime;
 uniform vec2 viewSize;
 
 //======// Function //============================================================================//
@@ -40,10 +41,11 @@ vec3 MotionBlur(in ivec2 texel) {
 	vec2 velocity = texelFetch(colortex2, texel, 0).xy;
 	float r = length(velocity);
 
-	if (r < 1e-6) return texelFetch(colortex1, texel, 0).rgb;
+	if (r < 1e-7) return texelFetch(colortex1, texel, 0).rgb;
 
 	const float s = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES);
-	velocity *= s / (1.0 + r) * viewSize;
+	velocity *= min(r, 0.25) / r;
+	velocity *= s * 0.015 / max(frameTime, 5e-3) * viewSize;
 
 	float dither = InterleavedGradientNoise(vec2(texel));
 
@@ -60,7 +62,7 @@ vec3 MotionBlur(in ivec2 texel) {
 		}
 	}
 
-	return total * rcp(max(float(sumWeight), 1.0));
+	return total * rcp(max(float(sumWeight), 0.1));
 }
 
 //======// Main //================================================================================//

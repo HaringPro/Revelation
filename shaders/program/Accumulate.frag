@@ -45,10 +45,6 @@ uniform vec2 prevTaaOffset;
 #include "/lib/utility/Noise.glsl"
 #include "/lib/utility/Offset.glsl"
 
-// #if AO_ENABLED > 0
-// 	#include "/lib/lighting/AmbientOcclusion.glsl"
-// #endif
-
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
@@ -257,11 +253,6 @@ void main() {
 
                 vec3 screenPos = vec3(currentCoord, depth);
                 vec3 viewPos = ScreenToViewSpace(screenPos);
-
-                // #if AO_ENABLED == 1
-                //     float dither = BlueNoiseTemporal(currentTexel);
-                //     if (depth > 0.56) indirectCurrent.a = CalculateSSAO(screenPos.xy, viewPos, mat3(gbufferModelView) * worldNormal, dither);
-                // #endif
 
                 vec2 prevCoord = Reproject(screenPos).xy;
                 if (saturate(prevCoord) != prevCoord || worldTimeChanged) {
