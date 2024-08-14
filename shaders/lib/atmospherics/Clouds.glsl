@@ -20,24 +20,24 @@
 // #define CLOUD_CUMULUS_3D_FBM_WIP // Enables 3D FBM for cumulus clouds (WIP)
 
 
-#define CLOUD_WIND_SPEED 0.006 // Wind speed of clouds. [0.0 0.0001 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0 45.0 50.0]
-#define CLOUD_PLANE_ALTITUDE 5500.0 // Altitude of planar clouds. [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 cumulusMaxAltitude 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0 10500.0 11000.0 11500.0 12000.0]
+#define CLOUD_WIND_SPEED 				0.006 // Wind speed of clouds. [0.0 0.0001 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0 45.0 50.0]
+#define CLOUD_PLANE_ALTITUDE 			5500.0 // Altitude of planar clouds. [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 cumulusMaxAltitude 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0 10500.0 11000.0 11500.0 12000.0]
 
-#define CLOUD_CUMULUS_SAMPLES 		   20 // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
+#define CLOUD_CUMULUS_SAMPLES 		   	22 // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
 
-#define CLOUD_CUMULUS_SUNLIGHT_SAMPLES 4  // Sample count for sunlight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
-#define CLOUD_CUMULUS_SKYLIGHT_SAMPLES 2  // Sample count for skylight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
+#define CLOUD_CUMULUS_SUNLIGHT_SAMPLES 	4  // Sample count for sunlight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
+#define CLOUD_CUMULUS_SKYLIGHT_SAMPLES 	2  // Sample count for skylight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
 
-const float cumulusAltitude 	= 1000.0;
-const float cumulusThickness 	= 1450.0;
-const float cumulusMaxAltitude 	= cumulusAltitude + cumulusThickness;
-const float cumulusCoverage 	= 1.1;
+const float cumulusAltitude 		= 1000.0;
+const float cumulusThickness 		= 1450.0;
+const float cumulusMaxAltitude 		= cumulusAltitude + cumulusThickness;
+const float cumulusCoverage 		= 1.1;
 
-const float cumulusExtinction 	= 0.12;
-// const float cumulusScattering = 0.12;
+const float cumulusExtinction 		= 0.12;
+// const float cumulusScattering 	= 0.12;
 
-const float cirrusExtinction = 0.1;
-// const float cirrusScattering = 0.1;
+const float cirrusExtinction 		= 0.1;
+// const float cirrusScattering 	= 0.1;
 
 #ifdef CLOUD_CUMULUS_3D_FBM_WIP
 	uniform sampler3D depthtex2;
@@ -227,7 +227,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 		for (uint i = 0u; i < octCount; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
-			position = position * (2.8 + 0.6 * fastSqrt(float(i))) - shift;
+			position = position * (2.8 + 0.65 * fastSqrt(float(i))) - shift;
 		}
 
 		if (density < 1e-6) return 0.0;
@@ -260,7 +260,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 		for (uint i = 0u; i < 4u; ++i, weight *= 0.5) {
 			density += weight * Calculate3DNoise(position);
-			position = position * (2.8 + 0.6 * fastSqrt(float(i))) - shift;
+			position = position * (2.8 + 0.65 * fastSqrt(float(i))) - shift;
 		}
 
 		if (density < 1e-6) return 0.0;

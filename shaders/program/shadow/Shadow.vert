@@ -16,10 +16,9 @@
 //======// Output //==============================================================================//
 
 out vec2 texCoord;
-out vec3 tint;
 // out vec2 lightmap;
 // out vec3 viewPos;
-out vec3 minecraftPos;
+out vec3 vectorData; // Minecraf position in water, tint in other materials
 
 flat out mat3 tbnMatrix;
 
@@ -74,21 +73,21 @@ void main() {
 		}
 	#endif
 
-	tint = vaColor.rgb;
-
-	isWater = 0;
-	if (int(mc_Entity.x) == 10003) {
-		tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
-
-		isWater = 1;
-	}
-
 	// lightmap = saturate(vec2(vaUV2) * r240);
 	texCoord = vaUV0;
 
 	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
-	minecraftPos = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;
+
+	isWater = 0u;
+	if (int(mc_Entity.x) == 10003) {
+		tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
+		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
+
+		isWater = 1u;
+		vectorData = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;
+	} else {
+		vectorData = vaColor.rgb;
+	}
 
 	gl_Position.xyz = DistortShadowSpace(projMAD(projectionMatrix, viewPos));
 	gl_Position.w = 1.0;

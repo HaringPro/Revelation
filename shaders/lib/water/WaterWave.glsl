@@ -26,17 +26,19 @@ float CalculateWaterHeight(in vec2 position) {
 #else
 float CalculateWaterHeight(in vec2 p) {
     float wavesTime = frameTimeCounter * WATER_WAVE_SPEED;
-	p.y *= 0.8;
+	p *= vec2(0.7, -0.6);
 
-	p += 1.0 - abs(textureLod(noisetex, (p + wavesTime) * 0.0006, 0.0).w * 2.0 - 1.0);
+	// p += 1.0 - abs(textureLod(noisetex, (p + wavesTime) * 0.0006, 0.0).w * 2.0 - 1.0);
 
-    float wave = 0.0;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 1.4, p.x + wavesTime * 0.2)) * 0.7);
-	wave += GetSmoothNoise((p + vec2(wavesTime, wavesTime * 0.3 - p.x)) * 1.6) * 0.5;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 0.9, p.x - wavesTime * 0.3)) * 2.4) * 0.2;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 1.8, wavesTime * 0.2 - p.x)) * 3.6) * 0.12;
+    float base = 0.2 + GetSmoothNoise((p + vec2(wavesTime * 0.1, wavesTime * 0.2 - p.x * 1.3)) * 0.3);
 
-    return sin(wave * 1.2 * PI);
+	float wave = 0.0;
+	wave += GetSmoothNoise((p + vec2(wavesTime * 1.4, p.x * 1.6 + wavesTime * 0.2)) * 0.65 + base * 3.0) * 1.2;
+	wave += GetSmoothNoise((p + vec2(wavesTime, wavesTime * 0.3 - p.x)) * 1.5 + base * 3.2)				 * 0.7;
+	wave += GetSmoothNoise((p + vec2(wavesTime * 0.9, p.x * 1.2 - wavesTime * 0.3)) * 2.4 - base * 3.4)	 * 0.4;
+	wave += GetSmoothNoise((p + vec2(wavesTime * 1.8, wavesTime * 0.2 - p.x * 1.2)) * 3.6 - base * 3.6)	 * 0.2;
+
+	return base * exp2(wave * 1.8 - 1.0);
 }
 #endif
 
@@ -47,60 +49,59 @@ vec2 wavedx(vec2 position, vec2 direction, float noise, float frequency, float t
 	float x = dot(direction, position) * frequency + noise + timeshift;
 	float wave = fastExp(sin(x) - 1.0);
 	float dx = wave * cos(x);
-	return vec2(wave * 8.0, -dx);
+	return vec2(wave, -dx);
 }
 
 // Calculates waves by summing octaves of various waves with various parameters
 float getwaves(vec2 position) {
 	float iter = 0.0; // this will help generating well distributed wave directions
-	float frequency = 1.5; // frequency of the wave, this will change every iteration
-	float timeMultiplier = 2.0; // time multiplier for the wave, this will change every iteration
+	float frequency = 0.6; // frequency of the wave, this will change every iteration
+	float timeMultiplier = 1.6; // time multiplier for the wave, this will change every iteration
 	float weight = 1.0; // weight in final sum for the wave, this will change every iteration
 	float sumOfValues = 0.0; // will store final sum of values
 	float sumOfWeights = 0.0; // will store final sum of weights
 
-	float noise = textureLod(noisetex, (position + frameTimeCounter) * 0.004, 0.0).w;
+	float noise = 5.0 * texture(noisetex, (position + frameTimeCounter) * 0.002).x;
 	for (uint i = 0u; i < 12u; ++i) {
+		// add some kind of random value to make next wave look random too
+		iter += 1232.399963;
+
 		// generate some wave direction that looks kind of random
 		vec2 p = sincos(iter);
 		// calculate wave data
 		vec2 res = wavedx(position, p, noise, frequency, frameTimeCounter * timeMultiplier);
 
 		// shift position around according to wave drag and derivative of the wave
-		position += p * res.y * weight * 0.4;
+		position += p * res.y * weight;
 
 		// add the results to sums
 		sumOfValues += res.x * weight;
 		sumOfWeights += weight;
 
 		// modify next octave
-		noise *= 1.3;
-		weight *= 0.8;
-		frequency *= 1.18;
-		timeMultiplier *= 1.07;
-
-		// add some kind of random value to make next wave look random too
-		iter += 1232.399963;
+		weight *= 0.65;
+		frequency *= 1.45;
+		timeMultiplier *= 1.1;
 	}
 	// calculate and return
-	return sumOfValues / sumOfWeights;
+	return sumOfValues / sumOfWeights * 12.0;
 }
 
 //================================================================================================//
 
 vec3 CalculateWaterNormal(in vec2 position) {
 	float wavesCenter = CalculateWaterHeight(position);
-	float wavesLeft   = CalculateWaterHeight(position + vec2(0.04, 0.0));
-	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.04));
+	float wavesLeft   = CalculateWaterHeight(position + vec2(0.1, 0.0));
+	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.1));
 
-	vec2 wavesNormal = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
+	vec2 wavesNormal  = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
 
-	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.8));
+	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 1.0));
 }
 
 vec3 CalculateWaterNormal(in vec2 position, in vec3 tangentViewDir) {
-	vec3 stepSize = tangentViewDir * vec3(vec2(0.1 * WATER_WAVE_HEIGHT), 1.0);
-	stepSize *= rcp(48.0) / -tangentViewDir.z;
+	vec3 stepSize = tangentViewDir * vec3(vec2(WATER_WAVE_HEIGHT), 1.0);
+	stepSize *= 0.02 / -tangentViewDir.z;
 
     vec3 samplePos = vec3(position, 0.0) + stepSize;
 	float sampleHeight = CalculateWaterHeight(samplePos.xy);

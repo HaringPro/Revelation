@@ -23,9 +23,8 @@ layout (location = 1) out vec4 shadowcolor1Out;
 in vec2 texCoord;
 // in vec2 lightmap;
 
-in vec3 tint;
 // in vec3 viewPos;
-in vec3 minecraftPos;
+in vec3 vectorData; // Minecraf position in water, tint in other materials
 
 flat in uint isWater;
 
@@ -60,20 +59,20 @@ uniform sampler2D tex;
 void main() {
 	if (isWater == 1u) {
 		#ifdef WATER_CAUSTICS
-			vec3 wavesNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
+			vec3 wavesNormal = CalculateWaterNormal(vectorData.xz - vectorData.y);
 			vec3 normal = tbnMatrix * wavesNormal;
 
-			vec3 oldPos = minecraftPos;
-			vec3 newPos = oldPos + fastRefract(-worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
+			vec3 oldPos = vectorData;
+			vec3 newPos = oldPos + 3.0 * fastRefract(-worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.6;
+			float caustics = inversesqrt(oldArea / newArea) * 0.5;
 
-			shadowcolor0Out = vec3(pow(caustics, 0.4));
+			shadowcolor0Out = vec3(sqrt2(caustics));
 			// shadowcolor1Out.xy = encodeUnitVector(normal);
-			shadowcolor1Out.w = minecraftPos.y * rcp(512.0) + 0.25;
+			shadowcolor1Out.w = vectorData.y * rcp(512.0) + 0.25;
 		#else
 			shadowcolor0Out = vec3(0.8);
 			// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
@@ -83,10 +82,10 @@ void main() {
 		if (albedo.a < 0.1) discard;
 
         if (albedo.a > oneMinus(r255)) {
-			shadowcolor0Out = albedo.rgb * tint;
+			shadowcolor0Out = albedo.rgb * vectorData;
 		} else {
 			albedo.a = fastSqrt(fastSqrt(albedo.a));
-			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * tint, albedo.a);
+			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * vectorData, albedo.a);
 		}
 		// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 	}

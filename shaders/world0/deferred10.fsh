@@ -228,6 +228,7 @@ uniform mat4 shadowModelView;
 			} else
 		// #endif
 		{ brdf *= FresnelDielectric(LdotH, material.f0); }
+		sceneOut *= 1.0 - brdf;
 
 		return vec4(clamp16f(reflection) * brdf, targetDepth);
 	}
@@ -461,6 +462,9 @@ void main() {
 		#endif
 
 		// Emissive & Blocklight
+		#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
+			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
+		#endif
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
 			vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos, blocklightColor);
@@ -483,10 +487,6 @@ void main() {
 				lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 				sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor;
 			}
-		#endif
-
-		#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
-			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
 		#endif
 
 		// Handheld light

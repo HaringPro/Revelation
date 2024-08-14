@@ -40,7 +40,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	const float rSteps = 1.0 / float(RSM_SAMPLES);
 	const float falloffScale = 12.0 / RSM_RADIUS;
 
-	float skyLightmap = texelFetch(colortex7, ivec2(gl_FragCoord.xy * 2.0), 0).g;
+	float skyLightmap = texelFetch(colortex7, ivec2(gl_FragCoord.xy * 2.0), 0).y;
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 

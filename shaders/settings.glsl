@@ -40,6 +40,10 @@ const float minCloudAbsorption	  = 0.01;
 	// #define BORDER_FOG // Enables border fog
 	#define BORDER_FOG_FALLOFF 12.0 // Falloff of the border fog. [0.0 0.5 1.0 1.5 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0]
 
+	#define LAVA_FOG // Enables lava fog
+	#define POWDERED_SNOW_FOG // Enables powdered snow fog
+	#define BLINDNESS_DARKNESS_FOG // Enables blindness & darkness fog
+
 	#define VOLUMETRIC_FOG // Enables volumetric fog
 	#define VOLUMETRIC_FOG_SAMPLES 18 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
 	#define FOG_QUALITY 0 // [0 1]

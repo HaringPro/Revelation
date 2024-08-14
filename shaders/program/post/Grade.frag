@@ -47,7 +47,7 @@ uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex7; // Bloomy fog transmittance
 
 uniform float aspectRatio;
-uniform float wetnessCustom;
+uniform float rainStrength;
 
 uniform vec2 viewPixelSize;
 
@@ -89,7 +89,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 		image = mix(bloomData, image, saturate(fogTransmittance));
 	#endif
 
-	if (wetnessCustom > 1e-2) {
+	if (rainStrength > 1e-2) {
 		float rain = texelFetch(colortex6, texel, 0).a * RAIN_VISIBILITY;
 		image = image * oneMinus(rain) + bloomData * rain * 1.3;
 	}
@@ -150,8 +150,8 @@ vec3 Uchimura(in vec3 x) {
 vec3 Lottes(in vec3 x) {
 	x *= 2.0;
 
-	const vec3 a      = vec3(1.4);
-	const vec3 d      = vec3(0.95);
+	const vec3 a      = vec3(1.35);
+	const vec3 d      = vec3(0.92);
 	const vec3 hdrMax = vec3(8.0);
 	const vec3 midIn  = vec3(0.2);
 	const vec3 midOut = vec3(0.3);

@@ -50,6 +50,7 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 #include "/lib/utility/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
+#include "/lib/atmospherics/CommonFog.glsl"
 
 #include "/lib/SpatialUpscale.glsl"
 
@@ -229,6 +230,8 @@ void main() {
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
 	}
+
+	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);
 
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;
