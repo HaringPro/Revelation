@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/Accumulate.comp"
+#include "/program/SpatialFilter.comp"

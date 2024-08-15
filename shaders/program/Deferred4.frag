@@ -1,0 +1,148 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: RSM calculation and accumulation
+	Reference:  https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
+                https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
+
+--------------------------------------------------------------------------------
+*/
+
+#define PROGRAM_DEFERRED_4
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Output //==============================================================================//
+
+/* RENDERTARGETS: 13 */
+out vec4 indirectHistory;
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/utility/Uniform.glsl"
+
+uniform sampler2D colortex13; // Previous indirect light
+
+uniform vec2 prevTaaOffset;
+
+//======// Function //============================================================================//
+
+#include "/lib/utility/Transform.glsl"
+#include "/lib/utility/Fetch.glsl"
+#include "/lib/utility/Noise.glsl"
+#include "/lib/utility/Offset.glsl"
+
+#include "/lib/lighting/GlobalIllumination.glsl"
+
+void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
+    vec4 prevLight = vec4(0.0);
+    float sumWeight = 0.0;
+
+    float cameraMovement = length(mat3(gbufferModelView) * (cameraPosition - previousCameraPosition));
+    float currViewDistance = length(viewPos);
+
+    prevCoord += (prevTaaOffset - taaOffset) * 0.125;
+
+    // Bilinear filter
+    vec2 prevTexel = prevCoord * viewSize - vec2(0.5);
+    ivec2 floorTexel = ivec2(floor(prevTexel));
+    vec2 fractTexel = fract(prevTexel - floorTexel);
+
+    float weight[4] = {
+        oneMinus(fractTexel.x) * oneMinus(fractTexel.y),
+        fractTexel.x           * oneMinus(fractTexel.y),
+        oneMinus(fractTexel.x) * fractTexel.y,
+        fractTexel.x           * fractTexel.y
+    };
+
+    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+
+    for (uint i = 0u; i < 4u; ++i) {
+        ivec2 sampleTexel = floorTexel + offset2x2[i];
+        if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
+            vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
+
+            if ((abs(currViewDistance - prevData.w) - cameraMovement) < 0.1 * currViewDistance) {
+                float weight = weight[i];
+
+                prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
+                sumWeight += weight;
+            }
+        }
+    }
+
+    indirectHistory.rgb = mix(indirectHistory.rgb, prevLight.rgb, 0.97 * sumWeight);
+}
+
+float sampleDepthMin4x4(in vec2 coord) {
+	// 4x4 pixel neighborhood using textureGather
+    vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
+    vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
+    vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
+    vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
+
+    return min(min(minOf(sampleDepth0), minOf(sampleDepth1)), min(minOf(sampleDepth2), minOf(sampleDepth3)));
+}
+
+float GetClosestDepth(in ivec2 texel) {
+    float depth = sampleDepth(texel);
+
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = offset3x3N[i] * 2 + texel;
+        float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
+        depth = min(depth, sampleDepth);
+    }
+
+    return depth;
+}
+
+//======// Main //================================================================================//
+void main() {
+    vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
+	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+
+    if (currentCoord.y < 1.0) {
+        if (currentCoord.x < 1.0) {
+            // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
+            float depth = sampleDepthMin4x4(currentCoord);
+
+            if (depth < 1.0) {
+                ivec2 currentTexel = screenTexel * 2;
+                // currentTexel = ivec2(closestFragment.xy * viewSize);
+                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+
+                vec3 screenPos = vec3(currentCoord, depth);
+                vec3 viewPos = ScreenToViewSpace(screenPos);
+                float dither = BlueNoiseTemporal(currentTexel);
+	            float skyLightmap = unpackUnorm2x8Y(sampleGbufferData0(currentTexel).x);
+
+                indirectHistory.rgb = CalculateRSM(viewPos, worldNormal, dither, skyLightmap);
+
+                vec2 prevCoord = Reproject(screenPos).xy;
+		        if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
+                    prevCoord *= 0.5;
+                    TemporalFilter(screenTexel, prevCoord, viewPos);
+                }
+            }
+        } else {
+            currentCoord -= vec2(1.0, 0.0);
+            float depth = sampleDepthMin4x4(currentCoord);
+
+            if (depth < 1.0) {
+                ivec2 currentTexel = screenTexel * 2 - ivec2(viewWidth, 0);
+                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+                float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
+
+                indirectHistory = vec4(worldNormal, viewDistance);
+            }
+        }
+    }
+}

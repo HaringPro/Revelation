@@ -165,7 +165,7 @@ void main() {
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
 		indirectCurrent *= sumWeight;
 
-		float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + 1));
+		float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + padRadius));
 		float variancePhi = 1.0 / (variance * 4.0 + 1e-6);
 
 		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * ATROUS_FILTER_SIZE);

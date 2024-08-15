@@ -21,7 +21,10 @@ layout (location = 1) out vec4 shadowcolor1Out;
 //======// Input //===============================================================================//
 
 in vec2 texCoord;
-// in vec2 lightmap;
+
+#ifdef RSM_ENABLED
+	in float skyLightmap;
+#endif
 
 // in vec3 viewPos;
 in vec3 vectorData; // Minecraf position in water, tint in other materials
@@ -63,19 +66,23 @@ void main() {
 			vec3 normal = tbnMatrix * wavesNormal;
 
 			vec3 oldPos = vectorData;
-			vec3 newPos = oldPos + 3.0 * fastRefract(-worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
+			vec3 newPos = oldPos + 2.0 * fastRefract(-worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.5;
+			float caustics = inversesqrt(oldArea / newArea) * 0.4;
 
 			shadowcolor0Out = vec3(sqrt2(caustics));
-			// shadowcolor1Out.xy = encodeUnitVector(normal);
+			// #ifdef RSM_ENABLED
+			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
+			// #endif
 			shadowcolor1Out.w = vectorData.y * rcp(512.0) + 0.25;
 		#else
 			shadowcolor0Out = vec3(0.8);
-			// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+			// #ifdef RSM_ENABLED
+			// 	shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+			// #endif
 		#endif
 	} else {
 		vec4 albedo = texture(tex, texCoord);
@@ -87,8 +94,13 @@ void main() {
 			albedo.a = fastSqrt(fastSqrt(albedo.a));
 			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * vectorData, albedo.a);
 		}
-		// shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+
+		#ifdef RSM_ENABLED
+			shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+		#endif
 	}
 
-	// shadowcolor1Out.z = lightmap.y;
+	#ifdef RSM_ENABLED
+		shadowcolor1Out.z = skyLightmap;
+	#endif
 }

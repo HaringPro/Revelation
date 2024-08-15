@@ -1,6 +1,12 @@
-#if 0
+#if defined PROGRAM_DEFERRED_4
 /* Reflective Shadow Maps */
 // Referrence: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
+
+#define RSM_SAMPLES 16 // [4 8 12 16 20 24 32 48 64 96 128 256]
+#define RSM_RADIUS 10.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 15.0 20.0 25.0 30.0 40.0 50.0 70.0 100.0]
+#define RSM_BRIGHTNESS 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.6 1.8 2.0 2.5 3.0 5.0 7.0 10.0 15.0 20.0 30.0 40.0 50.0 70.0 100.0]
+
+//================================================================================================//
 
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
@@ -26,7 +32,7 @@ vec2 DistortShadowScreenPos(in vec2 shadowPos) {
 
 //================================================================================================//
 
-vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
+vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in float skyLightmap) {
 	vec3 total = vec3(0.0);
 
 	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
@@ -38,19 +44,17 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 	vec2 scale = RSM_RADIUS * diagonal2(shadowProjection);
 	const float sqRadius = RSM_RADIUS * RSM_RADIUS;
 	const float rSteps = 1.0 / float(RSM_SAMPLES);
-	const float falloffScale = 12.0 / RSM_RADIUS;
-
-	float skyLightmap = texelFetch(colortex7, ivec2(gl_FragCoord.xy * 2.0), 0).y;
+	const float falloffScale = 9.0 / RSM_RADIUS;
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
-	vec2 rot = sincos(dither * 64.0) * scale;
+	vec2 dir = sincos(dither * 32.0 * PI) * scale;
 	dither *= rSteps;
 
-	for (uint i = 0u; i < RSM_SAMPLES; ++i, rot *= goldenRotate) {
+	for (uint i = 0u; i < RSM_SAMPLES; ++i, dir *= goldenRotate) {
 		float sampleRad 			= float(i) * rSteps + dither;
 
-		vec2 sampleCoord 			= shadowScreenPos.xy + rot * sampleRad;
+		vec2 sampleCoord 			= shadowScreenPos.xy + dir * sampleRad;
 		ivec2 sampleTexel 			= ivec2(DistortShadowScreenPos(sampleCoord) * realShadowMapRes);
 
 		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 5.0 - 2.0;
@@ -64,16 +68,16 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 		vec3 sampleDir 				= sampleVector * inversesqrt(sampleSqLen);
 
 		float diffuse 				= saturate(dot(shadowNormal, sampleDir));
-		if (diffuse < 1e-5) 		continue;
+		if (diffuse < 1e-6) 		continue;
 
 		vec3 sampleColor 			= texelFetch(shadowcolor1, sampleTexel, 0).rgb;
 
-		vec3 sampleNormal 			= DecodeNormal(sampleColor.xy);
+		vec3 sampleNormal 			= decodeUnitVector(sampleColor.xy);
 
 		float bounce 				= saturate(dot(sampleNormal, -sampleDir));				
-		if (bounce < 1e-5) 			continue;
+		if (bounce < 1e-6) 			continue;
 
-		float falloff 	 			= rcp((sampleSqLen + 0.5) * falloffScale + sampleRad);
+		float falloff 	 			= rcp((sampleSqLen + 0.4) * falloffScale + sampleRad);
 
 		float skylightWeight 		= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
 
@@ -83,11 +87,12 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither) {
 		total += albedo * falloff * diffuse * bounce * skylightWeight;
 	}
 
-	total *= sqRadius * rSteps;
+	total *= sqRadius * rSteps * RSM_BRIGHTNESS;
 
-	return total;
+	return total * inversesqrt(maxEps(total));
 }
-#endif
+
+#else
 
 //================================================================================================//
 
@@ -355,3 +360,4 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 		return total * 12.0 * rcp(float(SSPT_SPP));
 	#endif
 }
+#endif

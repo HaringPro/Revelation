@@ -80,7 +80,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		float LdotV = dot(worldLightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.7) + 0.25 * rPI;
 
-		vec3 scattering = scatteringSun * 0.3 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
+		vec3 scattering = scatteringSun * 0.2 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
 		scattering += scatteringSky * 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 		scattering *= oneMinus(stepTransmittance) / waterExtinction;
 

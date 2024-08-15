@@ -10,37 +10,50 @@ float GetSmoothNoise(in vec2 coord) {
 
 #if 0
 float CalculateWaterHeight(in vec2 position) {
-    float wavesTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
+    float waveTime = frameTimeCounter * 2.0 * WATER_WAVE_SPEED;
 
 	// Apply a large scale noise to the position to create a more stochastic looking wave
 	position += exp2(0.5 - 2.0 * pow5(1.0 - GetSmoothNoise(position * 0.15)));
 
-    float wave = GetSmoothNoise((position + wavesTime * 0.6) * vec2(0.9, 0.6));
-	wave += GetSmoothNoise((position + vec2(wavesTime, position.x + wavesTime * 0.6)) * vec2(1.2, 1.8)) * 0.6;
-	wave += GetSmoothNoise((position + vec2(wavesTime * 0.4, wavesTime - position.x * 0.7)) * vec2(2.0, 1.2)) * 0.3;
-	wave += GetSmoothNoise((position + vec2(wavesTime * 0.8, position.x * 0.5 + wavesTime * 0.2)) * vec2(3.2, 2.7)) * 0.16;
-	wave += GetSmoothNoise((position + vec2(wavesTime * 0.3, wavesTime - position.x * 0.3)) * vec2(4.4, 3.6)) * 0.1;
+    float wave = GetSmoothNoise((position + waveTime * 0.6) * vec2(0.9, 0.6));
+	wave += GetSmoothNoise((position + vec2(waveTime, position.x + waveTime * 0.6)) * vec2(1.2, 1.8)) * 0.6;
+	wave += GetSmoothNoise((position + vec2(waveTime * 0.4, waveTime - position.x * 0.7)) * vec2(2.0, 1.2)) * 0.3;
+	wave += GetSmoothNoise((position + vec2(waveTime * 0.8, position.x * 0.5 + waveTime * 0.2)) * vec2(3.2, 2.7)) * 0.16;
+	wave += GetSmoothNoise((position + vec2(waveTime * 0.3, waveTime - position.x * 0.3)) * vec2(4.4, 3.6)) * 0.1;
 
 	return exp2(2.0 - wave * wave);
 }
 #else
-float CalculateWaterHeight(in vec2 p) {
-    float wavesTime = frameTimeCounter * WATER_WAVE_SPEED;
-	p *= vec2(0.7, -0.6);
 
-	// p += 1.0 - abs(textureLod(noisetex, (p + wavesTime) * 0.0006, 0.0).w * 2.0 - 1.0);
+float CalculateWaterHeight(vec2 position) {
+	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
 
-    float base = 0.2 + GetSmoothNoise((p + vec2(wavesTime * 0.1, wavesTime * 0.2 - p.x * 1.3)) * 0.3);
+	vec2 pos = vec2(0.32, 0.24) * position + vec2(0.9, 0.12) * waveTime;
+	pos += pos.yx * vec2(0.2, 1.3);
+	float waves = GetSmoothNoise(pos) * 2.0 - 1.0;
+	waves = -0.76 * fastSqrt(waves * waves + 0.02);
 
-	float wave = 0.0;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 1.4, p.x * 1.6 + wavesTime * 0.2)) * 0.65 + base * 3.0) * 1.2;
-	wave += GetSmoothNoise((p + vec2(wavesTime, wavesTime * 0.3 - p.x)) * 1.5 + base * 3.2)				 * 0.7;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 0.9, p.x * 1.2 - wavesTime * 0.3)) * 2.4 - base * 3.4)	 * 0.4;
-	wave += GetSmoothNoise((p + vec2(wavesTime * 1.8, wavesTime * 0.2 - p.x * 1.2)) * 3.6 - base * 3.6)	 * 0.2;
+	pos = vec2(0.72, 0.56) * position + vec2(1.0, -0.4) * waveTime;
+	pos += pos.yx * vec2(0.1, 0.3);
+	float wave = GetSmoothNoise(pos) * 2.0 - 1.0;
+	waves += 0.5 * fastSqrt(wave * wave + 0.01);
 
-	return base * exp2(wave * 1.8 - 1.0);
+	pos = vec2(1.2, 0.84) * position + vec2(1.1, -0.8) * waveTime;
+	pos.y -= pos.x * 1.2;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.24;
+
+	pos = vec2(3.0, 2.1) * position + vec2(2.2, 0.7) * waveTime;
+	pos.y += pos.x * 0.6;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.09;
+
+	pos = vec2(6.4, 3.6) * position + vec2(1.8, 0.8) * waveTime;
+	pos.y -= pos.x;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.025;
+
+	return waves;
 }
 #endif
+
 
 // https://www.shadertoy.com/view/MdXyzX
 // Calculates wave value and its derivative, 
@@ -91,17 +104,17 @@ float getwaves(vec2 position) {
 
 vec3 CalculateWaterNormal(in vec2 position) {
 	float wavesCenter = CalculateWaterHeight(position);
-	float wavesLeft   = CalculateWaterHeight(position + vec2(0.1, 0.0));
-	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.1));
+	float wavesLeft   = CalculateWaterHeight(position + vec2(0.04, 0.0));
+	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.04));
 
 	vec2 wavesNormal  = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
 
-	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 1.0));
+	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.15));
 }
 
 vec3 CalculateWaterNormal(in vec2 position, in vec3 tangentViewDir) {
-	vec3 stepSize = tangentViewDir * vec3(vec2(WATER_WAVE_HEIGHT), 1.0);
-	stepSize *= 0.02 / -tangentViewDir.z;
+	vec3 stepSize = vec3(tangentViewDir.xy * WATER_WAVE_HEIGHT * 0.4, -0.02);
+	stepSize.xy *= 0.02 / -tangentViewDir.z;
 
     vec3 samplePos = vec3(position, 0.0) + stepSize;
 	float sampleHeight = CalculateWaterHeight(samplePos.xy);

@@ -34,12 +34,12 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	float searchRadius = 2.0 * shadowProjection[0].x;
 
 	// dither = TentFilter(dither);
-	vec2 rot = cossin(dither * TAU) * searchRadius;
+	vec2 dir = cossin(dither * TAU) * searchRadius;
 	const vec2 angleStep = cossin(TAU * 0.125);
-	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
-	for (uint i = 0u; i < 8u; ++i, rot *= rotStep) {
+	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+	for (uint i = 0u; i < 8u; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * 0.125;
-		vec2 sampleCoord = shadowScreenPos.xy + rot * radius;
+		vec2 sampleCoord = shadowScreenPos.xy + dir * radius;
 
 		float sampleDepth = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
 		float weight = step(sampleDepth, shadowScreenPos.z);
@@ -56,18 +56,16 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 }
 
 vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
-	shadowScreenPos.z -= 5e-5 * (1.0 + dither);
-
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 
 	vec3 result = vec3(0.0);
 
-	vec2 rot = cossin(dither * TAU) * penumbraScale;
+	vec2 dir = cossin(dither * TAU) * penumbraScale;
 	const vec2 angleStep = cossin(TAU * rSteps);
-	const mat2 rotStep = mat2(angleStep, -angleStep.y, angleStep.x);
-	for (uint i = 0u; i < PCF_SAMPLES; ++i, rot *= rotStep) {
+	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+	for (uint i = 0u; i < PCF_SAMPLES; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * rSteps;
-		vec2 sampleCoord = shadowScreenPos.xy + rot * radius * inversesqrt(radius);
+		vec2 sampleCoord = shadowScreenPos.xy + dir * radius * inversesqrt(radius);
 
 		float sampleDepth1 = textureLod(shadowtex1, vec3(sampleCoord, shadowScreenPos.z), 0).x;
 

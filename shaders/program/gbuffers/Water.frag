@@ -163,23 +163,27 @@ void main() {
 			vec3 normalOffset = tbnMatrix[2] * (dotSelf(worldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
-			float LdotV = dot(worldLightVector, -worldDir);
-			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+			if (saturate(shadowScreenPos) == shadowScreenPos) {
+				float LdotV = dot(worldLightVector, -worldDir);
+				float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
 
-			vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
-			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+				vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
+				float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
+				shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
 
-			if (dot(shadow, vec3(1.0)) > 1e-6) {
-				float NdotV = saturate(dot(worldNormal, -worldDir));
-				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-				float NdotH = (NdotL + NdotV) * halfwayNorm;
-				float LdotH = LdotV * halfwayNorm + halfwayNorm;
+				vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
 
-				shadow *= sunlightMult;
+				if (dot(shadow, vec3(1.0)) > 1e-6) {
+					float NdotV = saturate(dot(worldNormal, -worldDir));
+					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+					float NdotH = (NdotL + NdotV) * halfwayNorm;
+					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-				sunlightDiffuse = shadow * fastSqrt(NdotL) * rPI;
-				specularHighlight = shadow * 2.0 * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
+					shadow *= sunlightMult;
+
+					sunlightDiffuse = shadow * fastSqrt(NdotL) * rPI;
+					specularHighlight = shadow * 2.0 * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
+				}
 			}
 		}
 

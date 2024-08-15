@@ -16,7 +16,11 @@
 //======// Output //==============================================================================//
 
 out vec2 texCoord;
-// out vec2 lightmap;
+
+#ifdef RSM_ENABLED
+	out float skyLightmap;
+#endif
+
 // out vec3 viewPos;
 out vec3 vectorData; // Minecraf position in water, tint in other materials
 
@@ -65,7 +69,7 @@ void main() {
 		return;
 	}
 
-    tbnMatrix[2] = mat3(shadowModelViewInverse) * normalize(normalMatrix * vaNormal);
+    tbnMatrix[2] = normalize(normalMatrix * vaNormal);
 	#ifdef SHADOW_BACKFACE_CULLING
 		if (tbnMatrix[2].z < 0.0) {
 			gl_Position = vec4(-1.0);
@@ -73,7 +77,10 @@ void main() {
 		}
 	#endif
 
-	// lightmap = saturate(vec2(vaUV2) * r240);
+	#ifdef RSM_ENABLED
+		skyLightmap = saturate(vec2(vaUV2).y * r240);
+	#endif
+
 	texCoord = vaUV0;
 
 	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);

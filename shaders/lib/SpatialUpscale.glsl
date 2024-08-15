@@ -1,7 +1,7 @@
 #if defined PROGRAM_DEFERRED_10
-#if defined SSPT_ENABLED && defined SVGF_ENABLED
+#if (defined SSPT_ENABLED && defined SVGF_ENABLED) || defined RSM_ENABLED
 	vec3 SpatialUpscale5x5(in ivec2 texel, in vec3 worldNormal, in float viewDistance, in float NdotV) {
-		float sumWeight = 0.1;
+		float sumWeight = 0.2;
 
 		vec3 total = texelFetch(colortex3, texel, 0).rgb;
 		float centerLuma = GetLuminance(total);
@@ -18,7 +18,7 @@
 				vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
 
 				float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
-				weight *= exp2(-distance(prevData.a, viewDistance) * NdotV);
+				weight *= exp2(-distance(prevData.a, viewDistance) * 2.0 * NdotV);
 				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
 
 				if (weight < 1e-5) continue;

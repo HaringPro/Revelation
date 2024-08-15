@@ -45,7 +45,7 @@ vec3 MotionBlur(in ivec2 texel) {
 
 	const float s = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES);
 	velocity *= min(r, 0.25) / r;
-	velocity *= s * 0.015 / max(frameTime, 5e-3) * viewSize;
+	velocity *= s * 0.01 / max(frameTime, 5e-3) * viewSize;
 
 	float dither = InterleavedGradientNoise(vec2(texel));
 
