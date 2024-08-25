@@ -146,14 +146,14 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 //================================================================================================//
 
 mat4x3 ToSphericalHarmonics(in vec3 value, in vec3 dir) {
-	const vec2 foo = vec2(0.5 * sqrt(rPI), sqrt(0.75 * rPI));
+	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
     vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
 
 	return mat4x3(value * harmonics.x, value * harmonics.y, value * harmonics.z, value * harmonics.w);
 }
 
 vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
-	const vec2 foo = vec2(0.5 * sqrt(rPI), sqrt(0.75 * rPI));
+	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
     vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
 
 	return coeff[0] * harmonics.x + coeff[1] * harmonics.y + coeff[2] * harmonics.z + coeff[3] * harmonics.w;

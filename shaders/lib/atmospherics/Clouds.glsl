@@ -130,12 +130,12 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	/* Cirrocumulus clouds */ if (density < 0.1) {
 		vec2 position = rayPos * 9e-5 - shift + curl;
 
-		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.6 + 0.1);
+		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
 		baseCoverage *= max0(1.07 - texture(noisetex, position * 0.003).y * 1.4);
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
-		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.24;
+		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.3;
 		cirrocumulus = saturate(cirrocumulus - density);
 
 		cirrocumulus *= clamp(baseCoverage - saturate(localCoverage * 1.4 - 0.56), 0.0, 0.25) * 0.6;

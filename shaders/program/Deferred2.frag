@@ -144,11 +144,11 @@ void main() {
 
 			// Camera movement rejection
 			float cameraMovement = exp2(-20.0 * distance(cameraPosition, previousCameraPosition));
-			blendWeight *= cameraMovement * 0.5 + 0.5;
+			blendWeight *= cameraMovement * 0.25 + 0.75;
 
 			// Offcenter rejection
 			vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.5 + 0.5;
+			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.75 + 0.25;
 
 			vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
 

@@ -36,8 +36,6 @@ layout (location = 2) out vec3 lightingOut;
 
 //======// Input //===============================================================================//
 
-in vec2 screenCoord;
-
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
@@ -228,6 +226,7 @@ void main() {
 
 	float depth = sampleDepth(screenTexel);
 
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 

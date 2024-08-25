@@ -17,8 +17,6 @@
 
 //======// Output //==============================================================================//
 
-out vec2 screenCoord;
-
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
@@ -47,7 +45,6 @@ uniform vec3 fogRayleighCoeff;
 //======// Main //================================================================================//
 void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
-	screenCoord = vaUV0;
 
 	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
 	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;

@@ -86,7 +86,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += length(viewPos) * viewNormal * 3e-4 / maxEps(sqr(NdotL));
+	viewPos += length(viewPos) * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
 
     vec3 endPos = ViewToScreenSpace(viewLightVector * -viewPos.z + viewPos);
     vec3 rayStep = normalize(endPos - rayPos);

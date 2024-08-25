@@ -74,7 +74,7 @@ vec3 FidelityFX_CAS(in ivec2 texel) {
 	vec3 maxColor = maxOf(a, b, c, d, e, f, g, h, i);
 
     vec3 sharpeningAmount = sqrt(min(1.0 - maxColor, minColor) / maxColor);
-    vec3 w = sharpeningAmount * mix(-0.125, -0.2, CAS_STRENGTH);
+    vec3 w = sharpeningAmount * -(0.125 + 0.075 * CAS_STRENGTH);
 
 	//float minG = minOf(a.g, b.g, c.g, d.g, e.g, f.g, g.g, h.g, i.g);
 	//float maxG = maxOf(a.g, b.g, c.g, d.g, e.g, f.g, g.g, h.g, i.g);

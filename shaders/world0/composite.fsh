@@ -27,8 +27,6 @@ layout (location = 1) out vec3 transmittanceOut;
 
 //======// Input //===============================================================================//
 
-in vec2 screenCoord;
-
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
@@ -188,6 +186,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy) * 2;
 
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	vec3 screenPos = vec3(screenCoord, sampleDepth(screenTexel));
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 

@@ -30,7 +30,7 @@ float CalculateWaterHeight(in vec2 position) {
 	vec2 pos = vec2(0.4, 0.27) * position + vec2(0.8, 0.12) * waveTime;
 	pos += pos.yx * vec2(0.2, 1.3);
 	float waves = GetSmoothNoise(pos) * 2.0 - 1.0;
-	waves = -2.4 * (waves * waves + 0.04);
+	waves = -2.0 * (waves * waves + 0.04);
 
 	pos = vec2(0.76, 0.51) * position + vec2(-0.2, -0.3) * waveTime;
 	pos += pos.yx * vec2(0.1, 0.4);

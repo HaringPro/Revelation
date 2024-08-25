@@ -127,7 +127,6 @@ vec3 SpatialCurrent(in ivec2 texel) {
                 vec3 currentColor = texelFetch(SSPT_SAMPLER, sampleCoord, 0).rgb;
 
                 float weight = kernel[abs(x)][abs(y)];
-                float sampleLuma = GetLuminance(currentColor);
 
                 indirectData += currentColor * weight;
             }
@@ -182,7 +181,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
         indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel + shift, 0).rgb;
-        // indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, gl_FragCoord.xy * viewPixelSize).rgb;
+        // indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, vec2(screenTexel + shift) * viewPixelSize).rgb;
 
         indirectHistory.a = min(++prevLight.a, SSPT_MAX_BLENDED_FRAMES);
         float alpha = rcp(indirectHistory.a + 1.0);

@@ -209,7 +209,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
     blendWeight *= offcenterWeight;
 
     currentSample = mix(reinhard(currentSample), reinhard(prevSample), blendWeight);
-    return vec4(invReinhard(currentSample), frameIndex * offcenterWeight);
+    return vec4(invReinhard(currentSample), frameIndex);
 }
 
 //======// Main //================================================================================//

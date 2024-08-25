@@ -30,6 +30,7 @@ uniform sampler2D colortex13; // Previous indirect light
 
 uniform float viewWidth;
 
+uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 
 uniform vec2 viewPixelSize;
@@ -59,6 +60,7 @@ void CollectSharedData() {
         ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
 
         ivec2 sampleTexel = sharedTexel + index;
+        sampleTexel = clamp(sampleTexel, ivec2(0), ivec2(viewSize * 0.5) - 1);
 
         sharedLight[index.x][index.y] = texelFetch(colortex13, sampleTexel, 0).rgb;
         sharedData [index.x][index.y] = texelFetch(colortex13, sampleTexel + shift, 0);
@@ -68,6 +70,7 @@ void CollectSharedData() {
         ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
 
         ivec2 sampleTexel = sharedTexel + index;
+        sampleTexel = clamp(sampleTexel, ivec2(0), ivec2(viewSize * 0.5) - 1);
 
         sharedLight[index.x][index.y] = texelFetch(colortex13, sampleTexel, 0).rgb;
         sharedData [index.x][index.y] = texelFetch(colortex13, sampleTexel + shift, 0);
@@ -100,8 +103,10 @@ void main() {
         vec3 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
         vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
 
-        vec3 viewPos = ScreenToViewSpace(vec3(vec2(gl_GlobalInvocationID.xy) * viewPixelSize * 2.0, depth));
-        float NdotV = saturate(dot(normalDepthData.xyz, -normalize(viewPos)));
+        vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+        vec3 viewPos = ScreenToViewSpace(vec3(screenCoord * 2.0, depth));
+        vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+        float NdotV = saturate(dot(normalDepthData.xyz, -worldDir));
 
 		const ivec2 offset[8] = {
 			ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
@@ -116,8 +121,8 @@ void main() {
             vec4 sampleData = sharedData[sampleSharedTexel.x][sampleSharedTexel.y];
 
             float weight = exp2(-0.1 * dotSelf(offset[i]));
-            weight *= exp2(-abs(sampleData.w - normalDepthData.w) * 2.0 * NdotV); // Distance weight
-            weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
+            weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * 4.0 * NdotV); // Distance weight
+            weight *= sqr(pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)))); // Normal weight
 
             vec3 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
 
