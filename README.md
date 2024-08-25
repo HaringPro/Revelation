@@ -2,7 +2,7 @@
 <p  align = "center"> A realistic shaderpack for Minecraft: Java Edition, aiming to balance performance and image quality. </p>
 <p  align = "center"> Currently working in progress, more features will be added in the future. </p>
 
-![Screenshot](https://github.com/user-attachments/assets/5bbcb2fa-1e0f-48cd-8dd7-c56ccfd9daff)
+![Screenshot](https://github.com/user-attachments/assets/af647400-bd69-4349-ab14-79c865ef118d)
 
 ## Features
 * High quality atmospheric system: precomputed atmospheric scattering, multi-layer clouds, immersive volumetric fog and so on
