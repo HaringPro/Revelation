@@ -55,6 +55,7 @@ vec3  sqr(vec3 x)	  	{ return x * x; }
 vec4  sqr(vec4 x)	  	{ return x * x; }
 
 float pow1d5(float x) 	{ return x * x * inversesqrt(x); }
+vec3  pow1d5(vec3 x) 	{ return x * x * inversesqrt(x); }
 
 float cube(float x)   	{ return x * x * x; }
 vec2  cube(vec2 x)	  	{ return x * x * x; }

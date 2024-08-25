@@ -3,7 +3,7 @@
 
 #include "/lib/Utility.glsl"
 
-#define WAVING_FOILAGE // Enables waving foilage effect
+#define WAVING_FOLIAGE // Enables waving foilage effect
 
 //======// Output //==============================================================================//
 
@@ -74,7 +74,7 @@ void main() {
 
 	materialID = uint(max0(mc_Entity.x - 1e4));
 
-	#ifdef WAVING_FOILAGE
+	#ifdef WAVING_FOLIAGE
 		worldPos.xyz += cameraPosition;
 
 		float windIntensity = cube(saturate(lightmap.y * 1.5 - 0.5)) * fma(wetnessCustom, 0.2, 0.1);
@@ -88,7 +88,7 @@ void main() {
 
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 1e-3) * 0.5 + 0.5).xy * 1.4 - 0.4;
 			vec2 wind = sin(dot(worldPos.xz, vec2(0.87, 0.5)) + tick) * noise - cossin(PI * 0.2) * fastSqrt(max(worldPos.y, 1.0) * 0.4) * 0.2;
-			worldPos.xz += wind * windIntensity * topVertex;
+			worldPos.xz += wind * (windIntensity * topVertex);
 		}
 
 		// Leaves
@@ -97,7 +97,7 @@ void main() {
 
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 1e-3) * 0.5 + 0.5).xy * 1.4 - 0.4;
 			vec3 wind = sin(dot(worldPos.xyz, vec3(0.87, 0.6, 0.5)) + tick) * vec3(noise.x, noise.x * noise.y, noise.y);
-			worldPos.xyz += wind * windIntensity * 0.75;
+			worldPos.xyz += wind * (windIntensity * 0.75);
 		}
 
 		worldPos.xyz -= cameraPosition;

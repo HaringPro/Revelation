@@ -285,7 +285,7 @@ void main() {
 		#endif
 
 		float sssAmount = 0.0;
-		#if SUBSERFACE_SCATTERING_MODE < 2
+		#if SUBSURFACE_SCATTERING_MODE < 2
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
@@ -298,7 +298,7 @@ void main() {
 					#endif
 					break;
 				case 12u: // Leaves
-					sssAmount = 0.85;
+					sssAmount = 0.9;
 					break;
 				case 27u: case 37u: // Weak SSS
 					sssAmount = 0.5;
@@ -311,12 +311,12 @@ void main() {
 					break;
 			}
 		#endif
-		#if TEXTURE_FORMAT == 0 && SUBSERFACE_SCATTERING_MODE > 0 && defined SPECULAR_MAPPING
+		#if TEXTURE_FORMAT == 0 && SUBSURFACE_SCATTERING_MODE > 0 && defined SPECULAR_MAPPING
 			sssAmount = max(sssAmount, specularTex.b * step(64.5 / 255.0, specularTex.b));
 		#endif
 
 		// Remap sss amount to [0, 1] range
-		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSERFACE_SCATTERING_STRENTGH;
+		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSURFACE_SCATTERING_STRENGTH;
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);

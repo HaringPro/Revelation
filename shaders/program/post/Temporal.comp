@@ -215,7 +215,7 @@ void main() {
     float depth = sampleDepth(screenTexel);
     vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
 
-    #ifdef TAA_CLOSEST_FRAGMNET
+    #ifdef TAA_CLOSEST_FRAGMENT
         vec3 closestFragment = GetClosestFragment(screenTexel, depth);
         vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
     #else

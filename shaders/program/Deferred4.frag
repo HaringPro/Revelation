@@ -19,6 +19,8 @@
 
 #include "/lib/Utility.glsl"
 
+#define RSM_MAX_BLENDED_FRAMES 40.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 13 */
@@ -78,8 +80,14 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
             }
         }
     }
+    if (sumWeight > 1e-5) {
+        prevLight /= sumWeight;
 
-    indirectHistory.rgb = mix(indirectHistory.rgb, prevLight.rgb, 0.97 * sumWeight);
+        indirectHistory.a = min(++prevLight.a, RSM_MAX_BLENDED_FRAMES);
+
+        float alpha = rcp(indirectHistory.a + 1.0);
+        indirectHistory.rgb = mix(prevLight.rgb, indirectHistory.rgb, alpha);
+    }
 }
 
 float sampleDepthMin4x4(in vec2 coord) {

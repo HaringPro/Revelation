@@ -42,6 +42,7 @@ uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
 uniform vec3 fogWind;
+uniform vec3 lightningShading;
 
 #include "/lib/utility/Uniform.glsl"
 
@@ -56,7 +57,7 @@ uniform vec3 fogWind;
 	#include "/lib/atmospherics/Clouds.glsl"
 #endif
 
-const vec2 falloffScale = 1.0 / vec2(12.0, 70.0);
+const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
 
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
@@ -175,7 +176,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 	}
 
 	vec3 scattering = scatteringSun * 18.0 * directIlluminance;
-	scattering += scatteringSky * skyIlluminance;
+	scattering += scatteringSky * (skyIlluminance + lightningShading * 4e-3);
 	scattering *= eyeSkylightFix;
 
 	return mat2x3(scattering, transmittance);

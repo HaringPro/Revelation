@@ -11,37 +11,65 @@ const float mie_phase_g = 0.78;
 #define ATMOSPHERE_TOP_ALTITUDE     110000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
 
 const float atmosphere_bottom_radius = planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE;
-const float atmosphere_top_radius = planetRadius + ATMOSPHERE_TOP_ALTITUDE;
+const float atmosphere_top_radius 	 = planetRadius + ATMOSPHERE_TOP_ALTITUDE;
 
 const float atmosphere_bottom_radius_sq = atmosphere_bottom_radius * atmosphere_bottom_radius;
 const float atmosphere_top_radius_sq = atmosphere_top_radius * atmosphere_top_radius;
 
+const float isotropicPhase = 0.25 * rPI;
+
 //================================================================================================//
 
-float RayleighPhase(in float cosTheta) {
+float RayleighPhase(in float mu) {
 	const float c = 3.0 / 16.0 * rPI;
-	return cosTheta * cosTheta * c + c;
+	return mu * mu * c + c;
 }
 
-float HenyeyGreensteinPhase(in float cosTheta, in const float g) {
-	const float gg = g * g;
-    float phase = 1.0 + gg - 2.0 * g * cosTheta;
-    return oneMinus(gg) / (4.0 * PI * phase * sqrt(phase));
+// Henyey-Greenstein phase function (HG)
+float HenyeyGreensteinPhase(in float mu, in float g) {
+	float gg = g * g;
+    return isotropicPhase * oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
 }
 
-float CornetteShanksPhase(in float cosTheta, in const float g) {
-	const float gg = g * g;
-  	float a = oneMinus(gg) * rcp(2.0 + gg) * 3.0 * rPI;
-  	float b = (1.0 + sqr(cosTheta)) * pow((1.0 + gg - 2.0 * g * cosTheta), -1.5);
-  	return a * b * 0.125;
+// Cornette-Shanks phase function (CS)
+float CornetteShanksPhase(in float mu, in float g) {
+	float gg = g * g;
+  	float pa = oneMinus(gg) * (1.5 / (2.0 + gg));
+  	float pb = (1.0 + sqr(mu)) / pow1d5((1.0 + gg - 2.0 * g * mu));
+
+  	return isotropicPhase * pa * pb;
 }
 
-float MiePhaseClouds(in float cosTheta, in const vec3 g, in const vec3 w) {
-	const vec3 gg = g * g;
-	vec3 a = 0.75 * oneMinus(gg) * rcp(2.0 + gg)/* * rTAU*/;
-	vec3 b = (1.0 + sqr(cosTheta)) * pow(1.0 + gg - 2.0 * g * cosTheta, vec3(-1.5));
+// Draine’s phase function
+float DrainePhase(in float mu, in float g, in float a) {
+	float gg = g * g;
+	float pa = oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
+	float pb = (1.0 + a * sqr(mu)) / (1.0 + a * (1.0 + 2.0 * gg) / 3.0);
+	return isotropicPhase * pa * pb;
+}
 
-	return dot(a * b, w) / (w.x + w.y + w.z);
+// Mix between HG and Draine’s phase function (Paper: An Approximate Mie Scattering Function for Fog and Cloud Rendering)
+float HG_DrainePhase(in float mu, in float d) {
+	float gHG = fastExp(-0.0990567 / (d - 1.67154));
+	float gD  = fastExp(-2.20679 / (d + 3.91029) - 0.428934);
+	float a   = fastExp(3.62489 - 8.29288 / (d + 5.52825));
+	float w   = fastExp(-0.599085 / (d - 0.641583) - 0.665888);
+
+	return mix(HenyeyGreensteinPhase(mu, gHG), DrainePhase(mu, gD, a), w);
+}
+
+// Klein-Nishina phase function
+float KleinNishinaPhase(in float mu, in float e) {
+	return e / (TAU * (e * oneMinus(mu) + 1.0) * log(2.0 * e + 1.0));
+}
+
+// CS phase function for clouds
+float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
+	vec3 gg = g * g;
+  	vec3 pa = oneMinus(gg) * (1.5 / (2.0 + gg));
+	vec3 pb = (1.0 + sqr(mu)) / pow1d5(1.0 + gg - 2.0 * g * mu);
+
+	return isotropicPhase * dot(pa * pb, w);
 }
 
 //================================================================================================//

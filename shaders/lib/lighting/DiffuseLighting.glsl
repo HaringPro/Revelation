@@ -10,7 +10,7 @@ vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float 
 	vec3 subsurfaceScattering =  fastExp(0.35 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
 		 subsurfaceScattering += fastExp(0.1 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);
 
-	return subsurfaceScattering * sssAmount * SUBSERFACE_SCATTERING_BRIGHTNESS;
+	return subsurfaceScattering * sssAmount * SUBSURFACE_SCATTERING_BRIGHTNESS;
 }
 
 float CalculateFittedBouncedLight(in vec3 normal) {

@@ -43,7 +43,6 @@ uniform sampler2D tex;
 	uniform vec3 worldLightVector;
 
 	uniform float frameTimeCounter;
-	uniform float far;
 
 //======// Function //============================================================================//
 
@@ -71,9 +70,9 @@ void main() {
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
-			float caustics = inversesqrt(oldArea / newArea) * 0.4;
+			float caustics = inversesqrt(oldArea / newArea);
 
-			shadowcolor0Out = vec3(sqrt2(caustics));
+			shadowcolor0Out = vec3((caustics * 0.4 + 0.4));
 			// #ifdef RSM_ENABLED
 			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
 			// #endif

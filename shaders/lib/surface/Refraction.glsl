@@ -31,8 +31,6 @@ vec2 CalculateRefractCoord(in vec3 viewPos, in vec3 viewNormal, in vec3 hitPos) 
 
 #else
 
-#include "/lib/water/WaterWave.glsl"
-
 vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNormal, in vec4 gbufferData1, in float transparentDepth) {
 	// if (materialID != 2u && materialID != 3u) return screenCoord;
 

@@ -216,7 +216,6 @@ void main() {
 			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
 			sceneOut = sceneOut * volFogData[1] + volFogData[0];
 			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
-			bloomyFogTrans *= bloomyFogTrans;
 		}
 	#endif
 

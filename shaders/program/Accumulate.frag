@@ -144,10 +144,10 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     float cameraMovement = length(mat3(gbufferModelView) * (cameraPosition - previousCameraPosition));
     float currViewDistance = length(viewPos);
 
-    prevCoord += (prevTaaOffset - taaOffset) * 0.125;
+    prevCoord += (prevTaaOffset - taaOffset) * 0.25;
 
     // Bilinear filter
-    vec2 prevTexel = prevCoord * viewSize - vec2(0.5);
+    vec2 prevTexel = prevCoord * 0.5 * viewSize - vec2(0.5);
     ivec2 floorTexel = ivec2(floor(prevTexel));
     vec2 fractTexel = fract(prevTexel - floorTexel);
 
@@ -259,7 +259,6 @@ void main() {
                     indirectCurrent = SpatialColor(screenTexel);
                     indirectHistory.rgb = indirectCurrent.rgb;
                 } else {
-                    prevCoord *= 0.5;
                     TemporalFilter(screenTexel, prevCoord, viewPos);
                 }
 

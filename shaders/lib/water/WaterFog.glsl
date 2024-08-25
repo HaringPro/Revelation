@@ -61,7 +61,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 				if (sampleSunlight.x != sampleDepth0) {
 					float waterDepth = abs(texelFetch(shadowcolor1, shadowTexel, 0).w * 512.0 - 128.0 - shadowPosition.y - eyeAltitude);
 					if (waterDepth > 0.1) {
-						sampleSunlight = pow5(texelFetch(shadowcolor0, shadowTexel, 0).rgb);
+						sampleSunlight = pow4(texelFetch(shadowcolor0, shadowTexel, 0).rgb);
 					} else {
 						vec3 shadowColorSample = cube(texelFetch(shadowcolor0, shadowTexel, 0).rgb);
 						sampleSunlight = shadowColorSample * (sampleSunlight - sampleDepth0) + vec3(sampleDepth0);
@@ -80,7 +80,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		float LdotV = dot(worldLightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.7) + 0.25 * rPI;
 
-		vec3 scattering = scatteringSun * 0.2 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
+		vec3 scattering = scatteringSun * 0.32 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
 		scattering += scatteringSky * 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 		scattering *= oneMinus(stepTransmittance) / waterExtinction;
 

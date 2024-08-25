@@ -71,11 +71,11 @@ vec3 GetClosestFragment(in ivec2 texel, in float depth) {
     return closestFragment;
 }
 
-vec3 reinhard(in vec3 color) {
-    return color / (1.0 + GetLuminance(color));
+vec3 reinhard(in vec3 hdr) {
+    return hdr / (1.0 + GetLuminance(hdr));
 }
-vec3 invReinhard(in vec3 color) {
-    return color / (1.0 - GetLuminance(color));
+vec3 invReinhard(in vec3 sdr) {
+    return sdr / (1.0 - GetLuminance(sdr));
 }
 
 vec3 RGBtoYCoCgR(in vec3 rgbColor) {
@@ -197,7 +197,6 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
     prevSample = RGBtoYCoCgR(prevSample);
     prevSample = clipAABB(clipMin, clipMax, prevSample);
-
     prevSample = YCoCgRtoRGB(prevSample);
 
     float frameIndex = texelFetch(colortex1, rawCoord(prevCoord), 0).a;
@@ -222,7 +221,7 @@ void main() {
     float depth = sampleDepth(screenTexel);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
-    #ifdef TAA_CLOSEST_FRAGMNET
+    #ifdef TAA_CLOSEST_FRAGMENT
         vec3 closestFragment = GetClosestFragment(screenTexel, depth);
         vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
     #else
