@@ -1,4 +1,4 @@
-#if defined PROGRAM_DEFERRED_4
+#ifdef RSM_ENABLED
 /* Reflective Shadow Maps */
 // Referrence: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
 
@@ -11,8 +11,6 @@
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
-
-const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 
 //================================================================================================//
 
@@ -33,24 +31,25 @@ vec2 DistortShadowScreenPos(in vec2 shadowPos) {
 //================================================================================================//
 
 vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in float skyLightmap) {
-	vec3 total = vec3(0.0);
-
 	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
+
 	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
 	vec3 shadowScreenPos = WorldToShadowScreenPos(worldPos);
 
 	vec3 shadowNormal = mat3(shadowModelView) * worldNormal;
+	vec3 projectionInvScale = diagonal3(shadowProjectionInverse);
 
-	vec2 scale = RSM_RADIUS * diagonal2(shadowProjection);
+	vec2 offsetRadius = RSM_RADIUS * diagonal2(shadowProjection);
 	const float sqRadius = RSM_RADIUS * RSM_RADIUS;
 	const float rSteps = 1.0 / float(RSM_SAMPLES);
 	const float falloffScale = 9.0 / RSM_RADIUS;
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
-	vec2 dir = sincos(dither * 32.0 * PI) * scale;
+	vec2 dir = sincos(dither * 32.0 * PI) * offsetRadius;
 	dither *= rSteps;
 
+	vec3 sum = vec3(0.0);
 	for (uint i = 0u; i < RSM_SAMPLES; ++i, dir *= goldenRotate) {
 		float sampleRad 			= float(i) * rSteps + dither;
 
@@ -60,36 +59,36 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 5.0 - 2.0;
 
 		vec3 sampleVector 			= vec3(sampleCoord, sampleDepth) - shadowScreenPos;
-		sampleVector 				= mat3(shadowProjectionInverse) * sampleVector;
+		sampleVector 				= projectionInvScale * sampleVector;
 
 		float sampleSqLen 	 		= dotSelf(sampleVector);
 		if (sampleSqLen > sqRadius) continue;
 
 		vec3 sampleDir 				= sampleVector * inversesqrt(sampleSqLen);
 
-		float diffuse 				= saturate(dot(shadowNormal, sampleDir));
+		float diffuse 				= dot(shadowNormal, sampleDir);
 		if (diffuse < 1e-6) 		continue;
 
 		vec3 sampleColor 			= texelFetch(shadowcolor1, sampleTexel, 0).rgb;
 
 		vec3 sampleNormal 			= decodeUnitVector(sampleColor.xy);
 
-		float bounce 				= saturate(dot(sampleNormal, -sampleDir));				
+		float bounce 				= dot(sampleNormal, -sampleDir);				
 		if (bounce < 1e-6) 			continue;
 
-		float falloff 	 			= rcp((sampleSqLen + 0.4) * falloffScale + sampleRad);
+		float falloff 	 			= rcp((sampleSqLen + 0.2) * falloffScale * inversesqrt(sampleRad));
 
 		float skylightWeight 		= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
 
 		// vec3 albedo 				= sRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
 		vec3 albedo 				= pow(texelFetch(shadowcolor0, sampleTexel, 0).rgb, vec3(2.2));
 
-		total += albedo * falloff * diffuse * bounce * skylightWeight;
+		sum += albedo * falloff * saturate(diffuse * bounce) * skylightWeight;
 	}
 
-	total *= sqRadius * rSteps * RSM_BRIGHTNESS;
+	sum *= sqRadius * rSteps * RSM_BRIGHTNESS;
 
-	return total * inversesqrt(maxEps(total));
+	return sum * inversesqrt(maxEps(sum));
 }
 
 #else
@@ -247,7 +246,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 
 float CalculateBlocklightFalloff(in float blocklight) {
 	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
-	blocklight += fastSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
+	blocklight += approxSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
 	return blocklight * 0.5 * fade;
 }
 
@@ -268,7 +267,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
     NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
 
-	vec3 total = vec3(0.0);
+	vec3 sum = vec3(0.0);
 	const float f0 = 0.04;
 
 	float maxSqLen = sqr(viewPos.z) * 0.2;
@@ -307,10 +306,10 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				// 	target.brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
 				// }
 
-				total += sampleLight * target.brdf * pow(diffSqLen, -SSPT_FALLOFF);
+				sum += sampleLight * target.brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
 				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
-				total += (skyRadiance.rgb * lightmap.y + lightmap.x) * target.brdf;
+				sum += (skyRadiance.rgb * lightmap.y + lightmap.x) * target.brdf;
 				break;
 			}
 		}
@@ -346,18 +345,18 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				// 	brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
 				// }
 
-				total += sampleLight * brdf * pow(diffSqLen, -SSPT_FALLOFF);
+				sum += sampleLight * brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
 				vec4 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir));
-				total += (skyRadiance.rgb * lightmap.y + lightmap.x) * brdf;
+				sum += (skyRadiance.rgb * lightmap.y + lightmap.x) * brdf;
 			}
 		}
 	#endif
 
 	#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-		return total * 8.0 * rcp(float(SSPT_SPP));
+		return sum * 8.0 * rcp(float(SSPT_SPP));
 	#else
-		return total * 12.0 * rcp(float(SSPT_SPP));
+		return sum * 12.0 * rcp(float(SSPT_SPP));
 	#endif
 }
 #endif

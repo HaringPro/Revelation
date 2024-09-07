@@ -23,7 +23,7 @@ layout (location = 1) out vec3 clearOut;
 
 #ifdef MOTION_BLUR
 /* RENDERTARGETS: 1,4,2 */
-layout (location = 2) out vec2 velocityOut;
+layout (location = 2) out vec2 motionVectorOut;
 #endif
 
 //======// Uniform //=============================================================================//
@@ -54,9 +54,9 @@ uniform vec2 taaOffset;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Offset.glsl"
 
 vec3 GetClosestFragment(in ivec2 texel, in float depth) {
     vec3 closestFragment = vec3(texel, depth);
@@ -157,11 +157,11 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 
-vec4 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
+vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
 
     vec3 currentSample = sampleSceneColor(texel);
-    vec2 prevCoord = screenCoord - velocity;
+    vec2 prevCoord = screenCoord - motionVector;
 
     if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 0.0);
 
@@ -223,14 +223,14 @@ void main() {
 
     #ifdef TAA_CLOSEST_FRAGMENT
         vec3 closestFragment = GetClosestFragment(screenTexel, depth);
-        vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
+        vec2 motionVector = closestFragment.xy - Reproject(closestFragment).xy;
     #else
-        vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
+        vec2 motionVector = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
     #endif
 
     #ifdef MOTION_BLUR
-        velocityOut = depth < 0.56 ? velocity * 0.2 : velocity;
+        motionVectorOut = depth < 0.56 ? motionVector * 0.2 : motionVector;
     #endif
 
-    temporalOut = clamp16f(CalculateTAA(screenCoord, velocity));
+    temporalOut = clamp16f(CalculateTAA(screenCoord, motionVector));
 }

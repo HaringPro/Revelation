@@ -4,7 +4,7 @@
 //================================================================================================//
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
-	vec3 coeff = oneMinus(0.75 * albedo) * (32.0 / sssAmount);
+	vec3 coeff = oneMinus(0.75 * albedo) * (24.0 / sssAmount);
 	// vec3 coeff = 30.0 / (albedo * sssAmount + 0.5);
 
 	vec3 subsurfaceScattering =  fastExp(0.35 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
@@ -17,14 +17,14 @@ float CalculateFittedBouncedLight(in vec3 normal) {
 	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
 	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
 
-	return fastSqrt(bounce) * 5e-2;
+	return approxSqrt(bounce) * 5e-2;
 }
 
 //================================================================================================//
 
 float CalculateBlocklightFalloff(in float blocklight) {
 	float fade = rcp(sqr(16.0 - 15.0 * blocklight));
-	blocklight += fastSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
+	blocklight += approxSqrt(blocklight) * 0.4 + sqr(blocklight) * 0.6;
 	return blocklight * 0.5 * fade;
 }
 

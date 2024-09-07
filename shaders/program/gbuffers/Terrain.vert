@@ -87,7 +87,7 @@ void main() {
 			float topVertex = step(vaUV0.y, mc_midTexCoord.y) + float(materialID == 10u);
 
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 1e-3) * 0.5 + 0.5).xy * 1.4 - 0.4;
-			vec2 wind = sin(dot(worldPos.xz, vec2(0.87, 0.5)) + tick) * noise - cossin(PI * 0.2) * fastSqrt(max(worldPos.y, 1.0) * 0.4) * 0.2;
+			vec2 wind = sin(dot(worldPos.xz, vec2(0.87, 0.5)) + tick) * noise - cossin(PI * 0.2) * approxSqrt(max(worldPos.y, 1.0) * 0.4) * 0.2;
 			worldPos.xz += wind * (windIntensity * topVertex);
 		}
 

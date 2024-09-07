@@ -3,9 +3,9 @@
 	vec3 SpatialUpscale5x5(in ivec2 texel, in vec3 worldNormal, in float viewDistance, in float NdotV) {
 		float sumWeight = 0.2;
 
-		vec3 total = texelFetch(colortex3, texel, 0).rgb;
-		float centerLuma = GetLuminance(total);
-		total *= sumWeight;
+		vec3 sum = texelFetch(colortex3, texel, 0).rgb;
+		float centerLuma = GetLuminance(sum);
+		sum *= sumWeight;
 
 		ivec2 shift = ivec2(viewWidth * 0.5, 0);
         ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
@@ -23,12 +23,12 @@
 
 				if (weight < 1e-5) continue;
 
-				total += sampleLight * weight;
+				sum += sampleLight * weight;
 				sumWeight += weight;
 			}
 		}
 
-		return total / sumWeight;
+		return sum / sumWeight;
 	}
 #endif
 #endif
@@ -47,18 +47,20 @@
 		);
 
 		float sigmaZ = 64.0 / linearDepth;
-		mat2x3 total = mat2x3(0.0);
+		mat2x3 sum = mat2x3(0.0);
 		float sumWeight = 0.0;
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
 			float sampleDepth = ScreenToLinearDepth(sampleDepth(sampleTexel * 2));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
-			total += mat2x3(texelFetch(colortex11, sampleTexel, 0).rgb, texelFetch(colortex12, sampleTexel, 0).rgb) * weight;
+
+			sum[0] += texelFetch(colortex11, sampleTexel, 0).rgb * weight;
+			sum[1] += texelFetch(colortex12, sampleTexel, 0).rgb * weight;
 			sumWeight += weight;
 		}
 
-		return total / sumWeight;
+		return sum / sumWeight;
 	}
 #endif
 #endif

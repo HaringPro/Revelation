@@ -2,9 +2,6 @@
 #define PCF_SAMPLES 16 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 48 64]
 
 const float shadowDistanceRenderMul = 1.0; // [-1.0 1.0]
-const float	shadowDistance = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
-
-const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //================================================================================================//
@@ -37,6 +34,7 @@ vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	vec2 dir = cossin(dither * TAU) * searchRadius;
 	const vec2 angleStep = cossin(TAU * 0.125);
 	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+
 	for (uint i = 0u; i < 8u; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * 0.125;
 		vec2 sampleCoord = shadowScreenPos.xy + dir * radius;
@@ -63,6 +61,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 	vec2 dir = cossin(dither * TAU) * penumbraScale;
 	const vec2 angleStep = cossin(TAU * rSteps);
 	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * rSteps;
 		vec2 sampleCoord = shadowScreenPos.xy + dir * radius * inversesqrt(radius);

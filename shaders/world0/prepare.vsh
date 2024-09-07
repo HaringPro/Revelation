@@ -2,4 +2,4 @@
 
 #define VERTEX_SHADER
 
-#include "/program/Deferred0.glsl"
+#include "/program/Prepare.glsl"

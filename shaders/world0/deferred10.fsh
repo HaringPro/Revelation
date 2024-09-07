@@ -15,7 +15,6 @@
 --------------------------------------------------------------------------------
 */
 
-#define CLOUD_LIGHTING
 #define PROGRAM_DEFERRED_10
 #define RANDOM_NOISE
 
@@ -48,7 +47,7 @@ flat in vec3 blocklightColor;
 uniform sampler2D noisetex;
 
 #if defined CLOUDS_ENABLED && !defined CTU_ENABLED
-	uniform sampler3D colortex0; // Combined Atmospheric LUT
+	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
 uniform sampler2D colortex3; // Current indirect light
@@ -91,7 +90,7 @@ uniform float wetness;
 uniform float wetnessCustom;
 uniform float eyeAltitude;
 uniform float biomeSnowySmooth;
-uniform float eyeSkylightFix;
+uniform float eyeSkylightSmooth;
 uniform float worldTimeCounter;
 
 uniform vec2 viewPixelSize;
@@ -119,22 +118,23 @@ uniform mat4 shadowModelView;
 
 //======// Struct //==============================================================================//
 
-#include "/lib/utility/Material.glsl"
+#include "/lib/universal/Material.glsl"
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 
 #include "/lib/atmospherics/Celestial.glsl"
 
 #if defined CLOUDS_ENABLED && !defined CTU_ENABLED
+	#define CLOUD_LIGHTING
 	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
-	#include "/lib/atmospherics/Clouds.glsl"
 #endif
+#include "/lib/atmospherics/Clouds.glsl"
 
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
@@ -143,7 +143,7 @@ uniform mat4 shadowModelView;
 	#include "/lib/lighting/AmbientOcclusion.glsl"
 #endif
 
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Offset.glsl"
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 	#include "/lib/surface/ScreenSpaceRaytracer.glsl"
@@ -179,7 +179,7 @@ uniform mat4 shadowModelView;
 
 		vec3 reflection;
 		if (hit) {
-			// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * fastSqrt(material.roughness)).rgb;
+			// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * approxSqrt(material.roughness)).rgb;
 			reflection = texelFetch(colortex4, ivec2(screenPos.xy * 0.5), 0).rgb;
 		} else if (skylight > 1e-3) {
 			vec3 rayDirWorld = mat3(gbufferModelViewInverse) * rayDir;
@@ -287,7 +287,7 @@ void main() {
 		#if SUBSURFACE_SCATTERING_MODE < 2
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
-				case 9u: case 10u: case 11u: case 13u: case 28u: // Plants
+				case 9u: case 10u: case 11u: case 13u: case 27u: case 28u: // Plants
 					sssAmount = 0.55;
 					#ifdef NORMAL_MAPPING
 						worldNormal.y += 4.0;
@@ -299,7 +299,7 @@ void main() {
 				case 12u: // Leaves
 					sssAmount = 0.9;
 					break;
-				case 27u: case 37u: // Weak SSS
+				case 37u: // Weak SSS
 					sssAmount = 0.5;
 					break;
 				case 38u: case 51u: // Strong SSS
@@ -315,7 +315,7 @@ void main() {
 		#endif
 
 		// Remap sss amount to [0, 1] range
-		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightFix * SUBSURFACE_SCATTERING_STRENGTH;
+		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightSmooth * SUBSURFACE_SCATTERING_STRENGTH;
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
@@ -323,16 +323,22 @@ void main() {
 		float dither = BlueNoiseTemporal(screenTexel);
 
 		// Ambient occlusion
-		float ao = 1.0;
-		if (depth > 0.56) {
-			#if AO_ENABLED > 0
+		#if AO_ENABLED > 0
+			vec3 ao = vec3(1.0);
+			if (depth > 0.56) {
 				#if AO_ENABLED == 1
-					ao = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+					ao *= CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
 				#else
-					ao = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
+					ao *= CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
 				#endif
-			#endif
-		} else depth += 0.38;
+				#ifdef AO_MULTI_BOUNCE
+					ao = ApproxMultiBounce(ao.x, albedo);
+				#endif
+			} else depth += 0.38;
+		#else
+			const float ao = 1.0;
+			depth += step(0.56, depth) * 0.38;
+		#endif
 
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
@@ -364,7 +370,7 @@ void main() {
 				// Subsurface scattering
 				if (doSss) {
 					vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
-					// subsurfaceScattering *= eyeSkylightFix;
+					// subsurfaceScattering *= eyeSkylightSmooth;
 					sceneOut += subsurfaceScattering * sunlightMult * ao;
 				}
 
@@ -468,7 +474,7 @@ void main() {
 				float albedoLuma = saturate(dot(albedo, vec3(0.45)));
 
 				vec3 emissionAlbedo = normalize(maxEps(albedo));
-				emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), fastSqrt(albedoLuma));
+				emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), approxSqrt(albedoLuma));
 				emissive.rgb *= emissionAlbedo * 1.5;
 			#else
 				if (emissive.a * lightmap.x > 1e-5) {
@@ -488,13 +494,13 @@ void main() {
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
-				float falloff = rcp(max(dotSelf(worldPos), 1.0));
-				sceneOut += falloff * (ao * oneMinus(falloff) + falloff) * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS * blocklightColor;
+				float falloff = rcp(max(dotSelf(worldPos), 1.0)) * max(heldBlockLightValue, heldBlockLightValue2);
+				sceneOut += (falloff * HELD_LIGHT_BRIGHTNESS) * (ao * oneMinus(falloff) + falloff) * blocklightColor;
 			}
 		#endif
 
 		// Minimal ambient light
-		sceneOut += vec3(0.77, 0.82, 1.0) * MINIMUM_AMBIENT_BRIGHTNESS * ao * (worldNormal.y * 0.4 + 0.6);
+		sceneOut += vec3(0.77, 0.82, 1.0) * ((worldNormal.y * 0.4 + 0.6) * MINIMUM_AMBIENT_BRIGHTNESS) * ao;
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			if (material.hasReflections && materialID != 46u && materialID != 51u) {
@@ -528,15 +534,20 @@ void main() {
 			// Global illumination
 			#ifdef SVGF_ENABLED
 				float NdotV = saturate(dot(worldNormal, -worldDir));
-				sceneOut += SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.3 + 0.7);
+				sceneOut += SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.5 + 0.5);
 			#else
-				sceneOut += texelFetch(colortex3, screenTexel / 2, 0).rgb * albedo * (ao * 0.3 + 0.7);
+				sceneOut += texelFetch(colortex3, screenTexel / 2, 0).rgb * albedo * (ao * 0.5 + 0.5);
 			#endif
 		#elif defined RSM_ENABLED
+			#ifdef DEBUG_GI
+				sceneOut = vec3(0.0);
+				albedo = vec3(1.0);
+			#endif
+
 			// Global illumination
 			float NdotV = saturate(dot(worldNormal, -worldDir));
 			vec3 rsm = SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV);
-			sceneOut += sqr(rsm) * albedo * sunlightMult * 0.1 * (ao * 0.3 + 0.7);
+			sceneOut += sqr(rsm) * albedo * ao * (sunlightMult * rPI);
 		#endif
 	}
 }

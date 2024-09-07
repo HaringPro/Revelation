@@ -42,35 +42,36 @@ uniform int frameCounter;
 //======// Function //============================================================================//
 
 const uint padRadius = 1;
-
 const uvec2 sharedSize = gl_WorkGroupSize.xy + padRadius * 2;
-const uint sharedArea = sharedSize.x * sharedSize.y;
-const uint localArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
-const uint diffArea = sharedArea - localArea;
-const vec2 rcpSharedSize = 1.0 / sharedSize;
 
 shared float sharedVariance[sharedSize.x][sharedSize.y];
 
-void CollectSharedData() {
-    ivec2 sharedTexel = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
+void SharedPreload() {
+    ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
 
-    // Unroll the loop manually
-    {
-        vec2 fi = (float(gl_LocalInvocationIndex) + 0.5) * rcpSharedSize;
-        ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
+    const uint sharedArea = sharedSize.x * sharedSize.y;
+    const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+    const uint stageNum = (sharedArea - 1) / groupArea + 1;
 
-        ivec2 sampleTexel = sharedTexel + index;
+    uint localIndex = gl_LocalInvocationIndex;
+    ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
 
-        sharedVariance[index.x][index.y] = imageLoad(colorimg3, sampleTexel).a;
+    ivec2 loadTexel = groupBase + localID;
+    sharedVariance[localID.x][localID.y] = imageLoad(colorimg3, loadTexel).a;
+
+    for (uint stage = 1u; stage < stageNum; ++stage) {
+        localIndex = gl_LocalInvocationIndex + stage * groupArea;
+
+        if (localIndex < sharedArea) {
+            localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+
+            loadTexel = groupBase + localID;
+        	sharedVariance[localID.x][localID.y] = imageLoad(colorimg3, loadTexel).a;
+        }
     }
-    if (gl_LocalInvocationIndex < diffArea) {
-        vec2 fi = (float(gl_LocalInvocationIndex + localArea) + 0.5) * rcpSharedSize;
-        ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
 
-        ivec2 sampleTexel = sharedTexel + index;
-
-        sharedVariance[index.x][index.y] = imageLoad(colorimg3, sampleTexel).a;
-    }
+    memoryBarrierShared();
+    barrier();
 }
 
 vec3 ScreenToViewSpace(in vec3 screenPos) {
@@ -119,12 +120,9 @@ float CalculateVariance(in ivec2 texel) {
 
 //======// Main //================================================================================//
 void main() {
+	SharedPreload();
+
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-
-	CollectSharedData();
-    memoryBarrierShared();
-    barrier();
-
 	float depth = texelFetch(depthtex0, texel * 2, 0).x;
 	if (depth < 1.0) {
 		ivec2 shift = ivec2(viewSize.x * 0.5, 0);

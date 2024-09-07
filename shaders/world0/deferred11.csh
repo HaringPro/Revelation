@@ -65,7 +65,7 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 	uniform float wetnessCustom;
 	uniform float eyeAltitude;
 	uniform float biomeSnowySmooth;
-	uniform float eyeSkylightFix;
+	uniform float eyeSkylightSmooth;
 	uniform float worldTimeCounter;
 	uniform float timeNoon;
 	uniform float timeMidnight;
@@ -95,13 +95,13 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 
 	//======// Struct //==============================================================================//
 
-	#include "/lib/utility/Material.glsl"
+	#include "/lib/universal/Material.glsl"
 
 	//======// Function //============================================================================//
 
-	#include "/lib/utility/Transform.glsl"
-	#include "/lib/utility/Fetch.glsl"
-	#include "/lib/utility/Noise.glsl"
+	#include "/lib/universal/Transform.glsl"
+	#include "/lib/universal/Fetch.glsl"
+	#include "/lib/universal/Noise.glsl"
 
 	#include "/lib/atmospherics/Global.glsl"
 
@@ -140,7 +140,7 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 
 		vec3 reflection;
 		if (hit) {
-			// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * fastSqrt(material.roughness)).rgb;
+			// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * approxSqrt(material.roughness)).rgb;
 			reflection = texelFetch(colortex4, ivec2(screenPos.xy * 0.5), 0).rgb;
 		} else if (skylight > 1e-3) {
 			vec3 rayDirWorld = mat3(gbufferModelViewInverse) * rayDir;
@@ -190,7 +190,7 @@ void main() {
 		Material material = GetMaterialData(specularTex);
 
 		if (material.hasReflections) {
-			vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+			vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
 
 			vec4 gbufferData0 = sampleGbufferData0(screenTexel);
 			vec3 viewNormal = mat3(gbufferModelView) * FetchWorldNormal(gbufferData0);

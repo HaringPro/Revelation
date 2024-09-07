@@ -54,8 +54,8 @@ uniform vec2 viewPixelSize;
 //======// Function //============================================================================//
 
 vec2 CalculateTileOffset(in const int lod) {
-	vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
-	vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
+	const vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
+	const vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
 
 	return lodMult * 16.0 * viewPixelSize + offset;
 }

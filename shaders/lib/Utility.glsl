@@ -86,6 +86,7 @@ float remap(float e0, float e1, float x) { return saturate((x - e0) * rcp(e1 - e
 
 vec3  remap(float e0, float e1, vec3 x)  { return saturate((x - e0) * rcp(e1 - e0)); }
 
+// https://iquilezles.org/articles/functions/
 // float almostIdentity(float x, float m, float n) {
 //     if (x > m) return x;
 //     float a = 2.0 * n - m;
@@ -111,9 +112,9 @@ vec3 fastSign(vec3 x) {
 }
 
 // https://www.shadertoy.com/view/wlyXRt
-float fastSqrt(in float x) { return uintBitsToFloat((floatBitsToUint(x) >> 1) + 0x1FC00000u); }
+float approxSqrt(in float x) { return uintBitsToFloat((floatBitsToUint(x) >> 1) + 0x1FC00000u); }
 float sqrtNewton(float x, float guess) { return 0.5 * (guess + x / guess); }
-float fastSqrtN1(in float x) { return sqrtNewton(x, fastSqrt(x)); }
+float approxSqrtN1(in float x) { return sqrtNewton(x, approxSqrt(x)); }
 
 float fastAcos(in float x) {
     float a = abs(x);
@@ -142,6 +143,9 @@ float FastAcos(in float x) {
 	return negate * PI + ret;
 }
 */
+
+// https://www.desmos.com/calculator/cd3mvg1gfo
+float approxExp(in float x) { return rcp(x * x - x + 1.0); }
 
 vec2 ToSphereMap(in vec3 dir) {
     return vec2(atan(-dir.x, -dir.z) * rTAU + 0.5, fastAcos(dir.y) * rPI);
@@ -339,6 +343,8 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
     return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);
 }
 */
+
+#define COMBINED_TEXTURE_SAMPLER colortex0
 
 #ifdef DEBUG_RESHADING
 	uniform float dyn_100;

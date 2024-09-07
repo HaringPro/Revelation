@@ -65,14 +65,14 @@ void main() {
 			vec3 normal = tbnMatrix * wavesNormal;
 
 			vec3 oldPos = vectorData;
-			vec3 newPos = oldPos + 2.0 * fastRefract(-worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
+			vec3 newPos = oldPos + fastRefract(worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
 			float caustics = inversesqrt(oldArea / newArea);
 
-			shadowcolor0Out = vec3((caustics * 0.4 + 0.4));
+			shadowcolor0Out = vec3(approxSqrt(saturate(caustics * 0.4 + 0.1)));
 			// #ifdef RSM_ENABLED
 			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
 			// #endif
@@ -90,7 +90,7 @@ void main() {
         if (albedo.a > oneMinus(r255)) {
 			shadowcolor0Out = albedo.rgb * vectorData;
 		} else {
-			albedo.a = fastSqrt(fastSqrt(albedo.a));
+			albedo.a = approxSqrt(approxSqrt(albedo.a));
 			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * vectorData, albedo.a);
 		}
 

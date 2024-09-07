@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Compute indirect lighting (using Screen-Space Path Tracing)
+	Pass: Compute indirect lighting
 
 --------------------------------------------------------------------------------
 */
@@ -24,14 +24,14 @@ restrict writeonly uniform image2D colorimg3;
 
 //======// Uniform //=============================================================================//
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 
@@ -63,13 +63,20 @@ void main() {
 		vec4 gbufferData0 = sampleGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
-		vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+		vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
 		vec3 screenPos = vec3(screenCoord * 2.0, depth);
 		vec3 viewPos = ScreenToViewSpace(screenPos);
 
-		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+        float dither = BlueNoiseTemporal(currentTexel);
 
-		// Shift the write position to avoid read-write conflict
-		imageStore(colorimg3, screenTexel + ivec2(viewWidth * 0.5, 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, BlueNoiseTemporal(currentTexel)), 1.0));
+		#ifdef RSM_ENABLED
+			float skyLightmap = unpackUnorm2x8Y(sampleGbufferData0(currentTexel).x);
+			imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
+		#else
+			vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+
+			// Shift the write position to avoid read-write conflict
+			imageStore(colorimg3, screenTexel + ivec2(viewWidth * 0.5, 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
+		#endif
 	}
 }

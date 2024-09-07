@@ -30,7 +30,8 @@ layout (location = 1) out vec3 transmittanceOut;
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
-flat in mat2x3[2] fogCoeff;
+flat in mat2x3 fogExtinctionCoeff;
+flat in mat2x3 fogScatteringCoeff;
 
 //======// Uniform //=============================================================================//
 
@@ -42,13 +43,13 @@ uniform sampler2D shadowcolor1;
 uniform vec3 fogWind;
 uniform vec3 lightningShading;
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 #ifdef CLOUD_SHADOWS
@@ -57,7 +58,6 @@ uniform vec3 lightningShading;
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
 
-const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //================================================================================================//
@@ -74,7 +74,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0));
+		return max(exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0)), 0.07);
 	}
 #elif FOG_QUALITY == 1
 	/* Medium */
@@ -88,7 +88,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 
 		density.x *= saturate(noise * 8.0 - 6.0) * 1.4;
 
-		return density;
+		return max(density, 0.07);
 	}
 #endif
 
@@ -159,23 +159,23 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 			sampleShadow *= cloudShadow * cloudShadow * cloudShadow;
 		#endif
 
-		vec3 opticalDepth = fogCoeff[0] * density;
+		vec3 opticalDepth = fogExtinctionCoeff * density;
 		vec3 stepTransmittance = fastExp(-opticalDepth);
 
 		vec3 stepScattering = transmittance * oneMinus(stepTransmittance) / maxEps(opticalDepth);
 		// stepScattering *= 2.0 * oneMinus(fastExp(-opticalDepth * 4.0)); // Powder Effect
 
-		scatteringSun += fogCoeff[1] * (density * phase) * sampleShadow * stepScattering;
-		scatteringSky += fogCoeff[1] * density * stepScattering;
+		scatteringSun += fogScatteringCoeff * (density * phase) * sampleShadow * stepScattering;
+		scatteringSky += fogScatteringCoeff * density * stepScattering;
 
 		transmittance *= stepTransmittance;
 
 		if (dot(transmittance, vec3(1.0)) < 1e-4) break; // Faster than maxOf()
 	}
 
-	vec3 scattering = scatteringSun * 18.0 * directIlluminance;
+	vec3 scattering = scatteringSun * 16.0 * directIlluminance;
 	scattering += scatteringSky * (skyIlluminance + lightningShading * 4e-3);
-	scattering *= eyeSkylightFix;
+	scattering *= eyeSkylightSmooth;
 
 	return mat2x3(scattering, transmittance);
 }

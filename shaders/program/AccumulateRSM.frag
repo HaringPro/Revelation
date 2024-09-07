@@ -6,20 +6,20 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: RSM calculation and accumulation
+    Pass: RSM accumulation
 	Reference:  https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
                 https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
 
 --------------------------------------------------------------------------------
 */
 
-#define PROGRAM_DEFERRED_4
-
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
 
-#define RSM_MAX_BLENDED_FRAMES 40.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+#define RSM_SAMPLER colortex3
+
+#define RSM_MAX_BLENDED_FRAMES 32.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 //======// Output //==============================================================================//
 
@@ -28,7 +28,7 @@ out vec4 indirectHistory;
 
 //======// Uniform //=============================================================================//
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 uniform sampler2D colortex13; // Previous indirect light
 
@@ -36,12 +36,10 @@ uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
-#include "/lib/utility/Offset.glsl"
-
-#include "/lib/lighting/GlobalIllumination.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
 
 void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     vec4 prevLight = vec4(0.0);
@@ -115,9 +113,10 @@ float GetClosestDepth(in ivec2 texel) {
 //======// Main //================================================================================//
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
     if (currentCoord.y < 1.0) {
+        ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+
         if (currentCoord.x < 1.0) {
             // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
             float depth = sampleDepthMin4x4(currentCoord);
@@ -129,10 +128,9 @@ void main() {
 
                 vec3 screenPos = vec3(currentCoord, depth);
                 vec3 viewPos = ScreenToViewSpace(screenPos);
-                float dither = BlueNoiseTemporal(currentTexel);
-	            float skyLightmap = unpackUnorm2x8Y(sampleGbufferData0(currentTexel).x);
 
-                indirectHistory.rgb = CalculateRSM(viewPos, worldNormal, dither, skyLightmap);
+                indirectHistory.rgb = texelFetch(RSM_SAMPLER, screenTexel, 0).rgb;
+                indirectHistory.rgb = clamp16f(indirectHistory.rgb);
 
                 vec2 prevCoord = Reproject(screenPos).xy;
 		        if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {

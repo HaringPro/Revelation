@@ -37,44 +37,52 @@ uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
 uniform vec2 taaOffset;
 
+uniform int frameCounter;
+
 //======// Function //============================================================================//
 
-const uint padRadius = 1;
+#include "/lib/universal/Offset.glsl"
 
+const uint padRadius = 2;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + padRadius * 2;
-const uint sharedArea = sharedSize.x * sharedSize.y;
-const uint localArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
-const uint diffArea = sharedArea - localArea;
-const vec2 rcpSharedSize = 1.0 / sharedSize;
 
 shared vec3 sharedLight[sharedSize.x][sharedSize.y];
 shared vec4 sharedData [sharedSize.x][sharedSize.y];
 
-void CollectSharedData() {
-    ivec2 sharedTexel = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
+void SharedPreload() {
+    ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
     ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
-    // Unroll the loop manually
-    {
-        vec2 fi = (float(gl_LocalInvocationIndex) + 0.5) * rcpSharedSize;
-        ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
+    const uint sharedArea = sharedSize.x * sharedSize.y;
+    const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+    const uint stageNum = (sharedArea - 1) / groupArea + 1;
 
-        ivec2 sampleTexel = sharedTexel + index;
-        sampleTexel = clamp(sampleTexel, ivec2(0), ivec2(viewSize * 0.5) - 1);
+    uint localIndex = gl_LocalInvocationIndex;
+    ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
 
-        sharedLight[index.x][index.y] = texelFetch(colortex13, sampleTexel, 0).rgb;
-        sharedData [index.x][index.y] = texelFetch(colortex13, sampleTexel + shift, 0);
+    ivec2 loadTexel = groupBase + localID;
+    loadTexel = clamp(loadTexel, ivec2(0), maxLimit);
+
+    sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
+    sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + shift, 0);
+
+    for (uint stage = 1u; stage < stageNum; ++stage) {
+        localIndex = gl_LocalInvocationIndex + stage * groupArea;
+
+        if (localIndex < sharedArea) {
+            localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+
+            loadTexel = groupBase + localID;
+            loadTexel = clamp(loadTexel, ivec2(0), maxLimit);
+
+            sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
+            sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + shift, 0);
+        }
     }
-    if (gl_LocalInvocationIndex < diffArea) {
-        vec2 fi = (float(gl_LocalInvocationIndex + localArea) + 0.5) * rcpSharedSize;
-        ivec2 index = ivec2(fract(fi.x) * sharedSize.x, fi.y);
 
-        ivec2 sampleTexel = sharedTexel + index;
-        sampleTexel = clamp(sampleTexel, ivec2(0), ivec2(viewSize * 0.5) - 1);
-
-        sharedLight[index.x][index.y] = texelFetch(colortex13, sampleTexel, 0).rgb;
-        sharedData [index.x][index.y] = texelFetch(colortex13, sampleTexel + shift, 0);
-    }
+    memoryBarrierShared();
+    barrier();
 }
 
 vec3 ScreenToViewSpace(in vec3 screenPos) {
@@ -88,14 +96,27 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 	return viewPos;
 }
 
+uint triple32(uint x) {
+    // https://nullprogram.com/blog/2018/07/31/
+    x ^= x >> 17;
+    x *= 0xed5ad4bbu;
+    x ^= x >> 11;
+    x *= 0xac4c1b51u;
+    x ^= x >> 15;
+    x *= 0x31848babu;
+    x ^= x >> 14;
+    return x;
+}
+
+uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
+uint RandNext() { return randState = triple32(randState); }
+#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
+
 //======// Main //================================================================================//
 void main() {
+    SharedPreload();
+
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-
-    CollectSharedData();
-    memoryBarrierShared();
-    barrier();
-
     float depth = texelFetch(depthtex0, texel * 2, 0).x;
     if (depth < 1.0) {
         uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
@@ -103,26 +124,21 @@ void main() {
         vec3 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
         vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
 
-        vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+        vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
         vec3 viewPos = ScreenToViewSpace(vec3(screenCoord * 2.0, depth));
         vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
         float NdotV = saturate(dot(normalDepthData.xyz, -worldDir));
 
-		const ivec2 offset[8] = {
-			ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
-			ivec2(-1,  0), 				 ivec2(1,  0),
-			ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
-		};
+        float sumWeight = 1.0;
+        sharedTexel += ivec2(2.0 * (RandNext2F() - 0.5));
 
-        float sumWeight = 0.5;
-
-        for (uint i = 0u; i < 8u; ++i) {
-            uvec2 sampleSharedTexel = sharedTexel + offset[i];
+        for (uint i = 0u; i < 16u; ++i) {
+            uvec2 sampleSharedTexel = sharedTexel + offset4x4[i];
             vec4 sampleData = sharedData[sampleSharedTexel.x][sampleSharedTexel.y];
 
-            float weight = exp2(-0.1 * dotSelf(offset[i]));
+            float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
             weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * 4.0 * NdotV); // Distance weight
-            weight *= sqr(pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)))); // Normal weight
+            weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
 
             vec3 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
 

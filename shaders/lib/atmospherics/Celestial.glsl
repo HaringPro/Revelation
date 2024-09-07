@@ -1,23 +1,24 @@
 
+#define SUN_RADIUS_ENLARGING 2.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0]
+
 #define STARS_INTENSITY 0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define STARS_COVERAGE  0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-
-#define coneAngleToSolidAngle(x) (TAU * oneMinus(cos(x)))
 
 //================================================================================================//
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
-	const vec3 sunIlluminance = vec3(1.0, 0.92549, 0.87843) * 126.6e3;
+    const float cosRadius = cos(atmosphereModel.sun_angular_radius * SUN_RADIUS_ENLARGING);
+	const vec3 sunIlluminance = atmosphereModel.solar_irradiance * 126.6e3;
 
     float cosTheta = dot(worldDir, sunVector);
-    float centerToEdge = saturate(fastAcos(cosTheta) / sunAngularRadius);
-    if (cosTheta >= cos(sunAngularRadius)) {
-        const vec3 alpha = vec3(0.429, 0.522, 0.614);
+    if (cosTheta >= cosRadius) {
+        const vec3 alpha = vec3(0.397, 0.503, 0.652);
 
+        float centerToEdge = saturate(oneMinus(cosTheta) / oneMinus(cosRadius));
         vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
-        vec3 finalLuminance = sunIlluminance / coneAngleToSolidAngle(sunAngularRadius) * factor;
+        vec3 finalLuminance = sunIlluminance * factor;
 
-        return min(finalLuminance, 1e5); // Prevent overflow
+        return finalLuminance;
     }
 }
 
@@ -64,7 +65,7 @@ vec3 RenderStars(in vec3 worldDir) {
 
         vec2 rn = nmzHash33(id).xy;
 
-        float c2 = 1.0 - remap(0.0, 0.3, length(q));
+        float c2 = 1.0 - saturate(length(q) * 3.3);
               c2 *= step(rn.x, STARS_COVERAGE * 0.01 + sqr(i) * 0.001);
 
         c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.0), rn.y) * 0.25 + 0.05);

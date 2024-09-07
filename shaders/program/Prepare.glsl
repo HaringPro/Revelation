@@ -6,8 +6,8 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: 
-    - Vertex Shader: Compute illuminances and exposure
+    Pass:
+    - Vertex Shader:   Compute illuminances and exposure
     - Fragment Shader: Compute Sky-View LUT and Transmittance-View LUT, store illuminances and exposure
 
 --------------------------------------------------------------------------------
@@ -21,7 +21,7 @@
 
 //======// Output //==============================================================================//
 
-out vec2 screenCoord;
+noperspective out vec2 screenCoord;
 
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
@@ -38,8 +38,8 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler3D colortex0; // Combined Atmospheric LUT
-uniform sampler2D colortex1; // Sceen history
+uniform sampler3D colortex0; // Combined atmospheric LUT
+uniform sampler2D colortex1; // Scene history
 uniform sampler2D colortex5; // Previous exposure
 
 uniform int moonPhase;
@@ -80,7 +80,7 @@ float CalculateAutoExposure() {
         for (uint i = 0u; i < HISTOGRAM_BIN_COUNT; ++i) lumBucket[i] = 0.0;
     #endif
 
-    float total = 0.0;
+    float sum = 0.0;
     float sumWeight = 0.0;
 
     // Compute luminance for each tile
@@ -95,7 +95,7 @@ float CalculateAutoExposure() {
                 // Build luminance bucket
                 lumBucket[clamp(int(log2(luminance) - HISTOGRAM_MIN_EV), 0, HISTOGRAM_BIN_COUNT - 1)] += weight;
             #else
-                total += log2(luminance) * weight;
+                sum += log2(luminance) * weight;
             #endif
             sumWeight += weight;
         }
@@ -124,12 +124,12 @@ float CalculateAutoExposure() {
             }
         }
 
-        total = (lum.x + lum.y) / (weight.x + weight.y) + HISTOGRAM_MIN_EV;
+        sum = (lum.x + lum.y) / (weight.x + weight.y) + HISTOGRAM_MIN_EV;
     #else
-        total /= sumWeight;
+        sum /= sumWeight;
     #endif
 
-	return exp2(total);
+	return exp2(sum);
 }
 
 //======// Main //================================================================================//
@@ -138,7 +138,7 @@ void main() {
 	screenCoord = vaUV0;
 
 	vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
-	skyIlluminance = GetSunAndSkyIrradiance(atmosphereModel, camera, worldSunVector, sunIlluminance, moonIlluminance);
+	skyIlluminance = GetSunAndSkyIrradiance(camera, worldSunVector, sunIlluminance, moonIlluminance);
 	directIlluminance = sunIlluminance + moonIlluminance;
 
  	#ifdef AUTO_EXPOSURE
@@ -146,7 +146,7 @@ void main() {
 
         const float K = 12.5;
         const float cal = K / ISO;
-        const float m = 3.0, r = m - 0.01;
+        const float m = 3.5, r = m - 0.01;
         float targetExposure = exp2(AUTO_EV_BIAS) / (m - r * fastExp(-exposure * rcp(cal * r)));
 
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
@@ -164,7 +164,7 @@ void main() {
 
 #else
 
-#define PROGRAM_DEFERRED_0
+#define PROGRAM_PREPARE
 #define CLOUD_LIGHTING
 
 //======// Output //==============================================================================//
@@ -179,7 +179,7 @@ layout (location = 1) out vec3 transmittanceOut;
 
 //======// Input //===============================================================================//
 
-in vec2 screenCoord;
+noperspective in vec2 screenCoord;
 
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
@@ -193,7 +193,7 @@ flat in float exposure;
 
 uniform sampler2D noisetex;
 
-uniform sampler3D colortex0; // Combined Atmospheric LUT
+uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 
 uniform float nightVision;
 uniform float wetness;
@@ -209,7 +209,7 @@ uniform vec3 lightningShading;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Noise.glsl"
+#include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
@@ -249,7 +249,7 @@ void main() {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * 12.0;
 
 		#ifdef CLOUDS_ENABLED
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
@@ -259,7 +259,7 @@ void main() {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(atmosphereModel, worldDir, worldSunVector, transmittanceOut) * 12.0;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * 12.0;
 	}
 }
 

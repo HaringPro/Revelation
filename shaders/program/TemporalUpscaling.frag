@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Clouds temporal upscaling
+	Pass: Cloud temporal upscaling
 	Reference: https://github.com/sixthsurge/photon
 	Statement: I refer to the photon shader because of its MIT license, if it violates the license, I will rectify it immediately.
 
@@ -43,8 +43,8 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex1; // Scene history
 
-uniform sampler2D colortex13; // Current clouds
 uniform sampler2D colortex9; // Previous clouds
+uniform sampler2D colortex13; // Current clouds
 
 uniform sampler2D colortex14; // Depth history
 
@@ -74,10 +74,10 @@ uniform bool worldTimeChanged;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
 
 vec4 textureCatmullRom(in sampler2D tex, in vec2 coord) {
 	vec2 res = textureSize(tex, 0);
@@ -132,6 +132,7 @@ void main() {
 
 		if (saturate(prevCoord) != prevCoord // Offscreen invalidation
 		 || maxOf(textureGather(colortex14, prevCoord, 2)) > 1e-6 // Previous depth invalidation
+    	//  || (gbufferProjection[0][0] - gbufferPreviousProjection[0][0]) > 0.25 // Fov change invalidation
 		 || worldTimeChanged) {
 			cloudOut = textureBicubic(colortex13, min(screenCoord * rcp(float(CLOUD_TEMPORAL_UPSCALING)), rcp(float(CLOUD_TEMPORAL_UPSCALING)) - viewPixelSize));
 		} else {
@@ -142,13 +143,9 @@ void main() {
 			// Accumulate enough frame for checkerboard pattern
 			float blendWeight = 1.0 - rcp(max(frameIndex - cloudRenderArea, 1.0));
 
-			// Camera movement rejection
-			float cameraMovement = exp2(-20.0 * distance(cameraPosition, previousCameraPosition));
-			blendWeight *= cameraMovement * 0.25 + 0.75;
-
 			// Offcenter rejection
 			vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.75 + 0.25;
+			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.7 + 0.3;
 
 			vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
 
@@ -156,7 +153,7 @@ void main() {
 			if (screenTexel % CLOUD_TEMPORAL_UPSCALING == offset) {
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_TEMPORAL_UPSCALING, ivec2(0), ivec2(viewSize) / CLOUD_TEMPORAL_UPSCALING - 1);
 				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, blendWeight);
-			} else cloudOut = prevData;
+			} else cloudOut = mix(textureBicubic(colortex9, prevCoord), prevData, blendWeight);
 		}
 	} else {
 		cloudOut = vec4(0.0, 0.0, 0.0, 1.0);

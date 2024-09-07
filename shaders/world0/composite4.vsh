@@ -17,7 +17,7 @@
 
 //======// Output //==============================================================================//
 
-out vec2 screenCoord;
+noperspective out vec2 screenCoord;
 
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;

@@ -26,7 +26,7 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex1; // TAA output
-uniform sampler2D colortex2; // Velocity
+uniform sampler2D colortex2; // Motion vector
 
 uniform float frameTime;
 uniform vec2 viewSize;
@@ -38,31 +38,31 @@ float InterleavedGradientNoise(in vec2 coord) {
 }
 
 vec3 MotionBlur(in ivec2 texel) {
-	vec2 velocity = texelFetch(colortex2, texel, 0).xy;
-	float r = length(velocity);
+	vec2 motionVector = texelFetch(colortex2, texel, 0).xy;
+	float r = length(motionVector);
 
 	if (r < 1e-7) return texelFetch(colortex1, texel, 0).rgb;
 
 	const float s = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES);
-	velocity *= min(r, 0.25) / r;
-	velocity *= s * 0.01 / max(frameTime, 5e-3) * viewSize;
+	motionVector *= min(r, 0.25) / r;
+	motionVector *= s * 0.01 / max(frameTime, 5e-3) * viewSize;
 
 	float dither = InterleavedGradientNoise(vec2(texel));
 
-    vec2 sampleCoord = vec2(texel) + velocity * dither;
-	sampleCoord -= velocity * MOTION_BLUR_SAMPLES * 0.5;
+    vec2 sampleCoord = vec2(texel) + motionVector * dither;
+	sampleCoord -= motionVector * MOTION_BLUR_SAMPLES * 0.5;
 
-	vec3 total = vec3(0.0);
+	vec3 sum = vec3(0.0);
 	uint sumWeight = 0u;
 
-	for (uint i = 0u; i < MOTION_BLUR_SAMPLES; ++i, sampleCoord += velocity) {
+	for (uint i = 0u; i < MOTION_BLUR_SAMPLES; ++i, sampleCoord += motionVector) {
 		if (clamp(sampleCoord, vec2(0.0), viewSize - 1.0) == sampleCoord) {
-			total += texelFetch(colortex1, ivec2(sampleCoord), 0).rgb;
+			sum += texelFetch(colortex1, ivec2(sampleCoord), 0).rgb;
 			++sumWeight;
 		}
 	}
 
-	return total * rcp(max(float(sumWeight), 0.1));
+	return sum * rcp(max(float(sumWeight), 0.1));
 }
 
 //======// Main //================================================================================//

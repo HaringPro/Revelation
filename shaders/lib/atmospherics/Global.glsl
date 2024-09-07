@@ -1,20 +1,140 @@
 
+// #define PLANET_GROUND
+
+//================================================================================================//
+
 float moonlightFactor = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
 
 const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
 
-// const float sunAngularRadius = 0.004675;
-const float sunAngularRadius = 0.007; // Unphysical
 const float mie_phase_g = 0.78;
 
 #define ATMOSPHERE_BOTTOM_ALTITUDE  1000.0 // [0.0 500.0 1000.0 2000.0 3000.0 4000.0 5000.0 6000.0 7000.0 8000.0 9000.0 10000.0 11000.0 12000.0 13000.0 14000.0 15000.0 16000.0]
 #define ATMOSPHERE_TOP_ALTITUDE     110000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
 
-const float atmosphere_bottom_radius = planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE;
-const float atmosphere_top_radius 	 = planetRadius + ATMOSPHERE_TOP_ALTITUDE;
+//================================================================================================//
 
-const float atmosphere_bottom_radius_sq = atmosphere_bottom_radius * atmosphere_bottom_radius;
-const float atmosphere_top_radius_sq = atmosphere_top_radius * atmosphere_top_radius;
+#define TRANSMITTANCE_TEXTURE_WIDTH     256.0
+#define TRANSMITTANCE_TEXTURE_HEIGHT    64.0
+
+#define SCATTERING_TEXTURE_R_SIZE       32.0
+#define SCATTERING_TEXTURE_MU_SIZE      128.0
+#define SCATTERING_TEXTURE_MU_S_SIZE    32.0
+#define SCATTERING_TEXTURE_NU_SIZE      8.0
+
+#define IRRADIANCE_TEXTURE_WIDTH        64.0
+#define IRRADIANCE_TEXTURE_HEIGHT       16.0
+
+#define COMBINED_TEXTURE_WIDTH          256.0
+#define COMBINED_TEXTURE_HEIGHT         128.0
+#define COMBINED_TEXTURE_DEPTH          33.0
+
+struct AtmosphereParameters {
+    // The solar irradiance at the top of the atmosphere.
+    vec3 solar_irradiance;
+    // The sun's angular radius. Warning: the implementation uses approximations
+    // that are valid only if this angle is smaller than 0.1 radians.
+   float sun_angular_radius;
+    // The distance between the planet center and the bottom of the atmosphere.
+   float bottom_radius;
+    // The distance between the planet center and the top of the atmosphere.
+   float top_radius;
+    // The density profile of air molecules, i.e. a function from altitude to
+    // dimensionless values between 0 (null density) and 1 (maximum density).
+//    DensityProfile rayleigh_density;
+    // The scattering coefficient of air molecules at the altitude where their
+    // density is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The scattering coefficient at altitude h is equal to
+    // 'rayleigh_scattering' times 'rayleigh_density' at this altitude.
+    vec3 rayleigh_scattering;
+    // The density profile of aerosols, i.e. a function from altitude to
+    // dimensionless values between 0 (null density) and 1 (maximum density).
+//    DensityProfile mie_density;
+    // The scattering coefficient of aerosols at the altitude where their density
+    // is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The scattering coefficient at altitude h is equal to
+    // 'mie_scattering' times 'mie_density' at this altitude.
+    vec3 mie_scattering;
+    // The extinction coefficient of aerosols at the altitude where their density
+    // is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The extinction coefficient at altitude h is equal to
+    // 'mie_extinction' times 'mie_density' at this altitude.
+//    vec3 mie_extinction;
+    // The asymetry parameter for the Cornette-Shanks phase function for the
+    // aerosols.
+//    float mie_phase_function_g;
+    // The density profile of air molecules that absorb light (e.g. ozone), i.e.
+    // a function from altitude to dimensionless values between 0 (null density)
+    // and 1 (maximum density).
+//    DensityProfile absorption_density;
+    // The extinction coefficient of molecules that absorb light (e.g. ozone) at
+    // the altitude where their density is maximum, as a function of wavelength.
+    // The extinction coefficient at altitude h is equal to
+    // 'absorption_extinction' times 'absorption_density' at this altitude.
+//    vec3 absorption_extinction;
+    // The average albedo of the ground.
+    vec3 ground_albedo;
+    // The cosine of the maximum Sun zenith angle for which atmospheric scattering
+    // must be precomputed (for maximum precision, use the smallest Sun zenith
+    // angle yielding negligible sky light radiance values. For instance, for the
+    // Earth case, 102 degrees is a good choice - yielding mu_s_min = -0.2).
+   float mu_s_min;
+};
+
+const AtmosphereParameters atmosphereModel = AtmosphereParameters(
+    // The solar irradiance at the top of the atmosphere.
+    vec3(0.9420, 1.0269, 1.0242),
+    // The sun's angular radius. Warning: the implementation uses approximations
+    // that are valid only if this angle is smaller than 0.1 radians.
+	0.004675,
+    // The distance between the planet center and the bottom of the atmosphere.
+    planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE,
+    // The distance between the planet center and the top of the atmosphere.
+    planetRadius + ATMOSPHERE_TOP_ALTITUDE,
+    // The density profile of air molecules, i.e. a function from altitude to
+    // dimensionless values between 0 (null density) and 1 (maximum density).
+//    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(0.000000,0.000000,0.000000,0.000000,0.000000),DensityProfileLayer(0.000000,1.000000,-0.125000,0.000000,0.000000))),
+    // The scattering coefficient of air molecules at the altitude where their
+    // density is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The scattering coefficient at altitude h is equal to
+    // 'rayleigh_scattering' times 'rayleigh_density' at this altitude.
+    vec3(0.005802, 0.013558, 0.033100),
+    // The density profile of aerosols, i.e. a function from altitude to
+    // dimensionless values between 0 (null density) and 1 (maximum density).
+//    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(0.000000,0.000000,0.000000,0.000000,0.000000),DensityProfileLayer(0.000000,1.000000,-0.833333,0.000000,0.000000))),
+    // The scattering coefficient of aerosols at the altitude where their density
+    // is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The scattering coefficient at altitude h is equal to
+    // 'mie_scattering' times 'mie_density' at this altitude.
+    vec3(0.003996, 0.003996, 0.003996),
+    // The extinction coefficient of aerosols at the altitude where their density
+    // is maximum (usually the bottom of the atmosphere), as a function of
+    // wavelength. The extinction coefficient at altitude h is equal to
+    // 'mie_extinction' times 'mie_density' at this altitude.
+//    vec3(0.004440, 0.004440, 0.004440),
+    // The asymetry parameter for the Cornette-Shanks phase function for the
+    // aerosols.
+//    0.800000,
+    // The density profile of air molecules that absorb light (e.g. ozone), i.e.
+    // a function from altitude to dimensionless values between 0 (null density)
+    // and 1 (maximum density).
+//    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(25.000000,0.000000,0.000000,0.066667,-0.666667),DensityProfileLayer(0.000000,0.000000,0.000000,-0.066667,2.666667))),
+    // The extinction coefficient of molecules that absorb light (e.g. ozone) at
+    // the altitude where their density is maximum, as a function of wavelength.
+    // The extinction coefficient at altitude h is equal to
+    // 'absorption_extinction' times 'absorption_density' at this altitude.
+//    vec3(0.000650, 0.001881, 0.000085),
+    // The average albedo of the ground.
+    vec3(0.1),
+    // The cosine of the maximum Sun zenith angle for which atmospheric scattering
+    // must be precomputed (for maximum precision, use the smallest Sun zenith
+    // angle yielding negligible sky light radiance values. For instance, for the
+    // Earth case, 102 degrees is a good choice - yielding mu_s_min = -0.2).
+   -0.2
+);
+
+const float atmosphere_bottom_radius_sq = atmosphereModel.bottom_radius * atmosphereModel.bottom_radius;
+const float atmosphere_top_radius_sq    = atmosphereModel.top_radius * atmosphereModel.top_radius;
 
 const float isotropicPhase = 0.25 * rPI;
 
@@ -156,7 +276,7 @@ vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
 	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
     vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
 
-	return coeff[0] * harmonics.x + coeff[1] * harmonics.y + coeff[2] * harmonics.z + coeff[3] * harmonics.w;
+	return coeff * harmonics;
 }
 
 //================================================================================================//

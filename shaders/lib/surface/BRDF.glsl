@@ -131,6 +131,11 @@ vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float Ndot
 
 // From https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
+    // Randomness clamping
+    #ifdef SPECULAR_DIFFUSION_CLAMP
+        xy.y *= 0.5;
+    #endif
+
     // Transform viewer direction to the hemisphere configuration
     viewDir = normalize(vec3(roughness * viewDir.xy, viewDir.z));
 

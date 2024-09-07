@@ -24,7 +24,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 restrict writeonly uniform image2D colorimg1; // Scene history
 
 #ifdef MOTION_BLUR
-    restrict writeonly uniform image2D colorimg2; // Velocity output
+    restrict writeonly uniform image2D colorimg2; // Motion vector output
 #endif
 
 //======// Uniform //=============================================================================//
@@ -158,11 +158,11 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 
-vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
+vec3 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
 
     vec3 currentSample = sampleSceneColor(texel);
-    vec2 prevCoord = screenCoord - velocity;
+    vec2 prevCoord = screenCoord - motionVector;
 
     if (saturate(prevCoord) != prevCoord) return currentSample;
 
@@ -201,9 +201,14 @@ vec3 CalculateTAA(in vec2 screenCoord, in vec2 velocity) {
 
     prevSample = YCoCgRtoRGB(prevSample);
 
-    vec2 pixelVelocity = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-    float blendWeight = TAA_MAX_BLENDED_FRAMES;
-    blendWeight *= sqrt(pixelVelocity.x * pixelVelocity.y) * 0.25 + 0.75;
+    float frameIndex = texelFetch(colortex1, rawCoord(prevCoord), 0).a;
+
+    float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
+    blendWeight /= blendWeight + 1.0;
+
+    vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+    float offcenterWeight = sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.25 + 0.75;
+    blendWeight *= offcenterWeight;
 
     return invReinhard(mix(reinhard(currentSample), reinhard(prevSample), blendWeight));
 }
@@ -213,18 +218,18 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
     float depth = sampleDepth(screenTexel);
-    vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+    vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
 
     #ifdef TAA_CLOSEST_FRAGMENT
         vec3 closestFragment = GetClosestFragment(screenTexel, depth);
-        vec2 velocity = closestFragment.xy - Reproject(closestFragment).xy;
+        vec2 motionVector = closestFragment.xy - Reproject(closestFragment).xy;
     #else
-        vec2 velocity = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
+        vec2 motionVector = screenCoord - Reproject(vec3(screenCoord, depth)).xy;
     #endif
 
     #ifdef MOTION_BLUR
-        imageStore(colorimg2, screenTexel, vec4(velocity, 0.0, 1.0));
+        imageStore(colorimg2, screenTexel, vec4(motionVector, 0.0, 1.0));
     #endif
 
-    imageStore(colorimg1, screenTexel, vec4(CalculateTAA(screenCoord, velocity), 1.0));
+    imageStore(colorimg1, screenTexel, vec4(CalculateTAA(screenCoord, motionVector), 1.0));
 }

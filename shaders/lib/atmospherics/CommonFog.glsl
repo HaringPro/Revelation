@@ -21,7 +21,7 @@ void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float v
 			vec3 scattering = skyIlluminance * 2.0 + directIlluminance;
 			scattering *= 3.0 * oneMinus(wetnessCustom * 0.7);
 
-			scene = mix(scattering * eyeSkylightFix, scene, transmittance);
+			scene = mix(scattering * eyeSkylightSmooth, scene, transmittance);
 		}
 	#endif
 

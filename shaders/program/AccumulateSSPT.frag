@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: Accumulation for indirect lighting and variance estimation
+    Pass: Accumulation for SSPT and variance estimation
 	Reference:  https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering://svgf_preprint.pdf
                 https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
 
@@ -17,9 +17,9 @@
 
 #include "/lib/Utility.glsl"
 
-#define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
-
 #define SSPT_SAMPLER colortex3
+
+#define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 #define SSPT_VARIANCE_SCALE 0.02
 
 //======// Output //==============================================================================//
@@ -31,7 +31,7 @@ layout (location = 2) out vec3 historyBuffer; // xy: moments history, z: inverse
 
 //======// Uniform //=============================================================================//
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 uniform sampler2D colortex13; // Previous indirect light
 uniform sampler2D colortex14; // Previous moments
@@ -40,10 +40,10 @@ uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
 
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
@@ -187,6 +187,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         float alpha = rcp(indirectHistory.a + 1.0);
 
         indirectCurrent.rgb = indirectHistory.rgb = mix(prevLight.rgb, indirectCurrent.rgb, alpha);
+        indirectHistory.rgb = clamp16f(indirectHistory.rgb);
 
         float luminance = GetLuminance(indirectCurrent.rgb);
 

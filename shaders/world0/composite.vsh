@@ -20,7 +20,8 @@
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
-flat out mat2x3[2] fogCoeff;
+flat out mat2x3 fogExtinctionCoeff;
+flat out mat2x3 fogScatteringCoeff;
 
 //======// Attribute //===========================================================================//
 
@@ -49,18 +50,15 @@ void main() {
 	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
 	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 
-	mat2x3 fogExtinctionCoeff = mat2x3(
+	fogExtinctionCoeff = mat2x3(
 		fogMieExtinction * FOG_MIE_DENSITY,
 		fogRayleighCoeff * FOG_RAYLEIGH_DENSITY
 	);
 
-	mat2x3 fogScatteringCoeff = mat2x3(
+	fogScatteringCoeff = mat2x3(
 		fogMieScattering * FOG_MIE_DENSITY,
 		fogExtinctionCoeff[1]
 	);
 
 	fogExtinctionCoeff[0] *= 1.0 + wetness * FOG_MIE_DENSITY_RAIN_MULTIPLIER;
-
-	fogCoeff[0] = fogExtinctionCoeff;
-	fogCoeff[1] = fogScatteringCoeff;
 }

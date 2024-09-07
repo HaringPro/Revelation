@@ -1,2 +1,9 @@
 # shaders/lib/voxel
 # shadow.gsh
+
+Accumulate.comp
+SpatialUpscale.comp
+Temporal.comp
+DoF.comp
+deferred9.csh
+composite6.csh

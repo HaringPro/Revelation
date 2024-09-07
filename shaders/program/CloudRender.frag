@@ -31,7 +31,7 @@ flat in vec3 skyIlluminance;
 
 uniform sampler2D noisetex;
 
-uniform sampler3D colortex0; // Combined Atmospheric LUT
+uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 
 uniform sampler2D depthtex0;
 
@@ -54,8 +54,8 @@ uniform vec3 lightningShading;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Noise.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"

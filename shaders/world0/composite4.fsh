@@ -21,13 +21,18 @@
 
 //======// Output //==============================================================================//
 
+#ifdef DEPTH_OF_FIELD
+/* RENDERTARGETS: 4,7 */
+#else
 /* RENDERTARGETS: 0,7 */
+#endif
+
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out float bloomyFogTrans;
 
 //======// Input //===============================================================================//
 
-in vec2 screenCoord;
+noperspective in vec2 screenCoord;
 
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
@@ -37,17 +42,23 @@ flat in vec3 skyIlluminance;
 uniform sampler2D colortex11; // Volumetric Fog scattering
 uniform sampler2D colortex12; // Volumetric Fog transmittance
 
-#include "/lib/utility/Uniform.glsl"
+#if defined DEPTH_OF_FIELD && CAMERA_FOCUS_MODE == 0
+	const bool colortex0MipmapEnabled = true;
+
+    uniform float centerDepthSmooth;
+#endif
+
+#include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//
 
-#include "/lib/utility/Material.glsl"
+#include "/lib/universal/Material.glsl"
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/CommonFog.glsl"
@@ -100,7 +111,6 @@ vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
-	float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
@@ -155,6 +165,7 @@ void main() {
 
 	if (depth < 1.0 || waterMask) {
 		worldPos += gbufferModelViewInverse[3].xyz;
+		float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
@@ -175,7 +186,7 @@ void main() {
 			if (materialID == 2u) {
 				// Glass tint
 				vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
-				translucents.a = fastSqrt(fastSqrt(translucents.a));
+				translucents.a = approxSqrt(approxSqrt(translucents.a));
 				sceneOut *= pow4((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
 
 				// Specular reflections of glass
@@ -224,7 +235,7 @@ void main() {
 		#ifdef UW_VOLUMETRIC_FOG
 			mat2x3 waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
 		#else
-			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightFix + 0.2), viewDistance, LdotV);
+			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif
 		sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));

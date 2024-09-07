@@ -226,7 +226,7 @@ float GetClosestDepth(in ivec2 texel) {
 
 //======// Main //================================================================================//
 void main() {
-    vec2 currentCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize * 2.0;
+    vec2 currentCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize * 2.0;
 
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
     ivec2 currentTexel = screenTexel * 2;

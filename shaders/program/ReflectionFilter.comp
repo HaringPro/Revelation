@@ -7,6 +7,7 @@
 	Apache License 2.0
 
     Pass: Reflection Filter
+    Reference: https://www.researchgate.net/publication/354065087_ReBLUR_A_Hierarchical_Recurrent_Denoiser
 
 --------------------------------------------------------------------------------
 */
@@ -24,17 +25,17 @@ layout (rgba16f) restrict uniform image2D colorimg2;
 
 //======// Uniform //=============================================================================//
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//
 
-#include "/lib/utility/Material.glsl"
+#include "/lib/universal/Material.glsl"
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Offset.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Offset.glsl"
 
 uint triple32(uint x) {
     // https://nullprogram.com/blog/2018/07/31/
@@ -53,7 +54,7 @@ uint RandNext() { return randState = triple32(randState); }
 #define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
 
 vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
-    float smoothness = 1.0 - fastSqrt(roughness);
+    float smoothness = 1.0 - approxSqrt(roughness);
     float linearDepth = FetchLinearDepth(texel);
     float NdotV = saturate(dot(-worldDir, worldNormal));
 
@@ -61,12 +62,15 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     offsetScale *= fastExp(-oneMinus(reflectionData.a) * 0.25);
 
 	const vec2 angle = cossin(hPI);
-	const mat2 rot = mat2(angle, -angle.y, angle.x);
+	const mat2 rotND = mat2(angle, -angle.y, angle.x);
 
-    vec2 tangent = normalize(cross(worldNormal, worldDir).xy);
-    vec2 bitangent = tangent * rot;
-    tangent *= (0.2 + 0.8 * NdotV) * offsetScale;
-    bitangent *= (1.5 - 0.5 * NdotV) * offsetScale;
+    // Calculate kernel basis
+    vec3 reflectedDir = reflect(-worldDir, worldNormal);
+    vec2 tangent = normalize(cross(worldNormal, reflectedDir).xy) * offsetScale;
+    vec2 bitangent = tangent * rotND; // Cross product with tangent to get bitangent
+
+    float skewFactor = mix(0.5 + 0.5 * roughness, 1.0, NdotV);
+    bitangent /= skewFactor;
 
     const float sharpenWeight = 0.5;
     float roughnessInv = 80.0 / max(roughness, 1e-4);
@@ -108,10 +112,12 @@ void main() {
         Material material = GetMaterialData(specularTex);
 
         if (material.hasReflections && material.isRough) {
-            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(screenTexel));
-            vec3 screenPos = vec3(vec2(gl_GlobalInvocationID.xy) * viewPixelSize, sampleDepth(screenTexel));
+            vec3 screenPos = vec3((vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize, sampleDepth(screenTexel));
             vec3 viewPos = ScreenToViewSpace(screenPos);
+
             vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+            vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(screenTexel));
+
             reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, RandNext2F() - 0.5);
         }
     #endif

@@ -22,7 +22,7 @@ uniform sampler2D tex;
     uniform sampler2D specular;
 #endif
 
-#include "/lib/utility/Uniform.glsl"
+#include "/lib/universal/Uniform.glsl"
 
 //======// Input //===============================================================================//
 
@@ -41,9 +41,9 @@ flat in vec3 skyIlluminance;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
-#include "/lib/utility/Fetch.glsl"
-#include "/lib/utility/Noise.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
 
@@ -127,7 +127,7 @@ void main() {
 		if (albedo.a < 0.1) { discard; return; }
 
 		sceneOut.rgb = vec3(0.0);
-		sceneOut.a = fastSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
+		sceneOut.a = approxSqrt(albedo.a) * TRANSLUCENT_LIGHTING_BLEND_FACTOR;
 
 		#if defined NORMAL_MAPPING
 			worldNormal = texture(normals, texCoord).rgb;
@@ -181,7 +181,7 @@ void main() {
 
 					shadow *= sunlightMult;
 
-					sunlightDiffuse = shadow * fastSqrt(NdotL) * rPI;
+					sunlightDiffuse = shadow * approxSqrt(NdotL) * rPI;
 					specularHighlight = shadow * 2.0 * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(0.005), materialID == 3u ? 0.02 : 0.04);
 				}
 			}

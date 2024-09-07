@@ -52,7 +52,7 @@ uniform vec2 taaOffset;
 
 //======// Function //============================================================================//
 
-#include "/lib/utility/Transform.glsl"
+#include "/lib/universal/Transform.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -60,7 +60,7 @@ void main() {
 
 	float depth = texelFetch(depthtex0, screenTexel * 2, 0).x;
 
-	vec2 screenCoord = vec2(gl_GlobalInvocationID.xy) * viewPixelSize;
+	vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {

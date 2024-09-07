@@ -55,7 +55,7 @@ uniform vec3 skyColor;
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
 // https://gpuopen.com/wp-content/uploads/2019/07/FidelityFX-CAS.pptx
-vec3 FidelityFX_CAS(in ivec2 texel) {
+vec3 FsrCasFilter(in ivec2 texel) {
 	#ifndef CAS_ENABLED
 		return CasLoad(texel);
 	#endif
@@ -141,7 +141,7 @@ void main() {
 		finalOut = texelFetch(colortex4, screenTexel, 0).rgb;
 	#else
 		if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
-			finalOut = FidelityFX_CAS(screenTexel);
+			finalOut = FsrCasFilter(screenTexel);
 			#ifdef FSR_ENABLED
 				} else if (MC_RENDER_QUALITY < 1.0) {
 					finalOut = FsrRcasF(screenTexel);
@@ -153,18 +153,17 @@ void main() {
 
 	// Time display
 	#if 0
-		const int width = 30;
-		const int height = 200;
+		const ivec2 size = ivec2(30, 200);
 		const int strokewidth = 3;
 		const ivec2 start = ivec2(60, 200);
-		const ivec2 end = start + ivec2(width, height);
+		const ivec2 end = start + size;
 		const int center = (start.y + end.y) / 2;
 
 		if (clamp(screenTexel, start - strokewidth, end + strokewidth) == screenTexel) {
 			finalOut = vec3(0.0);
 			if (clamp(screenTexel, start, end) == screenTexel && clamp(screenTexel.y, center - 1, center + 1) != screenTexel.y) {
 				float t = 1.0 - sunAngle * 2.0 + step(0.5, sunAngle);
-				if (screenTexel.y > start.y + t * height) {
+				if (screenTexel.y > start.y + t * size.y) {
 					finalOut = sunAngle < 0.5 ? vec3(0.2, 0.7, 1.0) : vec3(0.08, 0.24, 0.4);
 				} else {
 					finalOut = vec3(1.0);
