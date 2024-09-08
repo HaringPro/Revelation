@@ -64,7 +64,7 @@ void main() {
 	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-	gl_Position = projectionMatrix * vec4(viewPos, 1.0);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif

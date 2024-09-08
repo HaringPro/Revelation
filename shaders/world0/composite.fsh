@@ -41,7 +41,6 @@ uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
 uniform vec3 fogWind;
-uniform vec3 lightningShading;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -53,7 +52,7 @@ uniform vec3 lightningShading;
 
 #include "/lib/atmospherics/Global.glsl"
 #ifdef CLOUD_SHADOWS
-	#include "/lib/atmospherics/Clouds.glsl"
+	#include "/lib/atmospherics/clouds/CloudLayers.glsl"
 #endif
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
@@ -92,8 +91,12 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
-mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
-	float rayLength = min(length(worldPos), far);
+mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
+	float rayLength = dotSelf(worldPos);
+	float norm = inversesqrt(dotSelf(worldPos));
+	rayLength = min(rayLength * norm, far);
+
+	vec3 worldDir = worldPos * norm;
 
 	uint steps = uint(VOLUMETRIC_FOG_SAMPLES * 0.4 + rayLength * 0.1);
 		 steps = min(steps, VOLUMETRIC_FOG_SAMPLES);
@@ -116,7 +119,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.7) * 0.45 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.15 + 0.15, RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.5) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.25 + HenyeyGreensteinPhase(LdotV, 0.85) * 0.15, RayleighPhase(LdotV));
 
 	uint i = 0u;
 	while (++i < steps) {
@@ -170,11 +173,11 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in vec3 worldDir, in float dither) {
 
 		transmittance *= stepTransmittance;
 
-		if (dot(transmittance, vec3(1.0)) < 1e-4) break; // Faster than maxOf()
+		if (dot(transmittance, vec3(1.0)) < 1e-3) break; // Faster than maxOf()
 	}
 
-	vec3 scattering = scatteringSun * 16.0 * directIlluminance;
-	scattering += scatteringSky * (skyIlluminance + lightningShading * 4e-3);
+	vec3 scattering = scatteringSun * 30.0 * directIlluminance;
+	scattering += scatteringSky * skyIlluminance;
 	scattering *= eyeSkylightSmooth;
 
 	return mat2x3(scattering, transmittance);
@@ -191,7 +194,6 @@ void main() {
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
-	vec3 worldDir = normalize(worldPos);
 
 	float dither = BlueNoiseTemporal(screenTexel);
 
@@ -199,12 +201,12 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			volFogData = AirVolumetricFog(worldPos, worldDir, dither);
+			volFogData = AirVolumetricFog(worldPos, dither);
 		}
 	#endif
 	#ifdef UW_VOLUMETRIC_FOG
 		if (isEyeInWater == 1) {
-			volFogData = UnderwaterVolumetricFog(worldPos, worldDir, dither);
+			volFogData = UnderwaterVolumetricFog(worldPos, dither);
 		}
 	#endif
 

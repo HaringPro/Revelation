@@ -23,7 +23,35 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-vec2 BlockerSearch(in vec3 shadowScreenPos, in float dither) {
+float BlockerSearch(in vec3 shadowScreenPos, in float dither) {
+	float searchDepth = 0.0;
+	float sumWeight = 0.0;
+
+	float searchRadius = 2.0 * shadowProjection[0].x;
+
+	// dither = TentFilter(dither);
+	vec2 dir = cossin(dither * TAU) * searchRadius;
+	const vec2 angleStep = cossin(TAU * 0.125);
+	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+
+	for (uint i = 0u; i < 8u; ++i, dir *= rot) {
+		float radius = (float(i) + dither) * 0.125;
+		vec2 sampleCoord = shadowScreenPos.xy + dir * radius;
+
+		float sampleDepth = texelFetch(shadowtex0, ivec2(sampleCoord * realShadowMapRes), 0).x;
+		float weight = step(sampleDepth, shadowScreenPos.z);
+
+		searchDepth += sampleDepth * weight;
+		sumWeight += weight;
+	}
+
+	searchDepth *= 1.0 / sumWeight;
+	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.2);
+
+	return searchDepth * shadowProjection[0].x;
+}
+
+vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither) {
 	float searchDepth = 0.0;
 	float sumWeight = 0.0;
 	float sssDepth = 0.0;

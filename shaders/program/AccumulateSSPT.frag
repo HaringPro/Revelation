@@ -48,7 +48,7 @@ uniform vec2 prevTaaOffset;
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
     ivec2 maxLimit = ivec2(viewSize * 0.5) - 1 + shift;
 
     texel += shift;
@@ -76,7 +76,7 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
 vec4 SpatialColor(in ivec2 texel) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
     ivec2 maxLimit = ivec2(viewSize * 0.5) - 1 + shift;
 
     texel += shift;
@@ -111,7 +111,7 @@ vec4 SpatialColor(in ivec2 texel) {
 vec3 SpatialCurrent(in ivec2 texel) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
     ivec2 maxLimit = ivec2(viewSize * 0.5) - 1 + shift;
 
     texel += shift;
@@ -157,7 +157,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         fractTexel.x           * fractTexel.y
     };
 
-    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
     ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
     for (uint i = 0u; i < 4u; ++i) {
@@ -232,7 +232,7 @@ float GetClosestDepth(in ivec2 texel) {
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-    #if defined CLOUDS_ENABLED && defined CTU_ENABLED
+    #if defined CLOUDS && defined CTU_ENABLED
         historyBuffer.z = 1.0 - sampleDepth(screenTexel);
     #endif
 

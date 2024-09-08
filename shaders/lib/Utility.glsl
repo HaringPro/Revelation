@@ -19,9 +19,9 @@ const float TAU 		= 6.28318530718;
 const float rTAU 		= 0.15915494310;
 const float rLOG2 		= 1.44269504089;
 const float PHI 		= 0.61803398875;
+//const float EPS 	    = 1e-6;
 const float goldenAngle = 2.39996322973;
 
-//const float EPS 	    = 1e-6;
 const float r255 		= 0.00392156863;
 const float r240		= 0.00416666667;
 

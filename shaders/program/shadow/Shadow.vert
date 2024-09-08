@@ -19,12 +19,13 @@ out vec2 texCoord;
 
 #ifdef RSM_ENABLED
 	out float skyLightmap;
+	flat out vec3 flatNormal;
 #endif
 
 // out vec3 viewPos;
 out vec3 vectorData; // Minecraf position in water, tint in other materials
 
-flat out mat3 tbnMatrix;
+// flat out mat3 tbnMatrix;
 
 flat out uint isWater;
 
@@ -69,9 +70,9 @@ void main() {
 		return;
 	}
 
-    tbnMatrix[2] = normalize(normalMatrix * vaNormal);
+    vec3 normal = normalize(normalMatrix * vaNormal);
 	#ifdef SHADOW_BACKFACE_CULLING
-		if (tbnMatrix[2].z < 0.0) {
+		if (normal < 0.0) {
 			gl_Position = vec4(-1.0);
 			return;
 		}
@@ -79,6 +80,7 @@ void main() {
 
 	#ifdef RSM_ENABLED
 		skyLightmap = saturate(vec2(vaUV2).y * r240);
+		flatNormal = normal;
 	#endif
 
 	texCoord = vaUV0;
@@ -87,8 +89,8 @@ void main() {
 
 	isWater = 0u;
 	if (int(mc_Entity.x) == 10003) {
-		tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
+		// tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
+		// tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 
 		isWater = 1u;
 		vectorData = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;

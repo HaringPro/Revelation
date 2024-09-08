@@ -7,7 +7,7 @@
 		float centerLuma = GetLuminance(sum);
 		sum *= sumWeight;
 
-		ivec2 shift = ivec2(viewWidth * 0.5, 0);
+		ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
         ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
 		for (uint i = 0u; i < 24u; ++i) {

@@ -26,6 +26,11 @@
 --------------------------------------------------------------------------------
 */
 
+uniform float worldTimeCounter;
+
+float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
+vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
+
 mat2 mm2(in float a)  { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
 mat2 m2 = mat2(0.95534, 0.29552, -0.29552, 0.95534);
 float tri(in float x) { return clamp(abs(fract(x) - 0.5), 0.01, 0.49); }
@@ -37,8 +42,7 @@ float triNoise2d(in vec2 p, in float spd) {
 	float rz = 0.0;
     p *= mm2(p.x * 0.06);
     vec2 bp = p;
-	for (uint i = 0u; i < 5u; ++i)
-	{
+	for (uint i = 0u; i < 5u; ++i) {
         vec2 dg = tri2(bp * 1.85) * 0.75;
         dg *= mm2(worldTimeCounter * spd);
         p -= dg / z2;
@@ -59,12 +63,13 @@ float hash21(in vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 4375
 vec4 aurora(in vec3 ro, in vec3 rd) {
     vec4 col = vec4(0.0);
     vec4 avgCol = vec4(0.0);
-    
-    //for(float i = 0.0; i < 50.0; ++i)
-    for (float i = 0.0; i < 40.0; ++i)
-    {
-        float of = 0.006 * hash21(gl_FragCoord.xy) * smoothstep(0.0, 15.0, i);
-        float pt = ((0.8 + pow(i, 1.4) * 0.002) - ro.y) / (rd.y * 2.0 + 0.4);
+
+    float hash = 0.006 * hash21(gl_FragCoord.xy);
+    float rf = 1.0 / (rd.y * 2.0 + 0.4);
+
+    for (float i = 0.0; i < 36.0; ++i) {
+        float of = hash * smoothstep(0.0, 15.0, i);
+        float pt = ((0.8 + pow(i, 1.4) * 0.002) - ro.y) * rf;
         pt -= of;
     	vec3 bpos = ro + pt * rd;
         vec2 p = bpos.zx;
@@ -77,19 +82,20 @@ vec4 aurora(in vec3 ro, in vec3 rd) {
 
     col *= saturate(rd.y * 15.0 + 0.4);
 
-    return col * 1.8;
+    return col;
 }
 
 vec3 NightAurora(in vec3 worldDir) {	
 	if (worldDir.y < 0.0 && eyeAltitude < 2e4) return vec3(0.0);;
+
 	vec3 planeOrigin = vec3(0.0, planetRadius + eyeAltitude, 0.0);
 	vec2 intersection = RaySphereIntersection(planeOrigin, worldDir, planetRadius + 2e4);
 
     float raylength = intersection.y;
 
-	if (raylength <= 0.0 || raylength > 5e5) return vec3(0.0);
+	if (raylength < 1e-6 || raylength > 5e5) return vec3(0.0);
+
 	vec3 rd = worldDir * raylength;
-	//float aurDist = length(rd);
 	float fade = fastExp(-raylength * 1e-5);
 
     vec4 aur = smoothstep(0.0, 2.5, aurora(vec3(0.0, 0.0, -6.7), rd * 1e-5));

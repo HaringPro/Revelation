@@ -39,13 +39,13 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 	vec3 shadowNormal = mat3(shadowModelView) * worldNormal;
 	vec3 projectionInvScale = diagonal3(shadowProjectionInverse);
 
-	vec2 offsetRadius = RSM_RADIUS * diagonal2(shadowProjection);
 	const float sqRadius = RSM_RADIUS * RSM_RADIUS;
 	const float rSteps = 1.0 / float(RSM_SAMPLES);
 	const float falloffScale = 9.0 / RSM_RADIUS;
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
+	vec2 offsetRadius = RSM_RADIUS * diagonal2(shadowProjection);
 	vec2 dir = sincos(dither * 32.0 * PI) * offsetRadius;
 	dither *= rSteps;
 

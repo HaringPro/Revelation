@@ -46,7 +46,7 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
-#if defined CLOUDS_ENABLED && !defined CTU_ENABLED
+#if defined CLOUDS && !defined CTU_ENABLED
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
@@ -91,7 +91,6 @@ uniform float wetnessCustom;
 uniform float eyeAltitude;
 uniform float biomeSnowySmooth;
 uniform float eyeSkylightSmooth;
-uniform float worldTimeCounter;
 
 uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
@@ -130,11 +129,11 @@ uniform mat4 shadowModelView;
 
 #include "/lib/atmospherics/Celestial.glsl"
 
-#if defined CLOUDS_ENABLED && !defined CTU_ENABLED
+#if defined CLOUDS && !defined CTU_ENABLED
 	#define CLOUD_LIGHTING
 	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 #endif
-#include "/lib/atmospherics/Clouds.glsl"
+#include "/lib/atmospherics/clouds/CloudLayers.glsl"
 
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
@@ -250,7 +249,7 @@ void main() {
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut = skyRadiance + transmittance * celestial;
 
-		#ifdef CLOUDS_ENABLED
+		#ifdef CLOUDS
 			#ifndef CTU_ENABLED
 				float dither = Bayer64Temporal(gl_FragCoord.xy);
 				vec4 cloudData = RenderClouds(worldDir/* , skyRadiance */, dither);
@@ -365,13 +364,15 @@ void main() {
 			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
 			if (saturate(shadowScreenPos) == shadowScreenPos) {
-				vec2 blockerSearch = BlockerSearch(shadowScreenPos, dither);
-
+				vec2 blockerSearch;
 				// Subsurface scattering
 				if (doSss) {
+					blockerSearch = BlockerSearchSSS(shadowScreenPos, dither);
 					vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 					// subsurfaceScattering *= eyeSkylightSmooth;
 					sceneOut += subsurfaceScattering * sunlightMult * ao;
+				} else {
+					blockerSearch.x = BlockerSearch(shadowScreenPos, dither);
 				}
 
 				// Shadows
@@ -450,12 +451,15 @@ void main() {
 				// Skylight
 				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
 				skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5) + lightningShading * 1e-3;
+				#ifdef AURORA
+					skylight += 0.2 * auroraShading;
+				#endif
 				skylight *= worldNormal.y * 2.0 + 3.0;
 
 				sceneOut += skylight * lightmap.y * ao;
 
-			#ifndef RSM_ENABLED
 				// Bounced light
+			#ifndef RSM_ENABLED
 				float bounce = CalculateFittedBouncedLight(worldNormal);
 				bounce *= sqr(lightmap.y);
 				sceneOut += bounce * sunlightMult * ao;
@@ -523,6 +527,7 @@ void main() {
 		// Specular highlights
 		sceneOut += specularHighlight;
 
+		// Global illumination
 		#ifdef SSPT_ENABLED
 			lightingOut = sceneOut;
 
@@ -531,7 +536,6 @@ void main() {
 				albedo = vec3(1.0);
 			#endif
 
-			// Global illumination
 			#ifdef SVGF_ENABLED
 				float NdotV = saturate(dot(worldNormal, -worldDir));
 				sceneOut += SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.5 + 0.5);
@@ -544,7 +548,6 @@ void main() {
 				albedo = vec3(1.0);
 			#endif
 
-			// Global illumination
 			float NdotV = saturate(dot(worldNormal, -worldDir));
 			vec3 rsm = SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV);
 			sceneOut += sqr(rsm) * albedo * ao * (sunlightMult * rPI);

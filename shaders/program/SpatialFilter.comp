@@ -51,7 +51,7 @@ shared vec4 sharedData [sharedSize.x][sharedSize.y];
 
 void SharedPreload() {
     ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
-    ivec2 shift = ivec2(viewWidth * 0.5, 0);
+    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
     ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
 
     const uint sharedArea = sharedSize.x * sharedSize.y;

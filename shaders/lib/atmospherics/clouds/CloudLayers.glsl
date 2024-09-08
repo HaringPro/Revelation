@@ -11,67 +11,11 @@
 --------------------------------------------------------------------------------
 */
 
+#include "Common.glsl"
 
-   #define CLOUD_CUMULUS 	   // Enables cumulus clouds
-// #define CLOUD_STRATOCUMULUS // Enables stratocumulus clouds
-   #define CLOUD_CIRROCUMULUS  // Enables cirrocumulus clouds
-   #define CLOUD_CIRRUS 	   // Enables cirrus clouds
-
-// #define CLOUD_CUMULUS_3D_FBM_WIP // Enables 3D FBM for cumulus clouds (WIP)
-// #define CLOUD_LOCAL_LIGHTING // Enables local lighting for clouds
-
-#define CLOUD_WIND_SPEED 				0.005 // Wind speed of clouds. [0.0 0.0001 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 35.0 40.0 45.0 50.0]
-#define CLOUD_PLANE_ALTITUDE 			6000.0 // Altitude of planar clouds. [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 cumulusMaxAltitude 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0 10500.0 11000.0 11500.0 12000.0]
-
-#define CLOUD_CUMULUS_SAMPLES 		   	24 // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
-
-#define CLOUD_CUMULUS_SUNLIGHT_SAMPLES 	4  // Sample count for sunlight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
-#define CLOUD_CUMULUS_SKYLIGHT_SAMPLES 	2  // Sample count for skylight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
-
-#define CLOUD_CUMULUS_ALTITUDE 		   	1000.0 // Altitude of cumulus clouds. [400.0 500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 2500.0 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 75000.0 8000.0 8500.0 9000.0 9500.0 10000.0]
-#define CLOUD_CUMULUS_THICKNESS 		1450.0 // Thickness of cumulus clouds. [1000.0 1100.0 1200.0 1300.0 1400.0 1450.0 1500.0 1550.0 1600.0 1650.0 1700.0 1750.0 1800.0 1850.0 1900.0 1950.0 2000.0 2050.0 2100.0 2150.0 2200.0 2250.0 2300.0 2350.0 2400.0 2450.0 2500.0 2550.0 2600.0 2650.0 2700.0 2750.0 2800.0 2850.0 2900.0 2950.0 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0]
-
-
-const float cumulusMaxAltitude 		= CLOUD_CUMULUS_ALTITUDE + CLOUD_CUMULUS_THICKNESS;
-const float cumulusCoverage 		= 1.0;
-
-const float cumulusExtinction 		= 0.12;
-// const float cumulusScattering 	= 0.12;
-
-const float cirrusExtinction 		= 0.1;
-// const float cirrusScattering 	= 0.1;
-
-#ifdef CLOUD_CUMULUS_3D_FBM_WIP
-	uniform sampler3D depthtex2;
-	uniform sampler3D colortex15;
+#ifdef AURORA
+	#include "/lib/atmospherics/Aurora.glsl"
 #endif
-
-uniform vec3 cloudWindLayer1;
-uniform vec2 cloudWindLayer2;
-uniform vec2 cloudWindLayer3;
-uniform vec2 cloudWindLayer4;
-uniform vec3 cloudLightVector;
-
-//================================================================================================//
-
-void ToPlanetCurvePos(inout vec3 pos) {
-	pos.y += planetRadius;
-	pos.y = length(pos); // sqrt(x^2 + y^2 + z^2)
-	pos.y -= planetRadius;
-}
-
-void FromPlanetCurvePos(inout vec3 pos) {
-	pos.y += planetRadius;
-	pos.y = sqrt(pos.y * pos.y - pos.x * pos.x - pos.z * pos.z); // sqrt(y^2 - x^2 - z^2)
-	pos.y -= planetRadius;
-}
-
-// Quadratic polynomial smooth-min function from https://www.iquilezles.org/www/articles/smin/smin.htm
-float smin(float a, float b, float k) {
-    k *= 4.0;
-    float h = max0(k - abs(a - b)) / k;
-    return min(a, b) - h * h * k * 0.25;
-}
 
 //================================================================================================//
 
@@ -134,7 +78,7 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (density < 0.1) {
 		shift = cloudWindLayer3 * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 9e-5 - shift + curl;
+		vec2 position = rayPos * 9e-5 - shift + curl * 2.0;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
 		baseCoverage *= max0(1.07 - texture(noisetex, position * 0.003).y * 1.4);
@@ -142,17 +86,19 @@ float CloudPlaneDensity(in vec2 rayPos) {
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
 		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.3;
-		cirrocumulus = saturate(cirrocumulus - density);
+		cirrocumulus = saturate(cirrocumulus - density - 0.014);
 
-		cirrocumulus *= clamp(baseCoverage - saturate(localCoverage * 1.4 - 0.56), 0.0, 0.25) * 0.6;
+		cirrocumulus *= clamp(baseCoverage - saturate(localCoverage * 1.4 - 0.5), 0.0, 0.25) * 0.6;
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
-			// Detail shape of the cirrocumulus clouds
-			cirrocumulus += 0.016 * texture(noisetex, position * 3.0).z;
-			cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.04;
+			#if !defined PROGRAM_PREPARE
+				// Detail shape of the cirrocumulus clouds
+				cirrocumulus += 0.016 * texture(noisetex, position * 3.0).z;
+				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
+			#endif
 
-			density += cube(saturate(cirrocumulus * 4.8));
+			density += cube(saturate((cirrocumulus) * 4.8));
 		}
 	}
 	#endif
@@ -167,14 +113,14 @@ float CloudPlaneDensity(in vec2 rayPos) {
 		float cirrus = texture(noisetex, position * vec2(0.9, 1.1)).x;
 
 		// Cirrus FBM
-		for (uint i = 1u; i < 6u; ++i, weight *= 0.45) {
+		for (uint i = 1u; i < 5u; ++i, weight *= 0.45) {
 			position = rot * (position - shift * 2e-3) * vec2(2.3, 2.5 + approxSqrt(i));
 			position += (cirrus + curl) * 4e-3;
 			cirrus += texture(noisetex, position).x * weight;
 		}
 		cirrus -= saturate(localCoverage * 1.65 - 0.6);
 
-		if (cirrus > 1e-5) density += sqr(0.2 * max0(cirrus * 0.9 - 0.77 - density) * cirrus);
+		if (cirrus > 1e-5) density += sqr(0.18 * max0(cirrus * 0.9 - 0.78 - density) * cirrus);
 	}
 	#endif
 
@@ -224,7 +170,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 #else
 	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
 		float localCoverage = texture(noisetex, rayPos.xz * 2e-7 - cloudWindLayer1.xz * 1e-5).y;
-		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
+		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.55 - 0.55)) * 0.7 + 0.3;
 		if (localCoverage < 0.3) return 0.0;
 
 		//======// FBM cloud shape //=================================================//
@@ -257,7 +203,7 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 	float CloudVolumeDensitySmooth(in vec3 rayPos) {
 		float localCoverage = texture(noisetex, rayPos.xz * 2e-7 - cloudWindLayer1.xz * 1e-5).y;
-		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.5 - 0.5)) * 0.7 + 0.3;
+		localCoverage = saturate(fma(localCoverage, 3.0, wetness * 0.55 - 0.55)) * 0.7 + 0.3;
 		if (localCoverage < 0.3) return 0.0;
 
 		//======// FBM cloud shape //=================================================//
@@ -392,10 +338,15 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_PLANE_ALTITUDE, rayPos.y);
 			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIlluminance, moonIlluminance);
 			vec3 directIlluminance = sunIlluminance + moonIlluminance;
+
+			skyIlluminance += lightningShading * 4e-3;
+			#ifdef AURORA
+				skyIlluminance += auroraShading;
+			#endif
 		#endif
 
 		vec3 scattering = scatteringSun * 40.0 * directIlluminance;
-		scattering += scatteringSky * 0.2 * (skyIlluminance + lightningShading * 5e-3);
+		scattering += scatteringSky * 0.2 * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * powder * absorption * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
@@ -532,17 +483,24 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
 						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayHitPos, worldSunVector, sunIlluminance, moonIlluminance);
 						vec3 directIlluminance = sunIlluminance + moonIlluminance;
+		
+						skyIlluminance += lightningShading * 4e-3;
+						#ifdef AURORA
+							skyIlluminance += auroraShading;
+						#endif
 					#endif
 
 					vec3 scattering = stepScattering.x * 2.2 * directIlluminance;
-					scattering += stepScattering.y * 0.04 * (skyIlluminance + lightningShading * 1e-2);
+					scattering += stepScattering.y * 0.036 * skyIlluminance;
 
 					// Compute aerial perspective
-					vec3 airTransmittance;
-					vec3 aerialPerspective = GetSkyRadianceToPoint(rayHitPos, worldSunVector, airTransmittance) * 12.0;
+					#ifdef CLOUD_AERIAL_PERSPECTIVE
+						vec3 airTransmittance;
+						vec3 aerialPerspective = GetSkyRadianceToPoint(rayHitPos, worldSunVector, airTransmittance) * skyIntensity;
 
-					scattering *= airTransmittance;
-					scattering += aerialPerspective * absorption;
+						scattering *= airTransmittance;
+						scattering += aerialPerspective * absorption;
+					#endif
 
 					// Remap cloud transmittance
 					transmittance = remap(minCloudTransmittance, 1.0, transmittance);
@@ -572,12 +530,14 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				vec4 sampleTemp = RenderCloudPlane(cloudDistance * cirrusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
 
 				// Compute aerial perspective
-				if (sampleTemp.a > minCloudAbsorption) {
-					vec3 airTransmittance;
-					vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * 12.0;
-					sampleTemp.rgb *= airTransmittance;
-					sampleTemp.rgb += aerialPerspective * sampleTemp.a;
-				}
+				#ifdef CLOUD_AERIAL_PERSPECTIVE
+					if (sampleTemp.a > minCloudAbsorption) {
+						vec3 airTransmittance;
+						vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * skyIntensity;
+						sampleTemp.rgb *= airTransmittance;
+						sampleTemp.rgb += aerialPerspective * sampleTemp.a;
+					}
+				#endif
 
 				cloudTemp.rgb = sampleTemp.rgb;
 				cloudTemp.a -= sampleTemp.a;
@@ -596,6 +556,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	// Remap cloud transmittance
     cloudData.a = remap(minCloudTransmittance, 1.0, cloudData.a);
+
+	#ifdef AURORA
+		if (auroraAmount > 1e-2) cloudData.rgb += NightAurora(rayDir) * cloudData.a;
+	#endif
+
     return cloudData;
 }
 #endif

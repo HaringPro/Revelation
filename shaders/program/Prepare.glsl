@@ -54,8 +54,14 @@ uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
 
 uniform vec3 worldSunVector;
+uniform vec3 lightningShading;
 
 //======// Function //============================================================================//
+
+#ifdef AURORA
+	float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
+	vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
+#endif
 
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
@@ -141,6 +147,11 @@ void main() {
 	skyIlluminance = GetSunAndSkyIrradiance(camera, worldSunVector, sunIlluminance, moonIlluminance);
 	directIlluminance = sunIlluminance + moonIlluminance;
 
+    skyIlluminance += lightningShading * 4e-3;
+	#ifdef AURORA
+		skyIlluminance += auroraShading;
+	#endif
+
  	#ifdef AUTO_EXPOSURE
 		exposure = CalculateAutoExposure();
 
@@ -214,7 +225,7 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-#include "/lib/atmospherics/Clouds.glsl"
+#include "/lib/atmospherics/clouds/CloudLayers.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -249,9 +260,9 @@ void main() {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * 12.0;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * skyIntensity;
 
-		#ifdef CLOUDS_ENABLED
+		#ifdef CLOUDS
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
         #endif
@@ -259,7 +270,7 @@ void main() {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * 12.0;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * skyIntensity;
 	}
 }
 

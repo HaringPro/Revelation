@@ -49,7 +49,7 @@ void main() {
 	lightmap = saturate(vec2(vaUV2) * r240);
 
 	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
-	gl_Position = projectionMatrix * vec4(viewPos, 1.0);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

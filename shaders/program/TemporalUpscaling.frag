@@ -147,7 +147,7 @@ void main() {
 			vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
 			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.7 + 0.3;
 
-			vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
+			vec4 prevData = textureCatmullRom(colortex9, prevCoord);
 
 			// Checkerboard upscaling
 			if (screenTexel % CLOUD_TEMPORAL_UPSCALING == offset) {

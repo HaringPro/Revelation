@@ -64,7 +64,7 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	vec4 worldPos = gbufferModelViewInverse * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(modelViewMatrix, vaPosition + chunkOffset));
 
     tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#if defined NORMAL_MAPPING
@@ -75,7 +75,7 @@ void main() {
 	materialID = uint(max0(mc_Entity.x - 1e4));
 
 	#ifdef WAVING_FOLIAGE
-		worldPos.xyz += cameraPosition;
+		worldPos += cameraPosition;
 
 		float windIntensity = cube(saturate(lightmap.y * 1.5 - 0.5)) * fma(wetnessCustom, 0.2, 0.1);
 
@@ -96,11 +96,11 @@ void main() {
 			float tick = frameTimeCounter * PI;
 
 			vec2 noise = texture(noisetex, worldPos.xz * rcp(256.0) + sin(tick * 1e-3) * 0.5 + 0.5).xy * 1.4 - 0.4;
-			vec3 wind = sin(dot(worldPos.xyz, vec3(0.87, 0.6, 0.5)) + tick) * vec3(noise.x, noise.x * noise.y, noise.y);
-			worldPos.xyz += wind * (windIntensity * 0.75);
+			vec3 wind = sin(dot(worldPos, vec3(0.87, 0.6, 0.5)) + tick) * vec3(noise.x, noise.x * noise.y, noise.y);
+			worldPos += wind * (windIntensity * 0.75);
 		}
 
-		worldPos.xyz -= cameraPosition;
+		worldPos -= cameraPosition;
 	#endif
 
 	if (materialID < 1u && maxOf(abs(vaNormal)) < 0.99) materialID = 13u;
@@ -111,10 +111,10 @@ void main() {
 		tileScale = abs(minMidCoord) * 2.0;
 		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
 
-		tangentViewPos = (worldPos.xyz - gbufferModelViewInverse[3].xyz) * tbnMatrix;
+		tangentViewPos = (worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix;
 	#endif
 
-	gl_Position = projectionMatrix * gbufferModelView * worldPos;
+	gl_Position = diagonal4(projectionMatrix) * transMAD(gbufferModelView, worldPos).xyzz + projectionMatrix[3];
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

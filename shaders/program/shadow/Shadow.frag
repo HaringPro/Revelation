@@ -24,6 +24,7 @@ in vec2 texCoord;
 
 #ifdef RSM_ENABLED
 	in float skyLightmap;
+	flat in vec3 flatNormal;
 #endif
 
 // in vec3 viewPos;
@@ -31,7 +32,7 @@ in vec3 vectorData; // Minecraf position in water, tint in other materials
 
 flat in uint isWater;
 
-flat in mat3 tbnMatrix;
+// flat in mat3 tbnMatrix;
 
 //======// Uniform //=============================================================================//
 
@@ -61,18 +62,17 @@ uniform sampler2D tex;
 void main() {
 	if (isWater == 1u) {
 		#ifdef WATER_CAUSTICS
-			vec3 wavesNormal = CalculateWaterNormal(vectorData.xz - vectorData.y);
-			vec3 normal = tbnMatrix * wavesNormal;
+			vec3 waterNormal = CalculateWaterShadowNormal(vectorData.xz - vectorData.y);
 
 			vec3 oldPos = vectorData;
-			vec3 newPos = oldPos + fastRefract(worldLightVector, normal, 1.0 / WATER_REFRACT_IOR);
+			vec3 newPos = oldPos + fastRefract(worldLightVector, waterNormal.xzy, 1.0 / WATER_REFRACT_IOR);
 
 			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
 			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
 
 			float caustics = inversesqrt(oldArea / newArea);
 
-			shadowcolor0Out = vec3(approxSqrt(saturate(caustics * 0.4 + 0.1)));
+			shadowcolor0Out = vec3(approxSqrt(saturate(caustics * 0.5 + 0.1)));
 			// #ifdef RSM_ENABLED
 			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
 			// #endif
@@ -95,7 +95,7 @@ void main() {
 		}
 
 		#ifdef RSM_ENABLED
-			shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+			shadowcolor1Out.xy = encodeUnitVector(flatNormal);
 		#endif
 	}
 

@@ -46,7 +46,7 @@ vec2 CalculateRefractCoord(in uint materialID, in vec3 viewPos, in vec3 viewNorm
 		refractCoord += screenCoord;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);
-		refractedDir *= saturate(transparentDepth * 0.1) / saturate(dot(refractedDir, -viewNormal));
+		refractedDir *= saturate(transparentDepth * 0.2) * inversesqrt(maxEps(dot(-refractedDir, viewNormal)));
 
 		refractCoord = ViewToScreenSpace(viewPos + refractedDir * REFRACTION_STRENGTH).xy;
 	}

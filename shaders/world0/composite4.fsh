@@ -43,8 +43,6 @@ uniform sampler2D colortex11; // Volumetric Fog scattering
 uniform sampler2D colortex12; // Volumetric Fog transmittance
 
 #if defined DEPTH_OF_FIELD && CAMERA_FOCUS_MODE == 0
-	const bool colortex0MipmapEnabled = true;
-
     uniform float centerDepthSmooth;
 #endif
 
@@ -247,9 +245,5 @@ void main() {
 		sceneOut = worldNormal * 0.5 + 0.5;
 	#elif DEBUG_NORMALS == 2
 		sceneOut = FetchFlatNormal(gbufferData0) * 0.5 + 0.5;
-	// #elif DEBUG_DEPTH == 1
-	// 	sceneOut = vec3(depth);
-	// #elif DEBUG_DEPTH == 2
-	// 	sceneOut = vec3(sDepth);
 	#endif
 }

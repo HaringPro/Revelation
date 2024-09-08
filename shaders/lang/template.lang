@@ -65,7 +65,10 @@ option.SUN_RADIUS_ENLARGING=
 
 option.STARS_INTENSITY=
 option.STARS_COVERAGE=
-option.CLOUDS_ENABLED=
+option.CLOUDS=
+
+option.AURORA=
+option.AURORA_STRENGTH=
 
 #====# Clouds #====================================================================================#
 
@@ -88,6 +91,7 @@ option.CLOUD_CUMULUS_ALTITUDE=
 option.CLOUD_CUMULUS_THICKNESS=
 
 option.CLOUD_CUMULUS_3D_FBM_WIP=
+option.CLOUD_AERIAL_PERSPECTIVE=
 option.CLOUD_LOCAL_LIGHTING=
 
 option.CLOUD_SHADOWS=

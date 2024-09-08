@@ -28,8 +28,8 @@ void main() {
 	tint = vaColor;
 	texCoord = vaUV0;
 
-	vec4 viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
-	gl_Position = projectionMatrix * viewPos;
+	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

@@ -53,7 +53,7 @@
 	const bool 	shadowHardwareFiltering1 	= true;
 */
 
-#if defined CLOUDS_ENABLED && defined CTU_ENABLED
+#if defined CLOUDS && defined CTU_ENABLED
 /*
 	const int 	colortex9Format 			= RGBA16F;
 	const bool	colortex9Clear				= false;

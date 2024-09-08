@@ -30,7 +30,33 @@ float CalculateWaterHeight(in vec2 position) {
 	vec2 pos = vec2(0.4, 0.27) * position + vec2(0.8, 0.12) * waveTime;
 	pos += pos.yx * vec2(0.2, 1.3);
 	float waves = GetSmoothNoise(pos) * 2.0 - 1.0;
-	waves = -1.6 * (waves * waves + 0.04);
+	waves = -2.0 * (waves * waves + 0.04);
+
+	pos = vec2(0.76, 0.51) * position + vec2(-0.2, -0.3) * waveTime;
+	pos += pos.yx * vec2(0.1, 0.4);
+	waves -= 0.16 * sin(GetSmoothNoise(pos) * TAU);
+
+	pos = vec2(1.4, 0.92) * position + vec2(1.1, -0.8) * waveTime;
+	pos.y -= pos.x * 1.2;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.24;
+
+	pos = vec2(3.5, 2.2) * position + vec2(2.2, 0.7) * waveTime;
+	pos.y += pos.x * 0.6;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.09;
+
+	pos = vec2(7.0, 3.9) * position + vec2(1.8, 0.8) * waveTime;
+	pos.y -= pos.x;
+	waves += (GetSmoothNoise(pos) - 1.0) * 0.03;
+
+	return waves;
+}
+
+float CalculateWaterCaustics(in vec2 position) {
+	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
+
+	vec2 pos = vec2(0.4, 0.27) * position + vec2(0.8, 0.12) * waveTime;
+	pos += pos.yx * vec2(0.2, 1.3);
+	float waves = -2.0;
 
 	pos = vec2(0.76, 0.51) * position + vec2(-0.2, -0.3) * waveTime;
 	pos += pos.yx * vec2(0.1, 0.4);
@@ -104,6 +130,16 @@ vec3 CalculateWaterNormal(in vec2 position) {
 	float wavesCenter = CalculateWaterHeight(position);
 	float wavesLeft   = CalculateWaterHeight(position + vec2(0.04, 0.0));
 	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.04));
+
+	vec2 wavesNormal  = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
+
+	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.15));
+}
+
+vec3 CalculateWaterShadowNormal(in vec2 position) {
+	float wavesCenter = CalculateWaterCaustics(position);
+	float wavesLeft   = CalculateWaterCaustics(position + vec2(0.04, 0.0));
+	float wavesUp     = CalculateWaterCaustics(position + vec2(0.0, 0.04));
 
 	vec2 wavesNormal  = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
 

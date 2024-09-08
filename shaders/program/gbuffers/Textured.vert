@@ -43,7 +43,8 @@ void main() {
 
 	materialID = lightmap.x > 0.99 ? 20u : 40u;
 
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

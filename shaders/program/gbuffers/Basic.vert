@@ -54,7 +54,8 @@ void main() {
         tint.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
         lightmap = vec2(dot(tint.rgb, vec3(0.333333)));
     } else {
-    	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
+        vec3 viewPos = transMAD(modelViewMatrix, vaPosition);
+        gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
     }
 
 	#ifdef TAA_ENABLED

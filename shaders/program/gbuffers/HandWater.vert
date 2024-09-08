@@ -44,13 +44,13 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	vec4 viewPos = modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
-	gl_Position = projectionMatrix * viewPos;
+	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	// worldPos = transMAD(gbufferModelViewInverse, viewPos);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
-	// vec4 worldPos = gbufferModelViewInverse * viewPos;
 
     tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#if defined NORMAL_MAPPING

@@ -60,7 +60,7 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-#include "/lib/atmospherics/Clouds.glsl"
+#include "/lib/atmospherics/clouds/CloudLayers.glsl"
 
 vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
