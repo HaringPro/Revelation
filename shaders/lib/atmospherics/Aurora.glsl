@@ -31,6 +31,8 @@ uniform float worldTimeCounter;
 float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
 vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
 
+//================================================================================================//
+
 mat2 mm2(in float a)  { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
 mat2 m2 = mat2(0.95534, 0.29552, -0.29552, 0.95534);
 float tri(in float x) { return clamp(abs(fract(x) - 0.5), 0.01, 0.49); }

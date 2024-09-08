@@ -242,9 +242,13 @@ void main() {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
+		vec3 celestial = RenderSun(worldDir, worldSunVector);
 		vec3 moonDisc = mix(albedo, GetLuminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
-		vec3 celestial = mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)) // Use bvec3 to avoid errors with some drivers
-		 + RenderSun(worldDir, worldSunVector);
+		#ifdef GALAXY
+			celestial += mix(RenderGalaxy(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+		#else
+			celestial += mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+		#endif
 
 		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
 		sceneOut = skyRadiance + transmittance * celestial;

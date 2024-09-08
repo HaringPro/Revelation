@@ -67,6 +67,9 @@ option.STARS_INTENSITY=
 option.STARS_COVERAGE=
 option.CLOUDS=
 
+option.GALAXY=
+option.GALAXY_INTENSITY=
+
 option.AURORA=
 option.AURORA_STRENGTH=
 

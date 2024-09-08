@@ -5,7 +5,7 @@
 ![Screenshot](https://github.com/user-attachments/assets/af647400-bd69-4349-ab14-79c865ef118d)
 
 ## Features
-* High quality atmospheric system: precomputed atmospheric scattering, multi-layer clouds, immersive volumetric fog and so on
+* High quality atmospheric system: precomputed atmospheric scattering, galaxy skybox, multi-layer clouds, immersive volumetric fog and so on
 * Advanced lighting stuff: PCSS, screen-space shadows, subsurface scattering, SH skylight, SSPT, RSM, GTAO, etc.
 * Various camera effects: motion blur, bloom, histogram auto-exposure, vignette and more
 * Improved post-processing: TAA, CAS, FSR 1.0 and color-grading
