@@ -12,7 +12,6 @@ uniform sampler2D colortex8;
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
-uniform sampler2D depthtex2;
 
 uniform int frameCounter;
 uniform int isEyeInWater;
@@ -57,9 +56,10 @@ uniform vec3 viewLightVector;
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferPreviousProjection;
+
+uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferPreviousModelView;
-uniform mat4 gbufferModelView;
 
 uniform mat4 shadowProjection;
 uniform mat4 shadowProjectionInverse;

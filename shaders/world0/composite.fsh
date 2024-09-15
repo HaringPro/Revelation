@@ -52,7 +52,7 @@ uniform vec3 fogWind;
 
 #include "/lib/atmospherics/Global.glsl"
 #ifdef CLOUD_SHADOWS
-	#include "/lib/atmospherics/clouds/CloudLayers.glsl"
+	#include "/lib/atmospherics/clouds/Shadows.glsl"
 #endif
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
@@ -187,12 +187,12 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy) * 2;
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy * 2.0);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	vec3 screenPos = vec3(screenCoord, sampleDepth(screenTexel));
-	vec3 viewPos = ScreenToViewSpace(screenPos);
 
+	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
 	float dither = BlueNoiseTemporal(screenTexel);

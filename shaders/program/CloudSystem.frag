@@ -60,7 +60,7 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-#include "/lib/atmospherics/clouds/CloudLayers.glsl"
+#include "/lib/atmospherics/clouds/Render.glsl"
 
 vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
@@ -85,7 +85,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	ivec2 cloudTexel = screenTexel * CLOUD_TEMPORAL_UPSCALING + checkerboardOffset[frameCounter % cloudRenderArea];
-	vec2 cloudUV = vec2(cloudTexel) * viewPixelSize;
+	vec2 cloudUV = (vec2(cloudTexel) + 0.5) * viewPixelSize;
 
 	if (sampleDepthMax4x4(cloudUV) > 0.999999) {
 		vec3 viewPos  = ScreenToViewSpaceRaw(vec3(cloudUV, 1.0));

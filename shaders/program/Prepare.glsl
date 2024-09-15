@@ -225,7 +225,7 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-#include "/lib/atmospherics/clouds/CloudLayers.glsl"
+#include "/lib/atmospherics/clouds/Render.glsl"
 
 //======// Main //================================================================================//
 void main() {

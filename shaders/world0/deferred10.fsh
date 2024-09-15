@@ -130,10 +130,12 @@ uniform mat4 shadowModelView;
 #include "/lib/atmospherics/Celestial.glsl"
 
 #if defined CLOUDS && !defined CTU_ENABLED
-	#define CLOUD_LIGHTING
 	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
+	#include "/lib/atmospherics/clouds/Render.glsl"
 #endif
-#include "/lib/atmospherics/clouds/CloudLayers.glsl"
+#ifdef CLOUD_SHADOWS
+	#include "/lib/atmospherics/clouds/Shadows.glsl"
+#endif
 
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
