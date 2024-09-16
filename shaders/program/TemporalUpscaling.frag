@@ -144,8 +144,8 @@ void main() {
 			float blendWeight = 1.0 - rcp(max(frameIndex - cloudRenderArea, 1.0));
 
 			// Offcenter rejection
-			vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-			blendWeight *= sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.7 + 0.3;
+			vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+			blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.7 + 0.3;
 
 			vec4 prevData = textureCatmullRom(colortex9, prevCoord);
 

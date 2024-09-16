@@ -41,18 +41,20 @@ uniform vec2 viewPixelSize;
 		return image / (1.0 + 1e-4 * GetLuminance(image));
 	}
 
-	#define CalculateTileOffset(lod) vec2(0.0)
 	#define sampleTile(uv) karisAverage(textureLod(colortex1, uv, 0.0).rgb)
 #else
-    vec2 CalculateTileOffset(in const int lod) {
-        const vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
-        const vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
-
-        return lodMult * 16.0 * viewPixelSize + offset;
-    }
-
 	#define sampleTile(uv) textureLod(colortex4, uv, 0.0).rgb
 #endif
+
+const vec2 bloomTileOffset[7] = vec2[7](
+	vec2(0.0000, 0.0000),
+	vec2(0.0000, 0.5000),
+	vec2(0.2500, 0.5000),
+	vec2(0.2500, 0.6250),
+	vec2(0.3125, 0.6250),
+	vec2(0.3150, 0.6563),
+	vec2(0.3281, 0.6563)
+);
 
 vec3 CalculateBloomTile(in vec2 uv) {
 	vec3  bloomTile = vec3(0.0);
@@ -74,12 +76,13 @@ vec3 CalculateBloomTile(in vec2 uv) {
 void main() {
     vec2 interpolatedUV = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
 
-    vec2 srcUV = interpolatedUV * viewPixelSize + CalculateTileOffset(DOWNSAMPLE_LEVEL - 1);
+	const int index = max(0, DOWNSAMPLE_LEVEL - 1);
+    vec2 srcUV = (interpolatedUV + float(index * 12)) * viewPixelSize + bloomTileOffset[index];
 
 	if (clamp(srcUV, viewPixelSize, 1.0 - viewPixelSize) == srcUV) {
 		vec3 bloomTile = CalculateBloomTile(srcUV);
 
-		vec2 dstTexel = vec2(gl_GlobalInvocationID.xy) + CalculateTileOffset(DOWNSAMPLE_LEVEL) * viewSize;
-		imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
+		vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + DOWNSAMPLE_LEVEL * 12) + bloomTileOffset[DOWNSAMPLE_LEVEL] * viewSize;
+		imageStore(colorimg4, ivec2(dstTexel + 0.5), vec4(bloomTile, 1.0));
 	}
 }

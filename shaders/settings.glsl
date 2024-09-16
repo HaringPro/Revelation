@@ -12,8 +12,8 @@
 #if !defined INCLUDE_SETTINGS
 #define INCLUDE_SETTINGS
 
-#define INFO Alpha // [Alpha Beta Release]
-#define AUTHOR HaringPro
+#define INFO Alpha // Development stage of the shaderpack. [Alpha Beta Release]
+#define AUTHOR HaringPro // Copyright holder of the shaderpack. [HaringPro]
 
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float	shadowDistance 	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]

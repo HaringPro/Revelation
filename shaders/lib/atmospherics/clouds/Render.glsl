@@ -212,7 +212,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute sample cloud density
 					#if defined PROGRAM_PREPARE
-						float density = CloudVolumeDensity(rayPos, 4u);
+						float density = CloudVolumeDensity(rayPos, 3u);
 					#else
 						float density = CloudVolumeDensity(rayPos, 5u);
 					#endif

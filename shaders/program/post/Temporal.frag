@@ -204,8 +204,8 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
     blendWeight /= blendWeight + 1.0;
 
-    vec2 distanceToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-    float offcenterWeight = sqrt(distanceToPixelCenter.x * distanceToPixelCenter.y) * 0.25 + 0.75;
+    vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+    float offcenterWeight = sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.25 + 0.75;
     blendWeight *= offcenterWeight;
 
     currentSample = mix(reinhard(currentSample), reinhard(prevSample), blendWeight);

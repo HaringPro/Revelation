@@ -63,8 +63,8 @@ void main() {
 		vec4 gbufferData0 = sampleGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
-		vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
-		vec3 screenPos = vec3(screenCoord * 2.0, depth);
+		vec2 screenCoord = (vec2(currentTexel) + 0.5) * viewPixelSize;
+		vec3 screenPos = vec3(screenCoord, depth);
 		vec3 viewPos = ScreenToViewSpace(screenPos);
 
         float dither = BlueNoiseTemporal(currentTexel);

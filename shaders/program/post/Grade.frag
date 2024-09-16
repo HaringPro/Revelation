@@ -53,12 +53,15 @@ uniform vec2 viewPixelSize;
 
 //======// Function //============================================================================//
 
-vec2 CalculateTileOffset(in const int lod) {
-	const vec2 lodMult = floor(lod * 0.5 + vec2(0.0, 0.5));
-	const vec2 offset = vec2(1.0 / 3.0, 2.0 / 3.0) * (1.0 - exp2(-2.0 * lodMult));
-
-	return lodMult * 16.0 * viewPixelSize + offset;
-}
+const vec2 bloomTileOffset[7] = vec2[7](
+	vec2(0.0000, 0.0000),
+	vec2(0.0000, 0.5000),
+	vec2(0.2500, 0.5000),
+	vec2(0.2500, 0.6250),
+	vec2(0.3125, 0.6250),
+	vec2(0.3150, 0.6563),
+	vec2(0.3281, 0.6563)
+);
 
 void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	vec3 bloomData = vec3(0.0);
@@ -68,12 +71,13 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	float sumWeight = 0.0;
 
 	for (int i = 0; i < 7; ++i) {
-    	vec2 sampleCoord = screenCoord * exp2(-float(i + 1)) + CalculateTileOffset(i);
+    	vec2 sampleCoord = screenCoord * exp2(-float(i + 1));
+		sampleCoord += bloomTileOffset[i] + viewPixelSize * float(i * 12);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
 		sumWeight += weight;
-		weight *= 0.9;
+		weight *= 0.85;
 	}
 
 	bloomData /= sumWeight;
