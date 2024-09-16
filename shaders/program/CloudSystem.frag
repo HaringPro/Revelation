@@ -62,12 +62,9 @@ uniform vec3 lightningShading;
 
 #include "/lib/atmospherics/clouds/Render.glsl"
 
-vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
-	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
-
-	return viewPos;
+vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
+	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
+	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
 float sampleDepthMax4x4(in vec2 coord) {
@@ -88,8 +85,8 @@ void main() {
 	vec2 cloudUV = (vec2(cloudTexel) + 0.5) * viewPixelSize;
 
 	if (sampleDepthMax4x4(cloudUV) > 0.999999) {
-		vec3 viewPos  = ScreenToViewSpaceRaw(vec3(cloudUV, 1.0));
-		vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+		vec3 viewDir  = ScreenToViewVectorRaw(cloudUV);
+		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
 

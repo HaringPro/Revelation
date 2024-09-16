@@ -35,7 +35,6 @@ uniform mat4 gbufferProjectionInverse;
 
 uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
-uniform vec2 taaOffset;
 
 uniform int frameCounter;
 
@@ -85,15 +84,9 @@ void SharedPreload() {
     barrier();
 }
 
-vec3 ScreenToViewSpace(in vec3 screenPos) {
-	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
-		NDCPos.xy -= taaOffset;
-	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
-
-	return viewPos;
+vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
+	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
+	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
 uint triple32(uint x) {
@@ -125,8 +118,8 @@ void main() {
         vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
 
         vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
-        vec3 viewPos = ScreenToViewSpace(vec3(screenCoord * 2.0, depth));
-        vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+        vec3 viewDir = ScreenToViewVectorRaw(screenCoord * 2.0);
+        vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
         float NdotV = saturate(dot(normalDepthData.xyz, -worldDir));
 
         float sumWeight = 1.0;

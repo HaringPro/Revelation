@@ -1,6 +1,7 @@
 # shaders/lib/voxel
 # shadow.gsh
 
+shaders/lang
 Accumulate.comp
 SpatialUpscale.comp
 Temporal.comp

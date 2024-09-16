@@ -284,7 +284,7 @@ vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
 
 	vec4 s = vec4(xCubic.xz + xCubic.yw, yCubic.xz + yCubic.yw);
 
-    vec4 offset = c + vec4(xCubic.y, xCubic.w, yCubic.y, yCubic.w) / s;
+    vec4 offset = c + vec4(xCubic.yw, yCubic.yw) / s;
 	offset *= 1.0 / res.xxyy;
 
 	vec4 sample0 = textureLod(tex, offset.xz, 0.0);
@@ -313,7 +313,7 @@ vec4 textureBicubicLod(in sampler2D tex, in vec2 coord, in int lod) {
 
 	vec4 s = vec4(xCubic.xz + xCubic.yw, yCubic.xz + yCubic.yw);
 
-    vec4 offset = c + vec4(xCubic.y, xCubic.w, yCubic.y, yCubic.w) / s;
+    vec4 offset = c + vec4(xCubic.yw, yCubic.yw) / s;
 	offset *= 1.0 / res.xxyy;
 
 	vec4 sample0 = textureLod(tex, offset.xz, lod);
