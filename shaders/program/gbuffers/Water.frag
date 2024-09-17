@@ -47,7 +47,14 @@ flat in vec3 skyIlluminance;
 
 #include "/lib/atmospherics/Global.glsl"
 
-#include "/lib/water/WaterWave.glsl"
+#define PHYSICS_OCEAN_SUPPORT
+
+#ifdef PHYSICS_OCEAN
+	#define PHYSICS_FRAGMENT
+	#include "/lib/water/PhysicsOceans.glsl"
+#else
+	#include "/lib/water/WaterWave.glsl"
+#endif
 // #include "/lib/water/WaterFog.glsl"
 
 #include "/lib/lighting/Shadows.glsl"
@@ -104,18 +111,24 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 vie
 //======// Main //================================================================================//
 void main() {
 	vec3 worldNormal;
+
 	if (materialID == 3u) { // water
-		vec3 minecraftPos = worldPos + cameraPosition;
-		#ifdef WATER_PARALLAX
-			worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix);
+		#ifdef PHYSICS_OCEAN
+			WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
+
+			worldNormal = wave.normal;
+			gbufferOut1.x = packUnorm2x8(worldNormal.xy * 0.5 + 0.5);
 		#else
-			worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
+			vec3 minecraftPos = worldPos + cameraPosition;
+			#ifdef WATER_PARALLAX
+				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix);
+			#else
+				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
+			#endif
+
+			gbufferOut1.x = packUnorm2x8(worldNormal.xy * 0.5 + 0.5);
+			worldNormal = tbnMatrix * worldNormal;
 		#endif
-
-		gbufferOut1.x = packUnorm2x8(worldNormal.xy * 0.5 + 0.5);
-		// albedo = sceneOut = vec4(0.0, 0.0, 0.0, 1e-2);
-
-		worldNormal = tbnMatrix * worldNormal;
 
 		// Water normal clamp
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
@@ -214,7 +227,7 @@ void main() {
 	//============================================================================================//
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = float(materialID + 0.1) * r255;
+	gbufferOut0.y = (float(materialID) + 0.1) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 }

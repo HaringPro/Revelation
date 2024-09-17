@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-flat out mat3 tbnMatrix;
+out mat3 tbnMatrix; // Not use flat because of the Physics mod snow
 
 out vec4 tint;
 out vec2 texCoord;
@@ -42,6 +42,14 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
+	#if 0
+	// Kill the nametag
+	if (clamp(vaColor.a, 0.24, 0.254) == vaColor.a) {
+		gl_Position = vec4(-1.0);
+		return;
+	}
+	#endif
+
 	tint = vaColor;
 	texCoord = vaUV0;
 
@@ -61,5 +69,6 @@ void main() {
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 	#endif
 
-	materialID = uint(entityId - 10000);
+	// 829925: Physics mod snow
+	materialID = entityId == 829925 ? 39u : uint(entityId - 10000);
 }

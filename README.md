@@ -6,7 +6,7 @@
 
 ## Features
 * High quality atmospheric system: precomputed atmospheric scattering, galaxy skybox, multi-layer clouds, immersive volumetric fog and so on
-* Advanced lighting stuff: PCSS, screen-space shadows, subsurface scattering, SH skylight, SSPT, RSM, GTAO, etc.
+* Advanced lighting stuff: PCSS, screen-space shadows, sub-surface scattering, SH skylight, SSPT, RSM, GTAO, etc.
 * Various camera effects: motion blur, bloom, histogram auto-exposure, vignette and more
 * Improved post-processing: TAA, CAS, FSR 1.0 and color-grading
 * Complete PBR resource pack support, auto generated normal maps
@@ -18,6 +18,7 @@
 * [Minecraft](https://www.minecraft.net/en-us/download): Java Edition 1.17.1 or newer
 * [OptiFine](https://optifine.net/home): HD U H1 or newer
 * [Iris](https://irisshaders.dev/download): 1.8.0 or newer
+* [Physics Mod](https://www.patreon.com/Haubna?utm_source=campaign-search-results): Revelation is already compatible with Physics Mod Pro
 
 ## Credits
 * [Mo Yongxin](https://github.com/moyongxin) - Some methods and testing

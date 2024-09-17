@@ -72,7 +72,7 @@ void main() {
 
     vec3 normal = normalize(normalMatrix * vaNormal);
 	#ifdef SHADOW_BACKFACE_CULLING
-		if (normal < 0.0) {
+		if (normal.z < 0.0) {
 			gl_Position = vec4(-1.0);
 			return;
 		}

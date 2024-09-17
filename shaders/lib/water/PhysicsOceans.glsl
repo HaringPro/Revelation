@@ -1,3 +1,4 @@
+// https://github.com/haubna/PhysicsMod/blob/main/oceans.glsl
 
 // just some basic consts for the wave function based on afl_ext's shader https://www.shadertoy.com/view/Xdlczl
 // the overall shape must stay consistent because it is also computed on the CPU side

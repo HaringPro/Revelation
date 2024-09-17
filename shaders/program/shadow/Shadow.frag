@@ -39,30 +39,44 @@ flat in uint isWater;
 uniform sampler2D tex;
 
 #ifdef WATER_CAUSTICS
-	uniform sampler2D noisetex;
 
-	uniform vec3 worldLightVector;
+uniform sampler2D noisetex;
 
-	uniform float frameTimeCounter;
+uniform vec3 worldLightVector;
+
+uniform float frameTimeCounter;
 
 //======// Function //============================================================================//
 
+vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
+	float NdotD = dot(normal, dir);
+	float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+	if (k < 0.0) return vec3(0.0);
+
+	return dir * eta - normal * (sqrt(k) + NdotD * eta);
+}
+	
+#define PHYSICS_OCEAN_SUPPORT
+
+#ifdef PHYSICS_OCEAN
+	#define PHYSICS_FRAGMENT
+	#include "/lib/water/PhysicsOceans.glsl"
+#else
 	#include "/lib/water/WaterWave.glsl"
+#endif
 
-	vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
-		float NdotD = dot(normal, dir);
-		float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
-		if (k < 0.0) return vec3(0.0);
-
-		return dir * eta - normal * (sqrt(k) + NdotD * eta);
-	}
 #endif
 
 //======// Main //================================================================================//
 void main() {
 	if (isWater == 1u) {
 		#ifdef WATER_CAUSTICS
-			vec3 waterNormal = CalculateWaterShadowNormal(vectorData.xz - vectorData.y);
+			#ifdef PHYSICS_OCEAN
+				WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
+				vec3 waterNormal = wave.normal;
+			#else
+				vec3 waterNormal = CalculateWaterShadowNormal(vectorData.xz - vectorData.y);
+			#endif
 
 			vec3 oldPos = vectorData;
 			vec3 newPos = oldPos + fastRefract(worldLightVector, waterNormal.xzy, 1.0 / WATER_REFRACT_IOR);

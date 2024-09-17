@@ -47,6 +47,15 @@ uniform mat4 gbufferModelViewInverse;
 
 uniform vec2 taaOffset;
 
+//======// Function //============================================================================//
+
+#define PHYSICS_OCEAN_SUPPORT
+
+#ifdef PHYSICS_OCEAN
+	#define PHYSICS_VERTEX
+	#include "/lib/water/PhysicsOceans.glsl"
+#endif
+
 //======// Main //================================================================================//
 void main() {
 	texCoord = vaUV0;
@@ -61,7 +70,17 @@ void main() {
 
 	materialID = uint(max(mc_Entity.x - 1e4, 2.0));
 
-	viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	#ifdef PHYSICS_OCEAN
+		// basic texture to determine how shallow/far away from the shore the water is
+		physics_localWaviness = texelFetch(physics_waviness, ivec2(gl_Vertex.xz) - physics_textureOffset, 0).r;
+		// transform gl_Vertex (since it is the raw mesh, i.e. not transformed yet)
+		vec4 finalPosition = vec4(gl_Vertex.x, gl_Vertex.y + physics_waveHeight(gl_Vertex.xz, PHYSICS_ITERATIONS_OFFSET, physics_localWaviness, physics_gameTime), gl_Vertex.z, gl_Vertex.w);
+		// pass this to the fragment shader to fetch the texture there for per fragment normals
+		physics_localPosition = finalPosition.xyz;
+		viewPos = transMAD(modelViewMatrix, finalPosition.xyz);
+	#else
+		viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
+	#endif
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];

@@ -293,7 +293,7 @@ void main() {
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 27u: case 28u: // Plants
-					sssAmount = 0.55;
+					sssAmount = 0.5;
 					#ifdef NORMAL_MAPPING
 						worldNormal.y += 4.0;
 						worldNormal = normalize(worldNormal);
@@ -304,7 +304,7 @@ void main() {
 				case 12u: // Leaves
 					sssAmount = 0.9;
 					break;
-				case 37u: // Weak SSS
+				case 37u: case 39u: // Weak SSS
 					sssAmount = 0.5;
 					break;
 				case 38u: case 51u: // Strong SSS
@@ -371,12 +371,14 @@ void main() {
 
 			if (saturate(shadowScreenPos) == shadowScreenPos) {
 				vec2 blockerSearch;
-				// Subsurface scattering
+				// Sub-surface scattering
 				if (doSss) {
 					blockerSearch = BlockerSearchSSS(shadowScreenPos, dither);
 					vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
-					// subsurfaceScattering *= eyeSkylightSmooth;
-					sceneOut += subsurfaceScattering * sunlightMult * ao;
+
+					// Formula from https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
+					// float bssrdf = sqr(saturate(dot(worldDir, worldLightVector + 0.2 * worldNormal))) * 4.0;
+					sceneOut += subsurfaceScattering * sunlightMult * ao * oneMinus(NdotL);
 				} else {
 					blockerSearch.x = BlockerSearch(shadowScreenPos, dither);
 				}
@@ -392,9 +394,9 @@ void main() {
 						shadow *= sunlightMult;
 						#ifdef SCREEN_SPACE_SHADOWS
 							#if defined NORMAL_MAPPING
-								shadow *= ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
+								shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
 							#else
-								shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+								shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
 							#endif
 						#endif
 						// shadow = shadow * oneMinus(distanceFade) + distanceFade;
@@ -413,7 +415,7 @@ void main() {
 						float LdotH = LdotV * halfwayNorm + halfwayNorm;
 						NdotV = max(NdotV, 1e-3);
 
-						sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.7);
+						sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 						specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 					}
@@ -423,9 +425,9 @@ void main() {
 			vec3 shadow = sunlightMult;
 			#ifdef SCREEN_SPACE_SHADOWS
 				#if defined NORMAL_MAPPING
-					shadow *= ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
+					shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, mat3(gbufferModelView) * flatNormal, dither, sssAmount);
 				#else
-					shadow *= ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
+					shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, viewNormal, dither, sssAmount);
 				#endif
 			#endif
 
@@ -443,7 +445,7 @@ void main() {
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
 
-			sunlightDiffuse = shadow * mix(DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo), vec3(rPI), sssAmount * 0.7);
+			sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 		}
