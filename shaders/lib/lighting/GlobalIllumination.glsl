@@ -97,8 +97,6 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 
 /* Screen-Space Path Tracing */
 
-// #define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-
 #define SSPT_SPP 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
 #define SSPT_BOUNCES 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
 
@@ -250,9 +248,9 @@ float CalculateBlocklightFalloff(in float blocklight) {
 	return blocklight * 0.5 * fade;
 }
 
-struct Trace {
-    vec3 screenPos;
-    vec3 viewDir;
+struct TracingData {
+	vec3 rayPos;
+    vec3 rayDir;
     vec3 viewNormal;
     vec3 worldNormal;
 	vec3 brdf;
@@ -260,51 +258,47 @@ struct Trace {
 
 vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap, in float dither) {
 	lightmap.x = CalculateBlocklightFalloff(lightmap.x) * SSPT_BLENDED_LIGHTMAP;
-	lightmap.y *= lightmap.y * 0.25;
+	lightmap.y *= lightmap.y * lightmap.y * rPI;
 
     vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
-	vec3 viewDir = normalize(viewPos);
 
     NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
 
 	vec3 sum = vec3(0.0);
-	const float f0 = 0.04;
+	const float f0 = 0.02;
 
-	float maxSqLen = sqr(viewPos.z) * 0.2;
+	ivec2 shiftX = ivec2((int(viewWidth) >> 1) + 1, 0);
 
 	#if SSPT_BOUNCES > 1 && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-    for (uint i = 0u; i < SSPT_SPP; ++i) {
-		// Initialize tracing data.
-		Trace target = Trace(screenPos, viewDir, viewNormal, worldNormal, vec3(1.0));
+	// Multiple bounce tracing.
 
-		for (uint j = 0u; j < SSPT_BOUNCES; ++j) {
+    for (uint spp = 0u; spp < SSPT_SPP; ++spp) {
+		// Initialize tracing data.
+		TracingData target = TracingData(screenPos, vec3(0.0), viewNormal, worldNormal, vec3(1.0));
+
+		for (uint bounce = 0u; bounce < SSPT_BOUNCES; ++bounce) {
 			vec3 sampleDir = sampleCosineVector(target.worldNormal, nextVec2(noiseGenerator));
 
-			target.viewDir = normalize(mat3(gbufferModelView) * sampleDir);
+			target.rayDir = normalize(mat3(gbufferModelView) * sampleDir);
 
-			float NdotV = dot(target.viewNormal, target.viewDir);
-			if (NdotV < 0.0) target.viewDir = -target.viewDir;
+			float NdotL = dot(target.viewNormal, target.rayDir);
+			if (NdotL < 0.0) target.rayDir = -target.rayDir;
 
-			NdotV = maxEps(dot(target.viewNormal, target.viewDir));
+			NdotL = dot(target.viewNormal, target.rayDir);
 
-			target.brdf *= FresnelSchlick(NdotV, f0) * PI;
+			vec3 targetViewPos = ScreenToViewSpaceRaw(target.rayPos) + target.viewNormal * 1e-2;
+			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
-			target.screenPos = sampleRaytrace(viewPos, target.viewDir, dither, target.screenPos);
+			if (target.rayPos.z < 1.0) {
+				vec3 sampleLight = texelFetch(colortex4, ivec2(target.rayPos.xy * 0.5) + shiftX, 0).rgb;
 
-			if (target.screenPos.z < 1.0) {
-				vec3 sampleLight = texelFetch(colortex3, ivec2(target.screenPos.xy * 0.5), 0).rgb;
-
-				target.worldNormal = FetchWorldNormal(sampleGbufferData0(ivec2(target.screenPos.xy)));
+				target.worldNormal = FetchWorldNormal(sampleGbufferData0(ivec2(target.rayPos.xy)));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
 
-				target.screenPos.xy *= viewPixelSize;
-				vec3 diff = ScreenToViewSpace(target.screenPos) - viewPos;
+				target.rayPos.xy *= viewPixelSize;
+				vec3 diff = ScreenToViewSpace(target.rayPos) - viewPos;
 
 				float diffSqLen = dotSelf(diff);
-				// if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-				// 	float NdotL = saturate(dot(target.viewNormal, diff * inversesqrt(diffSqLen)));
-				// 	target.brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
-				// }
 
 				sum += sampleLight * target.brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
@@ -312,38 +306,45 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				sum += (skyRadiance.rgb * lightmap.y + lightmap.x) * target.brdf;
 				break;
 			}
+
+			#if 1
+				target.brdf *= sampleAlbedo(ivec2(target.rayPos.xy));
+			#endif
 		}
 	}
+
 	#else
-	for (uint i = 0u; i < SSPT_SPP; ++i) {
+	// Single bounce tracing.
+
+	for (uint spp = 0u; spp < SSPT_SPP; ++spp) {
 			vec3 sampleDir = sampleCosineVector(worldNormal, nextVec2(noiseGenerator));
 
 			vec3 rayDir = normalize(mat3(gbufferModelView) * sampleDir);
 
-			float NdotV = dot(viewNormal, rayDir);
-			if (NdotV < 0.0) rayDir = -rayDir;
+			float NdotL = dot(viewNormal, rayDir);
+			if (NdotL < 0.0) rayDir = -rayDir;
 
-			NdotV = maxEps(dot(viewNormal, rayDir));
+			NdotL = dot(viewNormal, rayDir);
 
-			float brdf = FresnelSchlick(NdotV, f0) * PI;
+			#if 0
+				float brdf = oneMinus(FresnelSchlick(NdotL, f0));
+			#else
+				const float brdf = 1.0;
+			#endif
 
-			vec3 hitPos = sampleRaytrace(viewPos, rayDir, dither, screenPos);
+			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, dither, screenPos);
 
 			if (hitPos.z < 1.0) {
 				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb * float(screenPos.z > 0.56);
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb * step(0.56, screenPos.z);
 				#else
-					vec3 sampleLight = texelFetch(colortex3, ivec2(hitPos.xy * 0.5), 0).rgb;
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5) + shiftX, 0).rgb;
 				#endif
 
 				hitPos.xy *= viewPixelSize;
 				vec3 diff = ScreenToViewSpace(hitPos) - viewPos;
 
 				float diffSqLen = dotSelf(diff);
-				// if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-				// 	float NdotL = saturate(dot(viewNormal, diff * inversesqrt(diffSqLen)));
-				// 	brdf *= mix(max0(1.0 - NdotL * 2.0 * saturate(1.0 - diffSqLen / maxSqLen)), 1.0, dot(sampleLight, vec3(0.04)));
-				// }
 
 				sum += sampleLight * brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
@@ -353,10 +354,6 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 		}
 	#endif
 
-	#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-		return sum * 8.0 * rcp(float(SSPT_SPP));
-	#else
-		return sum * 12.0 * rcp(float(SSPT_SPP));
-	#endif
+	return sum * PI * rcp(float(SSPT_SPP));
 }
 #endif

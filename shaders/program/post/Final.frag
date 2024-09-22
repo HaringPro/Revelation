@@ -157,7 +157,7 @@ void main() {
 		const int strokewidth = 3;
 		const ivec2 start = ivec2(60, 200);
 		const ivec2 end = start + size;
-		const int center = (start.y + end.y) / 2;
+		const int center = (start.y + end.y) >> 1;
 
 		if (clamp(screenTexel, start - strokewidth, end + strokewidth) == screenTexel) {
 			finalOut = vec3(0.0);

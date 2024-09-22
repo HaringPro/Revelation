@@ -28,7 +28,7 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
-#ifdef SSPT_ENABLED
+#if defined SSPT_ENABLED && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
 /* RENDERTARGETS: 0,2,3 */
 layout (location = 2) out vec3 lightingOut;
 #endif
@@ -150,7 +150,6 @@ uniform mat4 shadowModelView;
 	#include "/lib/surface/ScreenSpaceRaytracer.glsl"
 
 	vec4 CalculateSpecularReflections(Material material, in vec3 viewNormal, in vec3 screenPos, in vec3 viewPos, in float skylight, in float dither) {
-		skylight = smoothstep(0.3, 0.8, skylight);
 		vec3 viewDir = normalize(viewPos);
 
 		vec3 rayDir;
@@ -285,7 +284,7 @@ void main() {
 			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
-			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.04, 0.0, false, false);
+			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.02, 0.0, false, false);
 		#endif
 
 		float sssAmount = 0.0;
@@ -359,7 +358,7 @@ void main() {
 		vec3 specularHighlight = vec3(0.0);
 
 		float worldDistSquared = dotSelf(worldPos);
-		float distanceFade = sqr(pow16(rcp(shadowDistance * shadowDistance) * worldDistSquared));
+		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * dotSelf(worldPos.xz)));
 
 		bool doShadows = NdotL > 1e-3;
 		bool doSss = sssAmount > 1e-3;
@@ -468,7 +467,7 @@ void main() {
 
 				// Bounced light
 			#ifndef RSM_ENABLED
-				float bounce = CalculateFittedBouncedLight(worldNormal);
+				float bounce = CalculateApproxBouncedLight(worldNormal);
 				bounce *= sqr(lightmap.y);
 				sceneOut += bounce * sunlightMult * ao;
 			#endif
@@ -487,7 +486,7 @@ void main() {
 
 				vec3 emissionAlbedo = normalize(maxEps(albedo));
 				emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), approxSqrt(albedoLuma));
-				emissive.rgb *= emissionAlbedo * 1.5;
+				emissive.rgb *= emissionAlbedo * 3.0;
 			#else
 				if (emissive.a * lightmap.x > 1e-5) {
 					lightmap.x = CalculateBlocklightFalloff(lightmap.x);
@@ -497,10 +496,8 @@ void main() {
 
 			sceneOut += emissive.rgb * EMISSIVE_BRIGHTNESS;
 		#elif !defined SSPT_ENABLED
-			if (lightmap.x > 1e-5) {
-				lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-				sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor;
-			}
+			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
+			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor;
 		#endif
 
 		// Handheld light
@@ -516,12 +513,14 @@ void main() {
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			if (material.hasReflections && materialID != 46u && materialID != 51u) {
+				lightmap.y = remap(0.3, 0.7, lightmap.y);
+
 				// Specular reflections
 				reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
 				reflectionOut.rgb *= mix(vec3(1.0), albedo, material.metalness);
 
 				// Metallic
-				if (isEyeInWater == 0) material.metalness *= 0.2 * smoothstep(0.3, 0.8, lightmap.y) + 0.8;
+				material.metalness *= 0.2 * lightmap.y + 0.8;
 				albedo *= oneMinus(material.metalness);
 			}
 		#else
@@ -537,7 +536,9 @@ void main() {
 
 		// Global illumination
 		#ifdef SSPT_ENABLED
-			lightingOut = sceneOut;
+			#ifndef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+				lightingOut = sceneOut;
+			#endif
 
 			#ifdef DEBUG_GI
 				sceneOut = vec3(0.0);
@@ -546,9 +547,9 @@ void main() {
 
 			#ifdef SVGF_ENABLED
 				float NdotV = saturate(dot(worldNormal, -worldDir));
-				sceneOut += SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.5 + 0.5);
+				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.5 + 0.5);
 			#else
-				sceneOut += texelFetch(colortex3, screenTexel / 2, 0).rgb * albedo * (ao * 0.5 + 0.5);
+				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2((int(viewWidth) >> 1) + 1, 0), 0).rgb * albedo * (ao * 0.5 + 0.5);
 			#endif
 		#elif defined RSM_ENABLED
 			#ifdef DEBUG_GI
@@ -557,7 +558,7 @@ void main() {
 			#endif
 
 			float NdotV = saturate(dot(worldNormal, -worldDir));
-			vec3 rsm = SpatialUpscale5x5(screenTexel / 2, worldNormal, length(viewPos), NdotV);
+			vec3 rsm = SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV);
 			sceneOut += sqr(rsm) * albedo * ao * (sunlightMult * rPI);
 		#endif
 	}

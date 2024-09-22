@@ -12,7 +12,7 @@
 #if !defined INCLUDE_SETTINGS
 #define INCLUDE_SETTINGS
 
-#define INFO Alpha // Development stage of the shaderpack. [Alpha Beta Release]
+#define INFO   Alpha // Development stage of the shaderpack. [Alpha Beta Release]
 #define AUTHOR HaringPro // Copyright holder of the shaderpack. [HaringPro]
 
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
@@ -21,10 +21,10 @@ const float	shadowDistance 	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.
 //======// Environment //=========================================================================//
 
 const ivec2 skyViewRes = ivec2(255, 192);
-const float skyIntensity = 12.0;
+const float skyIntensity = 14.0;
 
 const float minCloudTransmittance = 0.05;
-const float minCloudAbsorption	  = 0.01;
+const float minCloudAbsorption	  = 0.02;
 
 /* Aurora */
 	// #define AURORA // Enables aurora
@@ -108,6 +108,7 @@ const float minCloudAbsorption	  = 0.01;
 
 /* Global Illumination */
 	// #define SSPT_ENABLED // Enables screen-space path tracing
+	// #define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
 	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
 
 	// #define RSM_ENABLED // Enables reflective shadow maps
@@ -170,7 +171,7 @@ const float minCloudAbsorption	  = 0.01;
 	#endif
 
 	#define SPECULAR_DIFFUSION_CLAMP // Enables rough reflection diffusion clamp
-	#define SPECULAR_HIGHLIGHT_BRIGHTNESS 0.5 // Brightness of the specular high light. [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 2.0 2.5 3.0 4.0 5.0 7.0 10.0 15.0]
+	#define SPECULAR_HIGHLIGHT_BRIGHTNESS 0.6 // Brightness of the specular high light. [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 2.0 2.5 3.0 4.0 5.0 7.0 10.0 15.0]
 
 /* Emissive */
 	#define EMISSIVE_MODE 0 // [0 1 2]
@@ -241,6 +242,7 @@ const float minCloudAbsorption	  = 0.01;
 	// #define WHITE_WORLD
 	#define DEBUG_NORMALS 0 // [0 1 2]
 	// #define DEBUG_DEPTH 0 // [0 1 2]
+	// #define DEBUG_SKYVIEW
 	// #define DEBUG_BLOOM_TILES
 	// #define DEBUG_GI
 	// #define DEBUG_SKY_COLOR

@@ -35,14 +35,13 @@ uniform sampler2D depthtex0;
 uniform mat4 gbufferProjectionInverse;
 
 uniform vec2 viewSize;
-uniform vec2 taaOffset;
 
 uniform int frameCounter;
 
 //======// Function //============================================================================//
 
 const uint padRadius = 1;
-const uvec2 sharedSize = gl_WorkGroupSize.xy + padRadius * 2;
+const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 
 shared float sharedVariance[sharedSize.x][sharedSize.y];
 
@@ -112,12 +111,12 @@ void main() {
 	SharedPreload();
 
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-	float depth = texelFetch(depthtex0, texel * 2, 0).x;
+	float depth = texelFetch(depthtex0, texel << 1, 0).x;
 	if (depth < 1.0) {
-		ivec2 shift = ivec2(viewSize.x * 0.5, 0);
-        ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+		ivec2 shiftX = ivec2(int(viewSize.x) >> 1, 0);
+        ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
 
-		vec4 normalDepthData = texelFetch(colortex13, texel + shift, 0);
+		vec4 normalDepthData = texelFetch(colortex13, texel + shiftX, 0);
 		// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 
 		const ivec2 offset[4] = {
@@ -132,7 +131,7 @@ void main() {
 		#else
 			const float kernel[4] = {0.0625, 0.125, 0.125, 0.0625};
 
-			float sumWeight = 0.1;
+			float sumWeight = 0.25;
 		#endif
 
 		vec4 indirectCurrent = imageLoad(colorimg3, texel);
@@ -146,8 +145,8 @@ void main() {
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = randTexel + offset[i] * ATROUS_FILTER_SIZE;
-			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
-				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
+			if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
+				vec4 sampleData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
 				vec4 sampleLight = imageLoad(colorimg3, sampleTexel);
 				float sampleLuma = GetLuminance(sampleLight.rgb);
@@ -174,6 +173,6 @@ void main() {
 
 		indirectCurrent /= sumWeight;
 		indirectCurrent.a /= sumWeight; // Sample variance
-		imageStore(colorimg3, texel + shift, indirectCurrent);
+		imageStore(colorimg3, texel + shiftX, indirectCurrent);
 	}
 }

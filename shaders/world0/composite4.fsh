@@ -71,7 +71,7 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 #include "/lib/surface/BRDF.glsl"
 
 vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3 screenPos, in vec3 viewPos) {
-	skylight = smoothstep(0.3, 0.8, cube(skylight));
+	skylight = remap(0.3, 0.7, cube(skylight));
 	vec3 viewDir = normalize(viewPos);
 
 	float LdotH = dot(viewNormal, -viewDir);
@@ -166,7 +166,7 @@ void main() {
 		float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), vec2(0.0));
 			Material material = GetMaterialData(specularTex);
 		#endif
 

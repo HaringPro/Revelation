@@ -62,13 +62,13 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         fractTexel.x           * fractTexel.y
     };
 
-    ivec2 shift = ivec2(ceil(viewWidth * 0.5), 0);
-    ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+    ivec2 shiftX = ivec2(int(viewWidth) >> 1, 0);
+    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
 
     for (uint i = 0u; i < 4u; ++i) {
         ivec2 sampleTexel = floorTexel + offset2x2[i];
-        if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
-            vec4 prevData = texelFetch(colortex13, sampleTexel + shift, 0);
+        if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
+            vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
             if ((abs(currViewDistance - prevData.w) - cameraMovement) < 0.1 * currViewDistance) {
                 float weight = weight[i];
@@ -102,7 +102,7 @@ float GetClosestDepth(in ivec2 texel) {
     float depth = sampleDepth(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = offset3x3N[i] * 2 + texel;
+        ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
         float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
         depth = min(depth, sampleDepth);
     }
@@ -122,7 +122,7 @@ void main() {
             float depth = sampleDepthMin4x4(currentCoord);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = screenTexel * 2;
+                ivec2 currentTexel = screenTexel << 1;
                 // currentTexel = ivec2(closestFragment.xy * viewSize);
                 vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
 
@@ -143,7 +143,7 @@ void main() {
             float depth = sampleDepthMin4x4(currentCoord);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = screenTexel * 2 - ivec2(viewWidth, 0);
+                ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
                 vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
                 float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
 

@@ -152,7 +152,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define currentLoad(offset) RGBtoYCoCgR(sampleSceneColor(texel + offset));
+#define currentLoad(offset) RGBtoYCoCgR(texelFetchOffset(colortex0, texel, 0, offset).rgb);
 
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))

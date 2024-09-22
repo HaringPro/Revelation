@@ -7,6 +7,7 @@
 #define sampleGbufferData0(texel) texelFetch(colortex7, texel, 0)
 #define sampleGbufferData1(texel) texelFetch(colortex8, texel, 0)
 
+//================================================================================================//
 
 float FetchDepthFix(in ivec2 texel) {
 	float depth = texelFetch(depthtex0, texel, 0).x;
@@ -17,14 +18,6 @@ float FetchDepthSoildFix(in ivec2 texel) {
 	float depth = texelFetch(depthtex1, texel, 0).x;
 	return depth + 0.38 * step(depth, 0.56);
 }
-
-// vec3 FetchFlatNormal(in ivec2 texel) {
-// 	return decodeUnitVector(unpackUnorm2x8(sampleGbufferData0(texel).z));
-// }
-
-// vec3 FetchWorldNormal(in ivec2 texel) {
-// 	return decodeUnitVector(unpackUnorm2x8(sampleGbufferData0(texel).w));
-// }
 
 vec3 FetchFlatNormal(in vec4 data) {
 	return decodeUnitVector(unpackUnorm2x8(data.z));

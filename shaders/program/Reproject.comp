@@ -21,9 +21,6 @@ const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 //======// Output //==============================================================================//
 
 writeonly restrict uniform image2D colorimg4;
-#ifdef SSPT_ENABLED
-    writeonly restrict uniform image2D colorimg3;
-#endif
 
 //======// Uniform //=============================================================================//
 
@@ -58,7 +55,7 @@ uniform vec2 taaOffset;
 void main() {
     ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-	float depth = texelFetch(depthtex0, screenTexel * 2, 0).x;
+	float depth = texelFetch(depthtex0, screenTexel << 1, 0).x;
 
 	vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
@@ -66,11 +63,9 @@ void main() {
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {
         vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
         imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
-        #ifdef SSPT_ENABLED
+        #if defined SSPT_ENABLED && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
             reprojectedHistory = texture(colortex3, previousCoord).rgb;
-            imageStore(colorimg3, screenTexel, vec4(reprojectedHistory, 1.0));
-        } else {
-            imageStore(colorimg3, screenTexel, vec4(0.0));
+            imageStore(colorimg4, screenTexel + ivec2(int(viewSize.x) >> 1, 0), vec4(reprojectedHistory, 1.0));
         #endif
     }
 }

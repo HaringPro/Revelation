@@ -35,14 +35,13 @@ uniform sampler2D depthtex0;
 uniform mat4 gbufferProjectionInverse;
 
 uniform vec2 viewSize;
-uniform vec2 taaOffset;
 
 uniform int frameCounter;
 
 //======// Function //============================================================================//
 
 const uint padRadius = 1;
-const uvec2 sharedSize = gl_WorkGroupSize.xy + padRadius * 2;
+const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 
 shared float sharedVariance[sharedSize.x][sharedSize.y];
 
@@ -74,11 +73,8 @@ void SharedPreload() {
     barrier();
 }
 
-vec3 ScreenToViewSpace(in vec3 screenPos) {
+vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
-		NDCPos.xy -= taaOffset;
-	#endif
 	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
 	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
 
@@ -123,12 +119,12 @@ void main() {
 	SharedPreload();
 
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-	float depth = texelFetch(depthtex0, texel * 2, 0).x;
+	float depth = texelFetch(depthtex0, texel << 1, 0).x;
 	if (depth < 1.0) {
-		ivec2 shift = ivec2(viewSize.x * 0.5, 0);
-        ivec2 maxLimit = ivec2(viewSize * 0.5) - 1;
+		ivec2 shiftX = ivec2(int(viewSize.x) >> 1, 0);
+        ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
 
-		vec4 normalDepthData = texelFetch(colortex13, texel + shift, 0);
+		vec4 normalDepthData = texelFetch(colortex13, texel + shiftX, 0);
 		// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 
 		const ivec2 offset[8] = {
@@ -156,8 +152,7 @@ void main() {
         //             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
         //             1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0};
 
-		// float sumWeight = 0.25;
-		float sumWeight = 0.1;
+		float sumWeight = 0.25;
 
 		vec4 indirectCurrent = imageLoad(colorimg3, texel);
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
@@ -170,8 +165,8 @@ void main() {
 
 		for (uint i = 0u; i < 8u; ++i) {
 			ivec2 sampleTexel = randTexel + offset[i] * ATROUS_FILTER_SIZE;
-			if (clamp(sampleTexel, ivec2(0), maxLimit) == sampleTexel) {
-				vec4 sampleData = texelFetch(colortex13, sampleTexel + shift, 0);
+			if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
+				vec4 sampleData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
 				vec4 sampleLight = imageLoad(colorimg3, sampleTexel);
 				float sampleLuma = GetLuminance(sampleLight.rgb);

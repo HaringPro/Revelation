@@ -42,6 +42,19 @@ vec3 ViewToScreenSpace(in vec3 viewPos) {
 	return NDCPos * 0.5 + 0.5;
 }
 
+vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
+	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
+	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
+}
+
+vec3 ScreenToViewVector(in vec2 screenCoord) {
+	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCCoord -= taaOffset;
+	#endif
+	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
+}
+
 vec3 Reproject(in vec3 screenPos) {
 	vec3 position = ScreenToViewSpaceRaw(screenPos); // To view space
     position = transMAD(gbufferModelViewInverse, position); // To world space

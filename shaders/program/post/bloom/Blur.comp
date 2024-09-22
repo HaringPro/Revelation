@@ -23,7 +23,7 @@ shared vec3 sharedData[64 + 8];
 void main() {
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 
-	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg4, texel - OFFSET * 4).rgb;
+	sharedData[gl_LocalInvocationIndex] = imageLoad(colorimg4, texel - (OFFSET << 2)).rgb;
 	if (gl_LocalInvocationIndex < 8) {
 		sharedData[gl_LocalInvocationIndex + 64] = imageLoad(colorimg4, texel + OFFSET * (64 - 4)).rgb;
 	}

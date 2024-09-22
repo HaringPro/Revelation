@@ -168,7 +168,7 @@ void main() {
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
 
-		// float distanceFade = saturate(pow16(rcp(shadowDistance * shadowDistance) * dotSelf(worldPos)));
+		// float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * dotSelf(worldPos.xz)));
 
 		// Shadows
 		if (NdotL > 1e-3) {
@@ -212,7 +212,7 @@ void main() {
 				sceneOut.rgb += skylight * cube(lightmap.y);
 
 				// Bounced light
-				float bounce = CalculateFittedBouncedLight(worldNormal);
+				float bounce = CalculateApproxBouncedLight(worldNormal);
 				bounce *= pow5(lightmap.y);
 				sceneOut.rgb += bounce * sunlightMult;
 			}

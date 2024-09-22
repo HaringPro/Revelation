@@ -31,8 +31,7 @@ struct Material {
 
 // https://shaderlabs.org/wiki/LabPBR_Material_Standard
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-	const mat2x3 GetMetalCoeff[8] = mat2x3[8](
-							//--// N //--//				 //--// K //--//
+	const mat2x3 GetMetalCoeff[8] = mat2x3[8]( // mat3(N, K)
 		mat2x3(vec3(2.91140, 2.94970, 2.58450), vec3(3.0893, 2.9318, 2.7670)), // 230: 铁 - Iron
 		mat2x3(vec3(0.18299, 0.42108, 1.37340), vec3(3.4242, 2.3459, 1.7704)), // 231: 金 - Gold
 		mat2x3(vec3(1.34560, 0.96521, 0.61722), vec3(7.4746, 6.3995, 5.3031)), // 232: 铝 - Aluminium
@@ -50,14 +49,19 @@ struct Material {
 		material.isHardcodedMetal = false;
 
 		#if TEXTURE_FORMAT == 0
-			if (specTex.g < (229.5 / 255.0)) {
+			uint metalIndex = uint(specTex.g * 255.0);
+
+			if (metalIndex <= 229u) {
+				// Dielectrics
 				material.metalness = 0.0;
-				material.f0 = specTex.g;			
-			} else if (specTex.g < 237.5 / 255.0) {
+				material.f0 = mix(0.02, 1.0, specTex.g);
+			} else if (metalIndex <= 237u) {
+				// Hardcoded metals
 				material.metalness = 1.0;
 				material.isHardcodedMetal = true;
-				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(uint(specTex.g * 255.0) - 230u, 0u, 7u)];
+				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(metalIndex - 230u, 0u, 7u)];
 			} else {
+				// Metals
 				material.metalness = 1.0;
 				material.f0 = 0.91;
 			}
@@ -66,7 +70,7 @@ struct Material {
 			#endif
 		#else
 			material.metalness = specTex.g;
-			material.f0 = specTex.g * 0.96 + 0.04;
+			material.f0 = mix(0.02, 1.0, specTex.g);
 			#if defined PROGRAM_DEFERRED_10
 				material.emissiveness = specTex.b;
 			#endif
@@ -76,7 +80,7 @@ struct Material {
 			material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 		#endif
 
-		material.hasReflections = max0(0.4 - material.roughness) + material.metalness > 1e-3;
+		material.hasReflections = max0(0.4 - material.roughness) > 1e-2;
 		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;

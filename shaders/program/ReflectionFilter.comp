@@ -53,13 +53,27 @@ uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalI
 uint RandNext() { return randState = triple32(randState); }
 #define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
 
+// https://alakhag.github.io/posts/sg/
+float sphericalGaussian(in vec3 v, in vec3 p, in float lambda) {
+    return fastExp(lambda * (saturate(dot(v, p)) - 1.0));
+}
+
+float lobeSharpness(in float roughness) {
+    return 2.0 / (roughness * roughness);
+}
+
+float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float sRoughness, const float factor = 2.0) {
+    float cLambda = lobeSharpness(cRoughness), sLambda = lobeSharpness(sRoughness);
+    float product = cLambda * sLambda, summa = cLambda + sLambda;
+    return pow(summa * inversesqrt(product) * 0.5, -factor) * sphericalGaussian(cNormal, sNormal, product * (factor / maxEps(summa)));
+}
+
 vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
     float smoothness = 1.0 - approxSqrt(roughness);
     float linearDepth = FetchLinearDepth(texel);
-    float NdotV = saturate(dot(-worldDir, worldNormal));
+    float NdotV = saturate(dot(worldNormal, -worldDir));
 
-    float offsetScale = filterSize * min(roughness * 20.0, 1.0);
-    offsetScale *= fastExp(-oneMinus(reflectionData.a) * 0.25);
+    float offsetScale = filterSize * exp2(-oneMinus(reflectionData.a) * smoothness);
 
 	const vec2 angle = cossin(hPI);
 	const mat2 rotND = mat2(angle, -angle.y, angle.x);
@@ -69,11 +83,10 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     vec2 tangent = normalize(cross(worldNormal, reflectedDir).xy) * offsetScale;
     vec2 bitangent = tangent * rotND; // Cross product with tangent to get bitangent
 
-    float skewFactor = mix(0.5 + 0.5 * roughness, 1.0, NdotV);
-    bitangent /= skewFactor;
+    float skewFactor = mix(1.0, roughness, approxSqrt(1.0 - NdotV));
+    tangent *= skewFactor;
 
     const float sharpenWeight = 0.5;
-    float roughnessInv = 80.0 / max(roughness, 1e-4);
 
     reflectionData.rgb = pow(dotSelf(reflectionData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(reflectionData.rgb));
     float sumWeight = 1.0;
@@ -85,10 +98,13 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         vec4 sampleData = imageLoad(colorimg2, sampleTexel);
 
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
+        vec3 sampleWorldNormal = FetchWorldNormal(sampleGbufferData0(sampleTexel));
+        // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
+        float sampleRoughness = sqr(1.0 - unpackUnorm2x8(sampleGbufferData1(sampleTexel).x).x);
 
-        float weight =  pow(max0(dot(worldNormal, FetchWorldNormal(sampleGbufferData0(sampleTexel)))), roughnessInv) *
-                        fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) *
-                        fastExp(-abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV);
+        float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness) * // Lobe weight
+                       fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) * // Hit distance weight
+                       fastExp(-abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV); // Depth weight
 
         reflectionData += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
         sumWeight += weight;
@@ -107,15 +123,14 @@ void main() {
     vec4 reflectionData = imageLoad(colorimg2, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-        vec4 gbufferData1 = sampleGbufferData1(screenTexel);
-        vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+		vec4 specularTex = vec4(unpackUnorm2x8(sampleGbufferData1(screenTexel).x), vec2(0.0));
         Material material = GetMaterialData(specularTex);
 
         if (material.hasReflections && material.isRough) {
-            vec3 screenPos = vec3((vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize, sampleDepth(screenTexel));
-            vec3 viewPos = ScreenToViewSpace(screenPos);
+            vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
+            vec3 viewDir = ScreenToViewVector(screenCoord);
 
-            vec3 worldDir = mat3(gbufferModelViewInverse) * normalize(viewPos);
+            vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
             vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(screenTexel));
 
             reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, RandNext2F() - 0.5);

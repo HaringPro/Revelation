@@ -43,6 +43,7 @@ flat in float exposure;
 	uniform sampler2D colortex1; // TAA output
 #endif
 uniform sampler2D colortex4; // Bloom tiles
+uniform sampler2D colortex5; // Sky-View LUT
 uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex7; // Bloomy fog transmittance
 
@@ -202,6 +203,11 @@ void main() {
 		vec2 clipCoord = gl_FragCoord.xy * viewPixelSize * 2.0 - 1.0;
 		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
 		HDRImage *= fastExp(-0.4 * dotSelf(clipCoord) * VIGNETTE_STRENGTH);
+	#endif
+
+	// Debug sky-view
+	#ifdef DEBUG_SKYVIEW
+		HDRImage = texelFetch(colortex5, screenTexel >> 1, 0).rgb;
 	#endif
 
 	// Tone mapping
