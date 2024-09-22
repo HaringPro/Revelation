@@ -70,7 +70,7 @@ uniform vec3 lightningShading;
 
 #define HISTOGRAM_BIN_COUNT 32 // [8 16 32 64 128 256 512 1024]
 #define HISTOGRAM_MIN_EV -20.0 // [-24.0 -20.0 -16.0 -12.0 -8.0 -4.0 -2.0 -1.0 0.0 1.0 2.0 4.0 8.0 12.0 16.0 20.0 24.0]
-#define HISTOGRAM_LOWER_BOUND 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
+#define HISTOGRAM_LOWER_BOUND 0.6 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
 #define HISTOGRAM_UPPER_BOUND 0.9 // [0.5 0.6 0.7 0.8 0.9 1.0]
 
 float CalculateAutoExposure() {

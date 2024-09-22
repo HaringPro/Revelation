@@ -290,7 +290,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
 			if (target.rayPos.z < 1.0) {
-				vec3 sampleLight = texelFetch(colortex4, ivec2(target.rayPos.xy * 0.5) + shiftX, 0).rgb;
+				vec3 sampleLight = texelFetch(colortex4, (ivec2(target.rayPos.xy) >> 1) + shiftX, 0).rgb;
 
 				target.worldNormal = FetchWorldNormal(sampleGbufferData0(ivec2(target.rayPos.xy)));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
@@ -336,9 +336,9 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			if (hitPos.z < 1.0) {
 				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
-					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb * step(0.56, screenPos.z);
+					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy) >> 1, 0).rgb * step(0.56, screenPos.z);
 				#else
-					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy * 0.5) + shiftX, 0).rgb;
+					vec3 sampleLight = texelFetch(colortex4, (ivec2(hitPos.xy) >> 1) + shiftX, 0).rgb;
 				#endif
 
 				hitPos.xy *= viewPixelSize;
