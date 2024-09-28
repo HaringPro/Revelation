@@ -62,7 +62,7 @@ float lobeSharpness(in float roughness) {
     return 2.0 / (roughness * roughness);
 }
 
-float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float sRoughness, const float factor = 2.0) {
+float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float sRoughness, const float factor) {
     float cLambda = lobeSharpness(cRoughness), sLambda = lobeSharpness(sRoughness);
     float product = cLambda * sLambda, summa = cLambda + sLambda;
     return pow(summa * inversesqrt(product) * 0.5, -factor) * sphericalGaussian(cNormal, sNormal, product * (factor / maxEps(summa)));
@@ -102,7 +102,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
         float sampleRoughness = sqr(1.0 - unpackUnorm2x8(sampleGbufferData1(sampleTexel).x).x);
 
-        float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness) * // Lobe weight
+        float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 2.0) * // Lobe weight
                        fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) * // Hit distance weight
                        fastExp(-abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV); // Depth weight
 
