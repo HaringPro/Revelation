@@ -104,7 +104,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 				float NdotH = (NdotL + NdotV) * halfwayNorm;
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-				vec3 transmittance = textureBicubic(colortex10, skyViewCoord).rgb * (oneMinus(wetness * 0.96) * 1e2 * skylight);
+				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (oneMinus(wetness * 0.96) * 1e2 * skylight);
 				reflection += transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 			}
 		#endif
@@ -118,7 +118,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade) * brdf;
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb * brdf - reflection) * saturate(edgeFade);
 	}
 
 	return vec4(reflection, brdf);

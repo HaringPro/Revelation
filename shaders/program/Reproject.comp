@@ -63,7 +63,7 @@ void main() {
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {
         vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
         imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
-        #if defined SSPT_ENABLED && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+        #if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
             reprojectedHistory = texture(colortex3, previousCoord).rgb;
             imageStore(colorimg4, screenTexel + ivec2(int(viewSize.x) >> 1, 0), vec4(reprojectedHistory, 1.0));
         #endif

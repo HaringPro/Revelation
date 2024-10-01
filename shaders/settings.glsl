@@ -111,7 +111,7 @@ const float minCloudAbsorption	  = 0.02;
 
 /* Global Illumination */
 	// #define SSPT_ENABLED // Enables screen-space path tracing
-	// #define SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+	// #define SSPT_TEMPORAL_INFINITE_BOUNCES
 	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
 
 	// #define RSM_ENABLED // Enables reflective shadow maps

@@ -269,7 +269,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 	ivec2 shiftX = ivec2((int(viewWidth) >> 1) + 1, 0);
 
-	#if SSPT_BOUNCES > 1 && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+	#if SSPT_BOUNCES > 1 && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
 	// Multiple bounce tracing.
 
     for (uint spp = 0u; spp < SSPT_SPP; ++spp) {
@@ -334,7 +334,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, dither, screenPos);
 
 			if (hitPos.z < 1.0) {
-				#ifdef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+				#ifdef SSPT_TEMPORAL_INFINITE_BOUNCES
 					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy) >> 1, 0).rgb * step(0.56, screenPos.z);
 				#else
 					vec3 sampleLight = texelFetch(colortex4, (ivec2(hitPos.xy) >> 1) + shiftX, 0).rgb;

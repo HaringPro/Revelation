@@ -28,7 +28,7 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
-#if defined SSPT_ENABLED && !defined SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+#if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
 /* RENDERTARGETS: 0,2,3 */
 layout (location = 2) out vec3 lightingOut;
 #endif
@@ -463,7 +463,7 @@ void main() {
 
 		// Global illumination
 		#ifdef SSPT_ENABLED
-			#ifndef SSPT_ACCUMULATED_MULTIPLE_BOUNCES
+			#ifndef SSPT_TEMPORAL_INFINITE_BOUNCES
 				lightingOut = sceneOut;
 			#endif
 
@@ -474,9 +474,9 @@ void main() {
 
 			#ifdef SVGF_ENABLED
 				float NdotV = saturate(dot(worldNormal, -worldDir));
-				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * (ao * 0.5 + 0.5);
+				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * ao;
 			#else
-				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2((int(viewWidth) >> 1) + 1, 0), 0).rgb * albedo * (ao * 0.5 + 0.5);
+				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2((int(viewWidth) >> 1) + 1, 0), 0).rgb * albedo * ao;
 			#endif
 		#elif defined RSM_ENABLED
 			#ifdef DEBUG_GI
