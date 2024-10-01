@@ -52,7 +52,7 @@ void main() {
 	albedoOut = albedo;
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = 1.1 * r255;
+	gbufferOut0.y = r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 	#if defined NORMAL_MAPPING

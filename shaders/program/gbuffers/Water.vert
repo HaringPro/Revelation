@@ -50,6 +50,8 @@ uniform vec2 taaOffset;
 //======// Function //============================================================================//
 
 #define PHYSICS_OCEAN_SUPPORT
+#ifdef PHYSICS_OCEAN_SUPPORT
+#endif
 
 #ifdef PHYSICS_OCEAN
 	#define PHYSICS_VERTEX

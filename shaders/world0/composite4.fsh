@@ -63,47 +63,11 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 
 #include "/lib/SpatialUpscale.glsl"
 
-#include "/lib/surface/ScreenSpaceRaytracer.glsl"
-
-#include "/lib/surface/Refraction.glsl"
 #include "/lib/water/WaterFog.glsl"
 
 #include "/lib/surface/BRDF.glsl"
-
-vec4 CalculateSpecularReflections(in vec3 viewNormal, in float skylight, in vec3 screenPos, in vec3 viewPos) {
-	skylight = remap(0.3, 0.7, cube(skylight));
-	vec3 viewDir = normalize(viewPos);
-
-	float LdotH = dot(viewNormal, -viewDir);
-	vec3 rayDir = viewDir + viewNormal * LdotH * 2.0;
-
-	float NdotL = dot(viewNormal, rayDir);
-	if (NdotL < 1e-6) return vec4(0.0);
-
-	vec3 reflection;
-	if (skylight > 1e-3) {
-		if (isEyeInWater == 0) {
-			vec3 rayDirWorld = mat3(gbufferModelViewInverse) * rayDir;
-			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(rayDirWorld) + vec2(0.0, 0.5)).rgb;
-
-			reflection = skyRadiance * skylight;
-		}
-	}
-
-	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
-	bool hit = ScreenSpaceRaytrace(viewPos, rayDir, dither, RAYTRACE_SAMPLES, screenPos);
-	if (hit) {
-		screenPos.xy *= viewPixelSize;
-		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
-	}
-
-	float NdotV = max(1e-6, dot(viewNormal, -viewDir));
-	float brdf = FresnelDielectricN(NdotV, GLASS_REFRACT_IOR);
-
-	return vec4(reflection, brdf);
-}
+#include "/lib/surface/Reflection.glsl"
+#include "/lib/surface/Refraction.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -129,32 +93,30 @@ void main() {
 
 	vec4 gbufferData1 = sampleGbufferData1(screenTexel);
 	vec3 worldNormal = FetchWorldNormal(gbufferData0);
-	vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
-	vec2 refractCoord = screenCoord;
-	ivec2 refractTexel = screenTexel;
+	vec2 refracCoord = screenCoord;
+	ivec2 refracTexel = screenTexel;
 	bool waterMask = false;
+
 	if (materialID == 2u || materialID == 3u) {
+		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 		#ifdef RAYTRACED_REFRACTION
-			refractCoord = CalculateRefractCoord(viewPos, viewNormal, screenPos);
+			refracCoord = CalculateRefractiveCoord(materialID == 3u, viewPos, viewNormal, screenPos);
 		#else	
-			refractCoord = CalculateRefractCoord(materialID, viewPos, viewNormal, gbufferData1, transparentDepth);
+			refracCoord = CalculateRefractiveCoord(materialID == 3u, viewPos, viewNormal, gbufferData1, transparentDepth);
 		#endif
-		refractTexel = rawCoord(refractCoord);
-		if (sampleDepthSolid(refractTexel) < depth) {
-			refractCoord = screenCoord;
-			refractTexel = screenTexel;
-		}
+		refracCoord = sampleDepthSolid(rawCoord(refracCoord)) < depth ? screenCoord : refracCoord;
+		refracTexel = rawCoord(refracCoord);
 
-		depth = sampleDepth(refractTexel);
-		sDepth = sampleDepthSolid(refractTexel);
+		depth = sampleDepth(refracTexel);
+		sDepth = sampleDepthSolid(refracTexel);
 
-		gbufferData0 = sampleGbufferData0(refractTexel);
-		viewPos = ScreenToViewSpace(vec3(refractCoord, depth));
+		gbufferData0 = sampleGbufferData0(refracTexel);
+		viewPos = ScreenToViewSpace(vec3(refracCoord, depth));
 		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
 	}
 
-    sceneOut = sampleSceneColor(refractTexel);
+    sceneOut = sampleSceneColor(refracTexel);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -177,29 +139,37 @@ void main() {
 			sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		}
 
-		if (waterMask || materialID == 2u) {
-			// Specular reflections of water and lighting of glass
+		if (waterMask) { // Water
+			// Specular lighting of water
 			vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
-			sceneOut += (blendedData.rgb - sceneOut) * blendedData.a;
-			if (materialID == 2u) {
-				// Glass tint
-				vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
-				translucents.a = approxSqrt(approxSqrt(translucents.a));
-				sceneOut *= pow4((1.0 - translucents.a + saturate(translucents.rgb)) * translucents.a);
+			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
+				blendedData.rgb -= sceneOut * blendedData.a;
+			#else
+				blendedData.rgb = waterMask && isEyeInWater == 1 ? blendedData.rgb - sceneOut * blendedData.a : blendedData.rgb;
+			#endif
 
-				// Specular reflections of glass
-				vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, rawViewPos);
-				sceneOut += (reflections.rgb - sceneOut) * reflections.a * translucents.a;
-			}
+			sceneOut += blendedData.rgb;
+		} else if (materialID == 2u) { // Glass
+			// Glass tint
+			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+			sceneOut *= fastExp(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
+
+			// Specular and diffuse lighting of glass
+			vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
+			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
+				blendedData.rgb -= sceneOut * blendedData.a;
+			#endif
+
+			sceneOut += blendedData.rgb;
 		} else if (materialID == 46u || materialID == 51u) {
 			// Specular reflections of slime and ender portal
-			vec4 reflections = CalculateSpecularReflections(viewNormal, skyLightmap, screenPos, rawViewPos);
+			vec4 reflections = CalculateSpecularReflections(worldNormal, skyLightmap, screenPos, worldDir, rawViewPos);
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
-				vec4 reflectionData = texelFetch(colortex2, refractTexel, 0);
+				vec4 reflectionData = texelFetch(colortex2, refracTexel, 0);
 				sceneOut += reflectionData.rgb;
 			}
 		#endif

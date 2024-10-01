@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/SpatialFilter.comp"
+#include "/program/RSM/SpatialFilter.comp"

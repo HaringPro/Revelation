@@ -2,4 +2,4 @@
 
 #define ATROUS_FILTER_SIZE 4
 
-#include "/program/ATrousFilter.comp"
+#include "/program/SSPT/ATrousFilter.comp"

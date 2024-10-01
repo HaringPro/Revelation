@@ -187,7 +187,7 @@ void main() {
 	#endif
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = (float(materialID) + 0.1) * r255;
+	gbufferOut0.y = float(materialID) * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP

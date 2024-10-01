@@ -38,11 +38,11 @@ const float minCloudAbsorption	  = 0.02;
 		#undef CLOUD_SHADOWS
 	#endif
 
-	#define CTU_ENABLED // Enables cloud temporal upscaling
-	#define CLOUD_TEMPORAL_UPSCALING 2 // Temporal upscaling factor for cloud rendering. [2 3 4]
+	#define CLOUD_CBR_ENABLED // Enables cloud checkerboard rendering
+	#define CLOUD_CBR_SCALE 2 // Upscaling factor for cloud checkerboard rendering. [2 3 4]
 	#define CLOUD_MAX_BLENDED_FRAMES 40.0 // Maximum number of blended frames for cloud temporal upscaling. [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
-	const int cloudRenderArea = CLOUD_TEMPORAL_UPSCALING * CLOUD_TEMPORAL_UPSCALING;
+	const int cloudRenderArea = CLOUD_CBR_SCALE * CLOUD_CBR_SCALE;
 
 /* Fog */
 	// #define BORDER_FOG // Enables border fog
@@ -88,9 +88,12 @@ const float minCloudAbsorption	  = 0.02;
 	#define WATER_ABSORPTION_G 0.1  // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 	#define WATER_ABSORPTION_B 0.05 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
-	// #define TRANSLUCENT_LIGHTING // Enables translucent lighting
-	#define TRANSLUCENT_LIGHTING_BLEND_FACTOR 0.25 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 	#define GLASS_REFRACT_IOR 1.5 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
+
+	// #define TRANSLUCENT_LIGHTING // Enables translucent lighting
+	#define TRANSLUCENT_LIGHTING_BLENDED_MODE 1 // [0 1]
+	#define TRANSLUCENT_LIGHTING_BLENDED_FACTOR 0.25 // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+	#define TRANSLUCENT_ROUGHNESS 0.005 // Roughness of translucents. [0.0 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 /* Weather */
 	#define RAIN_VISIBILITY	0.25 // Visibility of the rain. [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]

@@ -6,7 +6,9 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Compute low-res clouds
+	Pass: Checkerboard render low-res clouds
+	Reference: https://www.intel.com/content/dam/develop/external/us/en/documents/checkerboard-rendering-for-real-time-upscaling-on-intel-integrated-graphics.pdf
+			   https://developer.nvidia.com/sites/default/files/akamai/gameworks/samples/DeinterleavedTexturing.pdf
 
 --------------------------------------------------------------------------------
 */
@@ -58,6 +60,10 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
+#ifdef AURORA
+	#include "/lib/atmospherics/Aurora.glsl"
+#endif
+
 #include "/lib/atmospherics/clouds/Render.glsl"
 
 vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
@@ -79,13 +85,14 @@ float sampleDepthMax4x4(in vec2 coord) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	ivec2 cloudTexel = screenTexel * CLOUD_TEMPORAL_UPSCALING + checkerboardOffset[frameCounter % cloudRenderArea];
+	ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
 	vec2 cloudUV = (vec2(cloudTexel) + 0.5) * viewPixelSize;
 
 	if (sampleDepthMax4x4(cloudUV) > 0.999999) {
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUV);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
+		// Checkerboard dithering
 		float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
 
 		cloudOut = RenderClouds(worldDir, dither);

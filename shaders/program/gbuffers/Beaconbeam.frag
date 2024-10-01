@@ -41,7 +41,7 @@ void main() {
 
 	albedoOut = albedo.rgb;
 
-	gbufferOut0.y = 20.1 * r255;
+	gbufferOut0.y = 20.0 * r255;
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP

@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/AccumulateSSPT.frag"
+#include "/program/SSPT/Accumulate.frag"

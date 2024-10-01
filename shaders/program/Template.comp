@@ -39,6 +39,6 @@ uniform sampler2D sampler2;
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
-    vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
+    vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
 	imageStore(colorimg0, screenTexel, vec4(texture(sampler0, texCoord).rgb, 1.0));
 }

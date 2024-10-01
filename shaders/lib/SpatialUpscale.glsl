@@ -11,21 +11,19 @@
         ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
 
 		for (uint i = 0u; i < 24u; ++i) {
-			ivec2 sampleTexel = texel + offset5x5N[i];
-			if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
-				vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
+			ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), halfResBorder);
+			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
 
-				vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+			vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
-				float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
-				weight *= exp2(-distance(prevData.a, viewDistance) * 2.0 * NdotV);
-				weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
+			float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
+			weight *= exp2(-distance(prevData.a, viewDistance) * 2.0 * NdotV);
+			weight *= exp2(-abs(centerLuma - GetLuminance(sampleLight.rgb)) * 0.4);
 
-				if (weight < 1e-5) continue;
+			if (weight < 1e-5) continue;
 
-				sum += sampleLight * weight;
-				sumWeight += weight;
-			}
+			sum += sampleLight * weight;
+			sumWeight += weight;
 		}
 
 		return sum / sumWeight;

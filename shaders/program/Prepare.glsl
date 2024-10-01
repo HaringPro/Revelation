@@ -227,6 +227,10 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
+#ifdef AURORA
+	#include "/lib/atmospherics/Aurora.glsl"
+#endif
+
 #include "/lib/atmospherics/clouds/Render.glsl"
 
 //======// Main //================================================================================//
@@ -268,6 +272,7 @@ void main() {
 		#ifdef CLOUDS
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
+            transmittanceOut *= cloudData.a;
         #endif
 	} else {
 		// Raw sky map

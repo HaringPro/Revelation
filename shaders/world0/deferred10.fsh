@@ -46,15 +46,12 @@ flat in vec3 blocklightColor;
 
 uniform sampler2D noisetex;
 
-#if defined CLOUDS && !defined CTU_ENABLED
+#if defined CLOUDS && !defined CLOUD_CBR_ENABLED
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
 uniform sampler2D colortex3; // Current indirect light
-
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-	uniform sampler2D colortex4; // Reprojected scene history
-#endif
+uniform sampler2D colortex4; // Reprojected scene history
 
 uniform sampler2D colortex5; // Sky-View LUT
 
@@ -123,13 +120,17 @@ uniform mat4 shadowModelView;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Offset.glsl"
 #include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
-
 #include "/lib/atmospherics/Celestial.glsl"
 
-#if defined CLOUDS && !defined CTU_ENABLED
+#ifdef AURORA
+	#include "/lib/atmospherics/Aurora.glsl"
+#endif
+
+#if defined CLOUDS && !defined CLOUD_CBR_ENABLED
 	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 	#include "/lib/atmospherics/clouds/Render.glsl"
 #endif
@@ -144,81 +145,9 @@ uniform mat4 shadowModelView;
 	#include "/lib/lighting/AmbientOcclusion.glsl"
 #endif
 
-#include "/lib/universal/Offset.glsl"
-
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-	#include "/lib/surface/ScreenSpaceRaytracer.glsl"
-
-	vec4 CalculateSpecularReflections(Material material, in vec3 viewNormal, in vec3 screenPos, in vec3 viewPos, in float skylight, in float dither) {
-		vec3 viewDir = normalize(viewPos);
-
-		vec3 rayDir;
-		float LdotH;
-		#ifdef ROUGH_REFLECTIONS
-			if (material.isRough) {
-				mat3 tbnMatrix;
-				tbnMatrix[0] = normalize(cross(gbufferModelView[1].xyz, viewNormal));
-				tbnMatrix[1] = cross(viewNormal, tbnMatrix[0]);
-				tbnMatrix[2] = viewNormal;
-
-				vec3 tangentViewDir = -viewDir * tbnMatrix;
-				vec3 facetNormal = tbnMatrix * sampleGGXVNDF(tangentViewDir, material.roughness, RandNext2F());
-				LdotH = dot(facetNormal, -viewDir);
-				rayDir = viewDir + facetNormal * LdotH * 2.0;
-			} else
-		#endif
-		{
-			LdotH = dot(viewNormal, -viewDir);
-			rayDir = viewDir + viewNormal * LdotH * 2.0;
-		}
-
-		float NdotL = dot(viewNormal, rayDir);
-		if (NdotL < 1e-6) return vec4(0.0);
-
-		bool hit = ScreenSpaceRaytrace(viewPos, rayDir, dither, uint(RAYTRACE_SAMPLES * oneMinus(material.roughness)), screenPos);
-
-		vec3 reflection;
-		if (hit) {
-			// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * approxSqrt(material.roughness)).rgb;
-			reflection = texelFetch(colortex4, ivec2(screenPos.xy * 0.5), 0).rgb;
-		} else if (skylight > 1e-3) {
-			vec3 rayDirWorld = mat3(gbufferModelViewInverse) * rayDir;
-			vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(rayDirWorld) + vec2(0.0, 0.5)).rgb;
-
-			reflection = skyRadiance * skylight;
-		}
-
-		// if (any(isnan(reflection))) reflection = vec3(0.0);
-
-		float targetDepth = 0.0;
-		vec3 brdf = vec3(1.0);
-
-		float NdotV = maxEps(dot(viewNormal, -viewDir));
-		if (material.isRough) {
-			float alpha2 = material.roughness * material.roughness;
-			float G2 = G2SmithGGX(NdotV, NdotL, alpha2);
-			float G1Inverse = G1SmithGGXInverse(NdotV, alpha2);
-
-			brdf *= G2 * G1Inverse;
-			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, sampleDepth(ivec2(screenPos.xy))));
-			targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
-		}
-
-		// #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			if (material.isHardcodedMetal) {
-				brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
-			} else if (material.metalness > 0.5) {
-				brdf *= FresnelSchlick(LdotH, material.f0);
-			} else
-		// #endif
-		{ brdf *= FresnelDielectric(LdotH, material.f0); }
-		sceneOut *= 1.0 - brdf;
-
-		return vec4(clamp16f(reflection) * brdf, targetDepth);
-	}
-#endif
-
 #include "/lib/SpatialUpscale.glsl"
+
+#include "/lib/surface/Reflection.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -255,15 +184,13 @@ void main() {
 		sceneOut = skyRadiance + transmittance * celestial;
 
 		#ifdef CLOUDS
-			#ifndef CTU_ENABLED
+			#ifndef CLOUD_CBR_ENABLED
 				float dither = Bayer64Temporal(gl_FragCoord.xy);
 				vec4 cloudData = RenderClouds(worldDir/* , skyRadiance */, dither);
-
-				sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 			#else
-				vec4 cloudData = texelFetch(colortex9, rawCoord(screenCoord + taaOffset * 0.5), 0);
-				sceneOut = sceneOut * cloudData.a + cloudData.rgb;
+				vec4 cloudData = textureBicubic(colortex9, screenCoord + taaOffset * 0.5);
 			#endif
+			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
 	} else {
 		sceneOut = vec3(0.0);
@@ -516,7 +443,7 @@ void main() {
 				lightmap.y = remap(0.3, 0.7, lightmap.y);
 
 				// Specular reflections
-				reflectionOut = CalculateSpecularReflections(material, viewNormal, screenPos, viewPos, lightmap.y, dither);
+				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
 				reflectionOut.rgb *= mix(vec3(1.0), albedo, material.metalness);
 
 				// Metallic

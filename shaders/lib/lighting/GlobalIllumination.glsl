@@ -282,7 +282,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			target.rayDir = normalize(mat3(gbufferModelView) * sampleDir);
 
 			float NdotL = dot(target.viewNormal, target.rayDir);
-			if (NdotL < 0.0) target.rayDir = -target.rayDir;
+			target.rayDir = NdotL < 0.0 ? -target.rayDir : target.rayDir;
 
 			NdotL = dot(target.viewNormal, target.rayDir);
 
@@ -290,10 +290,13 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
 			if (target.rayPos.z < 1.0) {
-				vec3 sampleLight = texelFetch(colortex4, (ivec2(target.rayPos.xy) >> 1) + shiftX, 0).rgb;
+				ivec2 targetTexel = ivec2(target.rayPos.xy);
+				vec3 sampleLight = texelFetch(colortex4, (targetTexel >> 1) + shiftX, 0).rgb;
 
-				target.worldNormal = FetchWorldNormal(sampleGbufferData0(ivec2(target.rayPos.xy)));
+				target.worldNormal = FetchWorldNormal(sampleGbufferData0(targetTexel));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
+
+				target.brdf *= sampleAlbedo(targetTexel);
 
 				target.rayPos.xy *= viewPixelSize;
 				vec3 diff = ScreenToViewSpace(target.rayPos) - viewPos;
@@ -306,10 +309,6 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				sum += (skyRadiance.rgb * lightmap.y + lightmap.x) * target.brdf;
 				break;
 			}
-
-			#if 1
-				target.brdf *= sampleAlbedo(ivec2(target.rayPos.xy));
-			#endif
 		}
 	}
 
@@ -322,7 +321,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			vec3 rayDir = normalize(mat3(gbufferModelView) * sampleDir);
 
 			float NdotL = dot(viewNormal, rayDir);
-			if (NdotL < 0.0) rayDir = -rayDir;
+			rayDir = NdotL < 0.0 ? -rayDir : rayDir;
 
 			NdotL = dot(viewNormal, rayDir);
 
