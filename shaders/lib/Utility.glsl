@@ -41,6 +41,7 @@ const float r240		= 0.00416666667;
 #define projMAD(m, v)	(diagonal3(m) * (v) + (m)[3].xyz)
 
 #define rawCoord(coord) ivec2((coord) * viewSize)
+#define normCoord(texel)((vec2(texel) + 0.5) * viewPixelSize)
 
 float maxOf(vec2 v)   	{ return max(v.x, v.y); }
 float maxOf(vec3 v)   	{ return max(v.x, max(v.y, v.z)); }
@@ -270,7 +271,7 @@ vec4 cubic(in float x) {
 }
 
 vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
-	vec2 res = textureSize(tex, 0);
+	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res - 0.5;
 
@@ -299,7 +300,7 @@ vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
 }
 /*
 vec4 textureBicubicLod(in sampler2D tex, in vec2 coord, in int lod) {
-	vec2 res = textureSize(tex, lod);
+	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res - 0.5;
 
@@ -328,7 +329,7 @@ vec4 textureBicubicLod(in sampler2D tex, in vec2 coord, in int lod) {
 }
 
 vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
-	vec2 res = textureSize(tex, 0);
+	vec2 res = vec2(textureSize(tex, 0));
 	coord = coord * res - 0.5;
 
     vec2 p = floor(coord);

@@ -32,5 +32,5 @@ void main() {
 
 	albedoOut = mix(albedo.rgb, entityColor.rgb, entityColor.a);
 
-	gbufferOut0.y = 20.1 * r255;
+	gbufferOut0.y = 20.0 * r255;
 }

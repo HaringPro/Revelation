@@ -3,22 +3,21 @@
 // https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdc2017/Presentations/Hammon_Earl_PBR_Diffuse_Lighting.pdf
 // https://schuttejoe.github.io/post/disneybsdf/
 
-
 //======// Fresnel //=============================================================================//
 
-// Schlick 近似算法
+// Schlick approximation
 float FresnelSchlick(in float cosTheta, in float f0) {
     return saturate(f0 + oneMinus(f0) * pow5(1.0 - cosTheta));
 }
 
-// Lazanyi 近似算法修正
+// Lazanyi approximation correction
 vec3 FresnelLazanyi2019(in float cosTheta, in vec3 f0, in vec3 f82) {
     vec3 a = 17.6513846 * (f0 - f82) + 8.16666667 * oneMinus(f0);
     float invMu5 = pow5(1.0 - cosTheta);
     return saturate(f0 + oneMinus(f0) * invMu5 - a * cosTheta * invMu5 * oneMinus(cosTheta));
 }
 
-// 基于反射系数F0
+// Based on the F0 (Fresnel reflectance at 0 degrees incidence)
 float FresnelDielectric(in float cosTheta, in float f0) {
     f0 = min(sqrt(f0), 0.99999);
     f0 = (1.0 + f0) * rcp(1.0 - f0);
@@ -34,7 +33,7 @@ float FresnelDielectric(in float cosTheta, in float f0) {
     return saturate(0.5 * (r1 * r1 + r2 * r2));
 }
 
-// 基于折射系数N
+// Based on the refractive index N
 float FresnelDielectricN(in float cosTheta, in float n) {
     float cosR = sqr(n) + sqr(cosTheta) - 1.0;
     if (cosR < 0.0) return 1.0;
@@ -47,7 +46,7 @@ float FresnelDielectricN(in float cosTheta, in float n) {
     return saturate(0.5 * (r1 * r1 + r2 * r2));
 }
 
-// 基于折射系数N, 衰减系数K
+// Based on the refractive index N and the attenuation coefficient K
 vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
     vec3 n2k2 = n * n + k * k;
     n *= 2.0 * cosTheta;
@@ -99,23 +98,21 @@ float G2SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
 //================================================================================================//
 
 float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in float f0) {
-	// if (alpha2 < 1e-6) return 0.0;
     alpha2 = max(alpha2, 1e-6);
 
-    // 菲涅尔
+    // Fresnel term
     float F = FresnelSchlick(LdotH, f0);
 
-    // 法线分布
+    // Distribution term
 	float D = DistributionGGX(NdotH, alpha2);
 
-    // 几何衰减
-    float G = G2SmithGGX(NdotV, NdotL, alpha2);
+    // Geometric term
+    float G = G2SmithGGX(NdotL, NdotV, alpha2);
 
-	return min(F * D * G / (4.0/*  * NdotL */ * NdotV), 1e3); // Prevent overflow
+	return min(F * D * G / (4.0/*  * NdotL */ * NdotV), 5e2); // Prevent overflow
 }
 
 vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {
-	// if (NdotL < 1e-6) return vec3(0.0);
     float facing = max0(LdotV) * 0.5 + 0.5;
 
     float singleSmooth = 1.05 * oneMinus(pow5(1.0 - NdotL)) * oneMinus(pow5(1.0 - NdotV));

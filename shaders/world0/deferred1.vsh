@@ -30,7 +30,7 @@ uniform sampler2D colortex5;
 
 //======// Main //================================================================================//
 void main() {
-    gl_Position = vec4(vaPosition * (2.0 / CLOUD_TEMPORAL_UPSCALING) - 1.0, 1.0);
+    gl_Position = vec4(vaPosition * (2.0 / CLOUD_CBR_SCALE) - 1.0, 1.0);
 
 	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
 	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;

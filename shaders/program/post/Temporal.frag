@@ -199,7 +199,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     prevSample = clipAABB(clipMin, clipMax, prevSample);
     prevSample = YCoCgRtoRGB(prevSample);
 
-    float frameIndex = texelFetch(colortex1, rawCoord(prevCoord), 0).a;
+    float frameIndex = texture(colortex1, prevCoord).a;
 
     float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
     blendWeight /= blendWeight + 1.0;
@@ -232,5 +232,9 @@ void main() {
         motionVectorOut = depth < 0.56 ? motionVector * 0.2 : motionVector;
     #endif
 
-    temporalOut = clamp16f(CalculateTAA(screenCoord, motionVector));
+    #ifdef TAA_ENABLED
+        temporalOut = CalculateTAA(screenCoord, motionVector);
+    #else
+        temporalOut = vec4(sampleSceneColor(screenTexel), 0.0);
+    #endif
 }

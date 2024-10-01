@@ -145,31 +145,29 @@ void main() {
 		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * ATROUS_FILTER_SIZE);
 
 		for (uint i = 0u; i < 4u; ++i) {
-			ivec2 sampleTexel = randTexel + offset[i] * ATROUS_FILTER_SIZE;
-			if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
-				vec4 sampleData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+			ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(0), halfResBorder);
+			vec4 sampleData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
-				vec4 sampleLight = imageLoad(colorimg3, sampleTexel + shiftX);
-				float sampleLuma = GetLuminance(sampleLight.rgb);
+			vec4 sampleLight = imageLoad(colorimg3, sampleTexel + shiftX);
+			float sampleLuma = GetLuminance(sampleLight.rgb);
 
-				// float weight = exp2(-dotSelf(offset));
-				// float weight = kernel[abs(x)] * kernel[abs(y)];
-				float weight = kernel[i];
+			// float weight = exp2(-dotSelf(offset));
+			// float weight = kernel[abs(x)] * kernel[abs(y)];
+			float weight = kernel[i];
 
-				// wN = max(0, N0 · N1) ^ σN
-				weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)));
+			// wN = max(0, N0 · N1) ^ σN
+			weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)));
 
-				// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
-				// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
-				weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * inversesqrt(float(ATROUS_FILTER_SIZE)));
+			// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
+			// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
+			weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * inversesqrt(float(ATROUS_FILTER_SIZE)));
 
-				// wL = exp(−|L0 − L1| / (σLvar + ε))
-				weight *= fastExp(-abs(sampleLuma - centerLuma) * variancePhi);
+			// wL = exp(−|L0 − L1| / (σLvar + ε))
+			weight *= fastExp(-abs(sampleLuma - centerLuma) * variancePhi);
 
-				indirectCurrent.rgb += sampleLight.rgb * weight;
-				indirectCurrent.a += sampleLight.a * weight * weight; // Sample variance
-				sumWeight += weight;
-			}
+			indirectCurrent.rgb += sampleLight.rgb * weight;
+			indirectCurrent.a += sampleLight.a * weight * weight; // Sample variance
+			sumWeight += weight;
 		}
 
 		indirectCurrent /= sumWeight;

@@ -190,7 +190,7 @@ void main() {
 		Material material = GetMaterialData(specularTex);
 
 		if (material.hasReflections) {
-			vec2 screenCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * viewPixelSize;
+    		vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
 
 			vec4 gbufferData0 = sampleGbufferData0(screenTexel);
 			vec3 viewNormal = mat3(gbufferModelView) * FetchWorldNormal(gbufferData0);
