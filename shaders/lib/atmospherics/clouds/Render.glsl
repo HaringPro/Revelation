@@ -31,7 +31,7 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
         opticalDepth += density;
     }
 
-    return opticalDepth * 9.0;
+    return opticalDepth * 12.0;
 }
 
 float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
@@ -50,12 +50,12 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
         opticalDepth += density;
     }
 
-    return opticalDepth * 3.0;
+    return opticalDepth * 4.0;
 }
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * 2.2e-2;
+    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * 2.4e-2;
 }
 
 //================================================================================================//

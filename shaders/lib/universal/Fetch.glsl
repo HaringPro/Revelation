@@ -1,11 +1,11 @@
-#define sampleDepth(texel) texelFetch(depthtex0, texel, 0).x
-#define sampleDepthSolid(texel) texelFetch(depthtex1, texel, 0).x
+#define readDepth(texel) texelFetch(depthtex0, texel, 0).x
+#define readDepthSolid(texel) texelFetch(depthtex1, texel, 0).x
 
-#define sampleSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
+#define readSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
 
-#define sampleAlbedo(texel) texelFetch(colortex6, texel, 0).rgb
-#define sampleGbufferData0(texel) texelFetch(colortex7, texel, 0)
-#define sampleGbufferData1(texel) texelFetch(colortex8, texel, 0)
+#define readAlbedo(texel) texelFetch(colortex6, texel, 0).rgb
+#define readGbufferData0(texel) texelFetch(colortex7, texel, 0)
+#define readGbufferData1(texel) texelFetch(colortex8, texel, 0)
 
 //================================================================================================//
 
@@ -32,9 +32,9 @@ vec3 FetchWorldNormal(in vec4 data) {
 }
 
 float FetchLinearDepth(in ivec2 texel) {
-    return (near * far) / (sampleDepth(texel) * (near - far) + far);
+    return (near * far) / (readDepth(texel) * (near - far) + far);
 }
 
 float FetchLinearDepthSolid(in ivec2 texel) {
-    return (near * far) / (sampleDepthSolid(texel) * (near - far) + far);
+    return (near * far) / (readDepthSolid(texel) * (near - far) + far);
 }

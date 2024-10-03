@@ -80,7 +80,7 @@ struct Material {
 			material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 		#endif
 
-		material.hasReflections = max0(0.4 - material.roughness) > 1e-2;
+		material.hasReflections = max0(specTex.r - 0.56) + material.metalness > 1e-2;
 		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;

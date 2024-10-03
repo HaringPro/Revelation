@@ -111,6 +111,7 @@ uniform mat4 gbufferModelView;
 uniform mat4 shadowProjection;
 uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelView;
+uniform mat4 shadowModelViewInverse;
 
 //======// Struct //==============================================================================//
 
@@ -153,7 +154,7 @@ uniform mat4 shadowModelView;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = sampleDepth(screenTexel);
+	float depth = readDepth(screenTexel);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 	vec3 screenPos = vec3(screenCoord, depth);
@@ -161,11 +162,11 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
-	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
+	vec4 gbufferData0 = readGbufferData0(screenTexel);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
-	vec3 albedoRaw = sampleAlbedo(screenTexel);
+	vec3 albedoRaw = readAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
 
 	if (depth > 0.999999 + materialID) {
@@ -207,7 +208,7 @@ void main() {
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		#ifdef SPECULAR_MAPPING
-			vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+			vec4 gbufferData1 = readGbufferData1(screenTexel);
 			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
@@ -273,13 +274,14 @@ void main() {
 
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
-			float cloudShadow = CalculateCloudShadows(worldPos + cameraPosition);
+			// float cloudShadow = CalculateCloudShadows(worldPos + cameraPosition);
+			float cloudShadow = min(ReadCloudShadowMap(colortex10, worldPos), 1.0 - wetness * 0.6);
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = 30.0 * cloudShadow * directIlluminance;
+		vec3 sunlightMult = 32.0 * cloudShadow * directIlluminance;
 
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
@@ -330,14 +332,14 @@ void main() {
 						// Apply parallax shadows
 						#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
 							#if !defined SPECULAR_MAPPING
-								vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+								vec4 gbufferData1 = readGbufferData1(screenTexel);
 							#endif
 							shadow *= oneMinus(gbufferData1.z);
 						#endif
 
 						float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
 						float NdotV = saturate(dot(worldNormal, -worldDir));
-						float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
+						float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 						float LdotH = LdotV * halfwayNorm + halfwayNorm;
 						NdotV = max(NdotV, 1e-3);
 
@@ -360,14 +362,14 @@ void main() {
 			// Apply parallax shadows
 			#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
 				#if !defined SPECULAR_MAPPING
-					vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+					vec4 gbufferData1 = readGbufferData1(screenTexel);
 				#endif
 				shadow *= oneMinus(gbufferData1.z);
 			#endif
 
 			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
 			float NdotV = saturate(dot(worldNormal, -worldDir));
-			float NdotH = maxEps((NdotL + NdotV) * halfwayNorm);
+			float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
 			NdotV = max(NdotV, 1e-3);
 
@@ -384,7 +386,7 @@ void main() {
 			if (lightmap.y > 1e-5) {
 				// Skylight
 				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-				skylight = mix(skylight, directIlluminance * 0.1, wetness * 0.5) + lightningShading * 1e-3;
+				skylight = mix(directIlluminance * 0.1, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
 				#ifdef AURORA
 					skylight += 0.2 * auroraShading;
 				#endif

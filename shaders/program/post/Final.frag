@@ -133,6 +133,8 @@ float bayer4(vec2 a)   { return bayer2 (0.5  * a) * 0.25   + bayer2(a); }
 float bayer8(vec2 a)   { return bayer4 (0.5  * a) * 0.25   + bayer2(a); }
 float bayer16(vec2 a)  { return bayer4 (0.25 * a) * 0.0625 + bayer4(a); }
 
+#include "/lib/universal/TextRenderer.glsl"
+
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
@@ -149,6 +151,12 @@ void main() {
 		} else {
 			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 		}
+	#endif
+
+	// Text display
+	#if 0
+		finalOut += renderText(ivec2(100), 3, vec3(0.5));
+		finalOut = saturate(finalOut);
 	#endif
 
 	// Time display

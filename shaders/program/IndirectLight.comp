@@ -40,7 +40,7 @@ restrict writeonly uniform image2D colorimg3;
 #include "/lib/lighting/GlobalIllumination.glsl"
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = sampleDepth(texel);
+    float depth = readDepth(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
@@ -57,10 +57,10 @@ void main() {
 
     ivec2 currentTexel = screenTexel << 1;
 	float depth = GetClosestDepth(currentTexel);
-	// float depth = sampleDepth(currentTexel);
+	// float depth = readDepth(currentTexel);
 
 	if (depth < 1.0) {
-		vec4 gbufferData0 = sampleGbufferData0(currentTexel);
+		vec4 gbufferData0 = readGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
     	vec2 screenCoord = normCoord(currentTexel);
@@ -70,7 +70,7 @@ void main() {
         float dither = BlueNoiseTemporal(currentTexel);
 
 		#ifdef RSM_ENABLED
-			float skyLightmap = unpackUnorm2x8Y(sampleGbufferData0(currentTexel).x);
+			float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
 			imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
 		#else
 			vec2 lightmap = unpackUnorm2x8(gbufferData0.x);

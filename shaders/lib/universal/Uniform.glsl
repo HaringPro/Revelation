@@ -66,6 +66,7 @@ uniform mat4 gbufferPreviousModelView;
 uniform mat4 shadowProjection;
 uniform mat4 shadowProjectionInverse;
 uniform mat4 shadowModelView;
+uniform mat4 shadowModelViewInverse;
 
 #if defined DISTANT_HORIZONS
     uniform sampler2D dhDepthTex0;

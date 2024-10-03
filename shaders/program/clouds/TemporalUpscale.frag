@@ -150,12 +150,12 @@ float lanczos(float x) {
 
 vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
+	vec2 pixelSize = 1.0 / res;
 
 	coord *= res;
 
     vec2 uv = floor(coord - 0.5) + 0.5;
     vec2 fp = coord - uv;
-    uv /= res;
 
     vec4 sum = vec4(0.0);
 	float weightSum = 0.0;
@@ -166,7 +166,7 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
         for (int y = -2; y <= 2; ++y) {
 			float fy = lanczos(float(y) - fp.y);
 
-			vec4 sampleData = textureOffset(tex, uv, ivec2(x, y));
+			vec4 sampleData = texture(tex, (uv + vec2(x, y)) * pixelSize);
             sum += sampleData * fx * fy;
 			weightSum += fx * fy;
         }
@@ -179,7 +179,7 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = sampleDepth(screenTexel);
+	float depth = readDepth(screenTexel);
 
 	#if !defined SSPT_ENABLED || !defined SVGF_ENABLED
 		historyBuffer.rg = texelFetch(colortex14, screenTexel, 0).rg;
@@ -194,9 +194,12 @@ void main() {
 		 || maxOf(textureGather(colortex14, prevCoord, 2)) > 1e-6 // Previous depth invalidation
     	//  || (gbufferProjection[0][0] - gbufferPreviousProjection[0][0]) > 0.25 // Fov change invalidation
 		 || worldTimeChanged) {
-			cloudOut = textureBicubic(colortex13, min(screenCoord * rcp(float(CLOUD_CBR_SCALE)), rcp(float(CLOUD_CBR_SCALE)) - viewPixelSize));
+			const float currScale = rcp(float(CLOUD_CBR_SCALE));
+			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
+			cloudOut = textureBicubic(colortex13, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.6);
+			prevData = clamp16f(prevData); // Fix black border artifacts
 
 			// Checkerboard upscaling
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
@@ -210,6 +213,7 @@ void main() {
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
 				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.7 + 0.3;
 
+				// Blend with current frame
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
 				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, blendWeight);
 

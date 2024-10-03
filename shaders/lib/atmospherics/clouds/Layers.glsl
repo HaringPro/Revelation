@@ -19,7 +19,6 @@
 //================================================================================================//
 
 float GetSmoothNoise(in vec2 coord) {
-    // coord *= 256.0;
     vec2 whole = floor(coord);
     vec2 part = curve(coord - whole);
 
@@ -134,11 +133,11 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 	#define fbm(n) (n.x * 0.625 + n.y * 0.25 + n.z * 0.125)
 
 	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1.2e-6 - cloudWindLayer1.xz * 2e-5).x;
+		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindLayer1.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-7) return 0.0;
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 1.4;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 2.0;
 		vec3 position = rayPos * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -150,33 +149,33 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
 		// Use two remap functions to carve out the gradient shape
-		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
+		float gradienShape = saturate(heightFraction * 4.0) * oneMinus(saturate((heightFraction - 0.75) * 4.0));
 
-		shape *= gradienShape * 0.8;
-		shape -= heightFraction * 0.32 + 0.74;
+		shape *= gradienShape * CLOUD_CUMULUS_COVERAGE * (0.76 + wetness * 0.07);
+		shape -= heightFraction * 0.33 + 0.67;
 
-		if (shape > 1e-8 && octCount > 3u) {
+		if (shape > 1e-6 && octCount > 3u) {
 			vec2 curl = texture(noisetex, position.xz * 0.1).xy;
-			position.xy += curl * 5e-2 * oneMinus(heightFraction);
+			position.xy += curl * 0.1 * oneMinus(heightFraction);
 
-			vec3 highFreqNoises = texture(colortex15, position * 8.0).rgb;
+			vec3 highFreqNoises = texture(colortex15, position * 9.0 - shift).rgb;
 			float detail = fbm(highFreqNoises);
 			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
 
-			shape = remap(detail * 0.04, 0.2, shape);
+			shape = remap(detail * 0.04, 0.3, shape);
 		} else {
-			shape = remap(0.02, 0.2, shape);
+			shape = remap(0.02, 0.3, shape);
 		}
 
 		return shape;
 	}
 
 	float CloudVolumeDensitySmooth(in vec3 rayPos) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1.2e-6 - cloudWindLayer1.xz * 2e-5).x;
+		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindLayer1.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-7) return 0.0;
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 1.4;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 2.0;
 		vec3 position = rayPos * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -188,12 +187,12 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
 		// Use two remap functions to carve out the gradient shape
-		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
+		float gradienShape = saturate(heightFraction * 4.0) * oneMinus(saturate((heightFraction - 0.75) * 4.0));
 
-		shape *= gradienShape * 0.8;
-		shape -= heightFraction * 0.32 + 0.74;
+		shape *= gradienShape * CLOUD_CUMULUS_COVERAGE * (0.76 + wetness * 0.07);
+		shape -= heightFraction * 0.33 + 0.67;
 
-		shape = remap(0.02, 0.2, shape);
+		shape = remap(0.02, 0.3, shape);
 
 		return shape;
 	}
@@ -223,9 +222,9 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
 
-		// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
+		// density = CLOUD_CUMULUS_COVERAGE == 1.0 ? density : saturate((density - 1.0 + CLOUD_CUMULUS_COVERAGE) * rcp(CLOUD_CUMULUS_COVERAGE));
 
-		density *= gradienShape * cumulusCoverage * localCoverage;
+		density *= gradienShape * CLOUD_CUMULUS_COVERAGE * localCoverage;
 		density -= heightFraction * 0.5 + 0.2;
 
 		return saturate(density * 3.2);
@@ -256,9 +255,9 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 6.0) * oneMinus(saturate((heightFraction - 0.8) * 5.0));
 
-		// density = cumulusCoverage == 1.0 ? density : saturate((density - 1.0 + cumulusCoverage) * rcp(cumulusCoverage));
+		// density = CLOUD_CUMULUS_COVERAGE == 1.0 ? density : saturate((density - 1.0 + CLOUD_CUMULUS_COVERAGE) * rcp(CLOUD_CUMULUS_COVERAGE));
 
-		density *= gradienShape * cumulusCoverage * localCoverage;
+		density *= gradienShape * CLOUD_CUMULUS_COVERAGE * localCoverage;
 		density -= heightFraction * 0.5 + 0.2;
 
 		return saturate(density * 3.2);

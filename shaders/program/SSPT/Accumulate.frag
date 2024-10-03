@@ -217,7 +217,7 @@ float sampleDepthMin4x4(in vec2 coord) {
 }
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = sampleDepth(texel);
+    float depth = readDepth(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
@@ -233,7 +233,7 @@ void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
     #if defined CLOUDS && defined CLOUD_CBR_ENABLED
-        historyBuffer.z = 1.0 - sampleDepth(screenTexel);
+        historyBuffer.z = 1.0 - readDepth(screenTexel);
     #endif
 
     if (currentCoord.y < 1.0) {
@@ -249,7 +249,7 @@ void main() {
             if (depth < 1.0) {
                 ivec2 currentTexel = screenTexel << 1;
                 // currentTexel = ivec2(closestFragment.xy * viewSize);
-                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+                vec3 worldNormal = FetchWorldNormal(readGbufferData0(currentTexel));
 
                 vec3 screenPos = vec3(currentCoord, depth);
                 vec3 viewPos = ScreenToViewSpace(screenPos);
@@ -270,7 +270,7 @@ void main() {
 
             if (depth < 1.0) {
                 ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
-                vec3 worldNormal = FetchWorldNormal(sampleGbufferData0(currentTexel));
+                vec3 worldNormal = FetchWorldNormal(readGbufferData0(currentTexel));
                 float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
 
                 indirectHistory = vec4(worldNormal, viewDistance);

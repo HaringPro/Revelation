@@ -72,7 +72,7 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-	vec4 gbufferData0 = sampleGbufferData0(screenTexel);
+	vec4 gbufferData0 = readGbufferData0(screenTexel);
 
 	uint materialID = uint(gbufferData0.y * 255.0);
 
@@ -91,7 +91,7 @@ void main() {
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
 
-	vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+	vec4 gbufferData1 = readGbufferData1(screenTexel);
 	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
 	vec2 refracCoord = screenCoord;
@@ -105,18 +105,18 @@ void main() {
 		#else	
 			refracCoord = CalculateRefractiveCoord(materialID == 3u, viewPos, viewNormal, gbufferData1, transparentDepth);
 		#endif
-		refracCoord = sampleDepthSolid(rawCoord(refracCoord)) < depth ? screenCoord : refracCoord;
+		refracCoord = readDepthSolid(rawCoord(refracCoord)) < depth ? screenCoord : refracCoord;
 		refracTexel = rawCoord(refracCoord);
 
-		depth = sampleDepth(refracTexel);
-		sDepth = sampleDepthSolid(refracTexel);
+		depth = readDepth(refracTexel);
+		sDepth = readDepthSolid(refracTexel);
 
-		gbufferData0 = sampleGbufferData0(refracTexel);
+		gbufferData0 = readGbufferData0(refracTexel);
 		viewPos = ScreenToViewSpace(vec3(refracCoord, depth));
 		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
 	}
 
-    sceneOut = sampleSceneColor(refracTexel);
+    sceneOut = readSceneColor(refracTexel);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -210,6 +210,10 @@ void main() {
 	}
 
 	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);
+
+	#ifdef DEBUG_CLOUD_SHADOWS
+		sceneOut = vec3(textureBicubic(colortex10, screenCoord).a);
+	#endif
 
 	#if DEBUG_NORMALS == 1
 		sceneOut = worldNormal * 0.5 + 0.5;

@@ -158,8 +158,9 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 		#endif
 
 		#ifdef CLOUD_SHADOWS
-			float cloudShadow = CalculateCloudShadows(rayPos);
-			sampleShadow *= cloudShadow * cloudShadow * cloudShadow;
+			// float cloudShadow = CalculateCloudShadows(rayPos);
+			float cloudShadow = ReadCloudShadowMap(colortex10, rayPos - cameraPosition);
+			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * density;
@@ -176,8 +177,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 		if (dot(transmittance, vec3(1.0)) < 1e-3) break; // Faster than maxOf()
 	}
 
-	vec3 scattering = scatteringSun * 30.0 * directIlluminance;
-	scattering += scatteringSky * skyIlluminance;
+	vec3 scattering = scatteringSun * 12.0 * directIlluminance;
+	scattering += scatteringSky * mix(skyIlluminance * 0.2, directIlluminance * 0.1, wetness * 0.6);
 	scattering *= eyeSkylightSmooth;
 
 	return mat2x3(scattering, transmittance);
@@ -190,7 +191,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy) << 1;
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 screenPos = vec3(screenCoord, sampleDepth(screenTexel));
+	vec3 screenPos = vec3(screenCoord, readDepth(screenTexel));
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;

@@ -188,7 +188,7 @@ const bool colortex1MipmapEnabled = true;
 
 /* RENDERTARGETS: 5,10 */
 layout (location = 0) out vec3 skyViewOut;
-layout (location = 1) out vec3 transmittanceOut;
+layout (location = 1) out vec4 transmittanceOut;
 
 //======// Input //===============================================================================//
 
@@ -211,6 +211,7 @@ uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 uniform float nightVision;
 uniform float wetness;
 uniform float eyeAltitude;
+uniform float far;
 
 uniform int moonPhase;
 uniform int frameCounter;
@@ -219,6 +220,11 @@ uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 cameraPosition;
 uniform vec3 lightningShading;
+
+#ifdef CLOUD_SHADOWS
+uniform mat4 shadowModelView;
+uniform mat4 shadowModelViewInverse;
+#endif
 
 //======// Function //============================================================================//
 
@@ -232,6 +238,10 @@ uniform vec3 lightningShading;
 #endif
 
 #include "/lib/atmospherics/clouds/Render.glsl"
+
+#ifdef CLOUD_SHADOWS
+    #include "/lib/atmospherics/clouds/Shadows.glsl"
+#endif
 
 //======// Main //================================================================================//
 void main() {
@@ -267,19 +277,25 @@ void main() {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * skyIntensity;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut.rgb) * skyIntensity;
 
 		#ifdef CLOUDS
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
-            transmittanceOut *= cloudData.a;
+            transmittanceOut.rgb *= cloudData.a;
         #endif
 	} else {
 		// Raw sky map
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut) * skyIntensity;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut.rgb) * skyIntensity;
 	}
+
+    // Render cloud shadow map
+    #ifdef CLOUD_SHADOWS
+        vec3 rayPos = SetupCloudShadowPos(screenCoord);
+        transmittanceOut.a = CalculateCloudShadows(rayPos);
+    #endif
 }
 
 #endif

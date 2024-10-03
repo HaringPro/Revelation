@@ -76,23 +76,15 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 	if (dot(normal, rayDir) < 1e-6) return vec4(0.0);
 
 	float f0 = materialID == 3u ? F0FromIOR(WATER_REFRACT_IOR) : F0FromIOR(GLASS_REFRACT_IOR);
-	float brdf;
+	bool withinWater = isEyeInWater == 1 && materialID == 3u;
 
-    // Fresnel term
-	if (isEyeInWater == 1) {
-		// Total internal reflection
-		// brdf = FresnelDielectricN(NdotV, 1.000293 / WATER_REFRACT_IOR);
-		brdf = FresnelDielectricN(NdotV, 1.0 / WATER_REFRACT_IOR);
-	} else {
-		brdf = FresnelDielectric(NdotV, f0);
-	}
-
-	vec3 reflection;
-	if (skylight > 1e-3 && (isEyeInWater == 0 || materialID != 3u)) {
+	vec3 reflection = vec3(0.0);
+	vec3 highlights = vec3(0.0);
+	if (skylight > 1e-3 && !withinWater) {
 		vec2 skyViewCoord = FromSkyViewLutParams(rayDir) + vec2(0.0, 0.5);
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
-		reflection = skyRadiance * skylight * brdf;
+		reflection = skyRadiance * skylight;
 
 		#ifndef TRANSLUCENT_LIGHTING
 			// Specular highlights
@@ -101,11 +93,11 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 			if (NdotL > 1e-3) {
 				float LdotV = dot(worldLightVector, -worldDir);
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-				float NdotH = (NdotL + NdotV) * halfwayNorm;
+				float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (oneMinus(wetness * 0.96) * 1e2 * skylight);
-				reflection += transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
+				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (64.0 * skylight);
+				highlights = transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 			}
 		#endif
 	}
@@ -118,10 +110,20 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb * brdf - reflection) * saturate(edgeFade);
+		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
-	return vec4(reflection, brdf);
+	float brdf;
+
+    // Fresnel term
+	if (withinWater) {
+		// Total internal reflection
+		brdf = FresnelDielectricN(NdotV, 1.0 / WATER_REFRACT_IOR);
+	} else {
+		brdf = FresnelDielectric(NdotV, f0);
+	}
+
+	return vec4(clamp16f(reflection * brdf + highlights), brdf);
 }
 
 //======// Main //================================================================================//
@@ -208,7 +210,7 @@ void main() {
 					float LdotV = dot(worldLightVector, -worldDir);
 					float NdotV = saturate(dot(worldNormal, -worldDir));
 					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-					float NdotH = (NdotL + NdotV) * halfwayNorm;
+					float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 					shadow *= sunlightMult;

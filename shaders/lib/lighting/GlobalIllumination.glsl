@@ -229,7 +229,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 
 	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep){
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
-		float sampleDepth = sampleDepth(ivec2(rayPos.xy));
+		float sampleDepth = readDepth(ivec2(rayPos.xy));
 
 		if (sampleDepth < rayPos.z) {
 			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
@@ -293,10 +293,10 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				ivec2 targetTexel = ivec2(target.rayPos.xy);
 				vec3 sampleLight = texelFetch(colortex4, (targetTexel >> 1) + shiftX, 0).rgb;
 
-				target.worldNormal = FetchWorldNormal(sampleGbufferData0(targetTexel));
+				target.worldNormal = FetchWorldNormal(readGbufferData0(targetTexel));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
 
-				target.brdf *= sampleAlbedo(targetTexel);
+				target.brdf *= readAlbedo(targetTexel);
 
 				target.rayPos.xy *= viewPixelSize;
 				vec3 diff = ScreenToViewSpace(target.rayPos) - viewPos;

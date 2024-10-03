@@ -72,13 +72,13 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	float sumWeight = 0.0;
 
 	for (int i = 0; i < 7; ++i) {
-    	vec2 sampleCoord = screenCoord * exp2(-float(i + 1));
-		sampleCoord += bloomTileOffset[i] + viewPixelSize * float(i * 12);
+		screenCoord *= 0.5;
+    	vec2 sampleCoord = screenCoord + bloomTileOffset[i] + viewPixelSize * float(i * 12);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
 		sumWeight += weight;
-		weight *= 0.85;
+		weight *= 0.9;
 	}
 
 	bloomData /= sumWeight;
@@ -91,7 +91,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#ifdef BLOOMY_FOG
 		float fogTransmittance = texelFetch(colortex7, texel, 0).x;
 
-		image = mix(bloomData, image, saturate(fogTransmittance));
+		image = mix(bloomData, image, saturate(sqr(fogTransmittance)));
 	#endif
 
 	if (rainStrength > 1e-2) {

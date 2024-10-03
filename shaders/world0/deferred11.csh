@@ -161,7 +161,7 @@ writeonly restrict uniform image2D colorimg3; // Current indirect light
 			float G1Inverse = G1SmithGGXInverse(NdotV, alpha2);
 
 			brdf *= G2 * G1Inverse;
-			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, sampleDepth(ivec2(screenPos.xy))));
+			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, readDepth(ivec2(screenPos.xy))));
 			float rDist = distance(reflectViewPos, viewPos);
 
 			dist = saturate(max(rDist * 2.0, material.roughness * 3.0));
@@ -185,14 +185,14 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-		vec4 gbufferData1 = sampleGbufferData1(screenTexel);
+		vec4 gbufferData1 = readGbufferData1(screenTexel);
 		vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
 		Material material = GetMaterialData(specularTex);
 
 		if (material.hasReflections) {
     		vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
 
-			vec4 gbufferData0 = sampleGbufferData0(screenTexel);
+			vec4 gbufferData0 = readGbufferData0(screenTexel);
 			vec3 viewNormal = mat3(gbufferModelView) * FetchWorldNormal(gbufferData0);
 
 			vec3 screenPos = vec3(screenCoord, FetchDepthFix(screenTexel));

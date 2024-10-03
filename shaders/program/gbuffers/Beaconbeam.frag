@@ -45,11 +45,9 @@ void main() {
 
 	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-        if (albedo.a > 0.999) {
-            vec4 specularTex = texture(specular, texCoord);
+		vec4 specularTex = texture(specular, texCoord);
 
-            gbufferOut1.x = packUnorm2x8(specularTex.rg);
-            gbufferOut1.y = packUnorm2x8(specularTex.ba);
-        }
+		gbufferOut1.x = packUnorm2x8(specularTex.rg);
+		gbufferOut1.y = packUnorm2x8(specularTex.ba);
 	#endif
 }
