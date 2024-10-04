@@ -96,7 +96,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 				float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (64.0 * skylight);
+				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (64.0 * skylight) * mix(1.0, moonlightFactor, sunAngle > 0.5);
 				highlights = transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 			}
 		#endif

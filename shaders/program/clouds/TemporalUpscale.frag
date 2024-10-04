@@ -51,6 +51,7 @@ uniform mat4 gbufferPreviousProjection;
 
 uniform float near;
 uniform float far;
+uniform float frameTime;
 
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
@@ -198,7 +199,7 @@ void main() {
 			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
 			cloudOut = textureBicubic(colortex13, currCoord);
 		} else {
-			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.6);
+			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
 			prevData = clamp16f(prevData); // Fix black border artifacts
 
 			// Checkerboard upscaling
@@ -211,7 +212,10 @@ void main() {
 
 				// Offcenter rejection
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.7 + 0.3;
+				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.5 + 0.5;
+
+				// Camera movement rejection
+				blendWeight *= exp2(-2e-2 * distance(previousCameraPosition, cameraPosition) * rcp(frameTime)) * 0.5 + 0.5;
 
 				// Blend with current frame
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
