@@ -8,7 +8,7 @@
 
     Pass:
     - Vertex Shader:   Compute illuminances and exposure
-    - Fragment Shader: Compute Sky-View LUT and Transmittance-View LUT, store illuminances and exposure
+    - Fragment Shader: Compute Sky-View LUT, Transmittance-View LUT, cloud shadows, store illuminances and exposure
 
 --------------------------------------------------------------------------------
 */

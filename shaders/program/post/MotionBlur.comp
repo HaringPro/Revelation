@@ -26,7 +26,7 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex1; // TAA output
-uniform sampler2D colortex2; // Motion vector
+uniform sampler2D colortex9; // Motion vector
 
 uniform float frameTime;
 uniform vec2 viewSize;
@@ -38,7 +38,7 @@ float InterleavedGradientNoise(in vec2 coord) {
 }
 
 vec3 MotionBlur(in ivec2 texel) {
-	vec2 motionVector = texelFetch(colortex2, texel, 0).xy;
+	vec2 motionVector = texelFetch(colortex9, texel, 0).xy;
 	float r = length(motionVector);
 
 	if (r < 1e-7) return texelFetch(colortex1, texel, 0).rgb;

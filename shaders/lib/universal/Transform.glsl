@@ -17,20 +17,9 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 	return viewPos;
 }
 
-vec3 ScreenToViewSpace(in vec2 coord) {
-	vec3 NDCPos = vec3(coord, texelFetch(depthtex0, rawCoord(coord), 0).x) * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
-		NDCPos.xy -= taaOffset;
-	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
-
-	return viewPos;
-}
-
 vec3 ScreenToViewSpaceRaw(in vec2 screenCoord, in float linearDepth) {
 	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
-	return vec3(diagonal2(gbufferProjection) * NDCCoord, gbufferProjection[3].z) * linearDepth;
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z) * linearDepth;
 }
 
 vec3 ScreenToViewSpace(in vec2 screenCoord, in float linearDepth) {
@@ -38,7 +27,7 @@ vec3 ScreenToViewSpace(in vec2 screenCoord, in float linearDepth) {
 	#ifdef TAA_ENABLED
 		NDCCoord -= taaOffset;
 	#endif
-	return vec3(diagonal2(gbufferProjection) * NDCCoord, gbufferProjection[3].z) * linearDepth;
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z) * linearDepth;
 }
 
 vec3 ViewToScreenSpaceRaw(in vec3 viewPos) {
@@ -87,11 +76,11 @@ float ViewToScreenDepth(in float depth) {
 	return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
 }
 
-float ScreenToLinearDepth(in float depth) {
+float LinearizeDepth(in float depth) {
     return (near * far) / (depth * (near - far) + far);
 }
 
-float LinearToScreenDepth(in float depthLinear) {
+float PerspectiveDepth(in float depthLinear) {
 	return (far + near) / (far - near) + (2.0 * far * near) / (depthLinear * (far - near));
 }
 

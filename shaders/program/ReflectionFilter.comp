@@ -21,7 +21,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 //======// Output //==============================================================================//
 
-layout (rgba16f) restrict uniform image2D colorimg2;
+layout (rgba16f) restrict uniform image2D colorimg1;
 
 //======// Uniform //=============================================================================//
 
@@ -70,7 +70,7 @@ float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float
 
 vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
     float smoothness = 1.0 - approxSqrt(roughness);
-    float linearDepth = FetchLinearDepth(texel);
+    float linearDepth = readLinearDepth(texel);
     float NdotV = saturate(dot(worldNormal, -worldDir));
 
     float offsetScale = filterSize * exp2(-oneMinus(reflectionData.a) * smoothness);
@@ -95,9 +95,9 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         vec2 offset = offset3x3N[i] + randOffset;
         ivec2 sampleTexel = clamp(texel + ivec2(tangent * offset.x + bitangent * offset.y), ivec2(0), ivec2(viewSize) - 1);
 
-        vec4 sampleData = imageLoad(colorimg2, sampleTexel);
+        vec4 sampleData = imageLoad(colorimg1, sampleTexel);
 
-        float sampleLinerDepth = FetchLinearDepth(sampleTexel);
+        float sampleLinerDepth = readLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(readGbufferData0(sampleTexel));
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
         float sampleRoughness = sqr(1.0 - unpackUnorm2x8(readGbufferData1(sampleTexel).x).x);
@@ -120,7 +120,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-    vec4 reflectionData = imageLoad(colorimg2, screenTexel);
+    vec4 reflectionData = imageLoad(colorimg1, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = vec4(unpackUnorm2x8(readGbufferData1(screenTexel).x), vec2(0.0));
@@ -137,5 +137,5 @@ void main() {
         }
     #endif
 
-    imageStore(colorimg2, screenTexel, reflectionData);
+    imageStore(colorimg1, screenTexel, reflectionData);
 }

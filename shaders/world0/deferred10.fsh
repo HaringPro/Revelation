@@ -24,12 +24,12 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,2 */
+/* RENDERTARGETS: 0,1 */
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
 #if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
-/* RENDERTARGETS: 0,2,3 */
+/* RENDERTARGETS: 0,1,3 */
 layout (location = 2) out vec3 lightingOut;
 #endif
 
@@ -49,6 +49,8 @@ uniform sampler2D noisetex;
 #if defined CLOUDS && !defined CLOUD_CBR_ENABLED
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
+
+uniform sampler2D colortex2; // Linear depth
 
 uniform sampler2D colortex3; // Current indirect light
 uniform sampler2D colortex4; // Reprojected scene history

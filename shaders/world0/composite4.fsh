@@ -77,7 +77,7 @@ void main() {
 	uint materialID = uint(gbufferData0.y * 255.0);
 
 	float depth = FetchDepthFix(screenTexel);
-	float sDepth = FetchDepthSoildFix(screenTexel);
+	float slinearDepth = readLinearDepth(screenTexel);
 
 	#ifdef BORDER_FOG
 		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
@@ -86,7 +86,7 @@ void main() {
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 rawViewPos = ScreenToViewSpace(screenPos);
 	vec3 viewPos = rawViewPos;
-	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
+	vec3 sViewPos = ScreenToViewSpace(screenCoord, slinearDepth);
 
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
@@ -109,7 +109,6 @@ void main() {
 		refracTexel = rawCoord(refracCoord);
 
 		depth = readDepth(refracTexel);
-		sDepth = readDepthSolid(refracTexel);
 
 		gbufferData0 = readGbufferData0(refracTexel);
 		viewPos = ScreenToViewSpace(vec3(refracCoord, depth));
@@ -134,14 +133,14 @@ void main() {
 
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
-			float waterDepth = distance(ScreenToViewDepth(depth), ScreenToViewDepth(sDepth));
+			float waterDepth = distance(ScreenToViewDepth(depth), readLinearDepth(refracTexel));
 			mat2x3 waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
 			sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		}
 
 		if (waterMask) { // Water
 			// Specular lighting of water
-			vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
+			vec4 blendedData = texelFetch(colortex1, screenTexel, 0);
 			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
 				blendedData.rgb -= sceneOut * blendedData.a;
 			#else
@@ -155,7 +154,7 @@ void main() {
 			sceneOut *= fastExp(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
 
 			// Specular and diffuse lighting of glass
-			vec4 blendedData = texelFetch(colortex2, screenTexel, 0);
+			vec4 blendedData = texelFetch(colortex1, screenTexel, 0);
 			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
 				blendedData.rgb -= sceneOut * blendedData.a;
 			#endif
@@ -169,7 +168,7 @@ void main() {
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
-				vec4 reflectionData = texelFetch(colortex2, refracTexel, 0);
+				vec4 reflectionData = texelFetch(colortex1, refracTexel, 0);
 				sceneOut += reflectionData.rgb;
 			}
 		#endif
@@ -192,7 +191,7 @@ void main() {
 	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
+			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, slinearDepth);
 			sceneOut = sceneOut * volFogData[1] + volFogData[0];
 			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
 		}
@@ -201,7 +200,7 @@ void main() {
 	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
-			mat2x3 waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, ScreenToLinearDepth(depth));
+			mat2x3 waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, slinearDepth);
 		#else
 			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif

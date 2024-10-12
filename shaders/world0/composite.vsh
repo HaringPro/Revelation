@@ -51,14 +51,14 @@ void main() {
 	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 
 	fogExtinctionCoeff = mat2x3(
-		fogMieExtinction * FOG_MIE_DENSITY,
-		fogRayleighCoeff * FOG_RAYLEIGH_DENSITY
+		fogMieExtinction * VF_MIE_DENSITY,
+		fogRayleighCoeff * VF_RAYLEIGH_DENSITY
 	);
 
 	fogScatteringCoeff = mat2x3(
-		fogMieScattering * FOG_MIE_DENSITY,
+		fogMieScattering * VF_MIE_DENSITY,
 		fogExtinctionCoeff[1]
 	);
 
-	fogExtinctionCoeff[0] *= 1.0 + wetness * FOG_MIE_DENSITY_RAIN_MULTIPLIER;
+	fogExtinctionCoeff[0] *= 1.0 + wetness * VF_MIE_DENSITY_RAIN_MULTIPLIER;
 }

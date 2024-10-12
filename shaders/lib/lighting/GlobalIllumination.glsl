@@ -229,14 +229,11 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 
 	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep){
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
-		float sampleDepth = readDepth(ivec2(rayPos.xy));
+		float sampleDepthLinear = readLinearDepth(ivec2(rayPos.xy));
+		float traceDepthLinear = ScreenToViewDepth(rayPos.z);
+		float diff = traceDepthLinear - sampleDepthLinear;
 
-		if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
-			float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
-
-			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
-		}
+		if (clamp(diff, 0.0, 0.25 * traceDepthLinear) == diff) return vec3(rayPos.xy, ViewToScreenDepth(sampleDepthLinear));
 	}
 
 	return vec3(1.5);

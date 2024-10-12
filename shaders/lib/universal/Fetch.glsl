@@ -1,6 +1,8 @@
 #define readDepth(texel) texelFetch(depthtex0, texel, 0).x
 #define readDepthSolid(texel) texelFetch(depthtex1, texel, 0).x
 
+#define readLinearDepth(texel) texelFetch(colortex2, texel, 0).x
+
 #define readSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
 
 #define readAlbedo(texel) texelFetch(colortex6, texel, 0).rgb

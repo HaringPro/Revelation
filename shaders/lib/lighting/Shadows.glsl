@@ -134,14 +134,11 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
     for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
         if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) == rayPos.xy) {
-			float sampleDepth = readDepth(ivec2(rayPos.xy));
+			float sampleDepthLinear = readLinearDepth(ivec2(rayPos.xy));
+			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
+			float diff = traceDepthLinear - sampleDepthLinear;
 
-			if (sampleDepth < rayPos.z) {
-				float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
-				float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
-
-				if (traceDepthLinear - sampleDepthLinear < maxThickness) shadow *= absorption;
-			}
+			if (clamp(diff, 0.0, maxThickness) == diff) shadow *= absorption;
 		}
  
 		if (shadow < 1e-3) break;

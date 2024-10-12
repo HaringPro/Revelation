@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,7,8 */
+/* RENDERTARGETS: 1,7,8 */
 layout (location = 0) out vec4 sceneOut;
 layout (location = 1) out vec4 gbufferOut0;
 layout (location = 2) out vec2 gbufferOut1;

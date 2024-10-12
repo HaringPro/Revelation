@@ -1,4 +1,9 @@
 
+vec3 ScreenToViewSpace(in vec2 coord) {
+	float linearDepth = readLinearDepth(rawCoord(coord));
+	return ScreenToViewSpace(coord, linearDepth);
+}
+
 #if AO_ENABLED == 1
 	/* Screen-Space Ambient Occlusion */
 
