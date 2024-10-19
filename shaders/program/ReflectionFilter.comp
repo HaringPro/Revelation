@@ -70,7 +70,7 @@ float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float
 
 vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
     float smoothness = 1.0 - approxSqrt(roughness);
-    float linearDepth = readLinearDepth(texel);
+    float linearDepth = FetchLinearDepth(texel);
     float NdotV = saturate(dot(worldNormal, -worldDir));
 
     float offsetScale = filterSize * exp2(-oneMinus(reflectionData.a) * smoothness);
@@ -97,7 +97,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 
         vec4 sampleData = imageLoad(colorimg1, sampleTexel);
 
-        float sampleLinerDepth = readLinearDepth(sampleTexel);
+        float sampleLinerDepth = FetchLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(readGbufferData0(sampleTexel));
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
         float sampleRoughness = sqr(1.0 - unpackUnorm2x8(readGbufferData1(sampleTexel).x).x);
@@ -127,7 +127,7 @@ void main() {
         Material material = GetMaterialData(specularTex);
 
         if (material.hasReflections && material.isRough) {
-            vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
+            vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
             vec3 viewDir = ScreenToViewVector(screenCoord);
 
             vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;

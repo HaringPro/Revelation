@@ -40,8 +40,6 @@ flat in vec3 skyIlluminance;
 
 flat in mat4x3 skySH;
 
-flat in vec3 blocklightColor;
-
 //======// Uniform //=============================================================================//
 
 uniform sampler2D noisetex;
@@ -50,7 +48,7 @@ uniform sampler2D noisetex;
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
-uniform sampler2D colortex2; // Linear depth
+uniform sampler2D colortex2; // Reversed depth
 
 uniform sampler2D colortex3; // Current indirect light
 uniform sampler2D colortex4; // Reprojected scene history
@@ -270,7 +268,7 @@ void main() {
 				#endif
 			} else depth += 0.38;
 		#else
-			const float ao = 1.0;
+			const vec3 ao = vec3(1.0);
 			depth += step(0.56, depth) * 0.38;
 		#endif
 
@@ -283,7 +281,7 @@ void main() {
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = 32.0 * cloudShadow * directIlluminance;
+		vec3 sunlightMult = 36.0 * cloudShadow * directIlluminance;
 
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
@@ -346,7 +344,7 @@ void main() {
 						NdotV = max(NdotV, 1e-3);
 
 						sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
+						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 						specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 					}
 				}
@@ -376,7 +374,7 @@ void main() {
 			NdotV = max(NdotV, 1e-3);
 
 			sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
+			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 		}
 
@@ -406,6 +404,7 @@ void main() {
 		#endif
 
 		// Emissive & Blocklight
+		vec3 blocklightColor = blackbody(float(BLOCKLIGHT_TEMPERATURE));
 		#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
 			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
 		#endif
@@ -434,8 +433,10 @@ void main() {
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
-				float falloff = rcp(max(dotSelf(worldPos), 1.0)) * max(heldBlockLightValue, heldBlockLightValue2);
-				sceneOut += (falloff * HELD_LIGHT_BRIGHTNESS) * (ao * oneMinus(falloff) + falloff) * blocklightColor;
+				float falloff = saturate(rcp(max(worldDistSquared, 1.0)) * max(heldBlockLightValue, heldBlockLightValue2));
+
+				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
+				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * mix(ao, vec3(1.0), falloff * 0.7) * blocklightColor;
 			}
 		#endif
 

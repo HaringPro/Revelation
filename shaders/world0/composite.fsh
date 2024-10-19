@@ -191,7 +191,9 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy) << 1;
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 viewPos = ScreenToViewSpace(screenCoord, readLinearDepth(screenTexel));
+	vec3 screenPos = vec3(screenCoord, readDepth(screenTexel));
+
+	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
 	float dither = BlueNoiseTemporal(screenTexel);

@@ -1,7 +1,13 @@
 
-vec3 ScreenToViewSpace(in vec2 coord) {
-	float linearDepth = readLinearDepth(rawCoord(coord));
-	return ScreenToViewSpace(coord, linearDepth);
+vec3 ScreenToViewSpace(in vec2 screenCoord) {
+	vec3 NDCPos = vec3(screenCoord, readDepthFRD(uvToTexel(screenCoord))) * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCPos.xy -= taaOffset;
+	#endif
+	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
+	viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+
+	return viewPos;
 }
 
 #if AO_ENABLED == 1

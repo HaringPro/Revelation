@@ -50,7 +50,7 @@
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
-			float sampleDepth = readLinearDepth(sampleTexel << 1);
+			float sampleDepth = ScreenToViewDepth(readDepthFRD(sampleTexel << 1));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
 
 			sum[0] += texelFetch(colortex11, sampleTexel, 0).rgb * weight;

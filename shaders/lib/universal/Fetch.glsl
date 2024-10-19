@@ -1,23 +1,28 @@
-#define readDepth(texel) texelFetch(depthtex0, texel, 0).x
-#define readDepthSolid(texel) texelFetch(depthtex1, texel, 0).x
+#define readDepth(texel) 			texelFetch(depthtex0, texel, 0).x
+#define readDepthSolid(texel) 		texelFetch(depthtex1, texel, 0).x
 
-#define readLinearDepth(texel) texelFetch(colortex2, texel, 0).x
+#define readDepthFRD(texel) 		(1.0 - texelFetch(colortex2, texel, 0).x)
 
-#define readSceneColor(texel) texelFetch(colortex0, texel, 0).rgb
+#define readSceneColor(texel) 		texelFetch(colortex0, texel, 0).rgb
 
-#define readAlbedo(texel) texelFetch(colortex6, texel, 0).rgb
-#define readGbufferData0(texel) texelFetch(colortex7, texel, 0)
-#define readGbufferData1(texel) texelFetch(colortex8, texel, 0)
+#define readAlbedo(texel) 			texelFetch(colortex6, texel, 0).rgb
+#define readGbufferData0(texel) 	texelFetch(colortex7, texel, 0)
+#define readGbufferData1(texel) 	texelFetch(colortex8, texel, 0)
+
+#if defined DISTANT_HORIZONS
+	#define readDepthDH(texel) 		texelFetch(dhDepthTex0, texel, 0).x
+	#define readDepthDHSolid(texel) texelFetch(dhDepthTex1, texel, 0).x
+#endif
 
 //================================================================================================//
 
 float FetchDepthFix(in ivec2 texel) {
-	float depth = texelFetch(depthtex0, texel, 0).x;
+	float depth = readDepth(texel);
 	return depth + 0.38 * step(depth, 0.56);
 }
 
 float FetchDepthSoildFix(in ivec2 texel) {
-	float depth = texelFetch(depthtex1, texel, 0).x;
+	float depth = readDepthSolid(texel);
 	return depth + 0.38 * step(depth, 0.56);
 }
 

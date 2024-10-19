@@ -107,7 +107,7 @@ float PerspectiveDepth(in float depthLinear) {
 	}
 
 	vec3 ScreenToViewSpaceDH(in vec2 coord) {
-		vec3 NDCPos = vec3(coord, texelFetch(dhDepthTex0, rawCoord(coord), 0).x) * 2.0 - 1.0;
+		vec3 NDCPos = vec3(coord, texelFetch(dhDepthTex0, uvToTexel(coord), 0).x) * 2.0 - 1.0;
 		#ifdef TAA_ENABLED
 			NDCPos.xy -= taaOffset;
 		#endif
@@ -150,11 +150,11 @@ float PerspectiveDepth(in float depthLinear) {
 		return (dhProjection[3].z - dhProjection[2].z * depth) / depth * 0.5 + 0.5;
 	}
 
-	float ScreenToLinearDepthDH(in float depth) {
+	float LinearizeDepthDH(in float depth) {
 		return (dhNearPlane * dhFarPlane) / (depth * (dhNearPlane - dhFarPlane) + dhFarPlane);
 	}
 
-	float LinearToScreenDepthDH(in float depthLinear) {
+	float PerspectiveDepthDH(in float depthLinear) {
 		return (dhFarPlane + dhNearPlane) / (dhFarPlane - dhNearPlane) + (2.0 * dhFarPlane * dhNearPlane) / (depthLinear * (dhFarPlane - dhNearPlane));
 	}
 #endif

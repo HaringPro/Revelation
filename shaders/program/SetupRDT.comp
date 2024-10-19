@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Setup linear depth texture
+	Pass: Setup reversed depth texture
 
 --------------------------------------------------------------------------------
 */
@@ -26,34 +26,11 @@ writeonly restrict uniform image2D colorimg2;
 
 uniform sampler2D depthtex0;
 
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferProjectionInverse;
-
-uniform mat4 gbufferPreviousModelView;
-uniform mat4 gbufferPreviousProjection;
-
-uniform float near;
-uniform float far;
-
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-
-uniform vec2 viewSize;
-uniform vec2 viewPixelSize;
-uniform vec2 taaOffset;
-
-//======// Function //============================================================================//
-
-#include "/lib/universal/Transform.glsl"
-
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
 	float depth = texelFetch(depthtex0, screenTexel, 0).x;
-    float linearDepth = ScreenToViewDepth(depth);
 
-	imageStore(colorimg2, screenTexel, vec4(linearDepth, 0.0, 0.0, 1.0));
+	imageStore(colorimg2, screenTexel, vec4(1.0 - depth, 0.0, 0.0, 1.0));
 }
