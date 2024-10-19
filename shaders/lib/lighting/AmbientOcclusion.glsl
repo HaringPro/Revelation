@@ -1,6 +1,6 @@
 
 vec3 ScreenToViewSpace(in vec2 coord) {
-	float linearDepth = readLinearDepth(rawCoord(coord));
+	float linearDepth = readLinearDepth(uvToTexel(coord));
 	return ScreenToViewSpace(coord, linearDepth);
 }
 

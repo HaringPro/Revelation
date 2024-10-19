@@ -63,7 +63,7 @@ void main() {
 		vec4 gbufferData0 = readGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
-    	vec2 screenCoord = normCoord(currentTexel);
+    	vec2 screenCoord = texelToUv(currentTexel);
 		vec3 screenPos = vec3(screenCoord, depth);
 		vec3 viewPos = ScreenToViewSpace(screenPos);
 

@@ -31,7 +31,7 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
         opticalDepth += density;
     }
 
-    return opticalDepth * 12.0;
+    return opticalDepth * 9.0;
 }
 
 float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
@@ -56,6 +56,10 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
     return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * 2.4e-2;
+}
+
+float CloudPowderEffect(in float depth, in float height, in float factor){
+    return depth * (height + oneMinus(height) * factor);
 }
 
 //================================================================================================//
@@ -111,13 +115,13 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 		#endif
 
 		// Compute skylight multi-scattering
-		float scatteringSky = fastExp(-opticalDepth * 0.1);
-		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.02);
+		float scatteringSky = fastExp(-opticalDepth * 0.5);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.1);
 
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
-		float powder = rcp(fastExp(-density * (TAU / cirrusExtinction)) * 0.7 + 0.3) - 1.0;
-		// powder = mix(powder, 0.3, 0.7 * pow1d5(maxEps(LdotV * 0.5 + 0.5)));
+		float powder = rcp(fastExp(-density * (PI * 6.0 / cirrusExtinction)) * 0.75 + 0.25) - 1.0;
+		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 18.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -132,9 +136,9 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * 40.0 * directIlluminance;
-		scattering += scatteringSky * 0.2 * skyIlluminance;
-		scattering *= oneMinus(0.6 * wetness) * powder * absorption * rcp(cirrusExtinction);
+		vec3 scattering = scatteringSun * 12.0 * powder * directIlluminance;
+		scattering += scatteringSky * 0.2 * (powder * 0.6 + 0.4) * skyIlluminance;
+		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
 	}
@@ -171,15 +175,16 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 			if (intersection.y > 0.0) { // Intersect the volume
 
 				// Special treatment for the eye inside the volume
-				float isEyeInVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CUMULUS_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
-				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), isEyeInVolumeSmooth) - intersection.x);
+				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CUMULUS_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
+				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
 				#if defined PROGRAM_PREPARE
 					uint raySteps = uint(CLOUD_CUMULUS_SAMPLES * 0.6);
+					raySteps = uint(raySteps * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CUMULUS_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(raySteps * (isEyeInVolumeSmooth + oneMinus(abs(rayDir) * 0.4))); // Reduce ray steps for vertical rays
+					raySteps = uint(raySteps * (withinVolumeSmooth + oneMinus(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
 				// const float nearStepSize = 3.0;
@@ -201,7 +206,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				vec2 stepScattering = vec2(0.0);
 				float transmittance = 1.0;
 
-				// float powderFactor = 0.75 * sqr(LdotV * 0.5 + 0.5);
+				float powderFactor = sqr(LdotV * 0.5 + 0.5);
 
 				for (uint i = 0u; i < raySteps; ++i, rayPos += rayStep) {
 					if (transmittance < minCloudTransmittance) break;
@@ -255,13 +260,22 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float stepOpticalDepth = density * cumulusExtinction * stepSize;
 					float stepTransmittance = max(fastExp(-stepOpticalDepth), fastExp(-stepOpticalDepth * 0.25) * 0.7);
 
-					// Compute powder effect
-					float powder = rcp(fastExp(-density * (PI / cumulusExtinction)) * 0.85 + 0.15) - 1.0;
-					// powder = mix(powder, 1.0, powderFactor);
+					// Compute In-Scatter Probability
+					#ifdef CLOUD_CUMULUS_ADVANCED_POWDER
+						// Reference: https://github.com/qiutang98/flower/blob/main/source/shader/cloud/cloud_common.glsl
+						float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
+	
+						float depthProbability = pow(min(density * 6.0, PI), remap(heightFraction, 0.3, 0.85, 0.5, 2.0)) + 0.05;
+						float verticalProbability = pow(remap(heightFraction, 0.07, 0.22, 0.1, 1.0), 0.8);
+						float powder = CloudPowderEffect(depthProbability, verticalProbability, powderFactor);
+					#else
+						float powder = 0.2 * rcp(fastExp(-density * (PI / cumulusExtinction)) * 0.85 + 0.15) - 0.2;
+						powder += oneMinus(powder) * powderFactor * saturate(density * 6.0);
+					#endif
 
 					// Compute the integral of the scattering over the step
 					float stepIntegral = transmittance * oneMinus(stepTransmittance);
-					stepScattering += powder * scattering * stepIntegral;
+					stepScattering += vec2(powder, powder * 0.6 + 0.4) * scattering * stepIntegral;
 					transmittance *= stepTransmittance;	
 				}
 
@@ -285,8 +299,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
-					vec3 scattering = stepScattering.x * 2.4 * directIlluminance;
-					scattering += stepScattering.y * 0.036 * skyIlluminance;
+					vec3 scattering = stepScattering.x * 12.0 * directIlluminance;
+					scattering += stepScattering.y * 0.2 * skyIlluminance;
 
 					// Compute aerial perspective
 					#ifdef CLOUD_AERIAL_PERSPECTIVE

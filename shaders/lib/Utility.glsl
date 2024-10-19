@@ -40,8 +40,8 @@ const float r240		= 0.00416666667;
 #define diagonal4(m)	vec4(diagonal3(m), (m)[2].w)
 #define projMAD(m, v)	(diagonal3(m) * (v) + (m)[3].xyz)
 
-#define rawCoord(coord) ivec2((coord) * viewSize)
-#define normCoord(texel)((vec2(texel) + 0.5) * viewPixelSize)
+#define uvToTexel(coord) ivec2((coord) * viewSize)
+#define texelToUv(texel) ((vec2(texel) + 0.5) * viewPixelSize)
 
 float maxOf(vec2 v)   	{ return max(v.x, v.y); }
 float maxOf(vec3 v)   	{ return max(v.x, max(v.y, v.z)); }

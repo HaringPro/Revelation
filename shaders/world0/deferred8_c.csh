@@ -1,5 +1,5 @@
 #version 450 core
 
-#define ATROUS_FILTER_SIZE 8
+#define ATROUS_FILTER_SIZE 4
 
-#include "/program/SSPT/ATrousFilterY.comp"
+#include "/program/SSPT/ATrousFilter.comp"
