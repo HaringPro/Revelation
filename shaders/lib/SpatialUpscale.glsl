@@ -26,7 +26,7 @@
 			sumWeight += weight;
 		}
 
-		return sum / sumWeight;
+		return sum * rcp(sumWeight);
 	}
 #endif
 #endif
@@ -50,7 +50,7 @@
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
-			float sampleDepth = ScreenToLinearDepth(readDepth(sampleTexel << 1));
+			float sampleDepth = ScreenToViewDepth(readDepth1(sampleTexel << 1));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
 
 			sum[0] += texelFetch(colortex11, sampleTexel, 0).rgb * weight;
@@ -58,7 +58,7 @@
 			sumWeight += weight;
 		}
 
-		return sum / sumWeight;
+		return sum * rcp(sumWeight);
 	}
 #endif
 #endif

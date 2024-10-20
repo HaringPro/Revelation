@@ -21,7 +21,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 //======// Output //==============================================================================//
 
-layout (rgba16f) restrict uniform image2D colorimg2;
+layout (rgba16f) restrict uniform image2D colorimg1;
 
 //======// Uniform //=============================================================================//
 
@@ -95,7 +95,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         vec2 offset = offset3x3N[i] + randOffset;
         ivec2 sampleTexel = clamp(texel + ivec2(tangent * offset.x + bitangent * offset.y), ivec2(0), ivec2(viewSize) - 1);
 
-        vec4 sampleData = imageLoad(colorimg2, sampleTexel);
+        vec4 sampleData = imageLoad(colorimg1, sampleTexel);
 
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(readGbufferData0(sampleTexel));
@@ -120,14 +120,14 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 void main() {
 	ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-    vec4 reflectionData = imageLoad(colorimg2, screenTexel);
+    vec4 reflectionData = imageLoad(colorimg1, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = vec4(unpackUnorm2x8(readGbufferData1(screenTexel).x), vec2(0.0));
         Material material = GetMaterialData(specularTex);
 
         if (material.hasReflections && material.isRough) {
-            vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
+            vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
             vec3 viewDir = ScreenToViewVector(screenCoord);
 
             vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
@@ -137,5 +137,5 @@ void main() {
         }
     #endif
 
-    imageStore(colorimg2, screenTexel, reflectionData);
+    imageStore(colorimg1, screenTexel, reflectionData);
 }

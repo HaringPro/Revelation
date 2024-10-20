@@ -60,13 +60,13 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	#ifdef CLOUD_CUMULUS
 		// Start from the cloud intersection plane and move towards the light vector.
-		shadowAltitude = 0.5 * (256.0 + cumulusMaxAltitude) - rayPos.y;
+		shadowAltitude = 0.5 * (CLOUD_CUMULUS_ALTITUDE + cumulusMaxAltitude) - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
 			#if 0
 				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CUMULUS_THICKNESS * cumulusExtinction * 0.2);
 			#else
-				cloudShadow *= exp2(-CloudVolumeDensitySmooth(cloudPos) * CLOUD_CUMULUS_THICKNESS * cumulusExtinction * 0.2);
+				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, 0u) * CLOUD_CUMULUS_THICKNESS * cumulusExtinction * 0.2);
 			#endif
 		}
 	#endif
@@ -74,6 +74,6 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	float timeFade = sqr(remap(0.08, 0.16, cloudLightVector.y));
 	cloudShadow = oneMinus(timeFade) + cloudShadow * timeFade;
 
-	return max(0.025, cloudShadow);
+	return max(0.04, cloudShadow);
 }
 #endif

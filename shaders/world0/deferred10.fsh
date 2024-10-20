@@ -24,12 +24,12 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 0,2 */
+/* RENDERTARGETS: 0,1 */
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
 #if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
-/* RENDERTARGETS: 0,2,3 */
+/* RENDERTARGETS: 0,1,3 */
 layout (location = 2) out vec3 lightingOut;
 #endif
 
@@ -39,8 +39,6 @@ flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
 flat in mat4x3 skySH;
-
-flat in vec3 blocklightColor;
 
 //======// Uniform //=============================================================================//
 
@@ -154,7 +152,7 @@ uniform mat4 shadowModelViewInverse;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = readDepth(screenTexel);
+	float depth = readDepth0(screenTexel);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 	vec3 screenPos = vec3(screenCoord, depth);
@@ -268,7 +266,7 @@ void main() {
 				#endif
 			} else depth += 0.38;
 		#else
-			const float ao = 1.0;
+			const vec3 ao = vec3(1.0);
 			depth += step(0.56, depth) * 0.38;
 		#endif
 
@@ -281,7 +279,7 @@ void main() {
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = 32.0 * cloudShadow * directIlluminance;
+		vec3 sunlightMult = 36.0 * cloudShadow * directIlluminance;
 
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
@@ -344,7 +342,7 @@ void main() {
 						NdotV = max(NdotV, 1e-3);
 
 						sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
+						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 						specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 					}
 				}
@@ -374,7 +372,7 @@ void main() {
 			NdotV = max(NdotV, 1e-3);
 
 			sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(material.roughness), material.f0);
+			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
 		}
 
@@ -404,6 +402,7 @@ void main() {
 		#endif
 
 		// Emissive & Blocklight
+		vec3 blocklightColor = blackbody(float(BLOCKLIGHT_TEMPERATURE));
 		#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
 			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
 		#endif
@@ -432,8 +431,10 @@ void main() {
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
-				float falloff = rcp(max(dotSelf(worldPos), 1.0)) * max(heldBlockLightValue, heldBlockLightValue2);
-				sceneOut += (falloff * HELD_LIGHT_BRIGHTNESS) * (ao * oneMinus(falloff) + falloff) * blocklightColor;
+				float falloff = saturate(rcp(max(worldDistSquared, 1.0)) * max(heldBlockLightValue, heldBlockLightValue2));
+
+				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
+				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * mix(ao, vec3(1.0), falloff * 0.7) * blocklightColor;
 			}
 		#endif
 

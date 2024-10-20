@@ -39,7 +39,7 @@ vec2 CalculateRefractiveCoord(in bool waterMask, in vec3 viewPos, in vec3 viewNo
 		vec3 upDir = normalize(gbufferModelView[1].xyz);
 
 		refractiveCoord = upDir.xy - waveNormalView.xy;
-		refractiveCoord *= saturate(transparentDepth / (1.0 - viewPos.z)) * REFRACTION_STRENGTH * 0.25;
+		refractiveCoord *= saturate(transparentDepth / oneMinus(viewPos.z)) * REFRACTION_STRENGTH * 0.25;
 		refractiveCoord += screenCoord;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);

@@ -55,9 +55,9 @@ uniform vec2 taaOffset;
 void main() {
     ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
-	float depth = texelFetch(depthtex0, screenTexel << 1, 0).x;
+	float depth = readDepth0(screenTexel << 1);
 
-    vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
+    vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {

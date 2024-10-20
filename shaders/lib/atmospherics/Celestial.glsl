@@ -82,7 +82,7 @@ vec3 RenderStars(in vec3 worldDir) {
 
 //================================================================================================//
 
-uniform sampler2D colortex2;
+uniform sampler2D colortex12;
 
 vec3 RenderGalaxy(in vec3 worldDir) {
     #ifdef GALAXY_ROTATION
@@ -93,6 +93,6 @@ vec3 RenderGalaxy(in vec3 worldDir) {
     // Convert to spherical coordinates
     vec2 galacticCoord = ToSphereMap(worldDir);
     // Bilinear interpolation is enough
-    vec3 galaxy = texture(colortex2, galacticCoord).rgb;
+    vec3 galaxy = texture(colortex12, galacticCoord).rgb;
     return sRGBtoLinear(galaxy) * GALAXY_INTENSITY;
 }

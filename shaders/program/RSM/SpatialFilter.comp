@@ -108,14 +108,14 @@ void main() {
     SharedPreload();
 
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-    float depth = texelFetch(depthtex0, texel << 1, 0).x;
+    float depth = readDepth0(texel << 1);
     if (depth < 1.0) {
         uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
 
         vec3 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
         vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
 
-        vec2 screenCoord = normCoord(gl_GlobalInvocationID.xy);
+        vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
         vec3 viewDir = ScreenToViewVectorRaw(screenCoord * 2.0);
         vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
         float NdotV = saturate(dot(normalDepthData.xyz, -worldDir));

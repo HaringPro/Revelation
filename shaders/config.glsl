@@ -12,18 +12,19 @@
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= RGBA16F;
-	const int 	colortex2Format 			= RGBA16F;
+	const int 	colortex2Format 			= RG8I;
 	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
 	const int 	colortex5Format 			= R11F_G11F_B10F;
 	const int 	colortex6Format 			= RGBA8;
 	const int 	colortex7Format 			= RGBA16;
 	const int 	colortex8Format 			= RGB16;
+	const int 	colortex9Format 			= RGBA16F;
 	const int 	colortex10Format 			= RGBA8;
 	const int 	colortex11Format 			= R11F_G11F_B10F;
 	const int 	colortex12Format 			= RGB8;
 	const int 	colortex13Format 			= RGBA16F;
-	const int 	colortex14Format 			= RGB16;
+	const int 	colortex14Format 			= RG16;
 	const int 	colortex15Format 			= RGB16;
 
 	const bool	colortex0Clear				= false;
@@ -35,6 +36,7 @@
 	const bool  colortex6Clear				= true;
 	const bool	colortex7Clear				= false;
 	const bool	colortex8Clear				= false;
+	const bool	colortex9Clear				= false;
 	const bool 	colortex10Clear				= false;
 	const bool 	colortex11Clear				= false;
 	const bool 	colortex12Clear				= false;
@@ -51,16 +53,7 @@
 	const float drynessHalflife				= 60.0;
 
 	const bool 	shadowHardwareFiltering1 	= true;
-*/
 
-#if defined CLOUDS && defined CLOUD_CBR_ENABLED
-/*
-	const int 	colortex9Format 			= RGBA16F;
-	const bool	colortex9Clear				= false;
-*/
-#endif
-
-/*
 --------------------------------------------------------------------------------
 
 	- Buffer Table -
@@ -68,20 +61,20 @@
 	|   Buffer		|   Format          |   Resolution	|   Usage
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
-	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
-	|	colortex2	|   rgba16f         |	Full res  	|	Specular reflections, lighting of glass -> Motion vector
+	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history | Specular reflections, lighting of glass
+	|	colortex2	|   rg8i	        |	Full res  	|	Cloud frame index, sky mask
 	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light -> Lighting data history
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors, exposure
 	|	colortex6	|   rgba8           |	Full res  	|	Solid albedo, rain alpha
 	|	colortex7	|   rgba16          |	Full res  	|	Gbuffer data 0 -> Bloomy fog transmittance
 	|	colortex8	|   rgb16           |	Full res  	|	Gbuffer data 1 -> Final output
-	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history
+	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history | Motion vector
 	|	colortex10	|   rgba8           |	256, 384   	|	Transmittance-View LUT, cloud shadow map
 	|	colortex11	|   r11f_g11f_b10f  |	Half res  	|	Volumetric fog scattering
 	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
 	|	colortex13	|   rgba16f         |	Full res	|	Cloud data -> Indirect light history, frame index
-	|	colortex14	|   rgb16           |	Full res	|	Variance history, inverse depth history
+	|	colortex14	|   rg16            |	Full res	|	Variance history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 
 --------------------------------------------------------------------------------

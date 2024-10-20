@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,7,8 */
+/* RENDERTARGETS: 1,7,8 */
 layout (location = 0) out vec4 sceneOut;
 layout (location = 1) out vec4 gbufferOut0;
 layout (location = 2) out vec2 gbufferOut1;
@@ -96,7 +96,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 				float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
-				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (64.0 * skylight) * mix(1.0, moonlightFactor, sunAngle > 0.5);
+				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (36.0 * skylight) * mix(1.0, moonlightFactor, sunAngle > 0.5);
 				highlights = transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 			}
 		#endif
@@ -104,14 +104,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 
 	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 	vec3 screenPos = vec3(gl_FragCoord.xy * viewPixelSize, gl_FragCoord.z);
-
-	bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, RAYTRACE_SAMPLES, screenPos);
-	if (hit) {
-		screenPos.xy *= viewPixelSize;
-		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
-		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
-	}
 
 	float brdf;
 
@@ -121,6 +113,15 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		brdf = FresnelDielectricN(NdotV, 1.0 / WATER_REFRACT_IOR);
 	} else {
 		brdf = FresnelDielectric(NdotV, f0);
+	}
+	uint raySteps = uint(mix(6u, RAYTRACE_SAMPLES, brdf));
+
+	bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, screenPos);
+	if (hit) {
+		screenPos.xy *= viewPixelSize;
+		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
+		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
 	return vec4(clamp16f(reflection * brdf + highlights), brdf);
@@ -181,7 +182,7 @@ void main() {
 	//==// Translucent lighting //================================================================//
 	#ifdef TRANSLUCENT_LIGHTING
 		// Sunlight
-		vec3 sunlightMult = 16.0 * oneMinus(wetness * 0.96) * directIlluminance;
+		vec3 sunlightMult = 36.0 * oneMinus(wetness * 0.96) * directIlluminance;
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		vec3 sunlightDiffuse = vec3(0.0);
@@ -217,7 +218,7 @@ void main() {
 
 					sunlightDiffuse = shadow * approxSqrt(NdotL) * rPI;
 					float f0 = materialID == 3u ? F0FromIOR(WATER_REFRACT_IOR) : F0FromIOR(GLASS_REFRACT_IOR);
-					specularHighlight = shadow * 4.0 * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
+					specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 				}
 			}
 		}
@@ -240,7 +241,7 @@ void main() {
 			}
 
 			if (lightmap.x > 1e-5) lighting += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
-			sceneOut.rgb *= lighting;
+			sceneOut.rgb *= lighting * rPI;
 
 			vec4 specularReflections = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos);
 			sceneOut.rgb = specularReflections.rgb + sceneOut.rgb * oneMinus(specularReflections.a);

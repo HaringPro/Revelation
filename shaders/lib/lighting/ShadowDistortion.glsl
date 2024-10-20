@@ -1,5 +1,5 @@
 
-#define SHADOW_MAP_BIAS	0.9 // [0.0 0.1 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+#define SHADOW_MAP_BIAS	0.9 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 float cubeLength(in vec2 v) {
     vec2 t = abs(cube(v));

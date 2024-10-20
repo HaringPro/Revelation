@@ -1,4 +1,15 @@
 
+vec3 ScreenToViewSpace(in vec2 screenCoord) {
+	vec3 NDCPos = vec3(screenCoord, readDepth0(uvToTexel(screenCoord))) * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCPos.xy -= taaOffset;
+	#endif
+	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
+	viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+
+	return viewPos;
+}
+
 #if AO_ENABLED == 1
 	/* Screen-Space Ambient Occlusion */
 

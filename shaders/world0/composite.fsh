@@ -51,7 +51,7 @@ uniform vec3 fogWind;
 #include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
-#ifdef CLOUD_SHADOWS
+#ifdef VF_CLOUD_SHADOWS
 	#include "/lib/atmospherics/clouds/Shadows.glsl"
 #endif
 
@@ -70,12 +70,12 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	return shadowClipPos;
 }
 
-#if FOG_QUALITY == 0
+#if VOLUMETRIC_FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
 		return max(exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0)), 0.07);
 	}
-#elif FOG_QUALITY == 1
+#elif VOLUMETRIC_FOG_QUALITY == 1
 	/* Medium */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
 		vec2 density = exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 2.0);
@@ -157,7 +157,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 			}
 		#endif
 
-		#ifdef CLOUD_SHADOWS
+		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			float cloudShadow = ReadCloudShadowMap(colortex10, rayPos - cameraPosition);
 			sampleShadow *= cloudShadow * cloudShadow;
@@ -191,7 +191,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy) << 1;
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 screenPos = vec3(screenCoord, readDepth(screenTexel));
+	vec3 screenPos = vec3(screenCoord, readDepth0(screenTexel));
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;

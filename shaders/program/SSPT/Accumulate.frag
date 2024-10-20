@@ -27,7 +27,7 @@
 /* RENDERTARGETS: 3,13,14 */
 layout (location = 0) out vec4 indirectCurrent;
 layout (location = 1) out vec4 indirectHistory;
-layout (location = 2) out vec3 historyBuffer; // xy: moments history, z: inverse depth
+layout (location = 2) out vec2 momentsHistory;
 
 //======// Uniform //=============================================================================//
 
@@ -36,6 +36,7 @@ layout (location = 2) out vec3 historyBuffer; // xy: moments history, z: inverse
 uniform sampler2D colortex13; // Previous indirect light
 uniform sampler2D colortex14; // Previous moments
 
+uniform float cameraVelocity;
 uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
@@ -104,7 +105,7 @@ vec4 SpatialColor(in ivec2 texel) {
         }
     }
 
-    historyBuffer.xy = vec2(luma, sqLuma);
+    momentsHistory = vec2(luma, sqLuma);
     return vec4(indirectData, abs(sqLuma - luma * luma));
 }
 
@@ -140,7 +141,6 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     vec2 prevMoments = vec2(0.0);
     float sumWeight = 0.0;
 
-    float cameraMovement = length(mat3(gbufferModelView) * (cameraPosition - previousCameraPosition));
     float currViewDistance = length(viewPos);
 
     prevCoord += (prevTaaOffset - taaOffset) * 0.25;
@@ -165,7 +165,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
             vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
-            if ((abs(currViewDistance - prevData.w) - cameraMovement) < 0.1 * currViewDistance) {
+            if ((abs(currViewDistance - prevData.w) - cameraVelocity) < 0.1 * currViewDistance) {
                 float weight = weight[i];
 
                 prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
@@ -192,13 +192,13 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         float luminance = GetLuminance(indirectCurrent.rgb);
 
         vec2 currMoments = vec2(luminance, luminance * luminance);
-        historyBuffer.xy = mix(prevMoments, currMoments, alpha);
+        momentsHistory = mix(prevMoments, currMoments, alpha);
 
         // See section 4.2 of the paper
         if (indirectHistory.a < 4.0) {
             indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
         } else {
-            indirectCurrent.a = abs(historyBuffer.xy.y - historyBuffer.xy.x * historyBuffer.xy.x);
+            indirectCurrent.a = abs(momentsHistory.y - momentsHistory.x * momentsHistory.x);
         }
     } else {
         indirectCurrent = SpatialColor(screenTexel);
@@ -217,11 +217,11 @@ float sampleDepthMin4x4(in vec2 coord) {
 }
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = readDepth(texel);
+    float depth = readDepth0(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
-        float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
+        float sampleDepth = readDepth0(sampleTexel);
         depth = min(depth, sampleDepth);
     }
 
@@ -232,9 +232,6 @@ float GetClosestDepth(in ivec2 texel) {
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-    #if defined CLOUDS && defined CLOUD_CBR_ENABLED
-        historyBuffer.z = 1.0 - readDepth(screenTexel);
-    #endif
 
     if (currentCoord.y < 1.0) {
         if (currentCoord.x < 1.0) {
@@ -244,7 +241,7 @@ void main() {
             indirectCurrent = vec4(vec3(0.0), 1.0);
             indirectHistory = indirectCurrent;
 
-            historyBuffer.xy = vec2(0.0);
+            momentsHistory = vec2(0.0);
 
             if (depth < 1.0) {
                 ivec2 currentTexel = screenTexel << 1;

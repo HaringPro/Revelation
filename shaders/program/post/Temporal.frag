@@ -22,7 +22,7 @@ layout (location = 0) out vec4 temporalOut;
 layout (location = 1) out vec3 clearOut;
 
 #ifdef MOTION_BLUR
-/* RENDERTARGETS: 1,4,2 */
+/* RENDERTARGETS: 1,4,9 */
 layout (location = 2) out vec2 motionVectorOut;
 #endif
 
@@ -63,7 +63,7 @@ vec3 GetClosestFragment(in ivec2 texel, in float depth) {
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = offset3x3N[i] + texel;
-        float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
+        float sampleDepth = readDepth0(sampleTexel);
         closestFragment = sampleDepth < closestFragment.z ? vec3(sampleTexel, sampleDepth) : closestFragment;
     }
 
@@ -158,7 +158,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 
 vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
-    ivec2 texel = rawCoord(screenCoord + taaOffset * 0.5);
+    ivec2 texel = uvToTexel(screenCoord + taaOffset * 0.5);
 
     vec3 currentSample = readSceneColor(texel);
     vec2 prevCoord = screenCoord - motionVector;
@@ -209,7 +209,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     blendWeight *= offcenterWeight;
 
     currentSample = mix(reinhard(currentSample), reinhard(prevSample), blendWeight);
-    return vec4(invReinhard(currentSample), frameIndex);
+    return vec4(invReinhard(currentSample), frameIndex * offcenterWeight);
 }
 
 //======// Main //================================================================================//
@@ -218,7 +218,7 @@ void main() {
 
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    float depth = readDepth(screenTexel);
+    float depth = readDepth0(screenTexel);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
     #ifdef TAA_CLOSEST_FRAGMENT
@@ -235,6 +235,6 @@ void main() {
     #ifdef TAA_ENABLED
         temporalOut = CalculateTAA(screenCoord, motionVector);
     #else
-        temporalOut = vec4(readSceneColor(screenTexel), 0.0);
+        temporalOut = vec4(readSceneColor(screenTexel), 1.0 + texture(colortex1, screenCoord - motionVector).a);
     #endif
 }

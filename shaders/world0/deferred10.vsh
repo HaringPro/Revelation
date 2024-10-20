@@ -24,8 +24,6 @@ flat out vec3 skyIlluminance;
 
 flat out mat4x3 skySH;
 
-flat out vec3 blocklightColor;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -67,6 +65,4 @@ void main() {
 	}
 
 	skySH *= rSlices * rSlices;
-
-	blocklightColor = blackbody(float(BLOCKLIGHT_TEMPERATURE));
 }

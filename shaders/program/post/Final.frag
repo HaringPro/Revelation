@@ -29,7 +29,7 @@ out vec3 finalOut;
 
 // uniform sampler2D colortex0;
 // uniform sampler2D colortex1; // Scene history
-// uniform sampler2D colortex2;
+// uniform usampler2D colortex2;
 // uniform sampler2D colortex3;
 uniform sampler2D colortex4; // Bloom tiles
 // uniform sampler2D colortex5;

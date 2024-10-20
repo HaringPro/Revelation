@@ -18,6 +18,7 @@ vec3 CalculateParallax(in vec3 tangentViewDir, in vec2 texSize, in float dither)
         float sampleHeight = texelFetch(normals, ivec2(OffsetCoord(offsetCoord.xy) * texSize), 0).a;
 
         #ifdef PARALLAX_REFINEMENT
+            // Refine the parallax mapping (binary search)
             if (sampleHeight > offsetCoord.z) {
                 if (refinementIndex >= PARALLAX_REFINEMENT_STEPS) break;
                 offsetCoord -= stepSize * float(i);

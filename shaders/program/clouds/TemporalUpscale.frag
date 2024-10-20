@@ -19,13 +19,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 9 */
-layout (location = 0) out vec4 cloudOut;
-
-#if !defined SSPT_ENABLED || !defined SVGF_ENABLED
-/* RENDERTARGETS: 9,14 */
-layout (location = 1) out vec3 historyBuffer; // xy: moments history, z: inverse depth
-#endif
+/* RENDERTARGETS: 2,9 */
+layout (location = 0) out uvec2 dataOut;
+layout (location = 1) out vec4 cloudOut;
 
 //======// Uniform //=============================================================================//
 
@@ -33,10 +29,10 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex1; // Scene history
 
+uniform usampler2D colortex2; // Cloud frame index, sky mask
+
 uniform sampler2D colortex9; // Previous clouds
 uniform sampler2D colortex13; // Current clouds
-
-uniform sampler2D colortex14; // Depth history
 
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
@@ -52,6 +48,7 @@ uniform mat4 gbufferPreviousProjection;
 uniform float near;
 uniform float far;
 uniform float frameTime;
+uniform float cameraVelocity;
 
 uniform vec3 cameraPosition;
 uniform vec3 previousCameraPosition;
@@ -180,42 +177,46 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = readDepth(screenTexel);
-
-	#if !defined SSPT_ENABLED || !defined SVGF_ENABLED
-		historyBuffer.rg = texelFetch(colortex14, screenTexel, 0).rg;
-		historyBuffer.b = 1.0 - depth; // Inverse depth
-	#endif
+	float depth = readDepth0(screenTexel);
+	dataOut = uvec2(0u);
 
 	if (depth > 0.999999) {
+		dataOut.y = 1u;
+
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 		vec2 prevCoord = Reproject(vec3(screenCoord, 1.0)).xy;
 
-		if (saturate(prevCoord) != prevCoord // Offscreen invalidation
-		 || maxOf(textureGather(colortex14, prevCoord, 2)) > 1e-6 // Previous depth invalidation
-    	//  || (gbufferProjection[0][0] - gbufferPreviousProjection[0][0]) > 0.25 // Fov change invalidation
-		 || worldTimeChanged) {
+		bool disocclusion = worldTimeChanged;
+		// Offscreen invalidation
+		disocclusion = disocclusion || saturate(prevCoord) != prevCoord;
+		// Previous land invalidation
+		disocclusion = disocclusion || texture(colortex2, prevCoord).y == 0u;
+		// Fov change invalidation
+		// disocclusion = disocclusion || (gbufferProjection[0].x - gbufferPreviousProjection[0].x) > 0.25;
+
+		if (disocclusion) {
 			const float currScale = rcp(float(CLOUD_CBR_SCALE));
 			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
 			cloudOut = textureBicubic(colortex13, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
 			prevData = clamp16f(prevData); // Fix black border artifacts
+			uint frameIndex = texture(colortex2, prevCoord).x;
+			dataOut.x = ++frameIndex;
 
 			// Checkerboard upscaling
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
 			if (screenTexel % CLOUD_CBR_SCALE == offset) {
-				float frameIndex = min(texture(colortex1, prevCoord).a, CLOUD_MAX_BLENDED_FRAMES);
 
 				// Accumulate enough frame for checkerboard pattern
-				float blendWeight = 1.0 - rcp(max(frameIndex - cloudRenderArea, 1.0));
+				float blendWeight = 1.0 - rcp(max(min(float(frameIndex), CLOUD_MAX_BLENDED_FRAMES) - cloudRenderArea, 1.0));
 
 				// Offcenter rejection
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
 				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.5 + 0.5;
 
 				// Camera movement rejection
-				blendWeight *= exp2(-2e-2 * distance(previousCameraPosition, cameraPosition) * rcp(frameTime)) * 0.5 + 0.5;
+				blendWeight *= exp2(-cameraVelocity * (1e-2 / frameTime)) * 0.5 + 0.5;
 
 				// Blend with current frame
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);

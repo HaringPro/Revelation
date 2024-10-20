@@ -32,6 +32,7 @@ out vec4 indirectHistory;
 
 uniform sampler2D colortex13; // Previous indirect light
 
+uniform float cameraVelocity;
 uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
@@ -45,7 +46,6 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     vec4 prevLight = vec4(0.0);
     float sumWeight = 0.0;
 
-    float cameraMovement = length(mat3(gbufferModelView) * (cameraPosition - previousCameraPosition));
     float currViewDistance = length(viewPos);
 
     prevCoord += (prevTaaOffset - taaOffset) * 0.125;
@@ -70,7 +70,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
             vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
-            if ((abs(currViewDistance - prevData.w) - cameraMovement) < 0.1 * currViewDistance) {
+            if ((abs(currViewDistance - prevData.w) - cameraVelocity) < 0.1 * currViewDistance) {
                 float weight = weight[i];
 
                 prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
@@ -99,11 +99,11 @@ float sampleDepthMin4x4(in vec2 coord) {
 }
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = readDepth(texel);
+    float depth = readDepth0(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
-        float sampleDepth = texelFetch(depthtex0, sampleTexel, 0).x;
+        float sampleDepth = readDepth0(sampleTexel);
         depth = min(depth, sampleDepth);
     }
 

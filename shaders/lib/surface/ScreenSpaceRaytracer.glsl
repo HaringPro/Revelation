@@ -1,37 +1,34 @@
 
-#define RAYTRACE_SAMPLES 16 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
+#define RAYTRACE_SAMPLES 18 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
 #define REAL_SKY_REFLECTIONS
 
 #define RAYTRACE_REFINEMENT
 #define RAYTRACE_REFINEMENT_STEPS 6 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
 
-bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, const in uint steps, inout vec3 rayPos) {
-	if (viewDir.z > -viewPos.z) return false;
+#define RAYTRACE_ADAPTIVE_STEP
 
-    const float rSteps = 1.0 / float(steps);
+bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in uint steps, inout vec3 rayPos) {
+	if (viewDir.z > max0(-viewPos.z)) return false;
 
-    vec3 endPos = ViewToScreenSpace(viewDir * abs(viewPos.z) + viewPos);
-    vec3 screenDir = normalize(endPos - rayPos);
-    float stepWeight = 1.0 / screenDir.z;
+    float rSteps = 1.0 / float(steps);
 
-    float stepLength = minOf((step(0.0, screenDir) - rayPos) / screenDir) * rSteps;
-    float minLength = stepLength * 1e-2;
+    vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
+    vec3 rayDir = normalize(endPos - rayPos);
+    float stepWeight = 1.0 / rayDir.z;
 
-    screenDir.xy *= viewSize;
+    float stepLength = minOf((step(0.0, rayDir) - rayPos) / rayDir) * rSteps;
+
+    rayDir.xy *= viewSize;
     rayPos.xy *= viewSize;
 
-    vec3 rayStep = screenDir * stepLength;
+    vec3 rayStep = rayDir * stepLength;
+
+	float depthTolerance = max(0.2 * oneMinus(rayPos.z), -2.0 * rayStep.z);
     rayPos += rayStep * (dither + 1.0);
 
 	bool hit = false;
 
-    #ifdef RAYTRACE_REFINEMENT
-        uint refinementSamp = 0u;
-    #endif
-
-	float depthTolerance = max(exp2(1e-2 * viewPos.z - 8.0), -rayStep.z);
-
-    for (uint i = 0u; i < steps; ++i) {
+    for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
         if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 
         #ifdef REAL_SKY_REFLECTIONS
@@ -40,30 +37,31 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, cons
             if (rayPos.z >= 1.0) break;
         #endif
 
-        float sampleDepth = readDepthSolid(ivec2(rayPos.xy));
+        float sampleDepth = readDepth1(ivec2(rayPos.xy));
+		float diff = rayPos.z - sampleDepth;
 
-        rayStep = screenDir * clamp((sampleDepth - rayPos.z) * stepWeight, minLength, rSteps);
-        rayPos += rayStep;
+        if (clamp(diff, 0.0, depthTolerance) == diff) {
+            hit = true;
+            break;
+        }
 
-        if (sampleDepth < rayPos.z) {
-            #ifdef RAYTRACE_REFINEMENT
-                if (refinementSamp < RAYTRACE_REFINEMENT_STEPS) {
-                    ++refinementSamp;
-                    rayStep *= 0.5;
+        #ifdef RAYTRACE_ADAPTIVE_STEP
+            rayStep = rayDir * max((sampleDepth - rayPos.z) * stepWeight, 1e-2 * rSteps);
+        #endif
+    }
 
-                    rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
+    // Refine hit position (binary search)
+    #ifdef RAYTRACE_REFINEMENT
+	if (hit) {
+        for (uint i = 0u; i < RAYTRACE_REFINEMENT_STEPS; ++i) {
+            rayStep *= 0.5;
 
-                    sampleDepth = readDepthSolid(ivec2(rayPos.xy));
-                }
-            #endif
-            // float sampleDepthLinear = GetDepthLinear(sampleDepth);
-            // float traceDepthLinear = GetDepthLinear(rayPos.z);
-            if (rayPos.z - sampleDepth < depthTolerance) {
-                hit = true;
-                break;
-            }
+            float sampleDepth = readDepth1(ivec2(rayPos.xy));
+
+            rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
         }
     }
+    #endif
 
     return hit;
 }

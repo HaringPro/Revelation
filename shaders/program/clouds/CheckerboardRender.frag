@@ -86,10 +86,10 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
-	vec2 cloudUV = (vec2(cloudTexel) + 0.5) * viewPixelSize;
+	vec2 cloudUv = texelToUv(cloudTexel);
 
-	if (sampleDepthMax4x4(cloudUV) > 0.999999) {
-		vec3 viewDir  = ScreenToViewVectorRaw(cloudUV);
+	if (sampleDepthMax4x4(cloudUv) > 0.999999) {
+		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		// Checkerboard dithering

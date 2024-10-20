@@ -22,7 +22,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 		screenPos.xy *= viewPixelSize;
 		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
-		reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
+		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
 	float brdf = FresnelDielectric(NdotV, 0.02);
@@ -72,12 +72,11 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 			// Geometric term
 			float NdotV = dot(normal, -worldDir);
-			float alpha2 = material.roughness * material.roughness;
-			brdf *= saturate(G2SmithGGX(NdotL, NdotV, alpha2) * G1SmithGGXInverse(NdotV, alpha2));
+			brdf *= saturate(G2SmithGGX(NdotL, NdotV, material.roughness) * G1SmithGGXInverse(NdotV, material.roughness));
 
 			sceneOut *= 1.0 - brdf;
 
-			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, readDepth(ivec2(screenPos.xy))));
+			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, readDepth0(ivec2(screenPos.xy))));
 			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
 
 			return vec4(clamp16f(reflection) * brdf, targetDepth);
@@ -104,7 +103,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 				screenPos.xy *= viewPixelSize;
 				float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
 				edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
-				reflection += (texelFetch(colortex4, rawCoord(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
+				reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 			}
 
 			vec3 brdf = vec3(1.0);

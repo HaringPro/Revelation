@@ -214,14 +214,14 @@ NoiseGenerator initNoiseGenerator(uvec2 texelIndex, uint frameIndex) {
 }
 
 vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
-	if (viewDir.z > -viewPos.z) return vec3(1.5);
+	if (viewDir.z > max0(-viewPos.z)) return vec3(1.5);
 
-	vec3 position = ViewToScreenSpace(viewDir * -viewPos.z + viewPos);
-	vec3 screenDir = normalize(position - rayPos);
+	vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
+	vec3 rayDir = normalize(endPos - rayPos);
 
-	float stepLength = minOf((step(0.0, screenDir) - rayPos) / screenDir) * rcp(15.0);
+	float stepLength = minOf((step(0.0, rayDir) - rayPos) / rayDir) * rcp(15.0);
 
-	vec3 rayStep = screenDir * stepLength;
+	vec3 rayStep = rayDir * stepLength;
 	rayPos += rayStep * dither;
 
 	rayPos.xy *= viewSize;
@@ -229,11 +229,11 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 
 	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep){
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
-		float sampleDepth = readDepth(ivec2(rayPos.xy));
+		float sampleDepth = readDepth0(ivec2(rayPos.xy));
 
 		if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = ScreenToLinearDepth(sampleDepth);
-			float traceDepthLinear = ScreenToLinearDepth(rayPos.z);
+			float sampleDepthLinear = LinearizeDepth(sampleDepth);
+			float traceDepthLinear = LinearizeDepth(rayPos.z);
 
 			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
 		}

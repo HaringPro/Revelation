@@ -40,8 +40,8 @@ const float r240		= 0.00416666667;
 #define diagonal4(m)	vec4(diagonal3(m), (m)[2].w)
 #define projMAD(m, v)	(diagonal3(m) * (v) + (m)[3].xyz)
 
-#define rawCoord(coord) ivec2((coord) * viewSize)
-#define normCoord(texel)((vec2(texel) + 0.5) * viewPixelSize)
+#define uvToTexel(coord) ivec2((coord) * viewSize)
+#define texelToUv(texel) ((vec2(texel) + 0.5) * viewPixelSize)
 
 float maxOf(vec2 v)   	{ return max(v.x, v.y); }
 float maxOf(vec3 v)   	{ return max(v.x, max(v.y, v.z)); }
@@ -345,7 +345,25 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
 }
 */
 
-#define COMBINED_TEXTURE_SAMPLER colortex0
+//================================================================================================//
+
+#define COMBINED_TEXTURE_SAMPLER 	colortex0
+
+#define readDepth0(texel) 			texelFetch(depthtex0, texel, 0).x
+#define readDepth1(texel) 			texelFetch(depthtex1, texel, 0).x
+
+#define readSceneColor(texel) 		texelFetch(colortex0, texel, 0).rgb
+
+#define readAlbedo(texel) 			texelFetch(colortex6, texel, 0).rgb
+#define readGbufferData0(texel) 	texelFetch(colortex7, texel, 0)
+#define readGbufferData1(texel) 	texelFetch(colortex8, texel, 0)
+
+#if defined DISTANT_HORIZONS
+	#define readDepth0DH(texel) 	texelFetch(dhDepthTex0, texel, 0).x
+	#define readDepth1DH(texel)		texelFetch(dhDepthTex1, texel, 0).x
+#endif
+
+//================================================================================================//
 
 #ifdef DEBUG_RESHADING
 	uniform float dyn_100;
