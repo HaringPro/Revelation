@@ -55,38 +55,38 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.04;
 	curl += texture(noisetex, rayPos * 1e-5).xy * 0.02;
 
-	float localCoverage = GetSmoothNoise(rayPos * 3e-5 + curl - shift * 0.3);
+	float localCoverage = GetSmoothNoise(rayPos * 2e-5 + curl - shift * 0.3);
 	float density = 0.0;
 
 	#ifdef CLOUD_STRATOCUMULUS
 	/* Stratocumulus clouds */ if (localCoverage > 0.5) {
-		vec2 position = (rayPos * 3e-4 - shift + curl) * 5e-3;
+		vec2 position = (rayPos * 3e-4 - shift + curl) * 4e-3;
 
-		float stratocumulus = texture(noisetex, position * 8.5).z, weight = 0.5;
+		float stratocumulus = texture(noisetex, position * 8.0).z * 0.82, weight = 0.56;
 
 		// Stratocumulus FBM
-		for (uint i = 0u; i < 5u; ++i, weight *= 0.47) {
+		for (uint i = 0u; i < 5u; ++i, weight *= 0.5) {
 			stratocumulus += weight * texture(noisetex, position).x;
-			position = position * (2.6 + approxSqrt(float(i))) + (stratocumulus - shift) * 0.012;
+			position = position * (3.0 - weight) + stratocumulus * 0.012;
 		}
 
-		if (stratocumulus > 1e-5) density += sqr(saturate(stratocumulus * 1.8 - 1.5)) * saturate(localCoverage * 1.6 - 0.9);
+		if (stratocumulus > 0.8) density += sqr(saturate(stratocumulus * 1.8 - 1.6)) * saturate(localCoverage * 1.6 - 0.8);
 	}
 	#endif
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (density < 0.1) {
 		shift = cloudWindCc * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 9e-5 - shift + curl * 2.0;
+		vec2 position = rayPos * 9e-5 - shift + curl + 0.15;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
-		baseCoverage *= max0(1.07 - texture(noisetex, position * 0.003).y * 1.4);
+		baseCoverage *= max0(1.0 - texture(noisetex, position * 0.003).y * 1.36);
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
 		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.3;
 		cirrocumulus = saturate(cirrocumulus - density - 0.014);
 
-		cirrocumulus *= clamp(baseCoverage - saturate(localCoverage * 1.4 - 0.5), 0.0, 0.25) * 0.6;
+		cirrocumulus *= clamp(baseCoverage - saturate(localCoverage * 1.25 - 0.5), 0.0, 0.25) * 0.6;
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
@@ -96,33 +96,33 @@ float CloudPlaneDensity(in vec2 rayPos) {
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
 			#endif
 
-			density += cube(saturate((cirrocumulus) * 4.8));
+			density += cube(saturate(cirrocumulus * 4.4));
 		}
 	}
 	#endif
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (density < 0.1) {
 		shift = cloudWindCi * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 4e-7 - shift * 2e-3 + curl * 2e-3;
-		const vec2 angle = cossin(PI * 0.2);
+		vec2 position = rayPos * 4e-7 - shift * 2e-3 + curl * 3e-3 + 0.6;
+		const vec2 angle = cossin(goldenAngle);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
 
 		float weight = 0.6;
-		float cirrus = texture(noisetex, position * vec2(0.9, 1.1)).x;
+		float cirrus = texture(noisetex, position * vec2(0.6, 0.8)).x;
 
 		// Cirrus FBM
 		for (uint i = 1u; i < 5u; ++i, weight *= 0.45) {
-			position = rot * (position - shift * 2e-3) * vec2(2.3, 2.5 + approxSqrt(i));
-			position += (cirrus + curl) * 4e-3;
+			position += (cirrus - shift + curl) * 2e-3;
+			position = rot * position * vec2(2.2, 2.5 + approxSqrt(i));
 			cirrus += texture(noisetex, position).x * weight;
 		}
-		cirrus -= saturate(localCoverage * 1.65 - 0.6);
+		cirrus -= saturate(localCoverage * 1.65 - 0.5);
 
-		if (cirrus > 1e-5) density += sqr(0.18 * max0(cirrus * 0.9 - 0.78 - density) * cirrus);
+		if (cirrus > 0.8) density += sqr(0.2 * max0(cirrus * 0.85 - 0.7 - density) * cirrus);
 	}
 	#endif
 
-	return density;
+	return saturate(density * 2.0);
 }
 
 float remap(float value, float orignalMin, float orignalMax, float newMin, float newMax) {

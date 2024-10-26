@@ -85,7 +85,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
@@ -115,13 +115,13 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 		#endif
 
 		// Compute skylight multi-scattering
-		float scatteringSky = fastExp(-opticalDepth * 0.5);
-		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.1);
+		float scatteringSky = fastExp(-opticalDepth * 0.25);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.05);
 
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
-		float powder = rcp(fastExp(-density * (PI * 6.0 / cirrusExtinction)) * 0.75 + 0.25) - 1.0;
-		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 18.0);
+		float powder = rcp(fastExp(-density * (PI * 3.0 / cirrusExtinction)) * 0.75 + 0.25) - 1.0;
+		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 9.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting

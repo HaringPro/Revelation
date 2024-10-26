@@ -36,8 +36,8 @@ const float cumulusExtinction 		= 0.12;
 const float cirrusExtinction 		= 0.1;
 // const float cirrusScattering 	= 0.1;
 
-uniform sampler3D depthtex2;
-uniform sampler3D colortex15;
+uniform sampler3D depthtex2;    // 3D perlin-worley & worley noise texture
+uniform sampler3D colortex15;   // 3D worley noise texture
 
 uniform vec3 cloudWindCu;
 uniform vec2 cloudWindSc;
