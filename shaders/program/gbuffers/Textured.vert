@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-out vec3 flatNormal;
+flat out vec3 flatNormal;
 
 out vec4 tint;
 out vec2 texCoord;

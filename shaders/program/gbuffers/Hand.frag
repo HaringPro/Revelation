@@ -16,7 +16,12 @@ layout (location = 2) out vec2 gbufferOut1;
 
 //======// Input //===============================================================================//
 
-flat in mat3 tbnMatrix;
+#if defined NORMAL_MAPPING
+	flat in mat3 tbnMatrix;
+	#define flatNormal tbnMatrix[2]
+#else
+	flat in vec3 flatNormal;
+#endif
 
 in vec4 tint;
 in vec2 texCoord;
@@ -54,7 +59,7 @@ void main() {
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = r255;
 
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
+	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
 	#if defined NORMAL_MAPPING
         vec3 normalTex = texture(normals, texCoord).rgb;
         DecodeNormalTex(normalTex);

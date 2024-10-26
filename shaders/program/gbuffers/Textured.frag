@@ -20,7 +20,7 @@ uniform sampler2D tex;
 
 //======// Input //===============================================================================//
 
-in vec3 flatNormal;
+flat in vec3 flatNormal;
 
 in vec4 tint;
 in vec2 texCoord;

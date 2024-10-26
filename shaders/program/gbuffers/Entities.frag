@@ -32,7 +32,12 @@ uniform vec4 entityColor;
 
 //======// Input //===============================================================================//
 
-in mat3 tbnMatrix; // Not use flat because of the Physics mod snow
+#if defined NORMAL_MAPPING
+	in mat3 tbnMatrix; // Not use flat because of the Physics mod snow
+	#define flatNormal tbnMatrix[2]
+#else
+	in vec3 flatNormal;
+#endif
 
 in vec4 tint;
 in vec2 texCoord;
@@ -64,7 +69,7 @@ void main() {
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID) * r255;
 
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
+	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
 	#if defined NORMAL_MAPPING
         vec3 normalTex = texture(normals, texCoord).rgb;
         DecodeNormalTex(normalTex);
