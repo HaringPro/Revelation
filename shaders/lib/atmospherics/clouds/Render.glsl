@@ -328,38 +328,34 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_PLANE_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_PLANE_ALTITUDE)) { // Above clouds
-			vec2 cloudIntersection = RaySphereIntersection(r, mu, planetRadius + CLOUD_PLANE_ALTITUDE);
-			float cloudDistance = eyeAltitude > CLOUD_PLANE_ALTITUDE ? cloudIntersection.x : cloudIntersection.y;
+			float cloudDistance = (planetRadius + CLOUD_PLANE_ALTITUDE - r) / mu;
+			vec3 cloudPos = rayDir * cloudDistance + cameraPosition;
 
-			if (clamp(cloudDistance, 1e-6, planetRadius + CLOUD_PLANE_ALTITUDE) == cloudDistance) {
-				vec3 cloudPos = rayDir * cloudDistance + cameraPosition;
+			vec4 cloudTemp = vec4(0.0, 0.0, 0.0, 1.0);
 
-				vec4 cloudTemp = vec4(0.0, 0.0, 0.0, 1.0);
+			vec4 sampleTemp = RenderCloudPlane(cloudDistance * cirrusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
 
-				vec4 sampleTemp = RenderCloudPlane(cloudDistance * cirrusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
-
-				// Compute aerial perspective
-				#ifdef CLOUD_AERIAL_PERSPECTIVE
-					if (sampleTemp.a > minCloudAbsorption) {
-						vec3 airTransmittance;
-						vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * skyIntensity;
-						sampleTemp.rgb *= airTransmittance;
-						sampleTemp.rgb += aerialPerspective * sampleTemp.a;
-					}
-				#endif
-
-				cloudTemp.rgb = sampleTemp.rgb;
-				cloudTemp.a -= sampleTemp.a;
-				if (eyeAltitude < CLOUD_PLANE_ALTITUDE) {
-					// Below clouds
-					cloudData.rgb += cloudTemp.rgb * cloudData.a;
-				} else {
-					// Above clouds
-					cloudData.rgb = cloudData.rgb * cloudTemp.a + cloudTemp.rgb;
+			// Compute aerial perspective
+			#ifdef CLOUD_AERIAL_PERSPECTIVE
+				if (sampleTemp.a > minCloudAbsorption) {
+					vec3 airTransmittance;
+					vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * skyIntensity;
+					sampleTemp.rgb *= airTransmittance;
+					sampleTemp.rgb += aerialPerspective * sampleTemp.a;
 				}
+			#endif
 
-				cloudData.a *= cloudTemp.a;
+			cloudTemp.rgb = sampleTemp.rgb;
+			cloudTemp.a -= sampleTemp.a;
+			if (eyeAltitude < CLOUD_PLANE_ALTITUDE) {
+				// Below clouds
+				cloudData.rgb += cloudTemp.rgb * cloudData.a;
+			} else {
+				// Above clouds
+				cloudData.rgb = cloudData.rgb * cloudTemp.a + cloudTemp.rgb;
 			}
+
+			cloudData.a *= cloudTemp.a;
 		}
 	#endif
 
