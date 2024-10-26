@@ -306,7 +306,7 @@ vec3 GetSkyRadiance(
                 float r = length(planet_surface);
                 float mu_s = dot(planet_surface, sun_direction) / r;
 
-                vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightFactor;
+                vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightMult;
                 vec3 sun_irradiance = atmosphereModel.solar_irradiance * GetTransmittanceToSun(r, mu_s);
 
                 float d = distance(camera, planet_surface);
@@ -322,10 +322,10 @@ vec3 GetSkyRadiance(
         moon_scattering = GetCombinedScattering(r, mu, -mu_s, -nu, ray_r_mu_intersects_ground, moon_single_mie_scattering);
 
         vec3 rayleigh = sun_scattering * RayleighPhase(nu)
-                     + moon_scattering * RayleighPhase(-nu) * moonlightFactor;
+                     + moon_scattering * RayleighPhase(-nu) * moonlightMult;
 
         vec3 mie = sun_single_mie_scattering * HenyeyGreensteinPhase(nu, mie_phase_g)
-                + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightFactor;
+                + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightMult;
 
         rayleigh = mix(rayleigh, vec3(GetLuminance(rayleigh)), wetness * 0.6);
 
@@ -394,10 +394,10 @@ vec3 GetSkyRadianceToPoint(
         moon_single_mie_scattering *= smoothstep(0.0, 0.01, -mu_s);
 
         vec3 rayleigh = sun_scattering * RayleighPhase(nu)
-                     + moon_scattering * RayleighPhase(-nu) * moonlightFactor;
+                     + moon_scattering * RayleighPhase(-nu) * moonlightMult;
 
         vec3 mie = sun_single_mie_scattering * HenyeyGreensteinPhase(nu, mie_phase_g)
-                + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightFactor;
+                + moon_single_mie_scattering * HenyeyGreensteinPhase(-nu, mie_phase_g) * moonlightMult;
 
         rayleigh = mix(rayleigh, vec3(GetLuminance(rayleigh)), wetness * 0.6);
 
@@ -414,10 +414,12 @@ vec3 GetSunAndSkyIrradiance(
         float mu_s = dot(point, sun_direction) / r;
 
         sun_irradiance = atmosphereModel.solar_irradiance * GetTransmittanceToSun(r, mu_s);
-        moon_irradiance = atmosphereModel.solar_irradiance * GetTransmittanceToSun(r, -mu_s) * moonlightFactor;
+        moon_irradiance = atmosphereModel.solar_irradiance * GetTransmittanceToSun(r, -mu_s) * moonlightMult;
 
-        vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightFactor;
-        sky_irradiance *= 1.0 + point.y / r;
+        vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightMult;
 
-        return sky_irradiance;
+        float NoP = point.y / r;
+        float diff = (1.0 - NoP) * rTAU + NoP + 1.0;
+
+        return sky_irradiance * diff;
 }

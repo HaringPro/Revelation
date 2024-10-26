@@ -1,7 +1,7 @@
 
 //================================================================================================//
 
-float moonlightFactor = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
+float moonlightMult = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
 
 const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
 

@@ -50,7 +50,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
         opticalDepth += density;
     }
 
-    return opticalDepth * 4.0;
+    return opticalDepth * 2.0;
 }
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
@@ -64,8 +64,8 @@ float CloudPowderEffect(in float depth, in float height, in float factor){
 
 //================================================================================================//
 
-vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float LdotV, in float lightNoise, in vec4 phases) {
-	float density = CloudPlaneDensity(rayPos);
+vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float LdotV, in float lightNoise, in vec4 phases) {
+	float density = CloudMidDensity(rayPos);
 	if (density > 1e-6) {
 		// Siggraph 2017's new formula
 		float opticalDepth = density * stepT;
@@ -78,14 +78,14 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 
 		opticalDepth = 0.0;
 		// Compute the optical depth of sunlight through clouds
-		for (uint i = 0u; i < 4u; ++i, rayPos += rayStep.xy) {
-			float density = CloudPlaneDensity(rayPos + rayStep.xy * lightNoise);
+		for (uint i = 0u; i < 3u; ++i, rayPos += rayStep.xy) {
+			float density = CloudMidDensity(rayPos + rayStep.xy * lightNoise);
 			if (density < 1e-6) continue;
 
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth, 56.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
@@ -103,7 +103,7 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 			opticalDepth = 0.0;
 			// Compute the optical depth of skylight through clouds
 			for (uint i = 0u; i < 2u; ++i, rayPos += rayStep.xy) {
-				float density = CloudPlaneDensity(rayPos + rayStep.xy * lightNoise);
+				float density = CloudMidDensity(rayPos + rayStep.xy * lightNoise);
 				if (density < 1e-6) continue;
 
 				rayStep *= 2.0;
@@ -111,22 +111,22 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 				opticalDepth += density * rayStep.z;
 			}
 		#else
-			opticalDepth = density * 3e2;
+			opticalDepth = density * 2e2;
 		#endif
 
 		// Compute skylight multi-scattering
-		float scatteringSky = fastExp(-opticalDepth * 0.25);
-		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.05);
+		float scatteringSky = fastExp(-opticalDepth * 0.4);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.08);
 
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
-		float powder = rcp(fastExp(-density * (PI * 3.0 / cirrusExtinction)) * 0.75 + 0.25) - 1.0;
+		float powder = rcp(fastExp(-density * (PI * 3.0 / stratusExtinction)) * 0.75 + 0.25) - 1.0;
 		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 9.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
 			vec3 sunIlluminance, moonIlluminance;
-			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_PLANE_ALTITUDE, rayPos.y);
+			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_MID_ALTITUDE, rayPos.y);
 			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIlluminance, moonIlluminance);
 			vec3 directIlluminance = sunIlluminance + moonIlluminance;
 
@@ -137,7 +137,89 @@ vec4 RenderCloudPlane(in float stepT, in vec2 rayPos, in vec2 rayDir, in float L
 		#endif
 
 		vec3 scattering = scatteringSun * 12.0 * powder * directIlluminance;
-		scattering += scatteringSky * 0.2 * (powder * 0.6 + 0.4) * skyIlluminance;
+		scattering += scatteringSky * 0.1 * (powder * 0.5 + 0.5) * skyIlluminance;
+		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(stratusExtinction);
+
+		return vec4(scattering, absorption);
+	}
+}
+
+//================================================================================================//
+
+vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float LdotV, in float lightNoise, in vec4 phases) {
+	float density = CloudHighDensity(rayPos);
+	if (density > 1e-6) {
+		// Siggraph 2017's new formula
+		float opticalDepth = density * stepT;
+		float absorption = oneMinus(max(fastExp(-opticalDepth), fastExp(-opticalDepth * 0.25) * 0.7));
+
+		float stepSize = 32.0;
+		vec2 rayPos = rayPos;
+		vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
+		// float lightNoise = hash1(rayPos);
+
+		opticalDepth = 0.0;
+		// Compute the optical depth of sunlight through clouds
+		for (uint i = 0u; i < 3u; ++i, rayPos += rayStep.xy) {
+			float density = CloudHighDensity(rayPos + rayStep.xy * lightNoise);
+			if (density < 1e-6) continue;
+
+			rayStep *= 2.0;
+
+			opticalDepth += density * rayStep.z;
+		} opticalDepth = smin(opticalDepth * 0.6, 56.0, 8.0);
+
+		// Magic power function, looks not bad
+		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
+
+		// Compute sunlight multi-scattering
+		float scatteringSun  = fastExp(-opticalDepth * 1.0)  * hitPhases.x;
+			  scatteringSun += fastExp(-opticalDepth * 0.4)  * hitPhases.y;
+			  scatteringSun += fastExp(-opticalDepth * 0.15) * hitPhases.z;
+			  scatteringSun += fastExp(-opticalDepth * 0.05) * hitPhases.w;
+
+		#if 0
+			stepSize = 44.0;
+			rayStep = vec3(rayDir, 1.0) * stepSize;
+
+			opticalDepth = 0.0;
+			// Compute the optical depth of skylight through clouds
+			for (uint i = 0u; i < 2u; ++i, rayPos += rayStep.xy) {
+				float density = CloudHighDensity(rayPos + rayStep.xy * lightNoise);
+				if (density < 1e-6) continue;
+
+				rayStep *= 2.0;
+
+				opticalDepth += density * rayStep.z;
+			}
+		#else
+			opticalDepth = density * 2e2;
+		#endif
+
+		// Compute skylight multi-scattering
+		float scatteringSky = fastExp(-opticalDepth * 0.25);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.05);
+
+		// Compute powder effect
+		float powder = 2.0 * fastExp(-density * 22.0) * oneMinus(fastExp(-density * 44.0));
+		// float powder = rcp(fastExp(-density * (PI * 3.0 / cirrusExtinction)) * 0.6 + 0.4) - 1.0;
+		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 9.0);
+
+		#ifdef CLOUD_LOCAL_LIGHTING
+			// Compute local lighting
+			vec3 sunIlluminance, moonIlluminance;
+			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_HIGH_ALTITUDE, rayPos.y);
+			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIlluminance, moonIlluminance);
+			vec3 directIlluminance = sunIlluminance + moonIlluminance;
+
+			skyIlluminance += lightningShading * 4e-3;
+			#ifdef AURORA
+				skyIlluminance += auroraShading;
+			#endif
+		#endif
+
+		vec3 scattering = scatteringSun * 12.0 * powder * directIlluminance;
+		scattering += scatteringSky * 0.1 * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
@@ -173,7 +255,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 			vec2 intersection = RaySphericalShellIntersection(r, mu, planetRadius + CLOUD_CUMULUS_ALTITUDE, planetRadius + cumulusMaxAltitude);
 
 			if (intersection.y > 0.0) { // Intersect the volume
-
 				// Special treatment for the eye inside the volume
 				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CUMULUS_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
 				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
@@ -209,11 +290,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				float powderFactor = sqr(LdotV * 0.5 + 0.5);
 
 				for (uint i = 0u; i < raySteps; ++i, rayPos += rayStep) {
-					if (transmittance < minCloudTransmittance) break;
 					if (rayPos.y < CLOUD_CUMULUS_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
-
-					float radius = distance(rayPos, cameraPosition);
-					if (radius > planetRadius + cumulusMaxAltitude) continue;
 
 					// Compute sample cloud density
 					#if defined PROGRAM_PREPARE
@@ -275,8 +352,10 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute the integral of the scattering over the step
 					float stepIntegral = transmittance * oneMinus(stepTransmittance);
-					stepScattering += vec2(powder, powder * 0.6 + 0.4) * scattering * stepIntegral;
+					stepScattering += vec2(powder, powder * 0.5 + 0.5) * scattering * stepIntegral;
 					transmittance *= stepTransmittance;	
+
+					if (transmittance < minCloudTransmittance) break;
 				}
 
 				float absorption = 1.0 - transmittance;
@@ -300,7 +379,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					#endif
 
 					vec3 scattering = stepScattering.x * 12.0 * directIlluminance;
-					scattering += stepScattering.y * 0.2 * skyIlluminance;
+					scattering += stepScattering.y * 0.1 * skyIlluminance;
 
 					// Compute aerial perspective
 					#ifdef CLOUD_AERIAL_PERSPECTIVE
@@ -322,32 +401,61 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	//================================================================================================//
 
-	// Compute planar clouds
-	#if defined CLOUD_STRATOCUMULUS || defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
-		bool planetIntersection = RayIntersectsGround(r, mu);
+	bool planetIntersection = RayIntersectsGround(r, mu);
 
-		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_PLANE_ALTITUDE) // Below clouds
-		 || (planetIntersection && eyeAltitude > CLOUD_PLANE_ALTITUDE)) { // Above clouds
-			float cloudDistance = (planetRadius + CLOUD_PLANE_ALTITUDE - r) / mu;
+	// Compute mid clouds
+	#if defined CLOUD_STRATOCUMULUS
+		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_MID_ALTITUDE) // Below clouds
+		 || (planetIntersection && eyeAltitude > CLOUD_MID_ALTITUDE)) { // Above clouds
+			float cloudDistance = (planetRadius + CLOUD_MID_ALTITUDE - r) / mu;
 			vec3 cloudPos = rayDir * cloudDistance + cameraPosition;
 
-			vec4 cloudTemp = vec4(0.0, 0.0, 0.0, 1.0);
-
-			vec4 sampleTemp = RenderCloudPlane(cloudDistance * cirrusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
+			vec4 cloudTemp = RenderCloudMid(cloudDistance * stratusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
 
 			// Compute aerial perspective
 			#ifdef CLOUD_AERIAL_PERSPECTIVE
-				if (sampleTemp.a > minCloudAbsorption) {
+				if (cloudTemp.a > minCloudAbsorption) {
 					vec3 airTransmittance;
 					vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * skyIntensity;
-					sampleTemp.rgb *= airTransmittance;
-					sampleTemp.rgb += aerialPerspective * sampleTemp.a;
+					cloudTemp.rgb *= airTransmittance;
+					cloudTemp.rgb += aerialPerspective * cloudTemp.a;
 				}
 			#endif
+			cloudTemp.a = 1.0 - cloudTemp.a;
 
-			cloudTemp.rgb = sampleTemp.rgb;
-			cloudTemp.a -= sampleTemp.a;
-			if (eyeAltitude < CLOUD_PLANE_ALTITUDE) {
+			if (eyeAltitude < CLOUD_MID_ALTITUDE) {
+				// Below clouds
+				cloudData.rgb += cloudTemp.rgb * cloudData.a;
+			} else {
+				// Above clouds
+				cloudData.rgb = cloudData.rgb * cloudTemp.a + cloudTemp.rgb;
+			}
+
+			cloudData.a *= cloudTemp.a;
+		}
+	#endif
+
+	// Compute high clouds
+	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
+		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_HIGH_ALTITUDE) // Below clouds
+		 || (planetIntersection && eyeAltitude > CLOUD_HIGH_ALTITUDE)) { // Above clouds
+			float cloudDistance = (planetRadius + CLOUD_HIGH_ALTITUDE - r) / mu;
+			vec3 cloudPos = rayDir * cloudDistance + cameraPosition;
+
+			vec4 cloudTemp = RenderCloudHigh(cloudDistance * cirrusExtinction, cloudPos.xz, rayDir.xz, LdotV, dither, phases);
+
+			// Compute aerial perspective
+			#ifdef CLOUD_AERIAL_PERSPECTIVE
+				if (cloudTemp.a > minCloudAbsorption) {
+					vec3 airTransmittance;
+					vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos - cameraPosition, worldSunVector, airTransmittance) * skyIntensity;
+					cloudTemp.rgb *= airTransmittance;
+					cloudTemp.rgb += aerialPerspective * cloudTemp.a;
+				}
+			#endif
+			cloudTemp.a = 1.0 - cloudTemp.a;
+
+			if (eyeAltitude < CLOUD_HIGH_ALTITUDE) {
 				// Below clouds
 				cloudData.rgb += cloudTemp.rgb * cloudData.a;
 			} else {
