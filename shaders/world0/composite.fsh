@@ -188,7 +188,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy) << 1;
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy * 2.0);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 	vec3 screenPos = vec3(screenCoord, readDepth0(screenTexel));

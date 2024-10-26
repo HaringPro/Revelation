@@ -217,12 +217,12 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute sample cloud density
 					#if defined PROGRAM_PREPARE
-						float density = CloudVolumeDensity(rayPos, 3u);
+						float stepDensity = CloudVolumeDensity(rayPos, 3u);
 					#else
-						float density = CloudVolumeDensity(rayPos, 5u);
+						float stepDensity = CloudVolumeDensity(rayPos, 5u);
 					#endif
 
-					if (density < 1e-5) continue;
+					if (stepDensity < 1e-5) continue;
 
 					rayHitPos += rayPos * transmittance;
 					rayHitPosWeight += transmittance;
@@ -257,7 +257,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					vec2 scattering = vec2(scatteringSun + scatteringGround * cloudLightVector.y, scatteringSky + scatteringGround * 0.5);
 
 					// Siggraph 2017's new formula
-					float stepOpticalDepth = density * cumulusExtinction * stepSize;
+					float stepOpticalDepth = stepDensity * cumulusExtinction * stepSize;
 					float stepTransmittance = max(fastExp(-stepOpticalDepth), fastExp(-stepOpticalDepth * 0.25) * 0.7);
 
 					// Compute In-Scatter Probability
@@ -265,12 +265,12 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						// Reference: https://github.com/qiutang98/flower/blob/main/source/shader/cloud/cloud_common.glsl
 						float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 	
-						float depthProbability = pow(min(density * 6.0, PI), remap(heightFraction, 0.3, 0.85, 0.5, 2.0)) + 0.05;
+						float depthProbability = pow(min(stepDensity * 6.0, PI), remap(heightFraction, 0.3, 0.85, 0.5, 2.0)) + 0.05;
 						float verticalProbability = pow(remap(heightFraction, 0.07, 0.22, 0.1, 1.0), 0.8);
 						float powder = CloudPowderEffect(depthProbability, verticalProbability, powderFactor);
 					#else
-						float powder = 0.2 * rcp(fastExp(-density * (PI / cumulusExtinction)) * 0.85 + 0.15) - 0.2;
-						powder += oneMinus(powder) * powderFactor * saturate(density * 6.0);
+						float powder = 0.2 * rcp(fastExp(-stepDensity * (PI / cumulusExtinction)) * 0.85 + 0.15) - 0.2;
+						powder += oneMinus(powder) * powderFactor * saturate(stepDensity * 6.0);
 					#endif
 
 					// Compute the integral of the scattering over the step

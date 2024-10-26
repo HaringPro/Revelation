@@ -27,7 +27,7 @@ uniform sampler2D tex;
 
 //======// Main //================================================================================//
 void main() {
-    float albedoAlpha = texture(tex, texCoord * vec2(4.0, 2.0)).a;
+    float albedoAlpha = texture(tex, texCoord).a;
 
     if (albedoAlpha < 0.1) discard;
 

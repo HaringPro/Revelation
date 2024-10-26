@@ -42,16 +42,12 @@ uniform vec2 taaOffset;
 //======// Main //================================================================================//
 void main() {
     vertColor = vaColor.a;
- 	texCoord = vaUV0;
+ 	texCoord = vaUV0 * vec2(RAIN_SCALE_X, RAIN_SCALE_Y);
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(modelViewMatrix, vaPosition));
 
     float windAngle = (dot(worldPos + cameraPosition, vec3(2.0)) + frameTimeCounter * 0.2) * PI;
 
-    worldPos.xz += worldPos.y * (0.2 + 0.1 * vec2(cos(windAngle), sin(windAngle)));
+    worldPos.xz += worldPos.y * (0.15 + 0.1 * vec2(cos(windAngle), sin(windAngle)));
 	gl_Position = diagonal4(projectionMatrix) * transMAD(gbufferModelView, worldPos).xyzz + projectionMatrix[3];
-
-    #ifdef TAA_ENABLED
-        gl_Position.xy += taaOffset * gl_Position.w;
-    #endif
 }
