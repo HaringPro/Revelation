@@ -7,7 +7,7 @@
 
 flat out vec3 flatNormal;
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
 
@@ -37,7 +37,7 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	tint = vaColor;
+	vertColor = vaColor;
 	flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);

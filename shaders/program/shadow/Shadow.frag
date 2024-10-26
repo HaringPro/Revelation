@@ -28,7 +28,7 @@ in vec2 texCoord;
 #endif
 
 // in vec3 viewPos;
-in vec3 vectorData; // Minecraf position in water, tint in other materials
+in vec3 vectorData; // Minecraf position in water, vertColor in other materials
 
 flat in uint isWater;
 

@@ -18,7 +18,7 @@ out vec4 albedoOut;
 
 //======// Input //===============================================================================//
 
-in float tint;
+in float vertColor;
 in vec2 texCoord;
 
 //======// Uniform //=============================================================================//
@@ -31,5 +31,5 @@ void main() {
 
     if (albedoAlpha < 0.1) discard;
 
-	albedoOut.a = albedoAlpha * tint;
+	albedoOut.a = albedoAlpha * vertColor;
 }

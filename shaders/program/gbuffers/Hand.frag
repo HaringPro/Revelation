@@ -23,7 +23,7 @@ layout (location = 2) out vec2 gbufferOut1;
 	flat in vec3 flatNormal;
 #endif
 
-in vec4 tint;
+in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 
@@ -46,7 +46,7 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 
 //======// Main //================================================================================//
 void main() {
-	vec4 albedo = texture(tex, texCoord) * tint;
+	vec4 albedo = texture(tex, texCoord) * vertColor;
 
 	if (albedo.a < 0.1) { discard; return; }
 

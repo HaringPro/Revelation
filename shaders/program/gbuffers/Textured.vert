@@ -7,7 +7,7 @@
 
 flat out vec3 flatNormal;
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
@@ -38,7 +38,7 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	tint = vaColor;
+	vertColor = vaColor;
 	flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 
 	materialID = lightmap.x > 0.99 ? 20u : 40u;

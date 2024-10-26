@@ -11,7 +11,7 @@
 
 //======// Output //==============================================================================//
 
-flat out vec4 tint;
+flat out vec4 vertColor;
 out vec2 lightmap;
 
 //======// Attribute //===========================================================================//
@@ -34,7 +34,7 @@ uniform int renderStage;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor;
+	vertColor = vaColor;
 	lightmap = saturate(vec2(vaUV2) * r240);
 
     if (renderStage == MC_RENDER_STAGE_OUTLINE) {
@@ -51,8 +51,8 @@ void main() {
         if (gl_VertexID % 2 == 0) gl_Position.xyz *= NDCStart + vec3(lineOffset, 0.0);
         else gl_Position.xyz *= NDCStart - vec3(lineOffset, 0.0);
 
-        tint.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
-        lightmap = vec2(dot(tint.rgb, vec3(0.333333)));
+        vertColor.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
+        lightmap = vec2(dot(vertColor.rgb, vec3(0.333333)));
     } else {
         vec3 viewPos = transMAD(modelViewMatrix, vaPosition);
         gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];

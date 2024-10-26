@@ -17,12 +17,12 @@ uniform vec4 entityColor;
 
 //======// Input //===============================================================================//
 
-in vec4 tint;
+in vec4 vertColor;
 in vec2 texCoord;
 
 //======// Main //================================================================================//
 void main() {
-	vec4 albedo = texture(tex, texCoord) * tint;
+	vec4 albedo = texture(tex, texCoord) * vertColor;
 
 	if (albedo.a < 0.1) { discard; return; }
 

@@ -23,7 +23,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
     vec3 rayStep = rayDir * stepLength;
 
-	float depthTolerance = max(0.2 * oneMinus(rayPos.z), -2.0 * rayStep.z);
+	float diffTolerance = max(0.2 * oneMinus(rayPos.z), -2.0 * rayStep.z);
     rayPos += rayStep * (dither + 1.0);
 
 	bool hit = false;
@@ -38,9 +38,9 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         #endif
 
         float sampleDepth = readDepth1(ivec2(rayPos.xy));
-		float diff = rayPos.z - sampleDepth;
+		float difference = rayPos.z - sampleDepth;
 
-        if (clamp(diff, 0.0, depthTolerance) == diff) {
+        if (clamp(difference, 0.0, diffTolerance) == difference) {
             hit = true;
             break;
         }

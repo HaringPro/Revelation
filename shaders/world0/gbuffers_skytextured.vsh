@@ -13,11 +13,11 @@
 
 //======// Utility //=============================================================================//
 
-#include "/settings.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
-out vec3 tint;
+out vec3 vertColor;
 out vec2 texCoord;
 
 //======// Attribute //===========================================================================//
@@ -35,10 +35,11 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor.rgb;
+	vertColor = vaColor.rgb;
 	texCoord = vaUV0;
 
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0);
+	vec3 viewPos = transMAD(modelViewMatrix, vaPosition);
+	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
 
     #ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

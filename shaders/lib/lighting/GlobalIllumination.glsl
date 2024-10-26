@@ -299,9 +299,9 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				target.brdf *= readAlbedo(targetTexel);
 
 				target.rayPos.xy *= viewPixelSize;
-				vec3 diff = ScreenToViewSpace(target.rayPos) - viewPos;
+				vec3 difference = ScreenToViewSpace(target.rayPos) - viewPos;
 
-				float diffSqLen = dotSelf(diff);
+				float diffSqLen = dotSelf(difference);
 
 				sum += sampleLight * target.brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {
@@ -341,9 +341,9 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				#endif
 
 				hitPos.xy *= viewPixelSize;
-				vec3 diff = ScreenToViewSpace(hitPos) - viewPos;
+				vec3 difference = ScreenToViewSpace(hitPos) - viewPos;
 
-				float diffSqLen = dotSelf(diff);
+				float diffSqLen = dotSelf(difference);
 
 				sum += sampleLight * brdf * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (lightmap.y + lightmap.x > 1e-3) {

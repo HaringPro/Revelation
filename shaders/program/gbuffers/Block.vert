@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
@@ -43,7 +43,7 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor;
+	vertColor = vaColor;
 	texCoord = vaUV0;
 
 	lightmap = saturate(vec2(vaUV2) * r240);

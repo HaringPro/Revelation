@@ -16,7 +16,7 @@ layout (location = 2) out vec2 gbufferOut1;
 
 //======// Input //===============================================================================//
 
-in vec4 tint;
+in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
@@ -79,7 +79,7 @@ vec2 endPortalLayer(in vec2 coord, in float layer) {
 
 //======// Main //================================================================================//
 void main() {
-	vec4 albedo = texture(tex, texCoord) * tint;
+	vec4 albedo = texture(tex, texCoord) * vertColor;
 
 	mat3 tbnMatrix = CalculateTBNMatrix(viewPos, texCoord);
 

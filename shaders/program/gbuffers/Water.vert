@@ -7,7 +7,7 @@
 
 flat out mat3 tbnMatrix;
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
@@ -64,7 +64,7 @@ void main() {
 
 	lightmap = saturate(vec2(vaUV2) * r240);
 
-	tint = vaColor;
+	vertColor = vaColor;
 
     tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);

@@ -23,7 +23,7 @@ out vec2 texCoord;
 #endif
 
 // out vec3 viewPos;
-out vec3 vectorData; // Minecraf position in water, tint in other materials
+out vec3 vectorData; // Minecraf position in water, vertColor in other materials
 
 // flat out mat3 tbnMatrix;
 

@@ -18,7 +18,7 @@ out vec3 albedoOut;
 
 //======// Input //===============================================================================//
 
-in vec3 tint;
+in vec3 vertColor;
 in vec2 texCoord;
 
 //======// Uniform //=============================================================================//
@@ -31,5 +31,5 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	albedoOut = albedo.rgb * tint;
+	albedoOut = albedo.rgb * vertColor;
 }

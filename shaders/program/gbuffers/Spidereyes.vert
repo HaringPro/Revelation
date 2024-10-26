@@ -4,7 +4,7 @@
 
 //======// Output //==============================================================================//
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 
 //======// Attribute //===========================================================================//
@@ -25,7 +25,7 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor;
+	vertColor = vaColor;
 	texCoord = vaUV0;
 
 	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);

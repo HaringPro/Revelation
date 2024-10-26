@@ -11,7 +11,7 @@ layout (location = 1) out vec2 gbufferOut0;
 
 //======// Input //===============================================================================//
 
-flat in vec4 tint;
+flat in vec4 vertColor;
 in vec2 lightmap;
 
 //======// Function //============================================================================//
@@ -21,9 +21,9 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 
 //======// Main //================================================================================//
 void main() {
-	if (tint.a < 0.1) { discard; return; }
+	if (vertColor.a < 0.1) { discard; return; }
 
-	albedoOut = tint.rgb;
+	albedoOut = vertColor.rgb;
 
 	uint materialID = lightmap.x > 0.999 ? 20u : 1u;
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));

@@ -28,7 +28,7 @@ uniform sampler2D tex;
 
 flat in mat3 tbnMatrix;
 
-in vec4 tint;
+in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
@@ -154,7 +154,7 @@ void main() {
 		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
 		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 	} else {
-		vec4 albedo = texture(tex, texCoord) * tint;
+		vec4 albedo = texture(tex, texCoord) * vertColor;
 
 		if (albedo.a < 0.1) { discard; return; }
 

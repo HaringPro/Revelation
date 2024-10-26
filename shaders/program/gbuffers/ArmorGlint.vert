@@ -5,7 +5,7 @@
 
 //======// Output //==============================================================================//
 
-out vec4 tint;
+out vec4 vertColor;
 out vec2 texCoord;
 
 //======// Attribute //===========================================================================//
@@ -31,6 +31,6 @@ void main() {
         gl_Position.xy += taaOffset * gl_Position.w;
     #endif
 
-    tint = vaColor;
+    vertColor = vaColor;
 	texCoord = vaUV0;
 }

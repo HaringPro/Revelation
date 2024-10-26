@@ -26,7 +26,7 @@ layout (location = 2) out vec2 gbufferOut1;
 	flat in vec3 flatNormal;
 #endif
 
-in vec3 tint;
+in vec3 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
@@ -185,7 +185,7 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	albedoOut = albedo.rgb * tint;
+	albedoOut = albedo.rgb * vertColor;
 
 	#ifdef WHITE_WORLD
 		albedoOut = vec3(1.0);

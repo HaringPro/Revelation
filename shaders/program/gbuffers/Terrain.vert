@@ -13,7 +13,7 @@
 	flat out vec3 flatNormal;
 #endif
 
-out vec3 tint;
+out vec3 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
 flat out uint materialID;
@@ -63,7 +63,7 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-	tint = vaColor.rgb;
+	vertColor = vaColor.rgb;
 	texCoord = vaUV0;
 
 	lightmap = saturate(vec2(vaUV2) * r240);

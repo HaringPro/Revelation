@@ -32,18 +32,18 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 			radius += rayStep;
 
 			// vec3 rayPos = cosineWeightedHemisphereSample(n, RandNext2F()) * radius + viewPos;
-			// vec3 diff = ScreenToViewSpace(ViewToScreenSpaceRaw(rayPos).xy) - viewPos;
-			vec3 diff = ScreenToViewSpace(coord + rot * radius) - viewPos;
-			float diffSqLen = dotSelf(diff);
+			// vec3 difference = ScreenToViewSpace(ViewToScreenSpaceRaw(rayPos).xy) - viewPos;
+			vec3 difference = ScreenToViewSpace(coord + rot * radius) - viewPos;
+			float diffSqLen = dotSelf(difference);
 			if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-				float NdotL = saturate(dot(normal, diff * inversesqrt(diffSqLen)));
+				float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 				sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
 			}
 
-			diff = ScreenToViewSpace(coord - rot * radius) - viewPos;
-			diffSqLen = dotSelf(diff);
+			difference = ScreenToViewSpace(coord - rot * radius) - viewPos;
+			diffSqLen = dotSelf(difference);
 			if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
-				float NdotL = saturate(dot(normal, diff * inversesqrt(diffSqLen)));
+				float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 				sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
 			}
 		}
@@ -72,8 +72,8 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 		const int sliceCount = GTAO_SLICES;
 		const float rSliceCount = 1.0 / float(sliceCount);
 
-		const int directionSampleCount = GTAO_DIRECTION_SAMPLES;
-		const float rDirectionSampleCount = 1.0 / float(directionSampleCount);
+		const int sampleCount = GTAO_DIRECTION_SAMPLES;
+		const float rSampleCount = 1.0 / float(sampleCount);
 
 		float radius = GTAO_RADIUS + viewDistance * 0.005;
 		vec2 sRadius = radius * gbufferProjection[1][1] * norm * vec2(1.0, aspectRatio);
@@ -81,8 +81,8 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 
 		float visibility = 0.0;
 
-		for (int slice = 0; slice < sliceCount; ++slice) {
-			float slicePhi = (slice + dither) * PI * rSliceCount;
+		for (uint slice = 0u; slice < sliceCount; ++slice) {
+			float slicePhi = (float(slice) + dither) * PI * rSliceCount;
 
 			vec3 directionV = vec3(cos(slicePhi), sin(slicePhi), 0.0);
 			vec3 orthoDirectionV = directionV - dot(directionV, viewDir) * viewDir;
@@ -99,8 +99,8 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 
 			vec2 cHorizonCos = vec2(-1.0);
 
-			for (int samp = 0; samp < directionSampleCount; ++samp) {
-				vec2 stepDir = rDirectionSampleCount * directionV.xy * sRadius;
+			for (uint samp = 0u; samp < sampleCount; ++samp) {
+				vec2 stepDir = rSampleCount * directionV.xy * sRadius;
 				vec2 offset = (samp + R1(slice + samp * frameCounter, dither)) * stepDir;
 
 				vec2 sTexCoord = coord + offset;
