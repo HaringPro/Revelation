@@ -49,7 +49,7 @@ float Calculate3DNoiseSmooth(in vec3 position) {
 }
 
 float CloudPlaneDensity(in vec2 rayPos) {
-	vec2 shift = cloudWindLayer2 * CLOUD_WIND_SPEED;
+	vec2 shift = cloudWindSc * CLOUD_WIND_SPEED;
 
 	// Curl noise to simulate wind, makes the positioning of the clouds more natural
 	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.04;
@@ -75,7 +75,7 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	#endif
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (density < 0.1) {
-		shift = cloudWindLayer3 * CLOUD_WIND_SPEED;
+		shift = cloudWindCc * CLOUD_WIND_SPEED;
 		vec2 position = rayPos * 9e-5 - shift + curl * 2.0;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
@@ -102,7 +102,7 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	#endif
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (density < 0.1) {
-		shift = cloudWindLayer4 * CLOUD_WIND_SPEED;
+		shift = cloudWindCi * CLOUD_WIND_SPEED;
 		vec2 position = rayPos * 4e-7 - shift * 2e-3 + curl * 2e-3;
 		const vec2 angle = cossin(PI * 0.2);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
@@ -131,14 +131,14 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 
 #if 0
 	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindLayer1.xz * 2e-5).x;
+		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-6) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -173,14 +173,14 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 	}
 #elif 1
 	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindLayer1.xz * 2e-5).x;
+		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-6) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -215,14 +215,14 @@ float remap(float value, float orignalMin, float orignalMax, float newMin, float
 	}
 #else
 	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindLayer1.xz * 2e-5).x;
+		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-6) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindLayer1 * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
