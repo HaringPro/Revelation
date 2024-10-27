@@ -55,7 +55,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 		float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudMidDensity(planePos) * 4e2 * stratusExtinction);
+			cloudShadow = exp2(-CloudMidDensity(planePos) * 5e2 * stratusExtinction);
 		}
 	}
 	#endif
@@ -65,7 +65,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 		float shadowAltitude = CLOUD_HIGH_ALTITUDE - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudHighDensity(planePos) * 4e2 * cirrusExtinction);
+			cloudShadow = exp2(-CloudHighDensity(planePos) * 3e2 * cirrusExtinction);
 		}
 	}
 	#endif

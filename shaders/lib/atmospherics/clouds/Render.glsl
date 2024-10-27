@@ -71,7 +71,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		float opticalDepth = density * stepT;
 		float absorption = oneMinus(max(fastExp(-opticalDepth), fastExp(-opticalDepth * 0.25) * 0.7));
 
-		float stepSize = 32.0;
+		float stepSize = 42.0;
 		vec2 rayPos = rayPos;
 		vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
 		// float lightNoise = hash1(rayPos);
@@ -85,7 +85,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
@@ -115,8 +115,8 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		#endif
 
 		// Compute skylight multi-scattering
-		float scatteringSky = fastExp(-opticalDepth * 0.4);
-		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.08);
+		float scatteringSky = fastExp(-opticalDepth * 0.2);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.04);
 
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
@@ -153,7 +153,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		float opticalDepth = density * stepT;
 		float absorption = oneMinus(max(fastExp(-opticalDepth), fastExp(-opticalDepth * 0.25) * 0.7));
 
-		float stepSize = 32.0;
+		float stepSize = 42.0;
 		vec2 rayPos = rayPos;
 		vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
 		// float lightNoise = hash1(rayPos);
@@ -167,7 +167,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth * 0.6, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
@@ -197,8 +197,8 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		#endif
 
 		// Compute skylight multi-scattering
-		float scatteringSky = fastExp(-opticalDepth * 0.25);
-		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.05);
+		float scatteringSky = fastExp(-opticalDepth * 0.2);
+		scatteringSky += 0.2 * fastExp(-opticalDepth * 0.04);
 
 		// Compute powder effect
 		float powder = 2.0 * fastExp(-density * 22.0) * oneMinus(fastExp(-density * 44.0));
@@ -421,15 +421,13 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					cloudTemp.rgb += aerialPerspective * cloudTemp.a;
 				}
 			#endif
+			// Absorption to transmittance
 			cloudTemp.a = 1.0 - cloudTemp.a;
 
-			if (eyeAltitude < CLOUD_MID_ALTITUDE) {
-				// Below clouds
-				cloudData.rgb += cloudTemp.rgb * cloudData.a;
-			} else {
-				// Above clouds
-				cloudData.rgb = cloudData.rgb * cloudTemp.a + cloudTemp.rgb;
-			}
+			// Blend layers
+			cloudData.rgb = eyeAltitude < CLOUD_MID_ALTITUDE ?
+							cloudData.rgb + cloudTemp.rgb * cloudData.a : // Below clouds
+							cloudData.rgb * cloudTemp.a + cloudTemp.rgb;  // Above clouds
 
 			cloudData.a *= cloudTemp.a;
 		}
@@ -453,16 +451,13 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					cloudTemp.rgb += aerialPerspective * cloudTemp.a;
 				}
 			#endif
+			// Absorption to transmittance
 			cloudTemp.a = 1.0 - cloudTemp.a;
 
-			if (eyeAltitude < CLOUD_HIGH_ALTITUDE) {
-				// Below clouds
-				cloudData.rgb += cloudTemp.rgb * cloudData.a;
-			} else {
-				// Above clouds
-				cloudData.rgb = cloudData.rgb * cloudTemp.a + cloudTemp.rgb;
-			}
-
+			// Blend layers
+			cloudData.rgb = eyeAltitude < CLOUD_HIGH_ALTITUDE ?
+							cloudData.rgb + cloudTemp.rgb * cloudData.a : // Below clouds
+							cloudData.rgb * cloudTemp.a + cloudTemp.rgb;  // Above clouds
 			cloudData.a *= cloudTemp.a;
 		}
 	#endif

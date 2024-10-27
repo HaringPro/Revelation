@@ -31,7 +31,7 @@
 //================================================================================================//
 
 const float cumulusMaxAltitude 		= CLOUD_CUMULUS_ALTITUDE + CLOUD_CUMULUS_THICKNESS;
-const float cumulusTopOffset        = CLOUD_CUMULUS_THICKNESS * 0.5;
+const float cumulusTopOffset        = CLOUD_CUMULUS_THICKNESS * 0.4;
 
 const float cumulusExtinction 		= 0.12;
 // const float cumulusScattering 	= 0.12;

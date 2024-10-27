@@ -168,7 +168,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.5) {
-		vec2 position = rayPos * 8e-5 - shift + curl + 0.15;
+		vec2 position = rayPos * 7e-5 - shift + curl + 0.15;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
 		baseCoverage *= max0(1.0 - texture(noisetex, position * 0.003).y * 1.36);
@@ -188,33 +188,36 @@ float CloudHighDensity(in vec2 rayPos) {
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
 			#endif
 
-			density += cube(saturate(cirrocumulus * 4.8));
+			density += cube(saturate(cirrocumulus * 4.8)) * 2.0;
 		}
 	}
 	#endif
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (density < 0.1) {
 		shift = cloudWindCi * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 4e-7 - shift * 2e-3 + curl * 3e-3 + 0.6;
+		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 3e-3 + 0.6;
 		const vec2 angle = cossin(goldenAngle);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
+		vec2 scale = vec2(3.0);
 
 		float weight = 0.6;
-		float cirrus = texture(noisetex, position * vec2(0.6, 0.8)).x;
+		float cirrus = texture(noisetex, position).x;
 
 		// Cirrus FBM
-		for (uint i = 1u; i < 5u; ++i, weight *= 0.45) {
+		for (uint i = 1u; i < 6u; ++i, scale *= vec2(0.6, 1.1)) {
 			position += (cirrus - shift + curl) * 2e-3;
-			position = rot * position * vec2(2.2, 2.5 + approxSqrt(i));
-			cirrus += texture(noisetex, position).x * weight;
-		}
-		cirrus -= saturate(localCoverage * 1.65 - 0.5);
 
-		if (cirrus > 0.8) density += cube(0.4 * max0(cirrus * 0.9 - 0.7 - density) * cirrus);
+			position = rot * position * scale;
+			cirrus += texture(noisetex, position).x * exp2(-float(i) * 1.3);
+		}
+		cirrus -= saturate(localCoverage * 1.6 - 0.8);
+		cirrus = saturate(cirrus * 1.65 - 1.4 - density);
+
+		density += cube(0.4 * exp2(-curl.x * 8.0) * cirrus);
 	}
 	#endif
 
-	return saturate(density * 2.0);
+	return saturate(density);
 }
 
 //================================================================================================//
