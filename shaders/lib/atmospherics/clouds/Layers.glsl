@@ -210,7 +210,7 @@ float CloudHighDensity(in vec2 rayPos) {
 			position = rot * position * scale;
 			cirrus += texture(noisetex, position).x * exp2(-float(i) * 1.3);
 		}
-		cirrus -= saturate(localCoverage * 1.6 - 0.8);
+		cirrus -= saturate(localCoverage * 2.0 - 0.8);
 		cirrus = saturate(cirrus * 1.65 - 1.4 - density);
 
 		density += cube(0.4 * exp2(-curl.x * 8.0) * cirrus);

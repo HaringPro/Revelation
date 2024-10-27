@@ -7,8 +7,8 @@
 		float centerLuma = GetLuminance(sum);
 		sum *= sumWeight;
 
-		ivec2 shiftX = ivec2((int(viewWidth) >> 1) + 1, 0);
-        ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+		ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+        ivec2 halfResBorder = ivec2(viewSize * 0.5) - 1;
 
 		for (uint i = 0u; i < 24u; ++i) {
 			ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), halfResBorder);
@@ -37,7 +37,7 @@
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
 	mat2x3 VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
 		ivec2 bias = ivec2(coord + frameCounter) % 2;
-		ivec2 texel = (ivec2(coord) >> 1) + (bias << 1);
+		ivec2 texel = ivec2(coord * 0.5) + (bias << 1);
 
 		const ivec2 offset[4] = ivec2[4](
 			ivec2(-2,-2), ivec2(-2, 0),

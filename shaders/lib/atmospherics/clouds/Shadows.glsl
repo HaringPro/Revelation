@@ -50,8 +50,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	float cloudShadow = 1.0;
 	#if defined CLOUD_STRATOCUMULUS
-	{
-		// Start from the cloud intersection plane and move towards the light vector.
+	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
@@ -60,8 +59,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	}
 	#endif
 	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
-	{
-		// Start from the cloud intersection plane and move towards the light vector.
+	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = CLOUD_HIGH_ALTITUDE - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
@@ -71,8 +69,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	#endif
 
 	#ifdef CLOUD_CUMULUS
-	{
-		// Start from the cloud intersection plane and move towards the light vector.
+	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = 0.5 * (CLOUD_CUMULUS_ALTITUDE + cumulusMaxAltitude) - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);

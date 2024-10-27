@@ -220,7 +220,7 @@ void main() {
 
 				// Blend with current frame
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
-				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, blendWeight);
+				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, saturate(blendWeight));
 
 			} else cloudOut = prevData;
 		}

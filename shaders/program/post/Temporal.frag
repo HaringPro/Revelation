@@ -235,6 +235,6 @@ void main() {
     #ifdef TAA_ENABLED
         temporalOut = CalculateTAA(screenCoord, motionVector);
     #else
-        temporalOut = vec4(readSceneColor(screenTexel), 1.0 + texture(colortex1, screenCoord - motionVector).a);
+        temporalOut = vec4(readSceneColor(screenTexel), 1.0/*  + texture(colortex1, screenCoord - motionVector).a */);
     #endif
 }

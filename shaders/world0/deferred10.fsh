@@ -187,7 +187,7 @@ void main() {
 				float dither = Bayer64Temporal(gl_FragCoord.xy);
 				vec4 cloudData = RenderClouds(worldDir/* , skyRadiance */, dither);
 			#else
-				vec4 cloudData = textureBicubic(colortex9, screenCoord + taaOffset * 0.5);
+				vec4 cloudData = textureBicubic(colortex9, screenCoord);
 			#endif
 			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
@@ -479,7 +479,7 @@ void main() {
 				float NdotV = saturate(dot(worldNormal, -worldDir));
 				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * ao;
 			#else
-				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2((int(viewWidth) >> 1) + 1, 0), 0).rgb * albedo * ao;
+				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2(int(viewWidth * 0.5) + 1, 0), 0).rgb * albedo * ao;
 			#endif
 		#elif defined RSM_ENABLED
 			#ifdef DEBUG_GI

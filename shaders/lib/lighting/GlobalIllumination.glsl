@@ -267,7 +267,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 	vec3 sum = vec3(0.0);
 	const float f0 = 0.02;
 
-	ivec2 shiftX = ivec2((int(viewWidth) >> 1) + 1, 0);
+	ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
 
 	#if SSPT_BOUNCES > 1 && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
 	// Multiple bounce tracing.

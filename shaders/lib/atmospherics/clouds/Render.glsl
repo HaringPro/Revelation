@@ -261,11 +261,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 				#if defined PROGRAM_PREPARE
 					uint raySteps = uint(CLOUD_CUMULUS_SAMPLES * 0.6);
-					raySteps = uint(raySteps * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CUMULUS_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(raySteps * (withinVolumeSmooth + oneMinus(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oneMinus(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
 				// const float nearStepSize = 3.0;
