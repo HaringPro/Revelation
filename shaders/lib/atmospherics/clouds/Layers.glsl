@@ -160,15 +160,15 @@ float CloudHighDensity(in vec2 rayPos) {
 	vec2 shift = cloudWindCc * CLOUD_WIND_SPEED;
 
 	// Curl noise to simulate wind, makes the positioning of the clouds more natural
-	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.04;
-	curl += texture(noisetex, rayPos * 1e-5).xy * 0.02;
+	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.03;
+	curl += texture(noisetex, rayPos * 1e-5).xy * 0.015;
 
 	float localCoverage = GetSmoothNoise(rayPos * 2e-5 + curl - shift * 0.3);
 	float density = 0.0;
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.5) {
-		vec2 position = rayPos * 7e-5 - shift + curl + 0.15;
+		vec2 position = rayPos * 7e-5 - shift + curl * 0.6 + 0.15;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
 		baseCoverage *= max0(1.0 - texture(noisetex, position * 0.003).y * 1.36);
@@ -188,7 +188,7 @@ float CloudHighDensity(in vec2 rayPos) {
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
 			#endif
 
-			density += cube(saturate(cirrocumulus * 4.8)) * 2.0;
+			density += cube(saturate(cirrocumulus * 5.0)) * 2.0;
 		}
 	}
 	#endif
@@ -242,7 +242,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 4.0) * saturate(6.0 - heightFraction * 6.0);
 
-		shape *= gradienShape * CLOUD_CUMULUS_COVERAGE * (0.9 + wetness * 0.1);
+		shape *= gradienShape * (0.4 + wetness * 0.1 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.5 + 0.3;
 
 		if (shape > 0.03 && octCount > 3u) {
@@ -284,7 +284,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 3.0) * saturate(6.0 - heightFraction * 6.0);
 
-		shape *= gradienShape * CLOUD_CUMULUS_COVERAGE * (0.77 + wetness * 0.07);
+		shape *= gradienShape * (0.26 + wetness * 0.07 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.63;
 
 		if (shape > 0.02 && octCount > 3u) {
@@ -327,7 +327,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 4.0) * saturate(5.0 - heightFraction * 5.0);
 
-		shape *= gradienShape * CLOUD_CUMULUS_COVERAGE * (0.74 + wetness * 0.06);
+		shape *= gradienShape * (0.24 + wetness * 0.06 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.16;
 
 		if (shape > 0.04 && octCount > 3u) {

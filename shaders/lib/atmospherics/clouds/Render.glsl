@@ -121,7 +121,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
 		float powder = rcp(fastExp(-density * (PI * 3.0 / stratusExtinction)) * 0.75 + 0.25) - 1.0;
-		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 9.0);
+		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -203,7 +203,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		// Compute powder effect
 		float powder = 2.0 * fastExp(-density * 22.0) * oneMinus(fastExp(-density * 44.0));
 		// float powder = rcp(fastExp(-density * (PI * 3.0 / cirrusExtinction)) * 0.6 + 0.4) - 1.0;
-		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 9.0);
+		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -347,7 +347,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						float powder = CloudPowderEffect(depthProbability, verticalProbability, powderFactor);
 					#else
 						float powder = 0.2 * rcp(fastExp(-stepDensity * (PI / cumulusExtinction)) * 0.85 + 0.15) - 0.2;
-						powder += oneMinus(powder) * powderFactor * saturate(stepDensity * 6.0);
+						powder += oneMinus(powder) * powderFactor * saturate(stepDensity * 3.0);
 					#endif
 
 					// Compute the integral of the scattering over the step
