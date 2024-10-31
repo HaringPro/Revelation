@@ -384,7 +384,7 @@ void main() {
 			if (lightmap.y > 1e-5) {
 				// Skylight
 				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-				skylight = mix(directIlluminance * 0.1, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
+				skylight = mix(directIlluminance * 0.2, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
 				#ifdef AURORA
 					skylight += 0.2 * auroraShading;
 				#endif

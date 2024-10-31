@@ -87,19 +87,18 @@ vec4 aurora(in vec3 ro, in vec3 rd) {
     return col;
 }
 
-vec3 NightAurora(in vec3 worldDir) {	
-	if (worldDir.y < 0.0 && eyeAltitude < 2e4) return vec3(0.0);;
+vec3 NightAurora(in vec3 rayDir) {	
+    if (auroraAmount > 1e-2 && rayDir.y > 0.0 && eyeAltitude < 2e4) {
+        float raylength = (planetRadius + 2e4 - viewerHeight) / rayDir.y * 1e-5;
 
-	vec3 planeOrigin = vec3(0.0, planetRadius + eyeAltitude, 0.0);
-	vec2 intersection = RaySphereIntersection(planeOrigin, worldDir, planetRadius + 2e4);
+        if (clamp(raylength, 0.0, 5.0) != raylength) return vec3(0.0);
 
-    float raylength = intersection.y;
+        vec3 rd = rayDir * raylength;
+        float fade = fastExp(-raylength);
 
-	if (raylength < 1e-6 || raylength > 5e5) return vec3(0.0);
-
-	vec3 rd = worldDir * raylength;
-	float fade = fastExp(-raylength * 1e-5);
-
-    vec4 aur = smoothstep(0.0, 2.5, aurora(vec3(0.0, 0.0, -6.7), rd * 1e-5));
-    return aur.rgb * fade * auroraAmount;
+        vec4 aur = smoothstep(0.0, 2.5, aurora(vec3(0.0, 0.0, -6.7), rd));
+        return aur.rgb * fade * auroraAmount;
+    } else {
+        return vec3(0.0);
+    }
 }
