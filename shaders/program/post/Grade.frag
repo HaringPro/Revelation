@@ -91,7 +91,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	#ifdef BLOOMY_FOG
 		float fogTransmittance = texelFetch(colortex7, texel, 0).x;
 
-		image = mix(bloomData, image, saturate(sqr(fogTransmittance)));
+		image = mix(bloomData, image, saturate(fogTransmittance));
 	#endif
 
 	if (rainStrength > 1e-2) {

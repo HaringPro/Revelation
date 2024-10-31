@@ -32,7 +32,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 
 	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
 		float rayLength = dotSelf(worldPos);
-		float norm = inversesqrt(dotSelf(worldPos));
+		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, far);
 
 		vec3 worldDir = worldPos * norm;

@@ -73,7 +73,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if VOLUMETRIC_FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return max(exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0)), 0.07);
+		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0));
 	}
 #elif VOLUMETRIC_FOG_QUALITY == 1
 	/* Medium */
@@ -87,43 +87,45 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 
 		density.x *= saturate(noise * 8.0 - 6.0) * 1.4;
 
-		return max(density, 0.07);
+		return density;
 	}
 #endif
 
 mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
+	const uint steps = VOLUMETRIC_FOG_SAMPLES;
+	const float rSteps = 1.0 / float(steps);
+
+	const float toExp6 = 2.58497;
+
 	float rayLength = dotSelf(worldPos);
-	float norm = inversesqrt(dotSelf(worldPos));
+	float norm = inversesqrt(rayLength);
 	rayLength = min(rayLength * norm, far);
 
 	vec3 worldDir = worldPos * norm;
 
-	uint steps = uint(VOLUMETRIC_FOG_SAMPLES * 0.4 + rayLength * 0.1);
-		 steps = min(steps, VOLUMETRIC_FOG_SAMPLES);
-
-	float rSteps = 1.0 / float(steps);
-
-	float stepLength = rayLength * rSteps;
-
-	vec3 rayStep = worldDir * stepLength,
-		 rayPos  = rayStep * dither + gbufferModelViewInverse[3].xyz + cameraPosition;
+	vec3 rayStart = gbufferModelViewInverse[3].xyz + cameraPosition,
+		 rayStep  = worldDir * rayLength;
 
 	vec3 shadowStart = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz),
-		 shadowEnd 	 = WorldPosToShadowPos(rayStep + gbufferModelViewInverse[3].xyz);
+		 shadowStep  = mat3(shadowModelView) * rayStep;
+	     shadowStep = diagonal3(shadowProjection) * shadowStep;
 
-	vec3 shadowStep = shadowEnd - shadowStart,
-		 shadowPos 	= shadowStep * dither + shadowStart;
+	rayLength *= toExp6 * 0.2 * rSteps;
 
 	vec3 scatteringSun = vec3(0.0);
 	vec3 scatteringSky = vec3(0.0);
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.5) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.25 + HenyeyGreensteinPhase(LdotV, 0.85) * 0.15, RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.5) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.85) * 0.1, RayleighPhase(LdotV));
+	float baseDensity = 9.0 / far;
 
-	uint i = 0u;
-	while (++i < steps) {
-		rayPos += rayStep, shadowPos += shadowStep;
+	for (uint i = 0u; i < steps; ++i) {
+		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
+		float stepLength = (stepExp - 1.0) * 0.2; // Normalize to [0, 1]
+
+		vec3 rayPos = rayStart + stepLength * rayStep;
+		vec3 shadowPos = shadowStart + stepLength * shadowStep;
 
 		#if MC_VERSION < 11800
 			if (rayPos.y > 256.0) continue;
@@ -133,9 +135,10 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 density = CalculateFogDensity(rayPos) * stepLength;
+		vec2 stepDensity = CalculateFogDensity(rayPos) + baseDensity;
+		stepDensity *= stepExp * rayLength;
 
-		if (dot(density, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
+		if (dot(stepDensity, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
 
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -163,14 +166,14 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
 
-		vec3 opticalDepth = fogExtinctionCoeff * density;
-		vec3 stepTransmittance = fastExp(-opticalDepth);
+		vec3 opticalDepth = fogExtinctionCoeff * stepDensity;
+		vec3 stepTransmittance = exp2(-opticalDepth);
 
 		vec3 stepScattering = transmittance * oneMinus(stepTransmittance) / maxEps(opticalDepth);
 		// stepScattering *= 2.0 * oneMinus(fastExp(-opticalDepth * 4.0)); // Powder Effect
 
-		scatteringSun += fogScatteringCoeff * (density * phase) * sampleShadow * stepScattering;
-		scatteringSky += fogScatteringCoeff * density * stepScattering;
+		scatteringSun += fogScatteringCoeff * (stepDensity * phase) * sampleShadow * stepScattering;
+		scatteringSky += fogScatteringCoeff * stepDensity * stepScattering;
 
 		transmittance *= stepTransmittance;
 
@@ -178,7 +181,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	}
 
 	vec3 scattering = scatteringSun * 12.0 * directIlluminance;
-	scattering += scatteringSky * mix(skyIlluminance * 0.2, directIlluminance * 0.1, wetness * 0.6);
+	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 0.5, wetness * 0.4 + 0.2);
 	scattering *= eyeSkylightSmooth;
 
 	return mat2x3(scattering, transmittance);
