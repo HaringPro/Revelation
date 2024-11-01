@@ -253,21 +253,27 @@ void main() {
 		float dither = BlueNoiseTemporal(screenTexel);
 
 		// Ambient occlusion
-		#if AO_ENABLED > 0
-			vec3 ao = vec3(1.0);
-			if (depth > 0.56) {
-				#if AO_ENABLED == 1
-					ao *= CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
-				#else
-					ao *= CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
-				#endif
-				#ifdef AO_MULTI_BOUNCE
-					ao = ApproxMultiBounce(ao.x, albedo);
-				#endif
-			} else depth += 0.38;
+		#ifdef SSILVB_ENABLED
+			float NdotV = saturate(dot(worldNormal, -worldDir));
+			vec4 ssilvbData = SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV);
+			#define ao ssilvbData.a
 		#else
-			const vec3 ao = vec3(1.0);
-			depth += step(0.56, depth) * 0.38;
+			#if AO_ENABLED > 0
+				vec3 ao = vec3(1.0);
+				if (depth > 0.56) {
+					#if AO_ENABLED == 1
+						ao *= CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+					#else
+						ao *= CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
+					#endif
+					#ifdef AO_MULTI_BOUNCE
+						ao = ApproxMultiBounce(ao.x, albedo);
+					#endif
+				} else depth += 0.38;
+			#else
+				const float ao = 1.0;
+				depth += step(0.56, depth) * 0.38;
+			#endif
 		#endif
 
 		// Cloud shadows
@@ -392,13 +398,18 @@ void main() {
 
 				sceneOut += skylight * lightmap.y * ao;
 
-				// Bounced light
-			#ifndef RSM_ENABLED
-				float bounce = CalculateApproxBouncedLight(worldNormal);
-				bounce *= sqr(lightmap.y);
-				sceneOut += bounce * sunlightMult * ao;
-			#endif
+				// Bounced light		
+			#ifdef SSILVB_ENABLED
 			}
+				sceneOut += ssilvbData.rgb;
+			#else
+				#ifndef RSM_ENABLED
+					float bounce = CalculateApproxBouncedLight(worldNormal);
+					bounce *= sqr(lightmap.y);
+					sceneOut += bounce * sunlightMult * ao;
+				#endif
+			}
+			#endif
 		#endif
 
 		// Emissive & Blocklight
@@ -409,7 +420,7 @@ void main() {
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
 			vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos, blocklightColor);
-			#ifdef SSPT_ENABLED
+			#if defined SSILVB_ENABLED || defined SSPT_ENABLED
 				float albedoLuma = saturate(dot(albedo, vec3(0.45)));
 
 				vec3 emissionAlbedo = normalize(maxEps(albedo));
@@ -423,7 +434,7 @@ void main() {
 			#endif
 
 			sceneOut += emissive.rgb * EMISSIVE_BRIGHTNESS;
-		#elif !defined SSPT_ENABLED
+		#elif !defined SSILVB_ENABLED && !defined SSPT_ENABLED
 			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor;
 		#endif
@@ -434,7 +445,7 @@ void main() {
 				float falloff = saturate(rcp(max(worldDistSquared, 1.0)) * max(heldBlockLightValue, heldBlockLightValue2));
 
 				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
-				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * mix(ao, vec3(1.0), falloff * 0.7) * blocklightColor;
+				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * (ao - oneMinus(ao) * falloff * 0.7) * blocklightColor;
 			}
 		#endif
 

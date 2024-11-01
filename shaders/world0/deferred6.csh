@@ -1,3 +1,11 @@
 #version 450 core
 
-#include "/program/RSM/SpatialFilter.comp"
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+#ifdef SSILVB_ENABLED
+    #include "/program/SSILVB/SpatialFilter.comp"
+#else
+    #include "/program/RSM/SpatialFilter.comp"
+#endif

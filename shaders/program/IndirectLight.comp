@@ -37,7 +37,11 @@ restrict writeonly uniform image2D colorimg3;
 
 #include "/lib/surface/BRDF.glsl"
 
-#include "/lib/lighting/GlobalIllumination.glsl"
+#ifdef SSILVB_ENABLED
+	#include "/lib/lighting/SSILVB.glsl"
+#else
+	#include "/lib/lighting/GlobalIllumination.glsl"
+#endif
 
 float GetClosestDepth(in ivec2 texel) {
     float depth = readDepth0(texel);
@@ -67,16 +71,23 @@ void main() {
 		vec3 screenPos = vec3(screenCoord, depth);
 		vec3 viewPos = ScreenToViewSpace(screenPos);
 
-        float dither = BlueNoiseTemporal(currentTexel);
-
-		#ifdef RSM_ENABLED
-			float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
-			imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
+		#ifdef SSILVB_ENABLED
+			// SSILVB
+			imageStore(colorimg3, screenTexel, CalculateSSILVB(screenCoord, viewPos, mat3(gbufferModelView) * worldNormal));
 		#else
-			vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+			float dither = BlueNoiseTemporal(currentTexel);
+			#ifdef SSPT_ENABLED
+				// SSPT
+				vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 
-			// Shift the write position to avoid read-write conflict
-			imageStore(colorimg3, screenTexel + ivec2(int(viewWidth * 0.5), 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
+				// Shift the write position to avoid read-write conflict
+				screenTexel += ivec2(int(viewWidth * 0.5), 0);
+				imageStore(colorimg3, screenTexel, vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
+			#else
+				// RSM
+				float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
+				imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
+			#endif
 		#endif
 	}
 }

@@ -39,7 +39,7 @@ uniform int frameCounter;
 const uint padRadius = 2;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 
-shared vec3 sharedLight[sharedSize.x][sharedSize.y];
+shared vec4 sharedLight[sharedSize.x][sharedSize.y];
 shared vec4 sharedData [sharedSize.x][sharedSize.y];
 
 void SharedPreload() {
@@ -57,7 +57,7 @@ void SharedPreload() {
     ivec2 loadTexel = groupBase + localID;
     loadTexel = clamp(loadTexel, ivec2(0), halfResBorder);
 
-    sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
+    sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0);
     sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + shiftX, 0);
 
     for (uint stage = 1u; stage < stageNum; ++stage) {
@@ -69,7 +69,7 @@ void SharedPreload() {
             loadTexel = groupBase + localID;
             loadTexel = clamp(loadTexel, ivec2(0), halfResBorder);
 
-            sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
+            sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0);
             sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + shiftX, 0);
         }
     }
@@ -108,7 +108,7 @@ void main() {
     if (depth < 1.0) {
         uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
 
-        vec3 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
+        vec4 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
         vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
 
         vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
@@ -127,7 +127,7 @@ void main() {
             weight *= fastExp(-abs(sampleData.w - normalDepthData.w) * 4.0 * NdotV); // Distance weight
             weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
 
-            vec3 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
+            vec4 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
 
             indirectData += sampleLight * weight;
             sumWeight += weight;
@@ -135,6 +135,6 @@ void main() {
 
         indirectData *= rcp(sumWeight);
 
-        imageStore(colorimg3, texel, vec4(indirectData, 1.0));
+        imageStore(colorimg3, texel, indirectData);
     }
 }

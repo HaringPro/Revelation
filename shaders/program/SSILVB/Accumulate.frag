@@ -6,16 +6,12 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: RSM accumulation
+    Pass: SSILVB accumulation
 	Reference:  https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
                 https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
 
 --------------------------------------------------------------------------------
 */
-
-#define RSM_SAMPLER colortex3
-
-#define RSM_MAX_BLENDED_FRAMES 32.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 //======// Output //==============================================================================//
 
@@ -76,11 +72,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
     }
     if (sumWeight > 1e-5) {
         prevLight /= sumWeight;
-
-        indirectHistory.a = min(prevLight.a, RSM_MAX_BLENDED_FRAMES);
-
-        float alpha = rcp(++indirectHistory.a);
-        indirectHistory.rgb = mix(prevLight.rgb, indirectHistory.rgb, alpha);
+        indirectHistory = mix(prevLight, indirectHistory, 0.03);
     }
 }
 
@@ -125,8 +117,7 @@ void main() {
                 vec3 screenPos = vec3(currentCoord, depth);
                 vec3 viewPos = ScreenToViewSpace(screenPos);
 
-                indirectHistory.rgb = texelFetch(RSM_SAMPLER, screenTexel, 0).rgb;
-                indirectHistory.rgb = clamp16f(indirectHistory.rgb);
+                indirectHistory = texelFetch(colortex3, screenTexel, 0);
 
                 vec2 prevCoord = Reproject(screenPos).xy;
 		        if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
