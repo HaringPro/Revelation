@@ -39,9 +39,10 @@ uniform float biomeGreenVapor;
 uniform float timeNoon;
 uniform float timeMidnight;
 
-uniform vec3 fogMieExtinction;
-uniform vec3 fogMieScattering;
-uniform vec3 fogRayleighCoeff;
+uniform vec3 fmExtinction;
+uniform vec3 fmScattering;
+uniform vec3 frExtinction;
+uniform vec3 frScattering;
 
 //======// Main //================================================================================//
 void main() {
@@ -51,13 +52,13 @@ void main() {
 	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 
 	fogExtinctionCoeff = mat2x3(
-		fogMieExtinction * VF_MIE_DENSITY,
-		fogRayleighCoeff * VF_RAYLEIGH_DENSITY
+		fmExtinction * VF_MIE_DENSITY,
+		frExtinction * VF_RAYLEIGH_DENSITY
 	);
 
 	fogScatteringCoeff = mat2x3(
-		fogMieScattering * VF_MIE_DENSITY,
-		fogExtinctionCoeff[1]
+		fmScattering * VF_MIE_DENSITY,
+		frScattering * VF_RAYLEIGH_DENSITY
 	);
 
 	fogExtinctionCoeff[0] *= 1.0 + wetness * VF_MIE_DENSITY_RAIN_MULTIPLIER;

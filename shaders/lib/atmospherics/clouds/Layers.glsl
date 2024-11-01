@@ -168,17 +168,17 @@ float CloudHighDensity(in vec2 rayPos) {
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.5) {
-		vec2 position = rayPos * 7e-5 - shift + curl * 0.6 + 0.15;
+		vec2 position = rayPos * 7e-5 - (shift + curl) * 0.6 + 0.15;
 
 		float baseCoverage = curve(texture(noisetex, position * 0.08).z * 0.65 + 0.1);
-		baseCoverage *= max0(1.0 - texture(noisetex, position * 0.003).y * 1.36);
+		baseCoverage *= max0(1.04 - texture(noisetex, position * 0.003).y * 1.36);
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
 		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.3;
 		cirrocumulus = saturate(cirrocumulus - density - 0.014);
 
-		cirrocumulus *= clamp(baseCoverage + saturate(localCoverage * 1.6 - 0.8) - 0.43, 0.0, 0.25) * 0.6;
+		cirrocumulus *= clamp(baseCoverage + saturate(localCoverage * 1.6 - 0.8) - 0.47, 0.0, 0.2);
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
@@ -188,7 +188,7 @@ float CloudHighDensity(in vec2 rayPos) {
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
 			#endif
 
-			density += cube(saturate(cirrocumulus * 5.0)) * 2.0;
+			density += cube(saturate(cirrocumulus * 2.0)) * 3.0;
 		}
 	}
 	#endif
@@ -231,7 +231,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -273,7 +273,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
@@ -315,7 +315,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu * 2.5;
+		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);

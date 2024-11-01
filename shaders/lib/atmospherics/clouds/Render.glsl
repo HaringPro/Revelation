@@ -85,7 +85,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth * 0.5, 46.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
@@ -167,7 +167,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 			rayStep *= 2.0;
 
 			opticalDepth += density * rayStep.z;
-		} opticalDepth = smin(opticalDepth * 0.5, 56.0, 8.0);
+		} opticalDepth = smin(opticalDepth * 0.5, 24.0, 8.0);
 
 		// Magic power function, looks not bad
 		vec4 hitPhases = pow(phases, vec4(0.7 + 0.2 * saturate(opticalDepth)));
