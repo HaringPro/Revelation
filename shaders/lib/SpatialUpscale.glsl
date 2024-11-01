@@ -37,20 +37,19 @@
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
 	mat2x3 VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
 		ivec2 bias = ivec2(coord + frameCounter) % 2;
-		ivec2 texel = ivec2(coord * 0.5) + (bias << 1);
+		ivec2 texel = ivec2(coord * 0.5) + bias * 2 - 1;
 
-		const ivec2 offset[4] = ivec2[4](
-			ivec2(-2,-2), ivec2(-2, 0),
-			ivec2( 0, 0), ivec2( 0,-2)
+		const ivec2 offset[5] = ivec2[5](
+			ivec2(-1, -1), ivec2(-1, 1), ivec2(0, 0), ivec2(1, -1), ivec2(1, 1)
 		);
 
 		float sigmaZ = 64.0 / linearDepth;
 		mat2x3 sum = mat2x3(0.0);
 		float sumWeight = 0.0;
 
-		for (uint i = 0u; i < 4u; ++i) {
+		for (uint i = 0u; i < 5u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
-			float sampleDepth = ScreenToViewDepth(readDepth1(sampleTexel << 1));
+			float sampleDepth = ScreenToViewDepth(readDepth1(sampleTexel * 2));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
 
 			sum[0] += texelFetch(colortex11, sampleTexel, 0).rgb * weight;
