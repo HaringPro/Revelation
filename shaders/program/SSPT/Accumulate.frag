@@ -49,7 +49,7 @@ uniform vec2 prevTaaOffset;
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
     ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
 
     texel += shiftX;
@@ -77,7 +77,7 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
 vec4 SpatialColor(in ivec2 texel) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
     ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
 
     texel += shiftX;
@@ -112,7 +112,7 @@ vec4 SpatialColor(in ivec2 texel) {
 vec3 SpatialCurrent(in ivec2 texel) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
     ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
 
     texel += shiftX;
@@ -157,7 +157,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         fractTexel.x           * fractTexel.y
     };
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
     ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
 
     for (uint i = 0u; i < 4u; ++i) {

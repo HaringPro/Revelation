@@ -7,7 +7,7 @@
 		float centerLuma = GetLuminance(sum);
 		sum *= sumWeight;
 
-		ivec2 shiftX = ivec2(int(viewWidth * 0.5) + 1, 0);
+		ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
         ivec2 halfResBorder = ivec2(viewSize * 0.5) - 1;
 
 		for (uint i = 0u; i < 24u; ++i) {

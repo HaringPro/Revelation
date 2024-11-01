@@ -76,7 +76,7 @@ void main() {
 			vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
 
 			// Shift the write position to avoid read-write conflict
-			imageStore(colorimg3, screenTexel + ivec2(int(viewWidth * 0.5) + 1, 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
+			imageStore(colorimg3, screenTexel + ivec2(int(viewWidth * 0.5), 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
 		#endif
 	}
 }
