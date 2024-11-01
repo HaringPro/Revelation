@@ -266,7 +266,7 @@ void main() {
 				#endif
 			} else depth += 0.38;
 		#else
-			const vec3 ao = vec3(1.0);
+			const float ao = 1.0;
 			depth += step(0.56, depth) * 0.38;
 		#endif
 
@@ -434,7 +434,7 @@ void main() {
 				float falloff = saturate(rcp(max(worldDistSquared, 1.0)) * max(heldBlockLightValue, heldBlockLightValue2));
 
 				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
-				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * mix(ao, vec3(1.0), falloff * 0.7) * blocklightColor;
+				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * (ao - oneMinus(ao) * falloff * 0.7) * blocklightColor;
 			}
 		#endif
 

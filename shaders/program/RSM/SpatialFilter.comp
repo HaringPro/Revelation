@@ -11,7 +11,7 @@
 --------------------------------------------------------------------------------
 */
 
-layout (local_size_x = 8, local_size_y = 8) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 //======// Utility //=============================================================================//
@@ -124,7 +124,7 @@ void main() {
         sharedTexel += ivec2(2.0 * (RandNext2F() - 0.5));
 
         for (uint i = 0u; i < 16u; ++i) {
-            uvec2 sampleSharedTexel = sharedTexel + offset4x4[i];
+            uvec2 sampleSharedTexel = sharedTexel + offset4x4[i] * padRadius;
             vec4 sampleData = sharedData[sampleSharedTexel.x][sampleSharedTexel.y];
 
             float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
@@ -137,7 +137,7 @@ void main() {
             sumWeight += weight;
         }
 
-        indirectData /= sumWeight;
+        indirectData *= rcp(sumWeight);
 
         imageStore(colorimg3, texel, vec4(indirectData, 1.0));
     }

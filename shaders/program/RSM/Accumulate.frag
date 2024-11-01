@@ -13,13 +13,12 @@
 --------------------------------------------------------------------------------
 */
 
+#define RSM_SAMPLER colortex3
+#define RSM_MAX_BLENDED_FRAMES 32.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
-
-#define RSM_SAMPLER colortex3
-
-#define RSM_MAX_BLENDED_FRAMES 32.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 //======// Output //==============================================================================//
 
@@ -143,7 +142,7 @@ void main() {
             float depth = sampleDepthMin4x4(currentCoord);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
+                ivec2 currentTexel = (screenTexel << 1) - ivec2(int(viewWidth), 0);
                 vec3 worldNormal = FetchWorldNormal(readGbufferData0(currentTexel));
                 float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
 
