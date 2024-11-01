@@ -136,7 +136,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * 12.0 * powder * directIlluminance;
+		vec3 scattering = scatteringSun * 11.0 * powder * directIlluminance;
 		scattering += scatteringSky * 0.1 * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(stratusExtinction);
 
@@ -218,7 +218,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * 12.0 * powder * directIlluminance;
+		vec3 scattering = scatteringSun * 11.0 * powder * directIlluminance;
 		scattering += scatteringSky * 0.1 * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
@@ -378,7 +378,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
-					vec3 scattering = stepScattering.x * 12.0 * directIlluminance;
+					vec3 scattering = stepScattering.x * 11.0 * directIlluminance;
 					scattering += stepScattering.y * 0.1 * skyIlluminance;
 
 					// Compute aerial perspective

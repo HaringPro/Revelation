@@ -32,8 +32,6 @@ layout (location = 1) out float bloomyFogTrans;
 
 //======// Input //===============================================================================//
 
-noperspective in vec2 screenCoord;
-
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
@@ -83,6 +81,8 @@ void main() {
 		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
 	#endif
 
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
@@ -91,30 +91,29 @@ void main() {
 	float transparentDepth = distance(viewPos, sViewPos);
 
 	vec4 gbufferData1 = readGbufferData1(screenTexel);
-	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
-	vec2 refracCoord = screenCoord;
-	ivec2 refracTexel = screenTexel;
+	vec2 refractedCoord = screenCoord;
+	ivec2 refractedTexel = screenTexel;
 	bool waterMask = false;
 
 	if (materialID == 2u || materialID == 3u) {
-		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
+		vec3 viewNormal = mat3(gbufferModelView) * decodeUnitVector(unpackUnorm2x8(gbufferData0.z));
 		#ifdef RAYTRACED_REFRACTION
-			refracCoord = CalculateRefractiveCoord(materialID == 3u, viewPos, viewNormal, screenPos);
+			refractedCoord = CalculateRefractedCoord(materialID == 3u, viewPos, viewNormal, screenPos);
 		#else	
-			refracCoord = CalculateRefractiveCoord(materialID == 3u, viewPos, viewNormal, gbufferData1, transparentDepth);
+			refractedCoord = CalculateRefractedCoord(materialID == 3u, viewPos, viewNormal, screenPos, gbufferData1, transparentDepth);
 		#endif
-		refracCoord = readDepth1(uvToTexel(refracCoord)) < depth ? screenCoord : refracCoord;
-		refracTexel = uvToTexel(refracCoord);
+		refractedTexel = uvToTexel(refractedCoord);
 
-		depth = readDepth0(refracTexel);
+		depth = readDepth0(refractedTexel);
 
-		gbufferData0 = readGbufferData0(refracTexel);
-		viewPos = ScreenToViewSpace(vec3(refracCoord, depth));
+		gbufferData0 = readGbufferData0(refractedTexel);
+		viewPos = ScreenToViewSpace(vec3(refractedCoord, depth));
 		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
 	}
 
-    sceneOut = readSceneColor(refracTexel);
+    sceneOut = readSceneColor(refractedTexel);
+	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -132,7 +131,7 @@ void main() {
 
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
-			float waterDepth = abs(viewPos.z + ScreenToViewDepth(readDepth1(refracTexel)));
+			float waterDepth = abs(viewPos.z + ScreenToViewDepth(readDepth1(refractedTexel)));
 			mat2x3 waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
 			sceneOut = sceneOut * waterFog[1] + waterFog[0];
 		}
@@ -167,7 +166,7 @@ void main() {
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
-				vec4 reflectionData = texelFetch(colortex1, refracTexel, 0);
+				vec4 reflectionData = texelFetch(colortex1, refractedTexel, 0);
 				sceneOut += reflectionData.rgb;
 			}
 		#endif

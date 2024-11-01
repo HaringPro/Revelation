@@ -7,7 +7,7 @@
 
 /* RENDERTARGETS: 1,7,8 */
 layout (location = 0) out vec4 sceneOut;
-layout (location = 1) out vec4 gbufferOut0;
+layout (location = 1) out vec3 gbufferOut0;
 layout (location = 2) out vec2 gbufferOut1;
 
 //======// Uniform //=============================================================================//
@@ -163,10 +163,10 @@ void main() {
 			DecodeNormalTex(worldNormal);
 
 			worldNormal = tbnMatrix * worldNormal;
-			gbufferOut0.w = packUnorm2x8(encodeUnitVector(worldNormal));
 		#else
 			worldNormal = tbnMatrix[2];
 		#endif
+		gbufferOut0.z = packUnorm2x8(encodeUnitVector(worldNormal));
 
 		#ifdef TRANSLUCENT_LIGHTING
 			sceneOut.rgb = albedo.rgb;
@@ -255,6 +255,4 @@ void main() {
 
 	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = float(materialID) * r255;
-
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(tbnMatrix[2]));
 }
