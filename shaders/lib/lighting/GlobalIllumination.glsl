@@ -117,7 +117,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	rayPos.xy *= viewSize;
 	rayStep.xy *= viewSize;
 
-	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep){
+	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep) {
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 		float sampleDepth = readDepth0(ivec2(rayPos.xy));
 

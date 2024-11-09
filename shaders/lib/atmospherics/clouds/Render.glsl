@@ -60,7 +60,7 @@ float CloudVolumeGroundLightOD(in vec3 rayPos) {
     return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 0.1;
 }
 
-float CloudPowderEffect(in float depth, in float height, in float factor){
+float CloudPowderEffect(in float depth, in float height, in float factor) {
     return depth * (height + oneMinus(height) * factor);
 }
 

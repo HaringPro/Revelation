@@ -64,7 +64,7 @@ vec3 RenderStars(in vec3 worldDir) {
     vec3 c = vec3(0.0);
     const float res = 768.0;
 
-    for (int i = 0; i < 4; ++i){
+    for (int i = 0; i < 4; ++i) {
         vec3 q = fract(p * (0.15 * res)) - 0.5;
         vec3 id = floor(p * (0.15 * res));
 
