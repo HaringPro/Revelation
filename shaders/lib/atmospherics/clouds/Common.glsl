@@ -33,7 +33,7 @@
 //================================================================================================//
 
 const uint  cloudMsCount 			= CLOUD_MULTI_SCATTERING_COUNT;
-const float cloudMsFactor 			= 0.6;
+const float cloudMsFactor 			= 0.65;
 
 const float cumulusMaxAltitude 		= CLOUD_CUMULUS_ALTITUDE + CLOUD_CUMULUS_THICKNESS;
 const float cumulusTopOffset        = 600.0;

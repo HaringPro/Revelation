@@ -57,7 +57,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 0.1;
+    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 6e-2;
 }
 
 float CloudPowderEffect(in float depth, in float height, in float factor) {
