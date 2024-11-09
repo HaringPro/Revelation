@@ -223,7 +223,7 @@ float CloudHighDensity(in vec2 rayPos) {
 //================================================================================================//
 
 #if 0
-	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
+	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-6) return 0.0;
@@ -245,7 +245,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		shape *= gradienShape * (0.4 + wetness * 0.1 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.5 + 0.3;
 
-		if (shape > 0.03 && octCount > 3u) {
+		if (shape > 0.03 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
 			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
 
@@ -253,7 +253,7 @@ float CloudHighDensity(in vec2 rayPos) {
 			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
 
 			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(detail, 1.0 - detail, saturate(heightFraction * 10.0));
+			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
 
 			shape = remap(detail * 0.06, 0.3, shape);
 		} else {
@@ -265,10 +265,10 @@ float CloudHighDensity(in vec2 rayPos) {
 		return shape;
 	}
 #elif 1
-	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
+	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
+		vec2 coverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).xz;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
-		if (baseCoverage < 1e-6) return 0.0;
+		if (dot(coverage, vec2(1.0)) < 1e-3) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
 		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
@@ -276,18 +276,19 @@ float CloudHighDensity(in vec2 rayPos) {
 		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
-		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
+		vec4 lowFreqNoises = texture(depthtex2, position * 0.22);
 		float shape = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
 
-		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape) + baseCoverage * 0.7;
+		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape) + coverage.x * 0.6;
 
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 3.0) * saturate(6.0 - heightFraction * 6.0);
 
-		shape *= gradienShape * (0.26 + wetness * 0.07 + CLOUD_CUMULUS_COVERAGE);
-		shape -= heightFraction * 0.4 + 0.63;
+        float localCoverage = saturate(coverage.y * 2.0 - 0.2) * 0.5 + 0.5;
+		shape *= gradienShape * localCoverage * (0.28 + wetness * 0.07 + CLOUD_CUMULUS_COVERAGE);
+		shape -= heightFraction * 0.4 + 0.6;
 
-		if (shape > 0.02 && octCount > 3u) {
+		if (shape > 0.02 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
 			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
 
@@ -295,11 +296,11 @@ float CloudHighDensity(in vec2 rayPos) {
 			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
 
 			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(detail, 1.0 - detail, saturate(heightFraction * 10.0));
+			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
 
-			shape = remap(detail * 0.04, 0.3, shape);
+			shape = remap(detail * 0.05, 0.3, shape);
 		} else {
-			shape = remap(0.02, 0.3, shape);
+			shape = remap(0.025, 0.3, shape);
 		}
 
 		// shape *= saturate(0.01 + heightFraction * 1.15) * saturate(5.0 - heightFraction * 5.0);
@@ -307,7 +308,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		return shape;
 	}
 #else
-	float CloudVolumeDensity(in vec3 rayPos, in uint octCount) {
+	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
 		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
 		if (baseCoverage < 1e-6) return 0.0;
@@ -330,7 +331,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		shape *= gradienShape * (0.24 + wetness * 0.06 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.16;
 
-		if (shape > 0.04 && octCount > 3u) {
+		if (shape > 0.04 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
 			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
 
@@ -338,7 +339,7 @@ float CloudHighDensity(in vec2 rayPos) {
 			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
 
 			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(detail, 1.0 - detail, saturate(heightFraction * 10.0));
+			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
 
 			shape = remap(detail * 0.08, 0.4, shape);
 		} else {
