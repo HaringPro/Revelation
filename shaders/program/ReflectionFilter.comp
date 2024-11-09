@@ -100,7 +100,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(readGbufferData0(sampleTexel));
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
-        float sampleRoughness = sqr(1.0 - unpackUnorm2x8(readGbufferData1(sampleTexel).x).x);
+        float sampleRoughness = sqr(1.0 - Unpack2x8(readGbufferData1(sampleTexel).x).x);
 
         float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 2.0) * // Lobe weight
                        fastExp(-abs(reflectionData.a - sampleData.a) * smoothness) * // Hit distance weight
@@ -123,7 +123,7 @@ void main() {
     vec4 reflectionData = imageLoad(colorimg1, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-		vec4 specularTex = vec4(unpackUnorm2x8(readGbufferData1(screenTexel).x), vec2(0.0));
+		vec4 specularTex = vec4(Unpack2x8(readGbufferData1(screenTexel).x), vec2(0.0));
         Material material = GetMaterialData(specularTex);
 
         if (material.hasReflections && material.isRough) {

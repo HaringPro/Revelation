@@ -45,7 +45,7 @@ flat in float exposure;
 uniform sampler2D colortex4; // Bloom tiles
 uniform sampler2D colortex5; // Sky-View LUT
 uniform sampler2D colortex6; // Rain alpha
-uniform sampler2D colortex7; // Bloomy fog transmittance
+uniform sampler2D colortex8; // Bloomy fog transmittance
 
 uniform float aspectRatio;
 uniform float rainStrength;
@@ -89,7 +89,7 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	image = mix(image, bloomData, bloomIntensity);
 
 	#ifdef BLOOMY_FOG
-		float fogTransmittance = texelFetch(colortex7, texel, 0).x;
+		float fogTransmittance = texelFetch(colortex8, texel, 0).x;
 
 		image = mix(bloomData, image, saturate(fogTransmittance));
 	#endif

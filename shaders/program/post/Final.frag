@@ -34,7 +34,7 @@ out vec3 finalOut;
 uniform sampler2D colortex4; // Bloom tiles
 // uniform sampler2D colortex5;
 // uniform sampler2D colortex6;
-// uniform sampler2D colortex7;
+// uniform usampler2D colortex7;
 uniform sampler2D colortex8; // LDR scene image
 #ifdef FSR_ENABLED
 	uniform sampler2D colortex15; // FSR EASU output

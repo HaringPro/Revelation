@@ -7,7 +7,7 @@
 
 /* RENDERTARGETS: 1,7,8 */
 layout (location = 0) out vec4 sceneOut;
-layout (location = 1) out vec3 gbufferOut0;
+layout (location = 1) out uvec3 gbufferOut0;
 layout (location = 2) out vec2 gbufferOut1;
 
 //======// Uniform //=============================================================================//
@@ -166,7 +166,7 @@ void main() {
 		#else
 			worldNormal = tbnMatrix[2];
 		#endif
-		gbufferOut0.z = packUnorm2x8(encodeUnitVector(worldNormal));
+		gbufferOut0.z = Packup2x8U(encodeUnitVector(worldNormal));
 
 		#ifdef TRANSLUCENT_LIGHTING
 			sceneOut.rgb = albedo.rgb;
@@ -175,8 +175,8 @@ void main() {
 			sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 		#endif
 
-		gbufferOut1.x = packUnorm2x8(albedo.rg);
-		gbufferOut1.y = packUnorm2x8(albedo.ba);
+		gbufferOut1.x = Packup2x8(albedo.rg);
+		gbufferOut1.y = Packup2x8(albedo.ba);
 	}
 
 	//==// Translucent lighting //================================================================//
@@ -253,6 +253,6 @@ void main() {
 
 	//============================================================================================//
 
-	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = float(materialID) * r255;
+	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	gbufferOut0.y = materialID;
 }

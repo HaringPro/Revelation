@@ -60,7 +60,7 @@ void main() {
 	// float depth = readDepth0(currentTexel);
 
 	if (depth < 1.0) {
-		vec4 gbufferData0 = readGbufferData0(currentTexel);
+		uvec4 gbufferData0 = readGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
     	vec2 screenCoord = texelToUv(currentTexel);
@@ -70,10 +70,10 @@ void main() {
         float dither = BlueNoiseTemporal(currentTexel);
 
 		#ifdef RSM_ENABLED
-			float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
+			float skyLightmap = Unpack2x8UY(gbufferData0.x);
 			imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
 		#else
-			vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+			vec2 lightmap = Unpack2x8U(gbufferData0.x);
 
 			// Shift the write position to avoid read-write conflict
 			imageStore(colorimg3, screenTexel + ivec2(int(viewWidth * 0.5), 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));

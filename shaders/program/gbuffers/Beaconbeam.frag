@@ -7,7 +7,7 @@
 
 /* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec3 albedoOut;
-layout (location = 1) out vec4 gbufferOut0;
+layout (location = 1) out uvec4 gbufferOut0;
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 /* RENDERTARGETS: 6,7,8 */
@@ -47,14 +47,14 @@ void main() {
 
 	albedoOut = albedo.rgb;
 
-	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = 20.0 * r255;
+	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	gbufferOut0.y = 20u;
 
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
 
-		gbufferOut1.x = packUnorm2x8(specularTex.rg);
-		gbufferOut1.y = packUnorm2x8(specularTex.ba);
+		gbufferOut1.x = Packup2x8(specularTex.rg);
+		gbufferOut1.y = Packup2x8(specularTex.ba);
 	#endif
 }

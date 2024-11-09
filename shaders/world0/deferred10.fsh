@@ -54,7 +54,7 @@ uniform sampler2D colortex4; // Reprojected scene history
 uniform sampler2D colortex5; // Sky-View LUT
 
 uniform sampler2D colortex6; // Albedo
-uniform sampler2D colortex7; // Gbuffer data 0
+uniform usampler2D colortex7; // Gbuffer data 0
 uniform sampler2D colortex8; // Gbuffer data 1
 
 uniform sampler2D colortex9; // Cloud history
@@ -160,9 +160,9 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
-	vec4 gbufferData0 = readGbufferData0(screenTexel);
+	uvec4 gbufferData0 = readGbufferData0(screenTexel);
 
-	uint materialID = uint(gbufferData0.y * 255.0);
+	uint materialID = gbufferData0.y;
 
 	vec3 albedoRaw = readAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
@@ -195,7 +195,7 @@ void main() {
 		sceneOut = vec3(0.0);
 		worldPos += gbufferModelViewInverse[3].xyz;
 
-		vec2 lightmap = unpackUnorm2x8(gbufferData0.x);
+		vec2 lightmap = Unpack2x8U(gbufferData0.x);
 		lightmap.y = isEyeInWater == 1 ? 1.0 : cube(lightmap.y);
 		vec3 flatNormal = FetchFlatNormal(gbufferData0);
 		#ifdef NORMAL_MAPPING
@@ -207,7 +207,7 @@ void main() {
 
 		#ifdef SPECULAR_MAPPING
 			vec4 gbufferData1 = readGbufferData1(screenTexel);
-			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
 			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.02, 0.0, false, false);

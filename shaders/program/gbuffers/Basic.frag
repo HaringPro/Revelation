@@ -7,7 +7,7 @@
 
 /* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec3 albedoOut;
-layout (location = 1) out vec2 gbufferOut0;
+layout (location = 1) out uvec2 gbufferOut0;
 
 //======// Input //===============================================================================//
 
@@ -26,6 +26,6 @@ void main() {
 	albedoOut = vertColor.rgb;
 
 	uint materialID = lightmap.x > 0.999 ? 20u : 1u;
-	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = float(materialID) * r255;
+	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	gbufferOut0.y = materialID;
 }

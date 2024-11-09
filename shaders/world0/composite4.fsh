@@ -22,9 +22,9 @@
 //======// Output //==============================================================================//
 
 #ifdef DEPTH_OF_FIELD
-/* RENDERTARGETS: 4,7 */
+/* RENDERTARGETS: 4,8 */
 #else
-/* RENDERTARGETS: 0,7 */
+/* RENDERTARGETS: 0,8 */
 #endif
 
 layout (location = 0) out vec3 sceneOut;
@@ -70,9 +70,9 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-	vec4 gbufferData0 = readGbufferData0(screenTexel);
+	uvec4 gbufferData0 = readGbufferData0(screenTexel);
 
-	uint materialID = uint(gbufferData0.y * 255.0);
+	uint materialID = gbufferData0.y;
 
 	float depth = FetchDepthFix(screenTexel);
 	float sDepth = FetchDepthSoildFix(screenTexel);
@@ -97,7 +97,7 @@ void main() {
 	bool waterMask = false;
 
 	if (materialID == 2u || materialID == 3u) {
-		vec3 viewNormal = mat3(gbufferModelView) * decodeUnitVector(unpackUnorm2x8(gbufferData0.z));
+		vec3 viewNormal = mat3(gbufferModelView) * decodeUnitVector(Unpack2x8U(gbufferData0.z));
 		#ifdef RAYTRACED_REFRACTION
 			refractedCoord = CalculateRefractedCoord(materialID == 3u, viewPos, viewNormal, screenPos);
 		#else	
@@ -109,7 +109,7 @@ void main() {
 
 		gbufferData0 = readGbufferData0(refractedTexel);
 		viewPos = ScreenToViewSpace(vec3(refractedCoord, depth));
-		waterMask = uint(gbufferData0.y * 255.0) == 3u || materialID == 3u;
+		waterMask = gbufferData0.y == 3u || materialID == 3u;
 	}
 
     sceneOut = readSceneColor(refractedTexel);
@@ -122,10 +122,10 @@ void main() {
 
 	if (depth < 1.0 || waterMask) {
 		worldPos += gbufferModelViewInverse[3].xyz;
-		float skyLightmap = unpackUnorm2x8Y(gbufferData0.x);
+		float skyLightmap = Unpack2x8UY(gbufferData0.x);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			vec4 specularTex = vec4(unpackUnorm2x8(gbufferData1.x), vec2(0.0));
+			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), vec2(0.0));
 			Material material = GetMaterialData(specularTex);
 		#endif
 
@@ -148,7 +148,7 @@ void main() {
 			sceneOut += blendedData.rgb;
 		} else if (materialID == 2u) { // Glass
 			// Glass tint
-			vec4 translucents = vec4(unpackUnorm2x8(gbufferData1.x), unpackUnorm2x8(gbufferData1.y));
+			vec4 translucents = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
 			sceneOut *= fastExp(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
 
 			// Specular and diffuse lighting of glass

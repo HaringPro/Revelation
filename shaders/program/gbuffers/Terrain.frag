@@ -7,7 +7,7 @@
 
 /* RENDERTARGETS: 6,7 */
 layout (location = 0) out vec3 albedoOut;
-layout (location = 1) out vec4 gbufferOut0;
+layout (location = 1) out uvec4 gbufferOut0;
 
 #if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
 /* RENDERTARGETS: 6,7,8 */
@@ -166,7 +166,7 @@ void main() {
 			DecodeNormalTex(normalTex.xyz);
 		}
 
-		gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex.xyz));
+		gbufferOut0.w = Packup2x8U(encodeUnitVector(tbnMatrix * normalTex.xyz));
 	#else
 		#define ReadTexture(tex) texture(tex, texCoord)
 
@@ -177,7 +177,7 @@ void main() {
 				vec3 normalTex = ReadTexture(normals).xyz;
 				DecodeNormalTex(normalTex);
 			#endif
-			gbufferOut0.w = packUnorm2x8(encodeUnitVector(tbnMatrix * normalTex));
+			gbufferOut0.w = Packup2x8U(encodeUnitVector(tbnMatrix * normalTex));
 		#endif
 	#endif
 
@@ -191,14 +191,14 @@ void main() {
 		albedoOut = vec3(1.0);
 	#endif
 
-	gbufferOut0.x = packUnorm2x8Dithered(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = float(materialID) * r255;
+	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	gbufferOut0.y = materialID;
 
-	gbufferOut0.z = packUnorm2x8(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = ReadTexture(specular);
 
-		gbufferOut1.x = packUnorm2x8(specularTex.rg);
-		gbufferOut1.y = packUnorm2x8(specularTex.ba);
+		gbufferOut1.x = Packup2x8(specularTex.rg);
+		gbufferOut1.y = Packup2x8(specularTex.ba);
 	#endif
 }

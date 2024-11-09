@@ -171,6 +171,39 @@ vec3 FromSphereMap(in vec2 coord) {
 	}
 #endif
 
+float Packup2x8(in vec2 data) {
+	return dot(floor(data * 255.0 + 0.5), vec2(256.0 / 65535.0, 1.0 / 65535.0));
+}
+
+float PackupDithered2x8(in vec2 data, in float dither) {
+	return dot(floor(data * 255.0 + dither), vec2(256.0 / 65535.0, 1.0 / 65535.0));
+}
+
+vec2 Unpack2x8(in float data) {
+	float x, y = modf(data * (65535.0 / 256.0), x) * 256.0;
+	return vec2(x, y) * r255;
+}
+
+float Packup2x8X(in float data) { return floor(data * (65535.0 / 256.0)) * r255; }
+float Packup2x8Y(in float data) { return fract(data * (65535.0 / 256.0)) * (256.0 * r255); }
+
+uint Packup2x8U(in vec2 data) {
+	uvec2 u = uvec2(data * 255.0 + 0.5);
+	return (u.x << 8) | u.y;
+}
+
+uint PackupDithered2x8U(in vec2 data, in float dither) {
+	uvec2 u = uvec2(data * 255.0 + dither);
+	return (u.x << 8) | u.y;
+}
+
+vec2 Unpack2x8U(in uint data) {
+	return vec2(float(data >> 8), float(data & 0xFF)) * r255;
+}
+
+float Unpack2x8UX(in uint data) { return float(data >> 8) * r255; }
+float Unpack2x8UY(in uint data) { return float(data & 0xFF) * r255; }
+
 // https://github.com/Jessie-LC/open-source-utility-code/blob/main/advanced/packing.glsl
 
 // Octahedral Unit Vector encoding
@@ -195,23 +228,6 @@ vec3 decodeUnitVector(in vec2 encoded) {
 	// Normalize and return
 	return normalize(vector);
 }
-
-float packUnorm2x8(in vec2 xy) {
-	return dot(floor(255.0 * xy + 0.5), vec2(1.0 / 65535.0, 256.0 / 65535.0));
-}
-
-float packUnorm2x8(in float x, in float y) { return packUnorm2x8(vec2(x, y)); }
-
-float packUnorm2x8Dithered(in vec2 xy, in float dither) {
-	return dot(floor(255.0 * xy + dither), vec2(1.0 / 65535.0, 256.0 / 65535.0));
-}
-
-vec2 unpackUnorm2x8(in float pack) {
-	vec2 xy; xy.x = modf(pack * 65535.0 / 256.0, xy.y);
-	return xy * vec2(256.0 * r255, r255);
-}
-float unpackUnorm2x8X(in float pack) { return fract(pack * 65535.0 / 256.0) * 256.0 / 255.0; }
-float unpackUnorm2x8Y(in float pack) { return floor(pack * 65535.0 / 256.0) / 255.0; }
 
 vec3 linearToSRGB(in vec3 color) {
 	return mix(color * 12.92, 1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055, lessThan(vec3(0.0031308), color));
