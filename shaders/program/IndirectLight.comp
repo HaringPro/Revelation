@@ -40,11 +40,11 @@ restrict writeonly uniform image2D colorimg3;
 #include "/lib/lighting/GlobalIllumination.glsl"
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = readDepth0(texel);
+    float depth = loadDepth0(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
-        float sampleDepth = readDepth0(sampleTexel);
+        float sampleDepth = loadDepth0(sampleTexel);
         depth = min(depth, sampleDepth);
     }
 
@@ -57,10 +57,10 @@ void main() {
 
     ivec2 currentTexel = screenTexel << 1;
 	float depth = GetClosestDepth(currentTexel);
-	// float depth = readDepth0(currentTexel);
+	// float depth = loadDepth0(currentTexel);
 
 	if (depth < 1.0) {
-		uvec4 gbufferData0 = readGbufferData0(currentTexel);
+		uvec4 gbufferData0 = loadGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
     	vec2 screenCoord = texelToUv(currentTexel);
@@ -75,7 +75,7 @@ void main() {
 		#else
 			vec2 lightmap = Unpack2x8U(gbufferData0.x);
 
-			// Shift the write position to avoid read-write conflict
+			// Shift the write position to avoid load-write conflict
 			imageStore(colorimg3, screenTexel + ivec2(int(viewWidth * 0.5), 0), vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
 		#endif
 	}

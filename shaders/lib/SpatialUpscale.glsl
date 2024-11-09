@@ -49,7 +49,7 @@
 
 		for (uint i = 0u; i < 5u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
-			float sampleDepth = ScreenToViewDepth(readDepth1(sampleTexel * 2));
+			float sampleDepth = ScreenToViewDepth(loadDepth1(sampleTexel * 2));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
 
 			sum.scattering += texelFetch(colortex11, sampleTexel, 0).rgb * weight;

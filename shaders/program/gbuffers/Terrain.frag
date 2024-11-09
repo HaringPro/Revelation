@@ -85,16 +85,16 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 		return mix(1.0 - fract(uv), fract(uv), mod(floor(uv), 2.0));
 	}
 
-	#define readAlbedo(uv) texture(tex, tileOffset + tileScale * serializeCoord(uv))
+	#define loadAlbedo(uv) texture(tex, tileOffset + tileScale * serializeCoord(uv))
 
 	vec3 AutoGenerateNormal() {
 		vec2 bias = (4.0 / AGN_RESOLUTION) / tileScale;
 
 		// Sample albedo
-		vec4 sampleR = readAlbedo(tileBase + vec2(bias.x, 0.0));
-		vec4 sampleL = readAlbedo(tileBase - vec2(bias.x, 0.0));
-		vec4 sampleU = readAlbedo(tileBase + vec2(0.0, bias.y));
-		vec4 sampleD = readAlbedo(tileBase - vec2(0.0, bias.y));
+		vec4 sampleR = loadAlbedo(tileBase + vec2(bias.x, 0.0));
+		vec4 sampleL = loadAlbedo(tileBase - vec2(bias.x, 0.0));
+		vec4 sampleU = loadAlbedo(tileBase + vec2(0.0, bias.y));
+		vec4 sampleD = loadAlbedo(tileBase - vec2(0.0, bias.y));
 
 		// Get heights from albedo luminance
 		float heightR = GetLuminance(sampleR.rgb * sampleR.a);

@@ -152,7 +152,7 @@ uniform mat4 shadowModelViewInverse;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = readDepth0(screenTexel);
+	float depth = loadDepth0(screenTexel);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 	vec3 screenPos = vec3(screenCoord, depth);
@@ -160,11 +160,11 @@ void main() {
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
-	uvec4 gbufferData0 = readGbufferData0(screenTexel);
+	uvec4 gbufferData0 = loadGbufferData0(screenTexel);
 
 	uint materialID = gbufferData0.y;
 
-	vec3 albedoRaw = readAlbedo(screenTexel);
+	vec3 albedoRaw = loadAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
 
 	if (depth > 0.999999 + materialID) {
@@ -206,7 +206,7 @@ void main() {
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		#ifdef SPECULAR_MAPPING
-			vec4 gbufferData1 = readGbufferData1(screenTexel);
+			vec4 gbufferData1 = loadGbufferData1(screenTexel);
 			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
@@ -241,7 +241,7 @@ void main() {
 			}
 		#endif
 		#if TEXTURE_FORMAT == 0 && SUBSURFACE_SCATTERING_MODE > 0 && defined SPECULAR_MAPPING
-			sssAmount = max(sssAmount, specularTex.b * step(64.5 / 255.0, specularTex.b));
+			sssAmount = max(sssAmount, specularTex.b * step(64.5 * r255, specularTex.b));
 		#endif
 
 		// Remap sss amount to [0, 1] range
@@ -330,7 +330,7 @@ void main() {
 						// Apply parallax shadows
 						#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
 							#if !defined SPECULAR_MAPPING
-								vec4 gbufferData1 = readGbufferData1(screenTexel);
+								vec4 gbufferData1 = loadGbufferData1(screenTexel);
 							#endif
 							shadow *= oneMinus(gbufferData1.z);
 						#endif
@@ -360,7 +360,7 @@ void main() {
 			// Apply parallax shadows
 			#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
 				#if !defined SPECULAR_MAPPING
-					vec4 gbufferData1 = readGbufferData1(screenTexel);
+					vec4 gbufferData1 = loadGbufferData1(screenTexel);
 				#endif
 				shadow *= oneMinus(gbufferData1.z);
 			#endif

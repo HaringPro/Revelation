@@ -44,11 +44,9 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 		float stepLength = rayLength * rSteps * UW_VOLUMETRIC_FOG_DENSITY;
 
-		vec3 shadowStart = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz),
-			 shadowEnd = WorldPosToShadowPos(worldDir * stepLength + gbufferModelViewInverse[3].xyz);
-
-		vec3 shadowStep = shadowEnd - shadowStart,
-			 shadowPosition = shadowStep * dither + shadowStart;
+		vec3 shadowStep = mat3(shadowModelView) * worldDir * stepLength;
+			 shadowStep = diagonal3(shadowProjection) * shadowStep;
+		vec3 shadowPos = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz) + shadowStep * dither;
 
 		vec3 stepTransmittance = fastExp(-waterExtinction * stepLength);
 		vec3 transmittance = vec3(1.0);
@@ -58,9 +56,9 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 		uint i = 0u;
 		while (++i < steps) {
-			shadowPosition += shadowStep;
+			shadowPos += shadowStep;
 
-			vec3 shadowScreenPos = DistortShadowSpace(shadowPosition) * 0.5 + 0.5;
+			vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 			if (saturate(shadowScreenPos) != shadowScreenPos) continue;
 
 			ivec2 shadowTexel = ivec2(shadowScreenPos.xy * realShadowMapRes);
@@ -72,7 +70,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 				sampleSunlight = step(shadowScreenPos.z, texelFetch(shadowtex1, shadowTexel, 0).xxx);
 
 				if (sampleSunlight.x != sampleDepth0) {
-					float waterDepth = abs(texelFetch(shadowcolor1, shadowTexel, 0).w * 512.0 - 128.0 - shadowPosition.y - eyeAltitude);
+					float waterDepth = abs(texelFetch(shadowcolor1, shadowTexel, 0).w * 512.0 - 128.0 - shadowPos.y - eyeAltitude);
 					if (waterDepth > 0.1) {
 						sampleSunlight = sqr(texelFetch(shadowcolor0, shadowTexel, 0).rgb * 2.0 - 1.0);
 					} else {

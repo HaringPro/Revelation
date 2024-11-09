@@ -136,10 +136,10 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 stepDensity = CalculateFogDensity(rayPos) + baseDensity;
-		stepDensity *= stepExp * rayLength;
+		vec2 stepFogmass = CalculateFogDensity(rayPos) + baseDensity;
+		stepFogmass *= stepExp * rayLength;
 
-		if (dot(stepDensity, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
+		if (dot(stepFogmass, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
 
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -167,14 +167,14 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
 
-		vec3 opticalDepth = fogExtinctionCoeff * stepDensity;
+		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
 		vec3 stepTransmittance = exp2(-opticalDepth);
 
 		vec3 stepScattering = transmittance * oneMinus(stepTransmittance) / maxEps(opticalDepth);
 		// stepScattering *= 2.0 * oneMinus(fastExp(-opticalDepth * 4.0)); // Powder Effect
 
-		scatteringSun += fogScatteringCoeff * (stepDensity * phase) * sampleShadow * stepScattering;
-		scatteringSky += fogScatteringCoeff * stepDensity * stepScattering;
+		scatteringSun += fogScatteringCoeff * (stepFogmass * phase) * sampleShadow * stepScattering;
+		scatteringSky += fogScatteringCoeff * stepFogmass * stepScattering;
 
 		transmittance *= stepTransmittance;
 
@@ -195,7 +195,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy * 2.0);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 screenPos = vec3(screenCoord, readDepth0(screenTexel));
+	vec3 screenPos = vec3(screenCoord, loadDepth0(screenTexel));
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;

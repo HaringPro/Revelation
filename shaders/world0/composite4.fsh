@@ -70,7 +70,7 @@ uniform sampler2D colortex12; // Volumetric Fog transmittance
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-	uvec4 gbufferData0 = readGbufferData0(screenTexel);
+	uvec4 gbufferData0 = loadGbufferData0(screenTexel);
 
 	uint materialID = gbufferData0.y;
 
@@ -90,7 +90,7 @@ void main() {
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
 
-	vec4 gbufferData1 = readGbufferData1(screenTexel);
+	vec4 gbufferData1 = loadGbufferData1(screenTexel);
 
 	vec2 refractedCoord = screenCoord;
 	ivec2 refractedTexel = screenTexel;
@@ -105,14 +105,14 @@ void main() {
 		#endif
 		refractedTexel = uvToTexel(refractedCoord);
 
-		depth = readDepth0(refractedTexel);
+		depth = loadDepth0(refractedTexel);
 
-		gbufferData0 = readGbufferData0(refractedTexel);
+		gbufferData0 = loadGbufferData0(refractedTexel);
 		viewPos = ScreenToViewSpace(vec3(refractedCoord, depth));
 		waterMask = gbufferData0.y == 3u || materialID == 3u;
 	}
 
-    sceneOut = readSceneColor(refractedTexel);
+    sceneOut = loadSceneColor(refractedTexel);
 	vec3 worldNormal = FetchWorldNormal(gbufferData0);
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
@@ -131,7 +131,7 @@ void main() {
 
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
-			float waterDepth = abs(viewPos.z + ScreenToViewDepth(readDepth1(refractedTexel)));
+			float waterDepth = abs(viewPos.z + ScreenToViewDepth(loadDepth1(refractedTexel)));
 			FogData waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
 			sceneOut = ApplyFog(sceneOut, waterFog);
 		}

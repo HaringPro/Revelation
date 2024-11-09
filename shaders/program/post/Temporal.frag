@@ -63,7 +63,7 @@ vec3 GetClosestFragment(in ivec2 texel, in float depth) {
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = offset3x3N[i] + texel;
-        float sampleDepth = readDepth0(sampleTexel);
+        float sampleDepth = loadDepth0(sampleTexel);
         closestFragment = sampleDepth < closestFragment.z ? vec3(sampleTexel, sampleDepth) : closestFragment;
     }
 
@@ -160,7 +160,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     ivec2 texel = uvToTexel(screenCoord + taaOffset * 0.5);
 
-    vec3 currentSample = readSceneColor(texel);
+    vec3 currentSample = loadSceneColor(texel);
     vec2 prevCoord = screenCoord - motionVector;
 
     if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 0.0);
@@ -218,7 +218,7 @@ void main() {
 
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    float depth = readDepth0(screenTexel);
+    float depth = loadDepth0(screenTexel);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
     #ifdef TAA_CLOSEST_FRAGMENT
@@ -235,6 +235,6 @@ void main() {
     #ifdef TAA_ENABLED
         temporalOut = CalculateTAA(screenCoord, motionVector);
     #else
-        temporalOut = vec4(readSceneColor(screenTexel), 1.0/*  + texture(colortex1, screenCoord - motionVector).a */);
+        temporalOut = vec4(loadSceneColor(screenTexel), 1.0/*  + texture(colortex1, screenCoord - motionVector).a */);
     #endif
 }

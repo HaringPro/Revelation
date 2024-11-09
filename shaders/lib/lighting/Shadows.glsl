@@ -135,7 +135,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
         if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
         if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 
-		float sampleDepth = readDepth0(ivec2(rayPos.xy));
+		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
 
 		if (sampleDepth < rayPos.z) {
 			float sampleDepthLinear = LinearizeDepth(sampleDepth);

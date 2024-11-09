@@ -1,6 +1,6 @@
 
 vec3 ScreenToViewSpace(in vec2 screenCoord) {
-	vec3 NDCPos = vec3(screenCoord, readDepth0(uvToTexel(screenCoord))) * 2.0 - 1.0;
+	vec3 NDCPos = vec3(screenCoord, loadDepth0(uvToTexel(screenCoord))) * 2.0 - 1.0;
 	#ifdef TAA_ENABLED
 		NDCPos.xy -= taaOffset;
 	#endif

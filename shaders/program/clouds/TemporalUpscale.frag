@@ -177,7 +177,7 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	float depth = readDepth0(screenTexel);
+	float depth = loadDepth0(screenTexel);
 	dataOut = uvec2(0u);
 
 	if (depth > 0.999999) {

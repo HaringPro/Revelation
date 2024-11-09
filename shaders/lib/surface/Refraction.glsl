@@ -30,7 +30,7 @@ vec2 CalculateRefractedCoord(in bool waterMask, in vec3 viewPos, in vec3 viewNor
 	rayPos.xy = mix(rayPos.xy, screenPos.xy, curve(edgeFade));
 
 	rayPos.xy = saturate(rayPos.xy);
-	float refractedDepth = readDepth1(uvToTexel(rayPos.xy));
+	float refractedDepth = loadDepth1(uvToTexel(rayPos.xy));
 	return refractedDepth < screenPos.z ? screenPos.xy : rayPos.xy;
 }
 
@@ -53,7 +53,7 @@ vec2 CalculateRefractedCoord(in bool waterMask, in vec3 viewPos, in vec3 viewNor
 	}
 
 	refractedCoord = saturate(refractedCoord);
-	float refractedDepth = readDepth1(uvToTexel(refractedCoord));
+	float refractedDepth = loadDepth1(uvToTexel(refractedCoord));
 	return refractedDepth < screenPos.z ? screenPos.xy : refractedCoord;
 }
 

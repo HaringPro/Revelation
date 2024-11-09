@@ -98,15 +98,43 @@ float sampleDepthMin4x4(in vec2 coord) {
 }
 
 float GetClosestDepth(in ivec2 texel) {
-    float depth = readDepth0(texel);
+    float depth = loadDepth0(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
-        float sampleDepth = readDepth0(sampleTexel);
+        float sampleDepth = loadDepth0(sampleTexel);
         depth = min(depth, sampleDepth);
     }
 
     return depth;
+}
+
+vec3 SpatialColor(in ivec2 texel, in vec3 worldNormal) {
+    const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
+
+    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
+    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+
+    float sumWeight = kernel[0][0];
+    vec3 indirectData = texelFetch(RSM_SAMPLER, texel, 0).rgb * sumWeight;
+
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            if (x == 0 && y == 0) continue;
+
+            ivec2 sampleTexel = clamp(texel + (ivec2(x, y) << 1), ivec2(0), halfResBorder);
+            vec3 sampleColor = texelFetch(RSM_SAMPLER, sampleTexel, 0).rgb;
+            vec3 sampleNormal = FetchWorldNormal(loadGbufferData0(sampleTexel << 1));
+
+            float weight = kernel[abs(x)][abs(y)];
+            weight *= pow16(max0(dot(sampleNormal, worldNormal)));
+
+            indirectData += sampleColor * weight;
+            sumWeight += weight;
+        }
+    }
+
+    return indirectData * rcp(sumWeight);
 }
 
 //======// Main //================================================================================//
@@ -117,19 +145,18 @@ void main() {
         ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
         if (currentCoord.x < 1.0) {
+            ivec2 currentTexel = screenTexel << 1;
             // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
-            float depth = sampleDepthMin4x4(currentCoord);
+            float depth = loadDepth0(currentTexel);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = screenTexel << 1;
                 // currentTexel = ivec2(closestFragment.xy * viewSize);
-                vec3 worldNormal = FetchWorldNormal(readGbufferData0(currentTexel));
+                vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
 
                 vec3 screenPos = vec3(currentCoord, depth);
                 vec3 viewPos = ScreenToViewSpace(screenPos);
 
-                indirectHistory.rgb = texelFetch(RSM_SAMPLER, screenTexel, 0).rgb;
-                indirectHistory.rgb = clamp16f(indirectHistory.rgb);
+                indirectHistory.rgb = SpatialColor(screenTexel, worldNormal);
 
                 vec2 prevCoord = Reproject(screenPos).xy;
 		        if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
@@ -139,11 +166,11 @@ void main() {
             }
         } else {
             currentCoord -= vec2(1.0, 0.0);
-            float depth = sampleDepthMin4x4(currentCoord);
+            ivec2 currentTexel = (screenTexel << 1) - ivec2(int(viewWidth), 0);
+            float depth = loadDepth0(currentTexel);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = (screenTexel << 1) - ivec2(int(viewWidth), 0);
-                vec3 worldNormal = FetchWorldNormal(readGbufferData0(currentTexel));
+                vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
                 float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
 
                 indirectHistory = vec4(worldNormal, viewDistance);

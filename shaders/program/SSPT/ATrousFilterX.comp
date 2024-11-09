@@ -111,7 +111,7 @@ void main() {
 	SharedPreload();
 
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-	float depth = readDepth0(texel << 1);
+	float depth = loadDepth0(texel << 1);
 	if (depth < 1.0) {
 		ivec2 shiftX = ivec2(int(viewSize.x) >> 1, 0);
         ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;

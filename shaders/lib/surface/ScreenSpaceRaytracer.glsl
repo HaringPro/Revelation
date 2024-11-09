@@ -37,7 +37,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
             if (rayPos.z >= 1.0) break;
         #endif
 
-        float sampleDepth = readDepth1(ivec2(rayPos.xy));
+        float sampleDepth = loadDepth1(ivec2(rayPos.xy));
 		float difference = rayPos.z - sampleDepth;
 
         if (clamp(difference, 0.0, diffTolerance) == difference) {
@@ -56,7 +56,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         for (uint i = 0u; i < RAYTRACE_REFINEMENT_STEPS; ++i) {
             rayStep *= 0.5;
 
-            float sampleDepth = readDepth1(ivec2(rayPos.xy));
+            float sampleDepth = loadDepth1(ivec2(rayPos.xy));
 
             rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
         }

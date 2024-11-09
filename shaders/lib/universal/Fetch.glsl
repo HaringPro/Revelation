@@ -1,11 +1,11 @@
 
 float FetchDepthFix(in ivec2 texel) {
-	float depth = readDepth0(texel);
+	float depth = loadDepth0(texel);
 	return depth + 0.38 * step(depth, 0.56);
 }
 
 float FetchDepthSoildFix(in ivec2 texel) {
-	float depth = readDepth1(texel);
+	float depth = loadDepth1(texel);
 	return depth + 0.38 * step(depth, 0.56);
 }
 
@@ -22,9 +22,9 @@ vec3 FetchWorldNormal(in uvec4 data) {
 }
 
 float FetchLinearDepth(in ivec2 texel) {
-    return (near * far) / (readDepth0(texel) * (near - far) + far);
+    return (near * far) / (loadDepth0(texel) * (near - far) + far);
 }
 
 float FetchLinearDepthSolid(in ivec2 texel) {
-    return (near * far) / (readDepth1(texel) * (near - far) + far);
+    return (near * far) / (loadDepth1(texel) * (near - far) + far);
 }
