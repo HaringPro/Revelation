@@ -91,7 +91,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
-mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
+FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 	const uint steps = VOLUMETRIC_FOG_SAMPLES;
 	const float rSteps = 1.0 / float(steps);
 
@@ -117,8 +117,9 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.5) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.85) * 0.1, RayleighPhase(LdotV));
-	float baseDensity = 9.0 / far;
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.6) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.9) * 0.1, RayleighPhase(LdotV));
+	phase.x = mix(isotropicPhase, phase.x, 0.6);
+	float baseDensity = 6.0 / far;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
@@ -184,7 +185,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 0.5, wetness * 0.4 + 0.2);
 	scattering *= eyeSkylightSmooth;
 
-	return mat2x3(scattering, transmittance);
+	return FogData(scattering, transmittance);
 }
 
 #include "/lib/water/WaterFog.glsl"
@@ -201,7 +202,7 @@ void main() {
 
 	float dither = BlueNoiseTemporal(screenTexel);
 
-	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
+	FogData volFogData = FogData(vec3(0.0), vec3(1.0));
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
@@ -214,8 +215,8 @@ void main() {
 		}
 	#endif
 
-	scatteringOut = volFogData[0];
-	transmittanceOut = volFogData[1];
+	scatteringOut = volFogData.scattering;
+	transmittanceOut = volFogData.transmittance;
 
 	// Apply bayer dithering to reduce banding artifacts
 	transmittanceOut += (dither - 0.5) * r255;

@@ -4,7 +4,7 @@ const vec3 waterExtinction = 1e-2 + waterAbsorption;
 
 //================================================================================================//
 
-mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV) {
+FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV) {
 	float fogDensity = WATER_FOG_DENSITY * max(waterDepth, 1.0);
 
 	vec3 transmittance = fastExp(-waterExtinction * fogDensity);
@@ -16,7 +16,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 	scattering += 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 	scattering *= oneMinus(transmittance) * skylight / waterExtinction;
 
-	return mat2x3(scattering, transmittance);
+	return FogData(scattering, transmittance);
 }
 
 //================================================================================================//
@@ -30,7 +30,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		return dir * eta - normal * (sqrt(k) + NdotD * eta);
 	}
 
-	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
+	FogData UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
 		float rayLength = dotSelf(worldPos);
 		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, far);
@@ -98,6 +98,6 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		scattering += scatteringSky * 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 		scattering *= oneMinus(stepTransmittance) / waterExtinction;
 
-		return mat2x3(scattering, transmittance);
+		return FogData(scattering, transmittance);
 	}
 #endif

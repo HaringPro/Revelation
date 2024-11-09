@@ -55,7 +55,7 @@ const float minCloudAbsorption	  = 0.02;
 	#define BLINDNESS_DARKNESS_FOG // Enables blindness & darkness fog
 
 	#define VOLUMETRIC_FOG // Enables volumetric fog
-	#define VOLUMETRIC_FOG_SAMPLES 10 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
+	#define VOLUMETRIC_FOG_SAMPLES 12 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
 	#define VOLUMETRIC_FOG_QUALITY 0 // [0 1]
 
 	// #define COLORED_VOLUMETRIC_FOG // Enables volumetric fog stained glass tint

@@ -35,7 +35,7 @@
 
 #if defined PROGRAM_COMPOSITE_4
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
-	mat2x3 VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
+	FogData VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
 		ivec2 bias = ivec2(coord + frameCounter) % 2;
 		ivec2 texel = ivec2(coord * 0.5) + bias * 2 - 1;
 
@@ -44,7 +44,7 @@
 		);
 
 		float sigmaZ = 64.0 / linearDepth;
-		mat2x3 sum = mat2x3(0.0);
+		FogData sum = FogData(vec3(0.0), vec3(0.0));
 		float sumWeight = 0.0;
 
 		for (uint i = 0u; i < 5u; ++i) {
@@ -52,12 +52,16 @@
 			float sampleDepth = ScreenToViewDepth(readDepth1(sampleTexel * 2));
 			float weight = maxEps(exp2(-abs(sampleDepth - linearDepth) * sigmaZ));
 
-			sum[0] += texelFetch(colortex11, sampleTexel, 0).rgb * weight;
-			sum[1] += texelFetch(colortex12, sampleTexel, 0).rgb * weight;
+			sum.scattering += texelFetch(colortex11, sampleTexel, 0).rgb * weight;
+			sum.transmittance += texelFetch(colortex12, sampleTexel, 0).rgb * weight;
 			sumWeight += weight;
 		}
 
-		return sum * rcp(sumWeight);
+		float rSumWeight = rcp(sumWeight);
+		sum.scattering *= rSumWeight;
+		sum.transmittance *= rSumWeight;
+
+		return sum;
 	}
 #endif
 #endif

@@ -345,6 +345,13 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
 }
 */
 
+struct FogData {
+	vec3 scattering;
+	vec3 transmittance;
+};
+
+#define ApplyFog(scene, fog) ((scene) * fog.transmittance + fog.scattering)
+
 //================================================================================================//
 
 #define COMBINED_TEXTURE_SAMPLER 	colortex0

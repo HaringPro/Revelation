@@ -132,8 +132,8 @@ void main() {
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
 			float waterDepth = abs(viewPos.z + ScreenToViewDepth(readDepth1(refractedTexel)));
-			mat2x3 waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
-			sceneOut = sceneOut * waterFog[1] + waterFog[0];
+			FogData waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
+			sceneOut = ApplyFog(sceneOut, waterFog);
 		}
 
 		if (waterMask) { // Water
@@ -189,21 +189,21 @@ void main() {
 	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
-			sceneOut = sceneOut * volFogData[1] + volFogData[0];
-			bloomyFogTrans = dot(volFogData[1], vec3(0.333333));
+			FogData volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
+			sceneOut = ApplyFog(sceneOut, volFogData);
+			bloomyFogTrans = dot(volFogData.transmittance, vec3(0.333333));
 		}
 	#endif
 
 	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
-			mat2x3 waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
+			FogData waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
 		#else
-			mat2x3 waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
+			FogData waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif
-		sceneOut = sceneOut * waterFog[1] + waterFog[0];
-		bloomyFogTrans = dot(waterFog[1], vec3(0.333333));
+		sceneOut = ApplyFog(sceneOut, waterFog);
+		bloomyFogTrans = dot(waterFog.transmittance, vec3(0.333333));
 	}
 
 	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);
