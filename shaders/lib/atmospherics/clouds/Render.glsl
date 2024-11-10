@@ -52,12 +52,12 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
         // opticalDepth += density;
     }
 
-    return opticalDepth * cumulusExtinction;
+    return opticalDepth * (cumulusExtinction * 0.1);
 }
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 6e-2;
+    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 0.08;
 }
 
 float CloudPowderEffect(in float depth, in float height, in float factor) {
@@ -121,8 +121,8 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		opticalDepth *= rLOG2;
 
 		// Compute skylight multi-scattering
-		float scatteringSky = exp2(-opticalDepth * 0.2);
-		scatteringSky += 0.2 * exp2(-opticalDepth * 0.04);
+		float scatteringSky = 2.0 * exp2(-opticalDepth * 0.2);
+		scatteringSky += 0.4 * exp2(-opticalDepth * 0.04);
 
 		// Compute powder effect
 		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
@@ -207,8 +207,8 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		opticalDepth *= rLOG2;
 
 		// Compute skylight multi-scattering
-		float scatteringSky = exp2(-opticalDepth * 0.2);
-		scatteringSky += 0.2 * exp2(-opticalDepth * 0.04);
+		float scatteringSky = 2.0 * exp2(-opticalDepth * 0.2);
+		scatteringSky += 0.4 * exp2(-opticalDepth * 0.04);
 
 		// Compute powder effect
 		float powder = 2.0 * fastExp(-density * 22.0) * oneMinus(fastExp(-density * 44.0));
@@ -338,7 +338,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute the optical depth of skylight through clouds
 					float opticalDepthSky = CloudVolumeSkylightOD(rayPos, lightNoise.y) * rLOG2;
-					float scatteringSky = exp2(-opticalDepthSky * 0.5) + exp2(-opticalDepthSky * 0.1) * 0.2;
+					float scatteringSky = 2.0 * exp2(-opticalDepthSky) + 0.4 * exp2(-opticalDepthSky * 0.2);
 
 					// Compute the optical depth of ground light through clouds
 					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);

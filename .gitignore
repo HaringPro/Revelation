@@ -1,6 +1,9 @@
 # shaders/lib/voxel
 # shadow.gsh
 
+PerlinWorley_Worley3d_256x.dat
+PerlinWorley_Worley3d_256x.dat.mcmeta
+
 shaders/lang
 Accumulate.comp
 SpatialUpscale.comp
