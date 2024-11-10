@@ -11,6 +11,10 @@
 --------------------------------------------------------------------------------
 */
 
+#ifndef COMPUTE_SHADER
+#define COMPUTE_SHADER
+#endif
+
 layout (local_size_x = 16, local_size_y = 16) in;
 
 const vec2 workGroupsRender = vec2(1.0f, 1.0f);

@@ -17,7 +17,7 @@ out vec3 viewPos;
 in vec3 vaPosition;
 in vec4 vaColor;
 in vec2 vaUV0;
-in ivec2 vaUV2;
+
 in vec3 vaNormal;
 
 #ifndef MC_GL_VENDOR_INTEL

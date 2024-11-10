@@ -12,6 +12,10 @@
 
 #include "/settings.glsl"
 
+#ifndef COMPUTE_SHADER
+	in ivec2 vaUV2;
+#endif
+
 const float PI 			= 3.14159265359;
 const float hPI 		= 1.57079632679;
 const float rPI 		= 0.31830988618;
