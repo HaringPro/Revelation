@@ -18,7 +18,7 @@ out vec2 lightmap;
 
 in vec3 vaPosition;
 in vec4 vaColor;
-in ivec2 vaUV2;
+
 in vec3 vaNormal;
 
 //======// Uniform //=============================================================================//
