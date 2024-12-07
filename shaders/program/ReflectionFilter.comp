@@ -75,13 +75,10 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 
     float offsetScale = filterSize * exp2(-oneMinus(reflectionData.a) * smoothness);
 
-	const vec2 angle = cossin(hPI);
-	const mat2 rotND = mat2(angle, -angle.y, angle.x);
-
     // Calculate kernel basis
     vec3 reflectedDir = reflect(-worldDir, worldNormal);
     vec2 tangent = normalize(cross(worldNormal, reflectedDir).xy) * offsetScale;
-    vec2 bitangent = tangent * rotND; // Cross product with tangent to get bitangent
+    vec2 bitangent = vec2(tangent.y, -tangent.x);
 
     float skewFactor = mix(1.0, roughness, approxSqrt(1.0 - NdotV));
     tangent *= skewFactor;
