@@ -157,7 +157,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 	vec3 sum = vec3(0.0);
 	const float f0 = 0.02;
 
-	ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
+	ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
 
 	#if SSPT_BOUNCES > 1 && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
 	// Multiple bounce tracing.
@@ -181,7 +181,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			if (target.rayPos.z < 1.0) {
 				ivec2 targetTexel = ivec2(target.rayPos.xy);
-				vec3 sampleLight = texelFetch(colortex4, (targetTexel >> 1) + shiftX, 0).rgb;
+				vec3 sampleLight = texelFetch(colortex4, (targetTexel >> 1) + offsetToBR, 0).rgb;
 
 				target.worldNormal = FetchWorldNormal(loadGbufferData0(targetTexel));
 				target.viewNormal = mat3(gbufferModelView) * target.worldNormal;;
@@ -227,7 +227,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				#ifdef SSPT_TEMPORAL_INFINITE_BOUNCES
 					vec3 sampleLight = texelFetch(colortex4, ivec2(hitPos.xy) >> 1, 0).rgb * step(0.56, screenPos.z);
 				#else
-					vec3 sampleLight = texelFetch(colortex4, (ivec2(hitPos.xy) >> 1) + shiftX, 0).rgb;
+					vec3 sampleLight = texelFetch(colortex4, (ivec2(hitPos.xy) >> 1) + offsetToBR, 0).rgb;
 				#endif
 
 				hitPos.xy *= viewPixelSize;

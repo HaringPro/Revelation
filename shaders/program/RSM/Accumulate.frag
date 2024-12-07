@@ -60,13 +60,13 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
         fractTexel.x           * fractTexel.y
     };
 
-    ivec2 shiftX = ivec2(int(viewWidth) >> 1, 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+	ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+    ivec2 texelEnd = ivec2(halfViewEnd);
 
     for (uint i = 0u; i < 4u; ++i) {
         ivec2 sampleTexel = floorTexel + offset2x2[i];
-        if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
-            vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+        if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
+            vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
             float diffZ = abs((currViewDistance - prevData.w) - cameraVelocity) / abs(currViewDistance);
             float diffN = dot(prevData.xyz, worldNormal);
@@ -113,8 +113,8 @@ float GetClosestDepth(in ivec2 texel) {
 vec3 SpatialCurrent(in ivec2 texel, in vec3 worldNormal) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+	ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+    ivec2 texelEnd = ivec2(halfViewEnd);
 
     float sumWeight = kernel[0][0];
     vec3 indirectData = texelFetch(colortex3, texel, 0).rgb * sumWeight;
@@ -123,7 +123,7 @@ vec3 SpatialCurrent(in ivec2 texel, in vec3 worldNormal) {
         for (int y = -1; y <= 1; ++y) {
             if (x == 0 && y == 0) continue;
 
-            ivec2 sampleTexel = clamp(texel + (ivec2(x, y) << 1), ivec2(0), halfResBorder);
+            ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), texelEnd);
             vec3 sampleColor = texelFetch(colortex3, sampleTexel, 0).rgb;
             vec3 sampleNormal = FetchWorldNormal(loadGbufferData0(sampleTexel << 1));
 

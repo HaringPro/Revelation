@@ -46,7 +46,7 @@ uniform vec2 prevTaaOffset;
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 halfResBorder = ivec2(viewSize * 0.5) - 2;
+    ivec2 texelEnd = ivec2(halfViewEnd);
 
     float sqLuma = luma * luma;
     luma *= kernel[0][0], sqLuma *= kernel[0][0];
@@ -55,7 +55,7 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
         for (int y = -1; y <= 1; ++y) {
             if (x == 0 && y == 0) continue;
 
-            ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), halfResBorder);
+            ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), texelEnd);
             float weight = kernel[abs(x)][abs(y)];
             float sampleLuma = GetLuminance(texelFetch(colortex3, sampleTexel, 0).rgb);
 
@@ -74,7 +74,7 @@ vec4 SpatialCurrent(in ivec2 texel) {
                          1.0 / 64.0,    1.0 / 16.0,     3.0 / 32.0,     1.0 / 16.0, 1.0 / 64.0,
                          1.0 / 256.0,   1.0 / 64.0,     3.0 / 128.0,    1.0 / 64.0, 1.0 / 256.0};
 
-    ivec2 halfResBorder = ivec2(viewSize * 0.5) - 2;
+    ivec2 texelEnd = ivec2(halfViewEnd);
 
     vec3 filteredColor = texelFetch(colortex3, texel, 0).rgb;
 
@@ -83,7 +83,7 @@ vec4 SpatialCurrent(in ivec2 texel) {
     filteredColor *= 9.0 / 64.0;
 
     for (uint i = 0u; i < 24u; ++i) {
-        ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(1), halfResBorder);
+        ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), texelEnd);
         vec3 currentColor = texelFetch(colortex3, sampleTexel, 0).rgb;
 
         float weight = h[i];
@@ -120,13 +120,13 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
         fractTexel.x           * fractTexel.y
     };
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+    ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+    ivec2 texelEnd = ivec2(halfViewEnd);
 
     for (uint i = 0u; i < 4u; ++i) {
         ivec2 sampleTexel = floorTexel + offset2x2[i];
-        if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
-            vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+        if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
+            vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
             float diffZ = abs((currViewDistance - prevData.w) - cameraVelocity) / abs(currViewDistance);
             float diffN = dot(prevData.xyz, worldNormal);
@@ -146,7 +146,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
         indirectCurrent.rgb = texelFetch(colortex3, screenTexel, 0).rgb;
-        // indirectCurrent.rgb = textureSmoothFilter(colortex3, vec2(screenTexel + shiftX) * viewPixelSize).rgb;
+        // indirectCurrent.rgb = textureSmoothFilter(colortex3, vec2(screenTexel + offsetToBR) * viewPixelSize).rgb;
 
         indirectHistory.a = min(++prevLight.a, SSPT_MAX_BLENDED_FRAMES);
         float alpha = rcp(indirectHistory.a + 1.0);

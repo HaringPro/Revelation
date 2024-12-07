@@ -7,14 +7,14 @@
 		float centerLuma = GetLuminance(sum);
 		sum *= sumWeight;
 
-		ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-        ivec2 halfResBorder = ivec2(viewSize * 0.5) - 1;
+		ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+        ivec2 texelEnd = ivec2(halfViewEnd);
 
 		for (uint i = 0u; i < 24u; ++i) {
-			ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), halfResBorder);
+			ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), texelEnd);
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
 
-			vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+			vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
 			float weight = sqr(pow16(max0(dot(prevData.rgb, worldNormal))));
 			weight *= exp2(-distance(prevData.a, viewDistance) * 2.0 * NdotV);

@@ -35,6 +35,8 @@ uniform sampler2D depthtex0;
 uniform mat4 gbufferProjectionInverse;
 
 uniform vec2 viewSize;
+uniform vec2 halfViewSize;
+uniform vec2 halfViewEnd;
 
 uniform int frameCounter;
 
@@ -121,10 +123,10 @@ void main() {
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 	float depth = loadDepth0(texel << 1);
 	if (depth < 1.0) {
-		ivec2 shiftX = ivec2(int(viewSize.x) >> 1, 0);
-        ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1;
+		ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+        ivec2 texelEnd = ivec2(halfViewEnd);
 
-		vec4 normalDepthData = texelFetch(colortex13, texel + shiftX, 0);
+		vec4 normalDepthData = texelFetch(colortex13, texel + offsetToBR, 0);
 		// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 
 		const ivec2 offset[8] = {
@@ -167,8 +169,8 @@ void main() {
 		const float sigmaZ = -rLOG2 * inversesqrt(float(ATROUS_FILTER_SIZE));
 
 		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(0), halfResBorder);
-			vec4 sampleData = texelFetch(colortex13, sampleTexel + shiftX, 0);
+			ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(0), texelEnd);
+			vec4 sampleData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
 			vec4 sampleLight = imageLoad(colorimg3, sampleTexel);
 			float sampleLuma = GetLuminance(sampleLight.rgb);

@@ -89,6 +89,8 @@ uniform float eyeSkylightSmooth;
 
 uniform vec2 viewPixelSize;
 uniform vec2 viewSize;
+uniform vec2 halfViewSize;
+uniform vec2 halfViewEnd;
 uniform vec2 taaOffset;
 
 uniform vec3 cameraPosition;
