@@ -118,8 +118,7 @@ void main() {
         vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
         vec3 viewDir = ScreenToViewVectorRaw(screenCoord * 2.0);
         vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
-        float NdotV = saturate(dot(normalDepthData.xyz, -worldDir));
-        NdotV *= 4.0 * rLOG2;
+        float sigmaZ = -4.0 * rLOG2 * saturate(dot(normalDepthData.xyz, -worldDir));
 
         float sumWeight = 1.0;
         sharedTexel += ivec2(2.0 * (RandNext2F() - 0.5));
@@ -129,8 +128,8 @@ void main() {
             vec4 sampleData = sharedData[sampleSharedTexel.x][sampleSharedTexel.y];
 
             float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
-            weight *= exp2(-abs(sampleData.w - normalDepthData.w) * NdotV); // Distance weight
-            weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
+            weight *= exp2(abs(sampleData.w - normalDepthData.w) * sigmaZ); // Distance weight
+            weight *= pow32(saturate(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
 
             vec3 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
 

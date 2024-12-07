@@ -13,8 +13,7 @@
 --------------------------------------------------------------------------------
 */
 
-#define SSPT_SAMPLER colortex3
-#define SSPT_MAX_BLENDED_FRAMES 160.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+#define SSPT_MAX_BLENDED_FRAMES 128.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 //======// Utility //=============================================================================//
 
@@ -47,10 +46,7 @@ uniform vec2 prevTaaOffset;
 float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
-
-    texel += shiftX;
+    ivec2 halfResBorder = ivec2(viewSize * 0.5) - 2;
 
     float sqLuma = luma * luma;
     luma *= kernel[0][0], sqLuma *= kernel[0][0];
@@ -59,9 +55,9 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
         for (int y = -1; y <= 1; ++y) {
             if (x == 0 && y == 0) continue;
 
-            ivec2 sampleTexel = clamp(texel + (ivec2(x, y) << 1), shiftX, halfResBorder);
+            ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), halfResBorder);
             float weight = kernel[abs(x)][abs(y)];
-            float sampleLuma = GetLuminance(texelFetch(SSPT_SAMPLER, sampleTexel, 0).rgb);
+            float sampleLuma = GetLuminance(texelFetch(colortex3, sampleTexel, 0).rgb);
 
             luma   += sampleLuma * weight;
             sqLuma += sampleLuma * sampleLuma * weight;
@@ -70,65 +66,40 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
     return abs(sqLuma - luma * luma);
 }
 
-vec4 SpatialColor(in ivec2 texel) {
-    const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
+vec4 SpatialCurrent(in ivec2 texel) {
+    // const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
+    const float h[24] = {1.0 / 256.0,   1.0 / 64.0,     3.0 / 128.0,    1.0 / 64.0, 1.0 / 256.0,
+                         1.0 / 64.0,    1.0 / 16.0,     3.0 / 32.0,     1.0 / 16.0, 1.0 / 64.0,
+                         3.0 / 128.0,   3.0 / 32.0,  /* 9.0 / 64.0 */   3.0 / 32.0, 3.0 / 128.0,
+                         1.0 / 64.0,    1.0 / 16.0,     3.0 / 32.0,     1.0 / 16.0, 1.0 / 64.0,
+                         1.0 / 256.0,   1.0 / 64.0,     3.0 / 128.0,    1.0 / 64.0, 1.0 / 256.0};
 
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
+    ivec2 halfResBorder = ivec2(viewSize * 0.5) - 2;
 
-    texel += shiftX;
-    vec3 indirectData = texelFetch(SSPT_SAMPLER, texel, 0).rgb;
+    vec3 filteredColor = texelFetch(colortex3, texel, 0).rgb;
 
-    float luma = GetLuminance(indirectData), sqLuma = luma * luma;
-    indirectData *= kernel[0][0];
-    luma *= kernel[0][0], sqLuma *= kernel[0][0];
+    // float luma = GetLuminance(filteredColor), sqLuma = luma * luma, maxLuma = luma;
+    float maxLuma = GetLuminance(filteredColor);
+    filteredColor *= 9.0 / 64.0;
 
-    for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
-            if (x == 0 && y == 0) continue;
+    for (uint i = 0u; i < 24u; ++i) {
+        ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(1), halfResBorder);
+        vec3 currentColor = texelFetch(colortex3, sampleTexel, 0).rgb;
 
-            ivec2 sampleTexel = clamp(texel + (ivec2(x, y) << 1), shiftX, halfResBorder);
-            vec3 currentColor = texelFetch(SSPT_SAMPLER, sampleTexel, 0).rgb;
+        float weight = h[i];
+        float sampleLuma = GetLuminance(currentColor);
+        maxLuma = max(maxLuma, sampleLuma);
 
-            float weight = kernel[abs(x)][abs(y)];
-            float sampleLuma = GetLuminance(currentColor);
-
-            indirectData += currentColor * weight;
-            luma   += sampleLuma * weight;
-            sqLuma += sampleLuma * sampleLuma * weight;
-        }
+        filteredColor += currentColor * weight;
+        // luma   += sampleLuma;
+        // sqLuma += sampleLuma * sampleLuma;
     }
 
-    momentsHistory = vec2(luma, sqLuma);
-    return vec4(indirectData, abs(sqLuma - luma * luma));
+    // momentsHistory = vec2(luma, sqLuma) * rcp(25.0);
+    return vec4(filteredColor, maxLuma);
 }
 
-vec3 SpatialCurrent(in ivec2 texel) {
-    const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
-
-    ivec2 shiftX = ivec2(int(viewWidth * 0.5), 0);
-    ivec2 halfResBorder = (ivec2(viewSize) >> 1) - 1 + shiftX;
-
-    texel += shiftX;
-    vec3 indirectData = texelFetch(SSPT_SAMPLER, texel, 0).rgb;
-    indirectData *= kernel[0][0];
-
-    for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
-            if (x == 0 && y == 0) continue;
-
-            ivec2 sampleTexel = clamp(texel + ivec2(x, y), shiftX, halfResBorder);
-            vec3 currentColor = texelFetch(SSPT_SAMPLER, sampleTexel, 0).rgb;
-
-            float weight = kernel[abs(x)][abs(y)];
-
-            indirectData += currentColor * weight;
-        }
-    }
-    return indirectData;
-}
-
-void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
+void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in vec3 worldNormal) {
     vec4 prevLight = vec4(0.0);
     vec2 prevMoments = vec2(0.0);
     float sumWeight = 0.0;
@@ -137,12 +108,12 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
 
     prevCoord += (prevTaaOffset - taaOffset) * 0.25;
 
-    // Bilinear filter
+    // Custom bilinear filter
     vec2 prevTexel = prevCoord * 0.5 * viewSize - vec2(0.5);
     ivec2 floorTexel = ivec2(floor(prevTexel));
     vec2 fractTexel = fract(prevTexel - floorTexel);
 
-    float weight[4] = {
+    float bilinearWeight[4] = {
         oneMinus(fractTexel.x) * oneMinus(fractTexel.y),
         fractTexel.x           * oneMinus(fractTexel.y),
         oneMinus(fractTexel.x) * fractTexel.y,
@@ -157,8 +128,10 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         if (clamp(sampleTexel, ivec2(0), halfResBorder) == sampleTexel) {
             vec4 prevData = texelFetch(colortex13, sampleTexel + shiftX, 0);
 
-            if ((abs(currViewDistance - prevData.w) - cameraVelocity) < 0.1 * currViewDistance) {
-                float weight = weight[i];
+            float diffZ = abs((currViewDistance - prevData.w) - cameraVelocity) / abs(currViewDistance);
+            float diffN = dot(prevData.xyz, worldNormal);
+            if (diffZ < 0.1 && diffN > 0.5) {
+                float weight = bilinearWeight[i];
 
                 prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
                 prevMoments += texelFetch(colortex14, sampleTexel, 0).xy * weight;
@@ -172,8 +145,8 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         prevMoments /= sumWeight;
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
-        indirectCurrent.rgb = texelFetch(SSPT_SAMPLER, screenTexel + shiftX, 0).rgb;
-        // indirectCurrent.rgb = textureSmoothFilter(SSPT_SAMPLER, vec2(screenTexel + shiftX) * viewPixelSize).rgb;
+        indirectCurrent.rgb = texelFetch(colortex3, screenTexel, 0).rgb;
+        // indirectCurrent.rgb = textureSmoothFilter(colortex3, vec2(screenTexel + shiftX) * viewPixelSize).rgb;
 
         indirectHistory.a = min(++prevLight.a, SSPT_MAX_BLENDED_FRAMES);
         float alpha = rcp(indirectHistory.a + 1.0);
@@ -184,17 +157,17 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos) {
         float luminance = GetLuminance(indirectCurrent.rgb);
 
         vec2 currMoments = vec2(luminance, luminance * luminance);
-        momentsHistory = mix(prevMoments, currMoments, alpha);
+        momentsHistory = mix(prevMoments, currMoments, max(0.05, alpha));
 
         // See section 4.2 of the paper
-        if (indirectHistory.a < 4.0) {
-            indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
-        } else {
+        if (indirectHistory.a > 4.5) {
             indirectCurrent.a = abs(momentsHistory.y - momentsHistory.x * momentsHistory.x);
+        } else {
+            indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
         }
     } else {
-        indirectCurrent = SpatialColor(screenTexel);
-        indirectHistory.rgb = indirectCurrent.rgb;
+        indirectCurrent = SpatialCurrent(screenTexel);
+        indirectHistory = vec4(indirectCurrent.rgb, 1.0);
     }
 }
 
@@ -223,44 +196,44 @@ float GetClosestDepth(in ivec2 texel) {
 //======// Main //================================================================================//
 void main() {
     vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
     if (currentCoord.y < 1.0) {
+        ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+
         if (currentCoord.x < 1.0) {
             // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
-            float depth = sampleDepthMin4x4(currentCoord);
+            // float depth = sampleDepthMin4x4(currentCoord);
+            ivec2 currentTexel = screenTexel << 1;
+            float depth = loadDepth0(currentTexel);
 
-            indirectCurrent = vec4(vec3(0.0), 1.0);
-            indirectHistory = indirectCurrent;
+            indirectCurrent = indirectHistory = vec4(vec3(0.0), 1.0);
 
             momentsHistory = vec2(0.0);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = screenTexel << 1;
                 // currentTexel = ivec2(closestFragment.xy * viewSize);
-                vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
 
                 vec3 screenPos = vec3(currentCoord, depth);
-                vec3 viewPos = ScreenToViewSpace(screenPos);
 
                 vec2 prevCoord = Reproject(screenPos).xy;
                 if (saturate(prevCoord) != prevCoord || worldTimeChanged) {
-                    indirectCurrent = SpatialColor(screenTexel);
-                    indirectHistory.rgb = indirectCurrent.rgb;
+                    indirectCurrent = SpatialCurrent(screenTexel);
+                    indirectHistory = vec4(indirectCurrent.rgb, 1.0);
                 } else {
-                    TemporalFilter(screenTexel, prevCoord, viewPos);
+                    vec3 viewPos = ScreenToViewSpace(screenPos);
+                    vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
+                    TemporalFilter(screenTexel, prevCoord, viewPos, worldNormal);
                 }
 
                 indirectCurrent.a = maxEps(indirectCurrent.a * 0.5);
             }
         } else {
-            currentCoord -= vec2(1.0, 0.0);
-            float depth = sampleDepthMin4x4(currentCoord);
+            ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
+            float depth = loadDepth0(currentTexel);
 
             if (depth < 1.0) {
-                ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
                 vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
-                float viewDistance = length(ScreenToViewSpace(vec3(currentCoord, depth)));
+                float viewDistance = length(ScreenToViewSpace(vec3(currentCoord - vec2(1.0, 0.0), depth)));
 
                 indirectHistory = vec4(worldNormal, viewDistance);
             }

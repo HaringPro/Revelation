@@ -152,17 +152,19 @@ void main() {
         //             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
         //             1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0};
 
-		float sumWeight = 0.25;
 
 		vec4 indirectCurrent = imageLoad(colorimg3, texel);
 		float centerLuma = GetLuminance(indirectCurrent.rgb);
+
+		float sumWeight = 0.25;
 		indirectCurrent *= sumWeight;
+		indirectCurrent.a *= sumWeight; // Variance weighting
 
 		float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + padRadius));
-		float variancePhi = rLOG2 / (variance * 4.0 + 1e-6);
+		float variancePhi = -rLOG2 / (variance * 6.0 + 1e-7);
 
 		ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * ATROUS_FILTER_SIZE);
-		const float sigmaZ = rLOG2 * inversesqrt(float(ATROUS_FILTER_SIZE));
+		const float sigmaZ = -rLOG2 * inversesqrt(float(ATROUS_FILTER_SIZE));
 
 		for (uint i = 0u; i < 8u; ++i) {
 			ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(0), halfResBorder);
@@ -171,19 +173,24 @@ void main() {
 			vec4 sampleLight = imageLoad(colorimg3, sampleTexel);
 			float sampleLuma = GetLuminance(sampleLight.rgb);
 
-			// float weight = exp2(-dotSelf(offset));
-			// float weight = kernel[abs(x)] * kernel[abs(y)];
-			float weight = kernel[i];
+			#if 0
+				float weight = kernel[i];
 
-			// wN = max(0, N0 · N1) ^ σN
-			weight *= pow16(max0(dot(sampleData.xyz, normalDepthData.xyz)));
+				// wN = max(0, N0 · N1) ^ σN
+				weight *= pow32(max0(dot(sampleData.xyz, normalDepthData.xyz)));
 
-			// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
-			// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
-			weight *= exp2(-abs(sampleData.w - normalDepthData.w) * sigmaZ);
+				// wD = exp(−|D0 − D1| / (|σD(grad · off)| + ε))
+				// weight *= fastExp(-abs(sampleData.w - normalDepthData.w) / (abs(1.0 * dot(depthGradient, offset)) + 1e-6));
+				weight *= exp2(abs(sampleData.w - normalDepthData.w) * sigmaZ);
 
-			// wL = exp(−|L0 − L1| / (σLvar + ε))
-			weight *= exp2(-abs(sampleLuma - centerLuma) * variancePhi);
+				// wL = exp(−|L0 − L1| / (σLvar + ε))
+				weight *= exp2(abs(sampleLuma - centerLuma) * variancePhi);
+			#else
+				float logWeightZ = abs(sampleData.w - normalDepthData.w) * sigmaZ;
+				float logWeightL = abs(sampleLuma - centerLuma) * variancePhi;
+				float weight = 0.25 * exp2(logWeightZ + logWeightL);
+				weight *= pow32(saturate(dot(sampleData.xyz, normalDepthData.xyz)));
+			#endif
 
 			sampleLight.a *= weight; // Sample variance
 			indirectCurrent += sampleLight * weight;

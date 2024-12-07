@@ -70,6 +70,8 @@ vec3  pow5(vec3 x)	  	{ return pow4(x) * x; }
 
 float pow16(float x)	{ x *= x; x *= x; x *= x; return x * x; }
 
+float pow32(float x)	{ x *= x; x *= x; x *= x; x *= x; return x * x; }
+
 float sqrt2(float c)  	{ return sqrt(c * inversesqrt(c)); }
 vec3  sqrt2(vec3 c)	  	{ return sqrt(c * inversesqrt(c)); }
 
