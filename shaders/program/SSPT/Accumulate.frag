@@ -141,8 +141,9 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
     }
 
     if (sumWeight > 1e-5) {
-        prevLight /= sumWeight;
-        prevMoments /= sumWeight;
+        sumWeight = rcp(sumWeight);
+        prevLight *= sumWeight;
+        prevMoments *= sumWeight;
 
         // indirectCurrent.rgb = SpatialCurrent(screenTexel);
         indirectCurrent.rgb = texelFetch(colortex3, screenTexel, 0).rgb;

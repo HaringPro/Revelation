@@ -68,6 +68,8 @@ vec3  pow4(vec3 x)	  	{ x *= x; return x * x; }
 float pow5(float x)   	{ return pow4(x) * x; }
 vec3  pow5(vec3 x)	  	{ return pow4(x) * x; }
 
+float pow8(float x)   	{ x *= x; x *= x; return x * x; }
+
 float pow16(float x)	{ x *= x; x *= x; x *= x; return x * x; }
 
 float pow32(float x)	{ x *= x; x *= x; x *= x; x *= x; return x * x; }

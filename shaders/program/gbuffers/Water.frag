@@ -69,13 +69,13 @@ flat in vec3 skyIlluminance;
 vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 worldDir) {
 	skylight = remap(0.3, 0.7, cube(skylight));
 
-	float NdotV = dot(normal, -worldDir);
+	float NdotV = abs(dot(normal, -worldDir));
     // Unroll the reflect function manually
 	vec3 rayDir = worldDir + normal * NdotV * 2.0;
 
 	if (dot(normal, rayDir) < 1e-6) return vec4(0.0);
 
-	float f0 = materialID == 3u ? F0FromIOR(WATER_REFRACT_IOR) : F0FromIOR(GLASS_REFRACT_IOR);
+	float f0 = F0FromIOR(materialID == 3u ? WATER_REFRACT_IOR : GLASS_REFRACT_IOR);
 	bool withinWater = isEyeInWater == 1 && materialID == 3u;
 
 	vec3 reflection = vec3(0.0);
@@ -209,15 +209,15 @@ void main() {
 
 				if (dot(shadow, vec3(1.0)) > 1e-6) {
 					float LdotV = dot(worldLightVector, -worldDir);
-					float NdotV = saturate(dot(worldNormal, -worldDir));
+					float NdotV = abs(dot(worldNormal, -worldDir));
 					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
 					float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 					float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 					shadow *= sunlightMult;
 
-					sunlightDiffuse = shadow * approxSqrt(NdotL) * rPI;
-					float f0 = materialID == 3u ? F0FromIOR(WATER_REFRACT_IOR) : F0FromIOR(GLASS_REFRACT_IOR);
+					sunlightDiffuse = shadow * NdotL * rPI;
+					float f0 = F0FromIOR(materialID == 3u ? WATER_REFRACT_IOR : GLASS_REFRACT_IOR);
 					specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
 				}
 			}
@@ -243,7 +243,7 @@ void main() {
 			if (lightmap.x > 1e-5) lighting += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
 			sceneOut.rgb *= lighting * rPI;
 
-			vec4 specularReflections = CalculateSpecularReflections(worldNormal, lightmap.y, viewPos);
+			vec4 specularReflections = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 			sceneOut.rgb = specularReflections.rgb + sceneOut.rgb * oneMinus(specularReflections.a);
 		}
 

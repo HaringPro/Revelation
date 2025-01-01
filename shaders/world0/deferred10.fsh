@@ -338,14 +338,13 @@ void main() {
 						#endif
 
 						float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-						float NdotV = saturate(dot(worldNormal, -worldDir));
+						float NdotV = abs(dot(worldNormal, -worldDir));
 						float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 						float LdotH = LdotV * halfwayNorm + halfwayNorm;
-						NdotV = max(NdotV, 1e-3);
 
 						sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 						specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
-						specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
+						specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
 					}
 				}
 			}
@@ -368,14 +367,13 @@ void main() {
 			#endif
 
 			float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-			float NdotV = saturate(dot(worldNormal, -worldDir));
+			float NdotV = abs(dot(worldNormal, -worldDir));
 			float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
 			float LdotH = LdotV * halfwayNorm + halfwayNorm;
-			NdotV = max(NdotV, 1e-3);
 
 			sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 			specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
-			specularHighlight *= SPECULAR_HIGHLIGHT_BRIGHTNESS * oneMinus(material.metalness * oneMinus(albedo));
+			specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
 		}
 
 		// Sunlight diffuse
@@ -449,7 +447,6 @@ void main() {
 
 				// Specular reflections
 				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
-				reflectionOut.rgb *= mix(vec3(1.0), albedo, material.metalness);
 
 				// Metallic
 				material.metalness *= 0.2 * lightmap.y + 0.8;
@@ -478,10 +475,10 @@ void main() {
 			#endif
 
 			#ifdef SVGF_ENABLED
-				float NdotV = saturate(dot(worldNormal, -worldDir));
+				float NdotV = abs(dot(worldNormal, -worldDir));
 				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * ao;
 			#else
-				sceneOut += texelFetch(colortex3, (screenTexel >> 1) + ivec2(int(viewWidth * 0.5), 0), 0).rgb * albedo * ao;
+				sceneOut += texelFetch(colortex3, screenTexel >> 1, 0), 0).rgb * albedo * ao;
 			#endif
 		#elif defined RSM_ENABLED
 			#ifdef DEBUG_GI
@@ -489,7 +486,7 @@ void main() {
 				albedo = vec3(1.0);
 			#endif
 
-			float NdotV = saturate(dot(worldNormal, -worldDir));
+			float NdotV = abs(dot(worldNormal, -worldDir));
 			vec3 rsm = SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV);
 			sceneOut += sqr(rsm) * albedo * ao * (sunlightMult * rPI);
 		#endif

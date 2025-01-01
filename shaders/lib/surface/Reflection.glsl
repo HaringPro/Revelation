@@ -3,7 +3,7 @@
 vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos) {
 	skylight = remap(0.3, 0.7, cube(skylight));
 
-	float NdotV = dot(normal, -worldDir);
+	float NdotV = abs(dot(normal, -worldDir));
     // Unroll the reflect function manually
 	vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
@@ -58,22 +58,9 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 				reflection = skyRadiance * skylight;
 			}
 
-			vec3 brdf = vec3(1.0);
             float LdotH = dot(lightDir, halfway);
-
-    		// Fresnel term
-			if (material.isHardcodedMetal) {
-				brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
-			} else if (material.metalness > 0.5) {
-				brdf *= FresnelSchlick(LdotH, material.f0);
-			} else {
-				brdf *= FresnelDielectric(LdotH, material.f0);
-			}
-
-			// Geometric term
-			float NdotV = dot(normal, -worldDir);
-			brdf *= saturate(G2SmithGGX(NdotL, NdotV, material.roughness) * G1SmithGGXInverse(NdotV, material.roughness));
-
+			float NdotV = abs(dot(normal, -worldDir));
+			vec3 brdf = SpecularBRDFwithPDF(LdotH, NdotV, NdotL, material);
 			sceneOut *= 1.0 - brdf;
 
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
@@ -84,7 +71,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 		} else
 	#endif
 		{
-			float NdotV = dot(normal, -worldDir);
+			float NdotV = abs(dot(normal, -worldDir));
 			// Unroll the reflect function manually
 			vec3 lightDir = worldDir + normal * NdotV * 2.0;
 

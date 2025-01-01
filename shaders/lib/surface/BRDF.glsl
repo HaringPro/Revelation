@@ -2,6 +2,8 @@
 // References:
 // https://ubm-twvideo01.s3.amazonaws.com/o1/vault/gdc2017/Presentations/Hammon_Earl_PBR_Diffuse_Lighting.pdf
 // https://schuttejoe.github.io/post/disneybsdf/
+// https://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#\
+// https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
 
 //======// Fresnel //=============================================================================//
 
@@ -10,11 +12,19 @@ float FresnelSchlick(in float cosTheta, in float f0) {
     return saturate(f0 + oneMinus(f0) * pow5(1.0 - cosTheta));
 }
 
+float FresnelSchlick(in float cosTheta, in float f0, in float f90) {
+    return saturate(f0 + (f90 - f0) * pow5(1.0 - cosTheta));
+}
+
 // Lazanyi approximation correction
 vec3 FresnelLazanyi2019(in float cosTheta, in vec3 f0, in vec3 f82) {
     vec3 a = 17.6513846 * (f0 - f82) + 8.16666667 * oneMinus(f0);
     float invMu5 = pow5(1.0 - cosTheta);
     return saturate(f0 + oneMinus(f0) * invMu5 - a * cosTheta * invMu5 * oneMinus(cosTheta));
+}
+
+float FresnelSchlickGaussian(in float cosTheta, in float f0) {
+    return saturate(f0 + oneMinus(f0) * exp2(-9.60232 * pow8(cosTheta) - 8.58092 * cosTheta));
 }
 
 // Based on the F0 (Fresnel reflectance at 0 degrees incidence)
@@ -59,14 +69,31 @@ vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
     return saturate(0.5 * (r1 + r2));
 }
 
-//======// Distribution GGX //====================================================================//
+//======// Normal Distribution //=================================================================//
 
-float DistributionGGX(in float NdotH, in float alpha2) {
+float NDFBeckmann(in float NdotH, in float alpha2) {
+    float NdotH2 = NdotH * NdotH;
+    return maxEps(rcp(PI * alpha2 * NdotH2 * NdotH2) * fastExp((NdotH2 - 1.0) / (alpha2 * NdotH2)));
+}
+
+float NDFGaussian(in float NdotH, in float alpha2) {
+	float thetaH = fastAcos(NdotH);
+    return fastExp(-thetaH * thetaH / alpha2);
+}
+
+float NDFGGX(in float NdotH, in float alpha) {
+    float NdotH2 = NdotH * NdotH;
+    float tanNdotH2 = oneMinus(NdotH2) / NdotH2;
+    return rPI * sqr(alpha / (NdotH2 * (sqr(alpha) + tanNdotH2)));
+}
+
+float NDFTrowbridgeReitz(in float NdotH, in float alpha2) {
 	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH * NdotH);
 }
 
-//======// Smith GGX //===========================================================================//
+//======// Geometric GGX //=======================================================================//
 
+// Smith-based
 // float lambda(in float cosTheta, in float alpha2) {
 //     return (sqrt(alpha2 + oneMinus(alpha2) * cosTheta * cosTheta) / cosTheta - 1.0) * 0.5;
 // }
@@ -83,35 +110,86 @@ float DistributionGGX(in float NdotH, in float alpha2) {
 //     return rcp(1.0 + lambda(NdotL, alpha2) + lambda(NdotV, alpha2));
 // }
 
-float G1SmithGGX(in float NdotV, in float alpha2) {
-    return 2.0 * NdotV * rcp(sqrt(alpha2 + oneMinus(alpha2) * NdotV * NdotV) + NdotV);
+float G1SmithGGX(in float cosTheta, in float alpha2) {
+    return 2.0 * cosTheta * rcp(sqrt(alpha2 + oneMinus(alpha2) * cosTheta * cosTheta) + cosTheta);
 }
 
-float G1SmithGGXInverse(in float NdotV, in float alpha2) {
-    return (sqrt(alpha2 + oneMinus(alpha2) * NdotV * NdotV) + NdotV) * (0.5 / NdotV);
+float G1SmithGGXInverse(in float cosTheta, in float alpha2) {
+    return (sqrt(alpha2 + oneMinus(alpha2) * cosTheta * cosTheta) + cosTheta) * (0.5 / cosTheta);
 }
 
 float G2SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
     return 2.0 * NdotL * NdotV * rcp(NdotL * sqrt(alpha2 + oneMinus(alpha2) * NdotV * NdotV) + NdotV * sqrt(alpha2 + oneMinus(alpha2) * NdotL * NdotL));
 }
 
+float G2withG1SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
+	float lt = sqrt(alpha2 + oneMinus(alpha2) * sqr(NdotL));
+	float vt = sqrt(alpha2 + oneMinus(alpha2) * sqr(NdotV));
+	return saturate(NdotL * (NdotV + vt) / (lt * NdotV + vt * NdotL));
+}
+
+// Schlick-based
+float G1Schlick(in float cosTheta, in float k) {
+    return cosTheta / (cosTheta * oneMinus(k) + k);
+}
+
+float G2Schlick(in float NdotL, in float NdotV, in float alpha2) {
+    return G1Schlick(NdotL, alpha2) * G1Schlick(NdotV, alpha2);
+}
+
+float G2SchlickBeckman(in float NdotL, in float NdotV, in float alpha2) {
+    float k = alpha2 * 0.797884560802865;
+    return G1Schlick(NdotL, k) * G1Schlick(NdotV, k);
+}
+
+float G2SchlickGGX(in float NdotL, in float NdotV, in float alpha) {
+    // float k = sqr(alpha + 1.0) * 0.125;
+    float k = alpha * 0.5;
+    return G1Schlick(NdotL, k) * G1Schlick(NdotV, k);
+}
+
 //================================================================================================//
 
+// Cook-Torrance model
 float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in float f0) {
-    alpha2 = max(alpha2, 1e-6);
+    alpha2 = maxEps(alpha2);
 
     // Fresnel term
     float F = FresnelSchlick(LdotH, f0);
 
     // Distribution term
-	float D = DistributionGGX(NdotH, alpha2);
+	float D = NDFTrowbridgeReitz(NdotH, alpha2);
 
     // Geometric term
     float G = G2SmithGGX(NdotL, NdotV, alpha2);
 
-	return min(F * D * G / (4.0/*  * NdotL */ * NdotV), 5e2); // Prevent overflow
+	return min(F * D * G / (4.0 * NdotV), 5e2); // Prevent overflow
 }
 
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+vec3 SpecularBRDFwithPDF(in float LdotH, in float NdotV, in float NdotL, in Material material) {
+    vec3 brdf = vec3(1.0);
+
+    // Fresnel term
+    if (material.isHardcodedMetal) {
+        brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
+    } else if (material.metalness > 0.5) {
+        brdf *= FresnelSchlick(LdotH, material.f0);
+    } else {
+        brdf *= FresnelSchlickGaussian(LdotH, material.f0);
+    }
+
+    // Geometric term
+    if (material.isRough) {
+		brdf *= G2withG1SmithGGX(NdotL, NdotV, material.roughness);
+    }
+
+    // Distribution term has already been offset by the PDF
+    return brdf;
+}
+#endif
+
+// From https://www.gdcvault.com/play/1024478/PBR-Diffuse-Lighting-for-GGX
 vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {
     float facing = max0(LdotV) * 0.5 + 0.5;
 
@@ -123,6 +201,17 @@ vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float Ndot
 
     return (multi * albedo + single) * NdotL;
 }
+
+// From https://disneyanimation.com/publications/physically-based-shading-at-disney/
+float DiffuseBurley(in float LdotH, in float NdotV, in float NdotL, in float roughness) {
+	float f90 = 0.5 + 2.0 * roughness * LdotH * LdotH;
+
+	return NdotL * rPI * FresnelSchlick(NdotL, roughness, f90) * FresnelSchlick(NdotV, roughness, f90);
+}
+
+// From https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
+// TODO: Implement
+float DiffuseTurquin() { return 0.0; }
 
 //================================================================================================//
 

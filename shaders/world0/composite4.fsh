@@ -149,7 +149,7 @@ void main() {
 		} else if (materialID == 2u) { // Glass
 			// Glass tint
 			vec4 translucents = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
-			sceneOut *= fastExp(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
+			sceneOut *= exp2(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
 
 			// Specular and diffuse lighting of glass
 			vec4 blendedData = texelFetch(colortex1, screenTexel, 0);
@@ -167,6 +167,9 @@ void main() {
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
 				vec4 reflectionData = texelFetch(colortex1, refractedTexel, 0);
+
+				vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
+				reflectionData.rgb *= oneMinus(material.metalness * oneMinus(albedo));
 				sceneOut += reflectionData.rgb;
 			}
 		#endif
