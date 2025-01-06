@@ -125,8 +125,7 @@ void main() {
 		float skyLightmap = Unpack2x8UY(gbufferData0.x);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), vec2(0.0));
-			Material material = GetMaterialData(specularTex);
+			Material material = GetMaterialData(Unpack2x8(gbufferData1.x));
 		#endif
 
 		// Water fog

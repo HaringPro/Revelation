@@ -51,33 +51,61 @@ struct Material {
 		#if TEXTURE_FORMAT == 0
 			uint metalIndex = uint(specTex.g * 255.0);
 
-			if (metalIndex <= 229u) {
+			if (metalIndex < 230u) {
 				// Dielectrics
 				material.metalness = 0.0;
-				material.f0 = mix(0.02, 1.0, specTex.g);
-			} else if (metalIndex <= 237u) {
+				material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
+			} else if (metalIndex < 238u) {
 				// Hardcoded metals
 				material.metalness = 1.0;
 				material.isHardcodedMetal = true;
 				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(metalIndex - 230u, 0u, 7u)];
 			} else {
-				// Metals
+				// Other metals
 				material.metalness = 1.0;
 				material.f0 = 0.91;
 			}
-			#if defined PROGRAM_DEFERRED_10
-				material.emissiveness = specTex.a * step(specTex.a, 0.999);
-			#endif
+			material.emissiveness = specTex.a * step(specTex.a, 0.999);
 		#else
 			material.metalness = specTex.g;
-			material.f0 = mix(0.02, 1.0, specTex.g);
-			#if defined PROGRAM_DEFERRED_10
-				material.emissiveness = specTex.b;
-			#endif
+			material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
+			material.emissiveness = specTex.b;
 		#endif
 
-		#if defined PROGRAM_DEFERRED_10
-			material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+		material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+
+		material.hasReflections = max0(specTex.r - 0.56) + material.metalness > 1e-2;
+		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
+
+		return material;
+	}
+
+	Material GetMaterialData(in vec2 specTex) {
+		Material material;
+
+		material.roughness = sqr(1.0 - specTex.r);
+		material.isHardcodedMetal = false;
+
+		#if TEXTURE_FORMAT == 0
+			uint metalIndex = uint(specTex.g * 255.0);
+
+			if (metalIndex < 230u) {
+				// Dielectrics
+				material.metalness = 0.0;
+				material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
+			} else if (metalIndex < 238u) {
+				// Hardcoded metals
+				material.metalness = 1.0;
+				material.isHardcodedMetal = true;
+				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(metalIndex - 230u, 0u, 7u)];
+			} else {
+				// Other metals
+				material.metalness = 1.0;
+				material.f0 = 0.91;
+			}
+		#else
+			material.metalness = specTex.g;
+			material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
 		#endif
 
 		material.hasReflections = max0(specTex.r - 0.56) + material.metalness > 1e-2;

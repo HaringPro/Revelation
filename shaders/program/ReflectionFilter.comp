@@ -124,8 +124,7 @@ void main() {
     vec4 reflectionData = imageLoad(colorimg1, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-		vec4 specularTex = vec4(Unpack2x8(loadGbufferData1(screenTexel).x), vec2(0.0));
-        Material material = GetMaterialData(specularTex);
+        Material material = GetMaterialData(Unpack2x8(loadGbufferData1(screenTexel).x));
 
         if (material.hasReflections && material.isRough) {
             vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);

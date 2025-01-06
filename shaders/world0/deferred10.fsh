@@ -212,7 +212,7 @@ void main() {
 			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
 			Material material = GetMaterialData(specularTex);
 		#else
-			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.02, 0.0, false, false);
+			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, DEFAULT_DIELECTRIC_F0, 0.0, false, false);
 		#endif
 
 		float sssAmount = 0.0;
