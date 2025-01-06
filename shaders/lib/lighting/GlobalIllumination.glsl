@@ -122,8 +122,8 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
 
 		if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = LinearizeDepth(sampleDepth);
-			float traceDepthLinear = LinearizeDepth(rayPos.z);
+			float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
+			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
 
 			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
 		}

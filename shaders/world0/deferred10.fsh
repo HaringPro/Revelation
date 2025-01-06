@@ -221,12 +221,6 @@ void main() {
 			switch (materialID) {
 				case 9u: case 10u: case 11u: case 13u: case 27u: case 28u: // Plants
 					sssAmount = 0.5;
-					#ifdef NORMAL_MAPPING
-						worldNormal.y += 4.0;
-						worldNormal = normalize(worldNormal);
-					#else
-						worldNormal = vec3(0.0, 1.0, 0.0);
-					#endif
 					break;
 				case 12u: // Leaves
 					sssAmount = 0.9;

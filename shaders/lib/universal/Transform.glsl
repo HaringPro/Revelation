@@ -76,14 +76,6 @@ float ViewToScreenDepth(in float depth) {
 	return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
 }
 
-float LinearizeDepth(in float depth) {
-    return (near * far) / (depth * (near - far) + far);
-}
-
-float PerspectiveDepth(in float depthLinear) {
-	return (far + near) / (far - near) + (2.0 * far * near) / (depthLinear * (far - near));
-}
-
 //======// Distant Horizons Transform Function //=================================================//
 
 #if defined DISTANT_HORIZONS

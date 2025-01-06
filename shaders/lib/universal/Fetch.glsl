@@ -22,9 +22,9 @@ vec3 FetchWorldNormal(in uvec4 data) {
 }
 
 float FetchLinearDepth(in ivec2 texel) {
-    return (near * far) / (loadDepth0(texel) * (near - far) + far);
+    return ScreenToViewDepth(loadDepth0(texel));
 }
 
 float FetchLinearDepthSolid(in ivec2 texel) {
-    return (near * far) / (loadDepth1(texel) * (near - far) + far);
+    return ScreenToViewDepth(loadDepth1(texel));
 }

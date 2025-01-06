@@ -138,8 +138,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
 
 		if (sampleDepth < rayPos.z) {
-			float sampleDepthLinear = LinearizeDepth(sampleDepth);
-			float traceDepthLinear = LinearizeDepth(rayPos.z);
+			float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
+			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
 
 			if (traceDepthLinear - sampleDepthLinear < maxThickness) shadow *= absorption;
 		}
