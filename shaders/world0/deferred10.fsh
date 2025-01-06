@@ -219,10 +219,10 @@ void main() {
 		#if SUBSURFACE_SCATTERING_MODE < 2
 			// Hard-coded sss amount for certain materials
 			switch (materialID) {
-				case 9u: case 10u: case 11u: case 13u: case 27u: case 28u: // Plants
+				case 9u: case 10u: case 11u: case 12u: case 27u: case 28u: // Plants
 					sssAmount = 0.5;
 					break;
-				case 12u: // Leaves
+				case 13u: // Leaves
 					sssAmount = 0.9;
 					break;
 				case 37u: case 39u: // Weak SSS

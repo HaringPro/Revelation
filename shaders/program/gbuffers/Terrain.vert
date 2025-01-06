@@ -78,12 +78,12 @@ void main() {
 		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
 		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
 		if (clamp(materialID, 9u, 12u) == materialID || clamp(materialID, 27u, 28u) == materialID) {
-			tbnMatrix[2] = vec3(0.0, 1.0, 0.0);
+			tbnMatrix[2] = normalize(tbnMatrix[2] + vec3(0.0, 4.0, 0.0));
 		}
 	#else
 		flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 		if (clamp(materialID, 9u, 12u) == materialID || clamp(materialID, 27u, 28u) == materialID) {
-			flatNormal = vec3(0.0, 1.0, 0.0);
+			flatNormal = normalize(flatNormal + vec3(0.0, 4.0, 0.0));
 		}
 	#endif
 
@@ -104,7 +104,7 @@ void main() {
 		}
 
 		// Leaves
-		if (materialID == 12u) {
+		if (materialID == 13u) {
 			float tick = frameTimeCounter * PI;
 			float windIntensity = cube(saturate(lightmap.y * 1.5 - 0.5)) * fma(wetnessCustom, 0.2, 0.1);
 			worldPos += cameraPosition;
@@ -117,7 +117,7 @@ void main() {
 
 	// Unlabelled foilage detection
 	#ifdef UNLABELLED_FOILAGE_DETECTION
-		if (materialID < 1u && maxOf(abs(vaNormal)) < 0.99) materialID = 13u;
+		if (materialID < 1u && maxOf(abs(vaNormal)) < 0.99) materialID = 12u;
 	#endif
 
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
