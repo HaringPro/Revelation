@@ -17,14 +17,15 @@
 
 #define TONEMAP_OPERATOR AcademyFit // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
-#define BLOOM_INTENSITY 1.0 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
+#define BLOOM_INTENSITY 1.0 // Intensity of bloom. [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
+#define BLOOMY_FOG_INTENSITY 1.0 // Intensity of bloomy fog. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.75 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 #define PURKINJE_SHIFT // Enables purkinje shift effect
-#define PURKINJE_SHIFT_STRENGTH 0.4 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define PURKINJE_SHIFT_STRENGTH 0.4 // Strength of purkinje shift effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 // #define VIGNETTE_ENABLED
-#define VIGNETTE_STRENGTH 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
-#define VIGNETTE_ROUNDNESS 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define VIGNETTE_STRENGTH 1.0 // Strength of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define VIGNETTE_ROUNDNESS 0.5 // Roundness of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 //======// Output //==============================================================================//
 
@@ -64,7 +65,7 @@ const vec2 bloomTileOffset[7] = vec2[7](
 	vec2(0.3281, 0.6563)
 );
 
-void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
+void CombineBloomAndFog(inout vec3 scene, in ivec2 texel) {
 	vec3 bloomData = vec3(0.0);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
@@ -86,17 +87,17 @@ void CombineBloomAndFog(inout vec3 image, in ivec2 texel) {
 	float bloomIntensity = BLOOM_INTENSITY * 0.05;
 	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.75, 0.25);
 
-	image = mix(image, bloomData, bloomIntensity);
+	scene = mix(scene, bloomData, bloomIntensity);
 
 	#ifdef BLOOMY_FOG
 		float fogTransmittance = texelFetch(colortex8, texel, 0).x;
 
-		image = mix(bloomData, image, saturate(fogTransmittance));
+		scene = mix(bloomData, scene, pow(saturate(fogTransmittance), BLOOMY_FOG_INTENSITY));
 	#endif
 
 	if (rainStrength > 1e-2) {
 		float rain = texelFetch(colortex6, texel, 0).a * RAIN_VISIBILITY;
-		image = image * oneMinus(rain) + bloomData * rain * 1.2;
+		scene = scene * oneMinus(rain) + bloomData * rain * 1.2;
 	}
 }
 

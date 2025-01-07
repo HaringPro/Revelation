@@ -193,7 +193,7 @@ void main() {
 		if (isEyeInWater == 0) {
 			FogData volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
 			sceneOut = ApplyFog(sceneOut, volFogData);
-			bloomyFogTrans = dot(volFogData.transmittance, vec3(0.333333));
+			bloomyFogTrans = mean(volFogData.transmittance);
 		}
 	#endif
 
@@ -205,7 +205,7 @@ void main() {
 			FogData waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif
 		sceneOut = ApplyFog(sceneOut, waterFog);
-		bloomyFogTrans = dot(waterFog.transmittance, vec3(0.333333));
+		bloomyFogTrans = mean(waterFog.transmittance);
 	}
 
 	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);

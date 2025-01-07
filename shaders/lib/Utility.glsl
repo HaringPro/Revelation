@@ -88,8 +88,9 @@ vec2  sincos(float x)   { return vec2(sin(x), cos(x)); }
 vec2  cossin(float x)   { return vec2(cos(x), sin(x)); }
 
 float remap(float e0, float e1, float x) { return saturate((x - e0) * rcp(e1 - e0)); }
-
 vec3  remap(float e0, float e1, vec3 x)  { return saturate((x - e0) * rcp(e1 - e0)); }
+
+float mean(vec3 v) { return dot(v, vec3(1.0 / 3.0)); }
 
 // https://iquilezles.org/articles/functions/
 // float almostIdentity(float x, float m, float n) {
