@@ -41,8 +41,6 @@ flat in mat4x3 skySH;
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
-uniform sampler2D colortex13; // Previous indirect light
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//

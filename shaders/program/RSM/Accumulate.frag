@@ -28,10 +28,7 @@ out vec4 indirectHistory;
 
 #include "/lib/universal/Uniform.glsl"
 
-uniform sampler2D colortex13; // Previous indirect light
-
 uniform float cameraVelocity;
-uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
 

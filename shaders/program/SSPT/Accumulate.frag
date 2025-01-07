@@ -30,11 +30,7 @@ layout (location = 2) out vec2 momentsHistory;
 
 #include "/lib/universal/Uniform.glsl"
 
-uniform sampler2D colortex13; // Previous indirect light
-uniform sampler2D colortex14; // Previous moments
-
 uniform float cameraVelocity;
-uniform vec2 prevTaaOffset;
 
 //======// Function //============================================================================//
 
