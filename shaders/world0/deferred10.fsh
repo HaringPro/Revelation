@@ -334,11 +334,12 @@ void main() {
 			// Hard-coded emissive
 			vec4 emissive = HardCodeEmissive(materialID, albedo, albedoRaw, worldPos, blocklightColor);
 			#ifdef SSPT_ENABLED
-				float albedoLuma = saturate(dot(albedo, vec3(0.45)));
+				// float albedoLuma = saturate(dot(albedo, vec3(0.45)));
 
-				vec3 emissionAlbedo = normalize(maxEps(albedo));
-				emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), approxSqrt(albedoLuma));
-				emissive.rgb *= emissionAlbedo * 4.0;
+				// vec3 emissionAlbedo = normalize(maxEps(albedo));
+				// emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), approxSqrt(albedoLuma));
+				// emissive.rgb *= emissionAlbedo * 4.0;
+				emissive.rgb *= PI;
 			#else
 				if (emissive.a * lightmap.x > 1e-5) {
 					lightmap.x = CalculateBlocklightFalloff(lightmap.x);
