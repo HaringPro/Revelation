@@ -166,7 +166,7 @@ float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float Ndot
 	return min(F * D * G / (4.0 * NdotV), 5e2); // Prevent overflow
 }
 
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_10
 vec3 SpecularBRDFwithPDF(in float LdotH, in float NdotV, in float NdotL, in Material material) {
     vec3 brdf = vec3(1.0);
 

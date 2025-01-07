@@ -178,7 +178,7 @@ void main() {
 
 #else
 
-#define PROGRAM_PREPARE
+#define PASS_PREPARE
 
 //======// Output //==============================================================================//
 

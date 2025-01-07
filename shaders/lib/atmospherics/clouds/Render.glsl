@@ -271,7 +271,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CUMULUS_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
 				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
-				#if defined PROGRAM_PREPARE
+				#if defined PASS_PREPARE
 					uint raySteps = uint(CLOUD_CUMULUS_SAMPLES * 0.6);
 					raySteps = uint(float(raySteps) * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
@@ -305,7 +305,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					if (rayPos.y < CLOUD_CUMULUS_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
 
 					// Compute sample cloud density
-					#if defined PROGRAM_PREPARE
+					#if defined PASS_PREPARE
 						float stepDensity = CloudVolumeDensity(rayPos, false);
 					#else
 						float stepDensity = CloudVolumeDensity(rayPos, true);
@@ -316,7 +316,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					rayHitPos += rayPos * transmittance;
 					rayHitPosWeight += transmittance;
 
-					#if defined PROGRAM_PREPARE
+					#if defined PASS_PREPARE
 						vec2 lightNoise = vec2(0.5);
 					#else
 						// Compute light noise

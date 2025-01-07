@@ -42,7 +42,7 @@ float ReadCloudShadowMap(in sampler2D shadowMap, in vec3 rayPos) {
 
 //================================================================================================//
 
-#ifdef PROGRAM_PREPARE
+#ifdef PASS_PREPARE
 float CalculateCloudShadows(in vec3 rayPos) {
 	// if (eyeAltitude > CLOUD_CUMULUS_ALTITUDE) return 1.0;
 

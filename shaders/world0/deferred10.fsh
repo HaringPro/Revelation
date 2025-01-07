@@ -15,7 +15,7 @@
 --------------------------------------------------------------------------------
 */
 
-#define PROGRAM_DEFERRED_10
+#define PASS_DEFERRED_10
 #define RANDOM_NOISE
 
 //======// Utility //=============================================================================//
@@ -28,11 +28,6 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
-#if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
-/* RENDERTARGETS: 0,1,3 */
-layout (location = 2) out vec3 lightingOut;
-#endif
-
 //======// Input //===============================================================================//
 
 flat in vec3 directIlluminance;
@@ -42,76 +37,13 @@ flat in mat4x3 skySH;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D noisetex;
-
 #if defined CLOUDS && !defined CLOUD_CBR_ENABLED
 	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #endif
 
-uniform sampler2D colortex3; // Current indirect light
-uniform sampler2D colortex4; // Reprojected scene history
-
-uniform sampler2D colortex5; // Sky-View LUT
-
-uniform sampler2D colortex6; // Albedo
-uniform usampler2D colortex7; // Gbuffer data 0
-uniform sampler2D colortex8; // Gbuffer data 1
-
-uniform sampler2D colortex9; // Cloud history
-
-uniform sampler2D colortex10; // Transmittance-View LUT
-
 uniform sampler2D colortex13; // Previous indirect light
 
-uniform sampler2D depthtex0;
-uniform sampler2D depthtex1;
-
-uniform int frameCounter;
-uniform int isEyeInWater;
-uniform int heldItemId;
-uniform int heldBlockLightValue;
-uniform int heldItemId2;
-uniform int heldBlockLightValue2;
-uniform int moonPhase;
-
-uniform float frameTimeCounter;
-uniform float nightVision;
-uniform float near;
-uniform float far;
-uniform float viewWidth;
-uniform float viewHeight;
-uniform float aspectRatio;
-uniform float wetness;
-uniform float wetnessCustom;
-uniform float eyeAltitude;
-uniform float biomeSnowySmooth;
-uniform float eyeSkylightSmooth;
-
-uniform vec2 viewPixelSize;
-uniform vec2 viewSize;
-uniform vec2 halfViewSize;
-uniform vec2 halfViewEnd;
-uniform vec2 taaOffset;
-
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-uniform vec3 worldSunVector;
-uniform vec3 worldLightVector;
-uniform vec3 viewLightVector;
-uniform vec3 lightningShading;
-
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferPreviousProjection;
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferPreviousModelView;
-uniform mat4 gbufferModelView;
-
-uniform mat4 shadowProjection;
-uniform mat4 shadowProjectionInverse;
-uniform mat4 shadowModelView;
-uniform mat4 shadowModelViewInverse;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//
 
@@ -408,7 +340,7 @@ void main() {
 
 				vec3 emissionAlbedo = normalize(maxEps(albedo));
 				emissionAlbedo *= mix(inversesqrt(emissionAlbedo), vec3(1.0), approxSqrt(albedoLuma));
-				emissive.rgb *= emissionAlbedo * 3.0;
+				emissive.rgb *= emissionAlbedo * 4.0;
 			#else
 				if (emissive.a * lightmap.x > 1e-5) {
 					lightmap.x = CalculateBlocklightFalloff(lightmap.x);
@@ -459,15 +391,6 @@ void main() {
 
 		// Global illumination
 		#ifdef SSPT_ENABLED
-			#ifndef SSPT_TEMPORAL_INFINITE_BOUNCES
-				lightingOut = sceneOut;
-			#endif
-
-			#ifdef DEBUG_GI
-				sceneOut = vec3(0.0);
-				albedo = vec3(1.0);
-			#endif
-
 			#ifdef SVGF_ENABLED
 				float NdotV = abs(dot(worldNormal, -worldDir));
 				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * albedo * ao;

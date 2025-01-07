@@ -30,7 +30,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	return vec4(clamp16f(reflection), brdf);
 }
 
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PROGRAM_DEFERRED_10
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_10
 	vec4 CalculateSpecularReflections(Material material, in vec3 normal, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos, in float skylight, in float dither) {
 	#ifdef ROUGH_REFLECTIONS
 		if (material.isRough) {

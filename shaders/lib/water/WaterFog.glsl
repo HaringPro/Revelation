@@ -21,7 +21,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 //================================================================================================//
 
-#if defined PROGRAM_COMPOSITE
+#if defined PASS_COMPOSITE
 	vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 		float NdotD = dot(normal, dir);
 		float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);

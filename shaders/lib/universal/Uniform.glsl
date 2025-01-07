@@ -56,6 +56,7 @@ uniform vec3 previousCameraPosition;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 viewLightVector;
+uniform vec3 lightningShading;
 
 uniform mat4 gbufferProjection;
 uniform mat4 gbufferProjectionInverse;

@@ -1,4 +1,4 @@
-#if defined PROGRAM_DEFERRED_10
+#if defined PASS_DEFERRED_10
 #if (defined SSPT_ENABLED && defined SVGF_ENABLED) || defined RSM_ENABLED
 	vec3 SpatialUpscale5x5(in ivec2 texel, in vec3 worldNormal, in float viewDistance, in float NdotV) {
 		float sumWeight = 0.2;
@@ -33,7 +33,7 @@
 
 //================================================================================================//
 
-#if defined PROGRAM_COMPOSITE_4
+#if defined PASS_COMPOSITE_4
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
 	FogData VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
 		ivec2 bias = ivec2(coord + frameCounter) % 2;
