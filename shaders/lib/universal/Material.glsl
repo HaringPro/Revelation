@@ -74,8 +74,8 @@ struct Material {
 
 		material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 
-		material.hasReflections = max0(specTex.r - 0.56) + material.metalness > 1e-2;
-		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
+		material.hasReflections = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
+		material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;
 	}
@@ -108,8 +108,8 @@ struct Material {
 			material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
 		#endif
 
-		material.hasReflections = max0(specTex.r - 0.56) + material.metalness > 1e-2;
-		material.isRough = material.roughness > ROUGH_REFLECTIONS_THRESHOLD;
+		material.hasReflections = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
+		material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;
 	}

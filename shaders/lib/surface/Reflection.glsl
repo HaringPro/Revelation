@@ -61,13 +61,14 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
             float LdotH = dot(lightDir, halfway);
 			float NdotV = abs(dot(normal, -worldDir));
 			vec3 brdf = SpecularBRDFwithPDF(LdotH, NdotV, NdotL, material);
+			// brdf *= saturate(0.4 - material.roughness);
+
 			sceneOut *= 1.0 - brdf;
 
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
 			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
 
-			return vec4(clamp16f(reflection) * brdf, targetDepth);
-
+			return vec4(clamp16f(reflection * brdf), targetDepth);
 		} else
 	#endif
 		{
@@ -105,7 +106,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			}
 			sceneOut *= 1.0 - brdf;
 
-			return vec4(clamp16f(reflection) * brdf, 0.0);
+			return vec4(clamp16f(reflection * brdf), 0.0);
 		}
 	}
 #endif

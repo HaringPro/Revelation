@@ -106,6 +106,10 @@ const float minCloudAbsorption	  = 0.02;
 	#endif
 
 /* Weather */
+	#define RAIN_PUDDLES // Enables rain puddles
+	#define RAIN_PUDDLE_SCALE 0.01 // Scale of the rain puddles. [0.001 0.002 0.005 0.007 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
+	#define RAIN_PUDDLE_SMOOTHNESS 0.95 // Smoothness of the rain puddles. [0.0 0.1 0.2 0.3 0.4 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.91 0.92 0.93 0.94 0.95 0.96 0.97 0.98 0.99 1.0]
+
 	#define RAIN_VISIBILITY	0.4 // Visibility of the rain particles. [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 	#define RAIN_SCALE_X	3.0 // X-Scale of the rain particles. [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 20.0 24.0]
 	#define RAIN_SCALE_Y	3.0 // Y-Scale of the rain particles. [0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0 10.5 11.0 11.5 12.0 12.5 13.0 13.5 14.0 14.5 15.0 15.5 16.0 20.0 24.0]
@@ -179,7 +183,7 @@ const float minCloudAbsorption	  = 0.02;
 
 /* Reflections */
 	#define ROUGH_REFLECTIONS // Enables rough reflections
-	#define ROUGH_REFLECTIONS_THRESHOLD 0.01 // Threshold for rough reflections. [0.0001 0.0002 0.0005 0.0007 0.001 0.002 0.005 0.007 0.01 0.02 0.05 0.07 0.1 0.2 0.5]
+	#define ROUGH_REFLECTIONS_THRESHOLD 0.005 // Threshold for rough reflections. [0.0001 0.0002 0.0005 0.0007 0.001 0.002 0.005 0.007 0.01 0.02 0.05 0.07 0.1 0.2 0.5]
 
 	#define REFLECTION_FILTER // Enables reflection filter
 

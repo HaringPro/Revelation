@@ -28,6 +28,11 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out vec4 reflectionOut;
 
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+/* RENDERTARGETS: 0,1,8 */
+layout (location = 2) out vec2 specularOut;
+#endif
+
 //======// Input //===============================================================================//
 
 flat in vec3 directIlluminance;
@@ -79,6 +84,10 @@ flat in mat4x3 skySH;
 #include "/lib/SpatialUpscale.glsl"
 
 #include "/lib/surface/Reflection.glsl"
+
+#ifdef RAIN_PUDDLES
+	#include "/lib/surface/RainPuddle.glsl"
+#endif
 
 //======// Main //================================================================================//
 void main() {
@@ -137,10 +146,23 @@ void main() {
 		#endif
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
-		#ifdef SPECULAR_MAPPING
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			vec4 gbufferData1 = loadGbufferData1(screenTexel);
 			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
+		#else
+			vec4 specularTex;
+		#endif
+
+		// Apply rain puddles
+		#ifdef RAIN_PUDDLES
+			if (wetnessCustom > 1e-2 && materialID != 20u && materialID != 40u) {
+				CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
+			}
+		#endif
+
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			Material material = GetMaterialData(specularTex);
+			specularOut = specularTex.rg;
 		#else
 			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, DEFAULT_DIELECTRIC_F0, 0.0, false, false);
 		#endif
@@ -376,11 +398,10 @@ void main() {
 				// Metallic
 				material.metalness *= 0.2 * lightmap.y + 0.8;
 				albedo *= oneMinus(material.metalness);
-			}
-		#else
-			// Clear buffer
-			reflectionOut = vec4(0.0);
+			} else
 		#endif
+		// Clear buffer
+		reflectionOut = vec4(0.0);
 
 		// Apply albedo
 		sceneOut *= albedo;

@@ -106,6 +106,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 4.0) *
                        fastExp(-(abs(reflectionData.a - sampleData.a) * smoothness
                                + abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV));
+        weight = saturate(weight);
 
         reflectionData += vec4(pow(dotSelf(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
         sumWeight += weight;
@@ -114,7 +115,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     reflectionData *= 1.0 / sumWeight;
     reflectionData.rgb = pow(dotSelf(reflectionData.rgb), 0.5 / sharpenWeight) * normalize(maxEps(reflectionData.rgb));
 
-    return reflectionData;
+    return clamp16f(reflectionData);
 }
 
 //======// Main //================================================================================//
@@ -124,7 +125,7 @@ void main() {
     vec4 reflectionData = imageLoad(colorimg1, screenTexel);
 
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-        Material material = GetMaterialData(Unpack2x8(loadGbufferData1(screenTexel).x));
+        Material material = GetMaterialData(loadGbufferData1(screenTexel).xy);
 
         if (material.hasReflections && material.isRough) {
             vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);

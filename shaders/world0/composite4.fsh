@@ -125,7 +125,7 @@ void main() {
 		float skyLightmap = Unpack2x8UY(gbufferData0.x);
 
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			Material material = GetMaterialData(Unpack2x8(gbufferData1.x));
+			Material material = GetMaterialData(gbufferData1.xy);
 		#endif
 
 		// Water fog
@@ -191,7 +191,7 @@ void main() {
 	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			FogData volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
+			FogData volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -viewPos.z);
 			sceneOut = ApplyFog(sceneOut, volFogData);
 			bloomyFogTrans = mean(volFogData.transmittance);
 		}
@@ -200,7 +200,7 @@ void main() {
 	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
-			FogData waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -sViewPos.z);
+			FogData waterFog = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -viewPos.z);
 		#else
 			FogData waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif
