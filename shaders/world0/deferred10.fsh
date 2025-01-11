@@ -137,7 +137,8 @@ void main() {
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		vec2 lightmap = Unpack2x8U(gbufferData0.x);
-		lightmap.y = isEyeInWater == 1 ? 1.0 : cube(lightmap.y);
+		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
+
 		vec3 flatNormal = FetchFlatNormal(gbufferData0);
 		#ifdef NORMAL_MAPPING
 			vec3 worldNormal = FetchWorldNormal(gbufferData0);
@@ -155,8 +156,9 @@ void main() {
 
 		// Apply rain puddles
 		#ifdef RAIN_PUDDLES
-			if (wetnessCustom > 1e-2 && materialID != 20u && materialID != 40u) {
-				CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
+			if (wetnessCustom > 1e-2) {
+				if (clamp(materialID, 9u, 12u) != materialID && materialID != 20u && materialID != 40u)
+					CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
 			}
 		#endif
 
@@ -336,12 +338,12 @@ void main() {
 				#endif
 				skylight *= worldNormal.y * 2.0 + 3.0;
 
-				sceneOut += skylight * lightmap.y * ao;
+				sceneOut += skylight * cube(lightmap.y) * ao;
 
 				// Bounced light
 			#ifndef RSM_ENABLED
 				float bounce = CalculateApproxBouncedLight(worldNormal);
-				bounce *= sqr(lightmap.y);
+				bounce *= pow5(lightmap.y);
 				sceneOut += bounce * sunlightMult * ao;
 			#endif
 			}

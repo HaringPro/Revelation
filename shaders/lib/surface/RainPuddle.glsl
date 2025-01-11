@@ -14,11 +14,10 @@ void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specT
     // Normal falloff
     noise *= saturate(flatNormal.y * 0.3 + 0.7);
     // Skylight falloff
-    noise *= saturate(skylight * 2.0 - 1.0);
-
-    if (noise < 1e-5) return;
+    noise *= saturate(skylight * 4.0 - 3.0);
 
     float puddles = sqr(remap(0.22, 0.51, noise));
+    if (puddles < 1e-5) return;
 
     // Apply wetness to albedo
     vec3 wetAlbedo = colorSaturation(albedo, 0.7) * 0.75;
