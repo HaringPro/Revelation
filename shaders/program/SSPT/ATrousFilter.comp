@@ -75,10 +75,10 @@ void SharedPreload() {
     barrier();
 }
 
-vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {
+vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
 	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	     viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
 
 	return viewPos;
 }

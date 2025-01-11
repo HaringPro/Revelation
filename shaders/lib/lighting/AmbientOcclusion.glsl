@@ -5,7 +5,7 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 		NDCPos.xy -= taaOffset;
 	#endif
 	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos /= gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w;
+	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
 
 	return viewPos;
 }
