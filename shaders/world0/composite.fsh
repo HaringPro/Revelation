@@ -181,8 +181,8 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 		if (dot(transmittance, vec3(1.0)) < 1e-3) break; // Faster than maxOf()
 	}
 
-	vec3 scattering = scatteringSun * 11.0 * directIlluminance;
-	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 0.5, wetness * 0.4 + 0.2);
+	vec3 scattering = scatteringSun * rPI * directIlluminance;
+	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 1e-2, wetness * 0.4 + 0.2);
 	scattering *= eyeSkylightSmooth;
 
 	return FogData(scattering, transmittance);

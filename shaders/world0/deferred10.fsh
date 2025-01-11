@@ -227,7 +227,7 @@ void main() {
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = 36.0 * cloudShadow * directIlluminance;
+		vec3 sunlightMult = cloudShadow * directIlluminance;
 
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
@@ -330,7 +330,7 @@ void main() {
 			if (lightmap.y > 1e-5) {
 				// Skylight
 				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-				skylight = mix(directIlluminance * 0.2, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
+				skylight = mix(directIlluminance * 5e-3, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
 				#ifdef AURORA
 					skylight += 0.2 * auroraShading;
 				#endif

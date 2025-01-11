@@ -12,7 +12,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 	float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + isotropicPhase * 0.3;
 	const vec3 sunTransmittance = fastExp(-waterExtinction * 5.0);
 
-	vec3 scattering = rPI * oneMinus(wetnessCustom * 0.8) * directIlluminance * phase * sunTransmittance;
+	vec3 scattering = rPI * oneMinus(wetnessCustom * 0.8) * directIlluminance * 3e-2 * phase * sunTransmittance;
 	scattering += 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 	scattering *= oneMinus(transmittance) * skylight / waterExtinction;
 
@@ -92,7 +92,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 		float LdotV = dot(lightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + isotropicPhase * 0.3;
 
-		vec3 scattering = scatteringSun * 0.55 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
+		vec3 scattering = scatteringSun * 0.015 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
 		scattering += scatteringSky * 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 		scattering *= oneMinus(stepTransmittance) / waterExtinction;
 

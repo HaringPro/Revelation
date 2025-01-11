@@ -131,10 +131,10 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
-			vec3 sunIlluminance, moonIlluminance;
+			vec3 sunIrradiance, moonIrradiance;
 			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_MID_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIlluminance, moonIlluminance);
-			vec3 directIlluminance = sunIlluminance + moonIlluminance;
+			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance);
+			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
 			skyIlluminance += lightningShading * 4e-3;
 			#ifdef AURORA
@@ -142,7 +142,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * 11.0 * powder * directIlluminance;
+		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
 		scattering += scatteringSky * isotropicPhase * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(stratusExtinction);
 
@@ -217,10 +217,10 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
-			vec3 sunIlluminance, moonIlluminance;
+			vec3 sunIrradiance, moonIrradiance;
 			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_HIGH_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIlluminance, moonIlluminance);
-			vec3 directIlluminance = sunIlluminance + moonIlluminance;
+			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance);
+			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
 			skyIlluminance += lightningShading * 4e-3;
 			#ifdef AURORA
@@ -228,7 +228,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * 11.0 * powder * directIlluminance;
+		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
 		scattering += scatteringSky * isotropicPhase * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
@@ -381,10 +381,10 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					#ifdef CLOUD_LOCAL_LIGHTING
 						// Compute local lighting
-						vec3 sunIlluminance, moonIlluminance;
+						vec3 sunIrradiance, moonIrradiance;
 						vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
-						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayHitPos, worldSunVector, sunIlluminance, moonIlluminance);
-						vec3 directIlluminance = sunIlluminance + moonIlluminance;
+						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayHitPos, worldSunVector, sunIrradiance, moonIrradiance);
+						vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 		
 						skyIlluminance += lightningShading * 4e-3;
 						#ifdef AURORA
@@ -392,7 +392,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
-					vec3 scattering = stepScattering.x * 11.0 * directIlluminance;
+					vec3 scattering = stepScattering.x * rPI * directIlluminance;
 					scattering += stepScattering.y * isotropicPhase * skyIlluminance;
 
 					// Compute aerial perspective

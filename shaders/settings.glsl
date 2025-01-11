@@ -22,6 +22,7 @@ const float	shadowDistance 	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.
 
 const ivec2 skyViewRes 			  = ivec2(255, 192);
 const float skyIntensity 		  = 14.0;
+const float sunIntensity 		  = 36.0;
 
 const float minCloudTransmittance = 0.05;
 const float minCloudAbsorption	  = 0.02;

@@ -182,7 +182,7 @@ void main() {
 	//==// Translucent lighting //================================================================//
 	#ifdef TRANSLUCENT_LIGHTING
 		// Sunlight
-		vec3 sunlightMult = 36.0 * oneMinus(wetness * 0.96) * directIlluminance;
+		vec3 sunlightMult = oneMinus(wetness * 0.96) * directIlluminance;
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		vec3 sunlightDiffuse = vec3(0.0);
@@ -229,7 +229,7 @@ void main() {
 			if (lightmap.y > 1e-5) {
 				// Skylight
 				vec3 skylight = skyIlluminance * 0.75;
-				skylight = mix(skylight, directIlluminance * 0.05, wetness * 0.5 + 0.2);
+				skylight = mix(skylight, directIlluminance * 1e-3, wetness * 0.5 + 0.2);
 				skylight *= worldNormal.y * 1.2 + 1.8;
 
 				lighting += skylight * cube(lightmap.y);

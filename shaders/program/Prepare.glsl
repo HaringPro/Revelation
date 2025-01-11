@@ -26,9 +26,6 @@ noperspective out vec2 screenCoord;
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
-flat out vec3 sunIlluminance;
-flat out vec3 moonIlluminance;
-
 flat out float exposure;
 
 //======// Attribute //===========================================================================//
@@ -144,11 +141,14 @@ void main() {
 	screenCoord = vaUV0;
 
 	vec3 camera = vec3(0.0, viewerHeight, 0.0);
-	skyIlluminance = GetSunAndSkyIrradiance(camera, worldSunVector, sunIlluminance, moonIlluminance);
+	vec3 sunIrradiance, moonIrradiance;
+	skyIlluminance = GetSunAndSkyIrradiance(camera, worldSunVector, sunIrradiance, moonIrradiance);
 
     // Fix the sunlight misalignment at sunrise and sunset
-	sunIlluminance *= 1.0 - curve(saturate(1.0 - worldSunVector.y * 32.0));
-	directIlluminance = sunIlluminance + moonIlluminance;
+	sunIrradiance *= 1.0 - curve(saturate(1.0 - worldSunVector.y * 32.0));
+
+    // Irradiance to illuminance
+	directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
     skyIlluminance += lightningShading * 4e-3;
 	#ifdef AURORA
@@ -196,9 +196,6 @@ noperspective in vec2 screenCoord;
 
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
-
-flat in vec3 sunIlluminance;
-flat in vec3 moonIlluminance;
 
 flat in float exposure;
 
@@ -256,14 +253,6 @@ void main() {
 
             case 1:
                 skyViewOut = skyIlluminance;
-                break;
-
-            case 2:
-                skyViewOut = sunIlluminance;
-                break;
-
-            case 3:
-                skyViewOut = moonIlluminance;
                 break;
 
             case 4:
