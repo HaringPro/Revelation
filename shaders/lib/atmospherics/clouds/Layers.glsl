@@ -284,7 +284,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 3.0) * saturate(6.0 - heightFraction * 6.0);
 
-        float localCoverage = saturate(coverage.y * 3.0 - 0.45) * 0.5 + 0.5;
+        float localCoverage = saturate(coverage.y * 3.0 - 0.55) * 0.5 + 0.5;
 		shape *= gradienShape * localCoverage * (0.28 + wetness * 0.07 + CLOUD_CUMULUS_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.6;
 
