@@ -378,10 +378,11 @@ void main() {
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > 1e-4) {
-				float falloff = saturate(rcp(max(worldDistSquared, 1.0)) * max(heldBlockLightValue, heldBlockLightValue2));
-
 				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
-				sceneOut += (falloff * NdotL * HELD_LIGHT_BRIGHTNESS) * (ao - oneMinus(ao) * falloff * 0.7) * blocklightColor;
+				float attenuation = rcp(1.0 + worldDistSquared) * NdotL;
+				float irradiance = attenuation * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS;
+
+				sceneOut += irradiance * (ao - oneMinus(ao) * sqr(attenuation)) * blocklightColor;
 			}
 		#endif
 
