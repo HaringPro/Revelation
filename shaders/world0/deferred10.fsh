@@ -306,7 +306,7 @@ void main() {
 
 			// Apply parallax shadows
 			#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
-				#if !defined SPECULAR_MAPPING
+				#ifndef SPECULAR_MAPPING
 					vec4 gbufferData1 = loadGbufferData1(screenTexel);
 				#endif
 				shadow *= oneMinus(gbufferData1.z);
