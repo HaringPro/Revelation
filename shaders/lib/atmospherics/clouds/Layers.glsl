@@ -55,7 +55,7 @@ float Calculate3DNoiseSmooth(in vec3 position) {
 //================================================================================================//
 
 float CloudPlaneDensity(in vec2 rayPos) {
-	vec2 shift = cloudWindSc * CLOUD_WIND_SPEED;
+	vec2 shift = cloudWindAs * CLOUD_WIND_SPEED;
 
 	// Curl noise to simulate wind, makes the positioning of the clouds more natural
 	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.04;
@@ -64,19 +64,19 @@ float CloudPlaneDensity(in vec2 rayPos) {
 	float localCoverage = GetSmoothNoise(rayPos * 2e-5 + curl - shift * 0.3);
 	float density = 0.0;
 
-	#ifdef CLOUD_STRATOCUMULUS
+	#ifdef CLOUD_ALTOSTRATUS
 	/* Stratocumulus clouds */ if (localCoverage > 0.5) {
 		vec2 position = (rayPos * 3e-4 - shift + curl) * 4e-3;
 
-		float stratocumulus = texture(noisetex, position * 8.0).z * 0.82, weight = 0.56;
+		float altostratus = texture(noisetex, position * 8.0).z * 0.82, weight = 0.56;
 
 		// Stratocumulus FBM
 		for (uint i = 0u; i < 5u; ++i, weight *= 0.5) {
-			stratocumulus += weight * texture(noisetex, position).x;
-			position = position * (3.0 - weight) + stratocumulus * 0.012;
+			altostratus += weight * texture(noisetex, position).x;
+			position = position * (3.0 - weight) + altostratus * 0.012;
 		}
 
-		if (stratocumulus > 0.8) density += sqr(saturate(stratocumulus * 1.8 - 1.6)) * saturate(localCoverage * 1.6 - 0.8);
+		if (altostratus > 0.8) density += sqr(saturate(altostratus * 1.8 - 1.6)) * saturate(localCoverage * 1.6 - 0.8);
 	}
 	#endif
 	#ifdef CLOUD_CIRROCUMULUS
@@ -132,7 +132,7 @@ float CloudPlaneDensity(in vec2 rayPos) {
 }
 
 float CloudMidDensity(in vec2 rayPos) {
-	vec2 shift = cloudWindSc * CLOUD_WIND_SPEED;
+	vec2 shift = cloudWindAs * CLOUD_WIND_SPEED;
 
 	rayPos += 40.0;
 	float localCoverage = GetSmoothNoise(rayPos * 4e-5 - shift * 0.3);
@@ -141,18 +141,18 @@ float CloudMidDensity(in vec2 rayPos) {
 		// Curl noise to simulate wind, makes the positioning of the clouds more natural
 		vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.05;
 
-		vec2 position = (rayPos * 3e-4 - shift + curl) * 4.5e-3;
+		vec2 position = (rayPos * 2e-4 - shift + curl) * 2e-3;
 
-		float stratocumulus = texture(noisetex, position * 8.0).z * 0.82, weight = 0.54;
+		float altostratus = texture(noisetex, position * 16.0).z * 0.84, weight = 0.5;
 
 		// Stratocumulus FBM
-		for (uint i = 0u; i < 5u; ++i, weight *= 0.5) {
-			stratocumulus += weight * texture(noisetex, position).x;
-			position = position * (3.2 - weight) + stratocumulus * 0.014;
+		for (uint i = 0u; i < 5u; ++i, weight *= 0.6) {
+			position = position * (3.0 - weight + curl) + altostratus * 0.02 * weight;
+			altostratus += weight * texture(noisetex, position).x;
 		}
 
 		localCoverage = saturate(localCoverage * 1.6 - 0.8) * 0.5 + 0.5;
-		return pow1d5(maxEps(stratocumulus * 1.4 * localCoverage - 0.85));
+		return sqr(saturate(altostratus * (1.0 + CLOUD_AS_COVERAGE) * localCoverage - 1.0));
 	}
 }
 
@@ -178,7 +178,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.3;
 		cirrocumulus = saturate(cirrocumulus - density - 0.014);
 
-		cirrocumulus *= clamp(baseCoverage + saturate(localCoverage * 1.6 - 0.8) - 0.47, 0.0, 0.2);
+		cirrocumulus *= clamp(baseCoverage + saturate(localCoverage * (1.0 + CLOUD_CC_COVERAGE) - 0.8) - 0.45, 0.0, 0.2);
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
@@ -188,7 +188,7 @@ float CloudHighDensity(in vec2 rayPos) {
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
 			#endif
 
-			density += cube(saturate(cirrocumulus * 2.0)) * 3.0;
+			density += cube(saturate(cirrocumulus * 2.4)) * 3.2;
 		}
 	}
 	#endif
@@ -211,7 +211,7 @@ float CloudHighDensity(in vec2 rayPos) {
 			cirrus += texture(noisetex, position).x * exp2(-float(i) * 1.3);
 		}
 		cirrus -= saturate(localCoverage * 2.0 - 0.8);
-		cirrus = saturate(cirrus * 1.65 - 1.4 - density);
+		cirrus = saturate(cirrus * (1.0 + CLOUD_CI_COVERAGE) - 1.4 - density);
 
 		density += cube(0.4 * exp2(-curl.x * 8.0) * cirrus);
 	}
@@ -229,7 +229,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		if (baseCoverage < 1e-6) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
+		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
 		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
@@ -242,7 +242,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 4.0) * saturate(6.0 - heightFraction * 6.0);
 
-		shape *= gradienShape * (0.4 + wetness * 0.1 + CLOUD_CUMULUS_COVERAGE);
+		shape *= gradienShape * (0.4 + wetness * 0.1 + CLOUD_CU_COVERAGE);
 		shape -= heightFraction * 0.5 + 0.3;
 
 		if (shape > 0.03 && detail) {
@@ -271,7 +271,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		if (dot(coverage, vec2(1.0)) < 1e-3) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
+		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
 		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
@@ -285,7 +285,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		float gradienShape = saturate(heightFraction * 3.0) * saturate(6.0 - heightFraction * 6.0);
 
         float localCoverage = saturate(coverage.y * 3.0 - 0.55) * 0.5 + 0.5;
-		shape *= gradienShape * localCoverage * (0.28 + wetness * 0.07 + CLOUD_CUMULUS_COVERAGE);
+		shape *= gradienShape * localCoverage * (0.28 + wetness * 0.07 + CLOUD_CU_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.6;
 
 		if (shape > 0.02 && detail) {
@@ -314,7 +314,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		if (baseCoverage < 1e-6) return 0.0;
 
 		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
+		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
 		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
@@ -328,7 +328,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		// Use two remap functions to carve out the gradient shape
 		float gradienShape = saturate(heightFraction * 4.0) * saturate(5.0 - heightFraction * 5.0);
 
-		shape *= gradienShape * (0.24 + wetness * 0.06 + CLOUD_CUMULUS_COVERAGE);
+		shape *= gradienShape * (0.24 + wetness * 0.06 + CLOUD_CU_COVERAGE);
 		shape -= heightFraction * 0.4 + 0.16;
 
 		if (shape > 0.04 && detail) {

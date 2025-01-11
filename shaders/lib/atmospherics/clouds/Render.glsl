@@ -16,12 +16,12 @@
 //================================================================================================//
 
 float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = CLOUD_CUMULUS_THICKNESS * (0.1 / float(CLOUD_CUMULUS_SUNLIGHT_SAMPLES));
+    const float stepSize = CLOUD_CU_THICKNESS * (0.1 / float(CLOUD_CU_SUNLIGHT_SAMPLES));
 	vec4 rayStep = vec4(cloudLightVector, 1.0) * stepSize;
 
     float opticalDepth = 0.0;
 
-	for (uint i = 0u; i < CLOUD_CUMULUS_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
+	for (uint i = 0u; i < CLOUD_CU_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
 		if (rayPos.y >= cumulusMaxAltitude) break;
         rayStep *= 1.5;
 
@@ -36,12 +36,12 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
 }
 
 float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = CLOUD_CUMULUS_THICKNESS * (0.1 / float(CLOUD_CUMULUS_SKYLIGHT_SAMPLES));
+    const float stepSize = CLOUD_CU_THICKNESS * (0.1 / float(CLOUD_CU_SKYLIGHT_SAMPLES));
 	vec4 rayStep = vec4(vec3(0.0, 1.0, 0.0), 1.0) * stepSize;
 
     float opticalDepth = 0.0;
 
-	for (uint i = 0u; i < CLOUD_CUMULUS_SKYLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
+	for (uint i = 0u; i < CLOUD_CU_SKYLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
 		if (rayPos.y >= cumulusMaxAltitude) break;
         rayStep *= 1.5;
 
@@ -57,7 +57,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CUMULUS_ALTITUDE + 40.0)) * cumulusExtinction * 0.08;
+    return max0(rayPos.y - (CLOUD_CU_ALTITUDE + 40.0)) * cumulusExtinction * 0.08;
 }
 
 float CloudPowderEffect(in float depth, in float height, in float factor) {
@@ -73,14 +73,14 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		float opticalDepth = density * stepT * rLOG2;
 		float absorption = oneMinus(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
 
-		float stepSize = 42.0;
+		const float stepSize = 128.0 / float(CLOUD_MID_SUNLIGHT_SAMPLES);
 		vec2 rayPos = rayPos;
 		vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
 		// float lightNoise = hash1(rayPos);
 
 		opticalDepth = 0.0;
 		// Compute the optical depth of sunlight through clouds
-		for (uint i = 0u; i < 3u; ++i, rayPos += rayStep.xy) {
+		for (uint i = 0u; i < CLOUD_MID_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xy) {
 			float density = CloudMidDensity(rayPos + rayStep.xy * lightNoise);
 			if (density < 1e-6) continue;
 
@@ -159,14 +159,14 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		float opticalDepth = density * stepT * rLOG2;
 		float absorption = oneMinus(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
 
-		float stepSize = 42.0;
+		const float stepSize = 128.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
 		vec2 rayPos = rayPos;
 		vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
 		// float lightNoise = hash1(rayPos);
 
 		opticalDepth = 0.0;
 		// Compute the optical depth of sunlight through clouds
-		for (uint i = 0u; i < 3u; ++i, rayPos += rayStep.xy) {
+		for (uint i = 0u; i < CLOUD_HIGH_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xy) {
 			float density = CloudHighDensity(rayPos + rayStep.xy * lightNoise);
 			if (density < 1e-6) continue;
 
@@ -257,25 +257,25 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	//================================================================================================//
 
-	// Compute volumetric clouds
+	// Low-cloud family
 	#ifdef CLOUD_CUMULUS
-		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_CUMULUS_ALTITUDE) // Below clouds
-		 || (clamp(eyeAltitude, CLOUD_CUMULUS_ALTITUDE, cumulusMaxAltitude) == eyeAltitude) // In clouds
+		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_CU_ALTITUDE) // Below clouds
+		 || (clamp(eyeAltitude, CLOUD_CU_ALTITUDE, cumulusMaxAltitude) == eyeAltitude) // In clouds
 		 || (rayDir.y < 0.0 && eyeAltitude > cumulusMaxAltitude)) { // Above clouds
 
 			// Compute cloud spherical shell intersection
-			vec2 intersection = RaySphericalShellIntersection(r, mu, planetRadius + CLOUD_CUMULUS_ALTITUDE, planetRadius + cumulusMaxAltitude);
+			vec2 intersection = RaySphericalShellIntersection(r, mu, planetRadius + CLOUD_CU_ALTITUDE, planetRadius + cumulusMaxAltitude);
 
 			if (intersection.y > 0.0) { // Intersect the volume
 				// Special treatment for the eye inside the volume
-				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CUMULUS_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
+				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
 				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
 				#if defined PASS_PREPARE
-					uint raySteps = uint(CLOUD_CUMULUS_SAMPLES * 0.6);
+					uint raySteps = uint(CLOUD_CU_SAMPLES * 0.6);
 					raySteps = uint(float(raySteps) * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
-					uint raySteps = CLOUD_CUMULUS_SAMPLES;
+					uint raySteps = CLOUD_CU_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
 					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oneMinus(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
@@ -302,7 +302,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				float powderFactor = sqr(LdotV * 0.5 + 0.5);
 
 				for (uint i = 0u; i < raySteps; ++i, rayPos += rayStep) {
-					if (rayPos.y < CLOUD_CUMULUS_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
+					if (rayPos.y < CLOUD_CU_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
 
 					// Compute sample cloud density
 					#if defined PASS_PREPARE
@@ -352,9 +352,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float stepTransmittance = max(exp2(-stepOpticalDepth), exp2(-stepOpticalDepth * 0.25) * 0.7);
 
 					// Compute In-Scatter Probability
-					#ifdef CLOUD_CUMULUS_ADVANCED_POWDER
+					#ifdef CLOUD_CU_ADVANCED_POWDER
 						// Reference: https://github.com/qiutang98/flower/blob/main/source/shader/cloud/cloud_common.glsl
-						float heightFraction = saturate((rayPos.y - CLOUD_CUMULUS_ALTITUDE) * rcp(CLOUD_CUMULUS_THICKNESS));
+						float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 	
 						float depthProbability = pow(min(stepDensity * 6.0, PI), remap(heightFraction, 0.3, 0.85, 0.5, 2.0)) + 0.05;
 						float verticalProbability = pow(remap(heightFraction, 0.07, 0.22, 0.1, 1.0), 0.8);
@@ -417,8 +417,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	bool planetIntersection = RayIntersectsGround(r, mu);
 
-	// Compute mid clouds
-	#if defined CLOUD_STRATOCUMULUS
+	// Mid-cloud family
+	#if defined CLOUD_ALTOSTRATUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_MID_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_MID_ALTITUDE)) { // Above clouds
 			float cloudDistance = (planetRadius + CLOUD_MID_ALTITUDE - r) / mu;
@@ -447,7 +447,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 		}
 	#endif
 
-	// Compute high clouds
+	// High-cloud family
 	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_HIGH_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_HIGH_ALTITUDE)) { // Above clouds

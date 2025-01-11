@@ -44,12 +44,12 @@ float ReadCloudShadowMap(in sampler2D shadowMap, in vec3 rayPos) {
 
 #ifdef PASS_PREPARE
 float CalculateCloudShadows(in vec3 rayPos) {
-	// if (eyeAltitude > CLOUD_CUMULUS_ALTITUDE) return 1.0;
+	// if (eyeAltitude > CLOUD_CU_ALTITUDE) return 1.0;
 
 	rayPos += cameraPosition;
 
 	float cloudShadow = 1.0;
-	#if defined CLOUD_STRATOCUMULUS
+	#if defined CLOUD_ALTOSTRATUS
 	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
 		if (shadowAltitude > 0.0) {
@@ -70,13 +70,13 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	#ifdef CLOUD_CUMULUS
 	{	// Start from the cloud intersection plane and move towards the light vector.
-		float shadowAltitude = 0.5 * (CLOUD_CUMULUS_ALTITUDE + cumulusMaxAltitude) - rayPos.y;
+		float shadowAltitude = 0.5 * (CLOUD_CU_ALTITUDE + cumulusMaxAltitude) - rayPos.y;
 		if (shadowAltitude > 0.0) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
 			#if 0
-				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CUMULUS_THICKNESS * cumulusExtinction * 0.2);
+				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CU_THICKNESS * cumulusExtinction * 0.2);
 			#else
-				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * CLOUD_CUMULUS_THICKNESS * cumulusExtinction * 0.2);
+				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * CLOUD_CU_THICKNESS * cumulusExtinction * 0.2);
 			#endif
 		}
 	}
