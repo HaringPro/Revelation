@@ -12,7 +12,7 @@
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= RGBA16F;
-	const int 	colortex2Format 			= RG8I;
+	const int 	colortex2Format 			= R8I;
 	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
 	const int 	colortex5Format 			= R11F_G11F_B10F;
@@ -62,7 +62,7 @@
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history | Specular reflections, lighting of glass
-	|	colortex2	|   rg8i	        |	Full res  	|	Cloud frame index, sky mask
+	|	colortex2	|   r8i	        	|	Full res  	|	Cloud frame index
 	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light -> Lighting data history
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors, exposure

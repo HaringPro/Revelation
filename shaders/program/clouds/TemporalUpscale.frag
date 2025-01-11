@@ -20,7 +20,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 2,9 */
-layout (location = 0) out uvec2 dataOut;
+layout (location = 0) out uint frameOut;
 layout (location = 1) out vec4 cloudOut;
 
 //======// Uniform //=============================================================================//
@@ -178,19 +178,20 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	float depth = loadDepth0(screenTexel);
-	dataOut = uvec2(0u);
+	frameOut = 0u;
 
 	if (depth > 0.999999) {
-		dataOut.y = 1u;
+		frameOut = 1u;
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 		vec2 prevCoord = Reproject(vec3(screenCoord, 1.0)).xy;
+		uint frameIndex = texture(colortex2, prevCoord).x;
 
 		bool disocclusion = worldTimeChanged;
 		// Offscreen invalidation
 		disocclusion = disocclusion || saturate(prevCoord) != prevCoord;
 		// Previous land invalidation
-		disocclusion = disocclusion || texture(colortex2, prevCoord).y == 0u;
+		disocclusion = disocclusion || frameIndex < 1u;
 		// Fov change invalidation
 		// disocclusion = disocclusion || (gbufferProjection[0].x - gbufferPreviousProjection[0].x) > 0.25;
 
@@ -201,15 +202,13 @@ void main() {
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
 			prevData = clamp16f(prevData); // Fix black border artifacts
-			uint frameIndex = texture(colortex2, prevCoord).x;
-			dataOut.x = ++frameIndex;
+			frameOut += frameIndex;
 
 			// Checkerboard upscaling
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
 			if (screenTexel % CLOUD_CBR_SCALE == offset) {
-
 				// Accumulate enough frame for checkerboard pattern
-				float blendWeight = 1.0 - rcp(max(min(float(frameIndex), CLOUD_MAX_BLENDED_FRAMES) - cloudRenderArea, 1.0));
+				float blendWeight = 1.0 - rcp(max(float(min(frameOut, CLOUD_MAX_BLENDED_FRAMES)) - cloudRenderArea, 1.0));
 
 				// Offcenter rejection
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
