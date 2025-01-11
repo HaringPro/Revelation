@@ -20,19 +20,19 @@ vec2 GetCloudShadowCoord(in vec3 rayPos) {
 	rayPos = mat3(shadowModelView) * rayPos;
 
 	// Distortion
-	rayPos.xy /= 1.0 + length(rayPos.xy);
+	rayPos.xy *= rcp(1.0 + length(rayPos.xy));
 
-	return rayPos.xy * rcp(far) * 0.5 + 0.5;
+	return rayPos.xy * rcp(CLOUD_SHADOW_DISTANCE) * 0.5 + 0.5;
 }
 
 vec3 SetupCloudShadowPos(in vec2 texCoord) {
 	texCoord = texCoord * 2.0 - 1.0;
 
 	// Distortion
-	texCoord /= 1.0 - length(texCoord);
+	texCoord *= rcp(1.0 + length(texCoord));
 
 	// Shadow view space to world space
-	return mat3(shadowModelViewInverse) * vec3(texCoord * far, 0.0);
+	return mat3(shadowModelViewInverse) * vec3(texCoord * CLOUD_SHADOW_DISTANCE, 0.0);
 }
 
 float ReadCloudShadowMap(in sampler2D shadowMap, in vec3 rayPos) {
