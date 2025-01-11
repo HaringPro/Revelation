@@ -29,7 +29,7 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex1; // Scene history
 
-uniform usampler2D colortex2; // Cloud frame index, sky mask
+uniform usampler2D colortex2; // Cloud frame index
 
 uniform sampler2D colortex9; // Previous clouds
 uniform sampler2D colortex13; // Current clouds
