@@ -98,9 +98,9 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 /* Screen-Space Path Tracing */
 
 #define SSPT_SPP 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
-#define SSPT_BOUNCES 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
+#define SSPT_BOUNCES 3 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
 
-#define SSPT_FALLOFF 0.3 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define SSPT_RR_MIN_BOUNCES 2 // [1 2 3 4 5 6 7 8 9 10 11 12 14 16 18 20 22 24]
 #define SSPT_BLENDED_LIGHTMAP 0.0 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 
 vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
@@ -109,7 +109,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
 	vec3 rayDir = normalize(endPos - rayPos);
 
-	float stepLength = minOf((step(0.0, rayDir) - rayPos) / rayDir) * rcp(15.0);
+	float stepLength = minOf((step(0.0, rayDir) - rayPos) / rayDir) * rcp(16.0);
 
 	vec3 rayStep = rayDir * stepLength;
 	rayPos += rayStep * dither;
@@ -117,7 +117,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 	rayPos.xy *= viewSize;
 	rayStep.xy *= viewSize;
 
-	for (uint i = 0u; i < 15u; ++i, rayPos += rayStep) {
+	for (uint i = 0u; i < 16u; ++i, rayPos += rayStep) {
 		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
 
@@ -146,7 +146,7 @@ struct TracingData {
 	vec3 contribution;
 };
 
-vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap, in float dither) {
+vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap) {
 	lightmap.x = CalculateBlocklightFalloff(lightmap.x) * SSPT_BLENDED_LIGHTMAP;
 	lightmap.y *= lightmap.y * lightmap.y;
 
@@ -157,9 +157,6 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 	vec3 sum = vec3(0.0);
 
-	// Fix overflow on handheld emitters
-	float maxRadiance = 0.1 + 1e5 * step(0.56, screenPos.z);
-
 	#if SSPT_BOUNCES > 1
 	// Multiple bounce tracing.
 
@@ -167,33 +164,38 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 		// Initialize tracing data.
 		TracingData target = TracingData(screenPos, vec3(0.0), viewNormal, worldNormal, vec3(1.0));
 
-		for (uint bounce = 0u; bounce < SSPT_BOUNCES; ++bounce) {
+		for (uint bounce = 1u; bounce <= SSPT_BOUNCES; ++bounce) {
 			vec3 sampleDir = sampleCosineVector(target.worldNormal, nextVec2(noiseGenerator));
 
 			// target.rayDir = dot(target.worldNormal, target.rayDir) < 0.0 ? -target.rayDir : target.rayDir;
 			target.rayDir = normalize(gbufferModelView * sampleDir);
 
+			float dither = nextFloat(noiseGenerator);
 			vec3 targetViewPos = ScreenToViewSpaceRaw(target.rayPos) + target.viewNormal * 1e-2;
 			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
 			if (target.rayPos.z < 1.0) {
 				ivec2 targetTexel = ivec2(target.rayPos.xy);
-				vec3 sampleRadiance = min(texelFetch(colortex4, targetTexel >> 1, 0).rgb, maxRadiance);
+				vec3 sampleRadiance = texelFetch(colortex4, targetTexel >> 1, 0).rgb;
 
 				target.worldNormal = FetchWorldNormal(loadGbufferData0(targetTexel));
 				target.viewNormal = gbufferModelView * target.worldNormal;;
 
+				sum += sampleRadiance * target.contribution;
+
 				target.contribution *= loadAlbedo(targetTexel);
-
 				target.rayPos.xy *= viewPixelSize;
-				vec3 diffPos = ScreenToViewSpace(target.rayPos) - viewPos;
-				float diffSqLen = dotSelf(diffPos);
-
-				sum += sampleRadiance * target.contribution * pow(diffSqLen, -SSPT_FALLOFF);
 			} else if (dot(lightmap, vec2(1.0)) > 1e-3) {
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir)).rgb;
 				sum += (skyRadiance * lightmap.y + lightmap.x) * target.contribution;
 				break;
+			}
+
+            // Russian roulette
+			if (bounce >= SSPT_RR_MIN_BOUNCES) {
+				float probability = saturate(GetLuminance(target.contribution));
+				if (probability < dither) break;
+				target.contribution *= rcp(probability);
 			}
 		}
 	}
@@ -207,16 +209,12 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			vec3 rayDir = normalize(gbufferModelView * sampleDir);
 			// rayDir = dot(viewNormal, rayDir) < 0.0 ? -rayDir : rayDir;
 
-			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, dither, screenPos);
+			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, nextFloat(noiseGenerator), screenPos);
 
 			if (hitPos.z < 1.0) {
-				vec3 sampleRadiance = min(texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb, maxRadiance);
+				vec3 sampleRadiance = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
 
-				hitPos.xy *= viewPixelSize;
-				vec3 diffPos = ScreenToViewSpace(hitPos) - viewPos;
-				float diffSqLen = dotSelf(diffPos);
-
-				sum += sampleRadiance * pow(diffSqLen, -SSPT_FALLOFF);
+				sum += sampleRadiance;
 			} else if (dot(lightmap, vec2(1.0)) > 1e-3) {
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir)).rgb;
 				sum += skyRadiance * lightmap.y + lightmap.x;

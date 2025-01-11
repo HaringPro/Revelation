@@ -76,7 +76,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
         }
     }
     if (sumWeight > 1e-5) {
-        prevLight /= sumWeight;
+        prevLight *= 1.0 / sumWeight;
 
         indirectHistory.a = min(prevLight.a, RSM_MAX_BLENDED_FRAMES);
 

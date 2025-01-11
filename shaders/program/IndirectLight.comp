@@ -67,14 +67,13 @@ void main() {
 		vec3 screenPos = vec3(screenCoord, depth);
 		vec3 viewPos = ScreenToViewSpace(screenPos);
 
-        float dither = BlueNoiseTemporal(currentTexel);
-
 		#ifdef RSM_ENABLED
+			float dither = BlueNoiseTemporal(currentTexel);
 			float skyLightmap = Unpack2x8UY(gbufferData0.x);
 			imageStore(colorimg3, screenTexel, vec4(CalculateRSM(viewPos, worldNormal, dither, skyLightmap), 1.0));
 		#else
 			vec2 lightmap = Unpack2x8U(gbufferData0.x);
-			imageStore(colorimg3, screenTexel, vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap, dither), 1.0));
+			imageStore(colorimg3, screenTexel, vec4(CalculateSSPT(screenPos, viewPos, worldNormal, lightmap), 1.0));
 		#endif
 	}
 }
