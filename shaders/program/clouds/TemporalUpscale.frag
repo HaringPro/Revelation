@@ -208,7 +208,7 @@ void main() {
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
 			if (screenTexel % CLOUD_CBR_SCALE == offset) {
 				// Accumulate enough frame for checkerboard pattern
-				float blendWeight = 1.0 - rcp(max(float(min(frameOut, CLOUD_MAX_BLENDED_FRAMES)) - cloudRenderArea, 1.0));
+				float blendWeight = 1.0 - rcp(max(float(min(frameOut, CLOUD_MAX_ACCUM_FRAMES)) - cloudRenderArea, 1.0));
 
 				// Offcenter rejection
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);

@@ -201,7 +201,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
 
     float frameIndex = texture(colortex1, prevCoord).a;
 
-    float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_BLENDED_FRAMES);
+    float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_ACCUM_FRAMES);
     blendWeight /= blendWeight + 1.0;
 
     vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);

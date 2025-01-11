@@ -93,11 +93,11 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 
 		// Compute sunlight multi-scattering
 		float scatteringSun = 0.0; {
-			float factor = cloudMsFactor;
+			float falloff = cloudMsFalloff;
 
-			for (uint ms = 0u; ms < cloudMsCount; ++ms, factor *= factor) {
+			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
 				scatteringSun += exp2(-opticalDepth) * phases[ms];
-				opticalDepth *= factor;
+				opticalDepth *= falloff;
 			}
 		}
 
@@ -179,11 +179,11 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 
 		// Compute sunlight multi-scattering
 		float scatteringSun = 0.0; {
-			float factor = cloudMsFactor;
+			float falloff = cloudMsFalloff;
 
-			for (uint ms = 0u; ms < cloudMsCount; ++ms, factor *= factor) {
+			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
 				scatteringSun += exp2(-opticalDepth) * phases[ms];
-				opticalDepth *= factor;
+				opticalDepth *= falloff;
 			}
 		}
 
@@ -244,11 +244,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	// Compute phases for clouds' sunlight multi-scattering
 	float phases[cloudMsCount]; {
-		float factor = cloudMsFactor;
+		float falloff = cloudMsFalloff;
 		phases[0] = MiePhaseClouds(LdotV, vec3(0.65, -0.4, 0.9), vec3(0.65, 0.25, 0.1));
 
-		for (uint ms = 1u; ms < cloudMsCount; ++ms, factor *= factor) {
-			phases[ms] = mix(isotropicPhase, phases[0], factor) * factor;
+		for (uint ms = 1u; ms < cloudMsCount; ++ms, falloff *= falloff) {
+			phases[ms] = mix(isotropicPhase, phases[0], falloff) * falloff;
 		}
 	}
 
@@ -328,11 +328,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute sunlight multi-scattering
 					float scatteringSun = 0.0; {
-						float factor = cloudMsFactor;
+						float falloff = cloudMsFalloff;
 
-						for (uint ms = 0u; ms < cloudMsCount; ++ms, factor *= factor) {
+						for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
 							scatteringSun += exp2(-opticalDepthSun) * phases[ms];
-							opticalDepthSun *= factor;
+							opticalDepthSun *= falloff;
 						}
 					}
 
