@@ -23,11 +23,11 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-float BlockerSearch(in vec3 shadowScreenPos, in float dither) {
+float BlockerSearch(in vec3 shadowScreenPos, in float dither, in float searchScale) {
 	float searchDepth = 0.0;
 	float sumWeight = 0.0;
 
-	float searchRadius = 2.0 * shadowProjection[0].x;
+	vec2 searchRadius = searchScale * diagonal2(shadowProjection);
 
 	// dither = TentFilter(dither);
 	vec2 dir = cossin(dither * TAU) * searchRadius;
@@ -46,17 +46,17 @@ float BlockerSearch(in vec3 shadowScreenPos, in float dither) {
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.2);
+	searchDepth = clamp(1.6 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.02, 0.1);
 
-	return searchDepth * shadowProjection[0].x;
+	return searchDepth;
 }
 
-vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither) {
+vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither, in float searchScale) {
 	float searchDepth = 0.0;
 	float sumWeight = 0.0;
 	float sssDepth = 0.0;
 
-	float searchRadius = 2.0 * shadowProjection[0].x;
+	vec2 searchRadius = searchScale * diagonal2(shadowProjection);
 
 	// dither = TentFilter(dither);
 	vec2 dir = cossin(dither * TAU) * searchRadius;
@@ -76,19 +76,21 @@ vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither) {
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = min(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.2);
+	searchDepth = clamp(1.6 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.02, 0.1);
 
-	return vec2(searchDepth * shadowProjection[0].x, sssDepth * shadowProjectionInverse[2].z);
+	return vec2(searchDepth, sssDepth * shadowProjectionInverse[2].z);
 }
 
 vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 
-	vec3 result = vec3(0.0);
+	vec2 penumbraRadius = penumbraScale * diagonal2(shadowProjection);
 
-	vec2 dir = cossin(dither * TAU) * penumbraScale;
+	vec2 dir = cossin(dither * TAU) * penumbraRadius;
 	const vec2 angleStep = cossin(TAU * rSteps);
 	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
+
+	vec3 result = vec3(0.0);
 
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * rSteps;

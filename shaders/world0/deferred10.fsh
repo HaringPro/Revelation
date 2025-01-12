@@ -249,22 +249,21 @@ void main() {
 				vec2 blockerSearch;
 				// Sub-surface scattering
 				if (doSss) {
-					blockerSearch = BlockerSearchSSS(shadowScreenPos, dither);
+					blockerSearch = BlockerSearchSSS(shadowScreenPos, dither, 0.25 * (1.0 + sssAmount) / distortFactor);
 					vec3 subsurfaceScattering = CalculateSubsurfaceScattering(albedo, sssAmount, blockerSearch.y, LdotV);
 
 					// Formula from https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
 					// float bssrdf = sqr(saturate(dot(worldDir, worldLightVector + 0.2 * worldNormal))) * 4.0;
 					sceneOut += subsurfaceScattering * sunlightMult * ao * oneMinus(NdotL);
 				} else {
-					blockerSearch.x = BlockerSearch(shadowScreenPos, dither);
+					blockerSearch.x = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
 				}
 
 				// Shadows
 				if (doShadows) {
-					float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
 					shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
 
-					vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+					vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
 
 					if (maxOf(shadow) > 1e-6) {
 						shadow *= sunlightMult;

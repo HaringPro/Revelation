@@ -201,11 +201,10 @@ void main() {
 			if (saturate(shadowScreenPos) == shadowScreenPos) {
 				float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
 
-				float blockerSearch = BlockerSearch(shadowScreenPos, dither);
-				float penumbraScale = max(blockerSearch / distortFactor, 2.0 / realShadowMapRes);
+				float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
 				shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
 
-				vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, penumbraScale) * saturate(lightmap.y * 1e8);
+				vec3 shadow = PercentageCloserFilter(shadowScreenPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
 
 				if (dot(shadow, vec3(1.0)) > 1e-6) {
 					float LdotV = dot(worldLightVector, -worldDir);
