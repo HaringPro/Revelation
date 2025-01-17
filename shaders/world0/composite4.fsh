@@ -94,22 +94,21 @@ void main() {
 
 	vec2 refractedCoord = screenCoord;
 	ivec2 refractedTexel = screenTexel;
-	bool waterMask = false;
+	bool waterMask = materialID == 3u;
 
-	if (materialID == 2u || materialID == 3u) {
+	if (materialID == 2u || waterMask) {
 		vec3 viewNormal = mat3(gbufferModelView) * decodeUnitVector(Unpack2x8U(gbufferData0.z));
 		#ifdef RAYTRACED_REFRACTION
-			refractedCoord = CalculateRefractedCoord(materialID == 3u, viewPos, viewNormal, screenPos);
+			refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos);
 		#else	
-			refractedCoord = CalculateRefractedCoord(materialID == 3u, viewPos, viewNormal, screenPos, gbufferData1, transparentDepth);
+			refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos, gbufferData1, transparentDepth);
 		#endif
 		refractedTexel = uvToTexel(refractedCoord);
 
 		depth = loadDepth0(refractedTexel);
 
-		gbufferData0 = loadGbufferData0(refractedTexel);
+		// gbufferData0 = loadGbufferData0(refractedTexel);
 		viewPos = ScreenToViewSpace(vec3(refractedCoord, depth));
-		waterMask = gbufferData0.y == 3u || materialID == 3u;
 	}
 
     sceneOut = loadSceneColor(refractedTexel);
@@ -176,7 +175,7 @@ void main() {
 		// Border fog
 		#ifdef BORDER_FOG
 			if (doBorderFog) {
-				float density = saturate(1.0 - exp2(-sqr(pow4(dotSelf(worldPos.xz) * rcp(far * far))) * BORDER_FOG_FALLOFF));
+				float density = saturate(1.0 - exp2(-pow8(dotSelf(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
 				density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
 
 				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
