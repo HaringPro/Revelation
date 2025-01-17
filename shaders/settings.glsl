@@ -246,10 +246,17 @@ const float minCloudAbsorption	  = 0.02;
 	#define AUTO_EXPOSURE_LOD 6 // LOD level for auto exposure. [1 2 3 4 5 6 7 8 9 10 11 12 14 16]
 
 	#define ISO 100.0 // ISO value. [100.0 200.0 320.0 400.0 500.0 640.0 800.0 1000.0 1250.0 1600.0 2000.0 2500.0 3200.0 4000.0 5000.0 6400.0 8000.0 10000.0 12800.0 16000.0 20000.0 25600.0 32000.0 40000.0 51200.0 64000.0 80000.0]
+	#define AUTO_EV_MIN -16.0 // Minimum EV value for auto exposure. [-24.0 -20.0 -16.0 -12.0 -8.0 -4.0 -2.0 -1.0 0.0 1.0 2.0 4.0 8.0 12.0 16.0 20.0 24.0]
+	#define AUTO_EV_MAX  16.0 // Maximum EV value for auto exposure. [-24.0 -20.0 -16.0 -12.0 -8.0 -4.0 -2.0 -1.0 0.0 1.0 2.0 4.0 8.0 12.0 16.0 20.0 24.0]
 	#define AUTO_EV_BIAS 0.0 // EV bias for auto exposure. [-2.0 -1.9 -1.8 -1.7 -1.6 -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 	#define EXPOSURE_SPEED_DOWN 1.6 // Bright to dim speed. [0.5 0.6 0.7 0.8 0.9 1.0 1.6 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 40.0 50.0]
 	#define EXPOSURE_SPEED_UP 3.0 // Dim to bright speed. [0.5 0.6 0.7 0.8 0.9 1.0 1.6 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 40.0 50.0]
 	#define MANUAL_EV 12.0 // Manual exposure value. [0.1 0.3 0.5 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 14.0 16.0 18.0 20.0 25.0 30.0 40.0 50.0]
+
+	#define HISTOGRAM_AE // Enables auto exposure histogram
+	#define HISTOGRAM_BIN_COUNT 32 // Number of bins for the histogram. [8 16 32 64 128 256 512 1024]
+	#define HISTOGRAM_LOWER_BOUND 0.4 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+	#define HISTOGRAM_UPPER_BOUND 0.7 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 /* FidelityFX */
 	// #define FSR_ENABLED // Enables AMD FidelityFX Super Resolution

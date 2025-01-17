@@ -63,12 +63,16 @@ uniform vec3 lightningShading;
 #include "/lib/atmospherics/Global.glsl"
 #include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
 
-#define HISTOGRAM_AE // Enables auto exposure histogram
+const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
+const float autoEvRangeInv = 1.0 / autoEvRange;
 
-#define HISTOGRAM_BIN_COUNT 32 // [8 16 32 64 128 256 512 1024]
-#define HISTOGRAM_MIN_EV -20.0 // [-24.0 -20.0 -16.0 -12.0 -8.0 -4.0 -2.0 -1.0 0.0 1.0 2.0 4.0 8.0 12.0 16.0 20.0 24.0]
-#define HISTOGRAM_LOWER_BOUND 0.6 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9]
-#define HISTOGRAM_UPPER_BOUND 0.9 // [0.5 0.6 0.7 0.8 0.9 1.0]
+float histogramLumToBin(in float lum) {
+    return saturate(log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv));
+}
+
+float histogramBinToLum(in float bin) {
+    return exp2(bin * (autoEvRange / HISTOGRAM_BIN_COUNT) + AUTO_EV_MIN);
+}
 
 float CalculateAutoExposure() {
     const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
@@ -92,47 +96,51 @@ float CalculateAutoExposure() {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
             float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = exp2(-0.2 * dotSelf(uv * 2.0 - 1.0));
+            float weight = exp2(-0.25 * dotSelf(uv * 2.0 - 1.0));
 
             #ifdef HISTOGRAM_AE
                 // Build luminance bucket
-                lumBucket[clamp(int(log2(luminance) - HISTOGRAM_MIN_EV), 0, HISTOGRAM_BIN_COUNT - 1)] += weight;
+                float bin = histogramLumToBin(luminance);
+                lumBucket[uint(bin * float(HISTOGRAM_BIN_COUNT - 1u))] += weight;
             #else
-                sum += log2(luminance) * weight;
+                sum += clamp(log2(luminance), AUTO_EV_MIN, AUTO_EV_MAX) * weight;
             #endif
             sumWeight += weight;
         }
 	}
 
     #ifdef HISTOGRAM_AE
-        float sumWeightInv = 1.0 / sumWeight;
+        float norm = 1.0 / sumWeight;
 
         float prefix = 0.0;
-        vec2 lum = vec2(0.0), weight = vec2(0.0);
+        sum = sumWeight = 0.0;
+
         uint i = 0u;
         for (; i < HISTOGRAM_BIN_COUNT; ++i) {
-            prefix += lumBucket[i] * sumWeightInv;
+            prefix += lumBucket[i] * norm;
             if (prefix > HISTOGRAM_LOWER_BOUND) {
-                weight.x = prefix - HISTOGRAM_LOWER_BOUND;
-                lum.x = float(i) * weight.x;
+                float weight = prefix - HISTOGRAM_LOWER_BOUND;
+                sum = float(i) * weight;
+                sumWeight += weight;
                 break;
             }
         }
         for (; i < HISTOGRAM_BIN_COUNT; ++i) {
-            prefix += lumBucket[i] * sumWeightInv;
+            prefix += lumBucket[i] * norm;
             if (prefix > HISTOGRAM_UPPER_BOUND) {
-                weight.y = prefix - HISTOGRAM_UPPER_BOUND;
-                lum.y = float(i) * weight.y;
+                float weight = prefix - HISTOGRAM_UPPER_BOUND;
+                sum += float(i) * weight;
+                sumWeight += weight;
                 break;
             }
         }
 
-        sum = (lum.x + lum.y) / (weight.x + weight.y) + HISTOGRAM_MIN_EV;
+        sum = histogramBinToLum(sum / sumWeight);
     #else
-        sum /= sumWeight;
+        sum = exp2(sum / sumWeight);
     #endif
 
-	return exp2(sum);
+	return sum;
 }
 
 //======// Main //================================================================================//
@@ -166,8 +174,8 @@ void main() {
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
         /* if (prevExposure > 1e-8)  */{
-            float fadedSpeed = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-            exposure = mix(targetExposure, prevExposure, fastExp(-fadedSpeed * frameTime));
+            float blendRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+            exposure = mix(targetExposure, prevExposure, fastExp(-blendRate * frameTime));
         // } else {
         //     exposure = targetExposure;
         }
