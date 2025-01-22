@@ -32,7 +32,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 	#include "/lib/water/WaterWave.glsl"
 	float CalculateWaterCaustics(in vec3 rayPos, in vec3 lightVector) {
-		vec2 waveCoord = rayPos.xz - rayPos.y * lightVector.xz / lightVector.y;
+		vec2 waveCoord = rayPos.xz - rayPos.y * (1.0 + lightVector.xz / lightVector.y);
 		vec3 waveNormal = CalculateWaterNormal(waveCoord).xzy;
 		vec3 refractVector = fastRefract(vec3(0.0, 1.0, 0.0), waveNormal, 1.0 / WATER_REFRACT_IOR);
 
