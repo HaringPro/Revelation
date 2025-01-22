@@ -9,6 +9,8 @@
 --------------------------------------------------------------------------------
 */
 
+#define PASS_SHADOW
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -38,15 +40,17 @@ flat in uint isWater;
 
 uniform sampler2D tex;
 
-#ifdef WATER_CAUSTICS
-
 uniform sampler2D noisetex;
 
 uniform vec3 worldLightVector;
 
+uniform int frameCounter;
 uniform float frameTimeCounter;
 
 //======// Function //============================================================================//
+
+#include "/lib/universal/Offset.glsl"
+#include "/lib/universal/Noise.glsl"
 
 vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 	float NdotD = dot(normal, dir);
@@ -55,38 +59,34 @@ vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 
 	return dir * eta - normal * (sqrt(k) + NdotD * eta);
 }
-	
-#define PHYSICS_OCEAN_SUPPORT
 
-#ifdef PHYSICS_OCEAN
-	#define PHYSICS_FRAGMENT
-	#include "/lib/water/PhysicsOceans.glsl"
-#else
-	#include "/lib/water/WaterWave.glsl"
-#endif
+#include "/lib/water/WaterWave.glsl"
+float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
+	float caustics = 0.0;
 
-#endif
+	for (uint i = 0u; i < 9u; ++i) {
+		vec2 offset = (offset3x3[i] + dither) * 0.125;
+		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
+
+		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
+		waveCoord += lightVector.xz / lightVector.y;
+		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
+
+		caustics += exp2(-dotSelf(offset - waveNormal) * 3e2);
+	}
+
+	return saturate(caustics * 0.75);
+}
 
 //======// Main //================================================================================//
 void main() {
 	if (isWater == 1u) {
 		#ifdef WATER_CAUSTICS
-			#ifdef PHYSICS_OCEAN
-				WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
-				vec3 waterNormal = wave.normal;
-			#else
-				vec3 waterNormal = CalculateWaterShadowNormal(vectorData.xz - vectorData.y);
-			#endif
+			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+			vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
+			float caustics = CalculateWaterCaustics(vectorData, lightVector, dither);
 
-			vec3 oldPos = vectorData;
-			vec3 newPos = oldPos + fastRefract(worldLightVector, waterNormal.xzy, 1.0 / WATER_REFRACT_IOR);
-
-			float oldArea = dotSelf(dFdx(oldPos)) * dotSelf(dFdy(oldPos));
-			float newArea = dotSelf(dFdx(newPos)) * dotSelf(dFdy(newPos));
-
-			float caustics = inversesqrt(oldArea / newArea);
-
-			shadowcolor0Out = vec3(approxSqrt(saturate(caustics * 0.5 + 0.1)));
+			shadowcolor0Out = vec3(caustics);
 			// #ifdef RSM_ENABLED
 			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
 			// #endif

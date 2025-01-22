@@ -286,7 +286,7 @@ void main() {
 					if (doShadows) {
 						shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
 
-						shadow *= PercentageCloserFilter(shadowScreenPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
+						shadow *= PercentageCloserFilter(shadowScreenPos, dither, 0.5 * blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
 					}
 				}
 			}
