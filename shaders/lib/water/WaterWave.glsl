@@ -10,7 +10,7 @@ float FetchNoise(in vec2 coord) {
 	return textureLod(noisetex, coord * rcp(256.0), 0.0).x;
 }
 
-#if defined PASS_DEFERRED_10 || defined PASS_COMPOSITE
+#if 0
 float CalculateWaterHeight(in vec2 position) {
 	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
 
