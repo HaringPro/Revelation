@@ -29,28 +29,9 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D noisetex;
-
 uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 
-uniform sampler2D depthtex0;
-
-uniform mat4 gbufferProjectionInverse;
-uniform mat4 gbufferModelViewInverse;
-
-uniform float nightVision;
-uniform float wetness;
-uniform float eyeAltitude;
-
-uniform int moonPhase;
-uniform int frameCounter;
-
-uniform vec2 viewPixelSize;
-
-uniform vec3 worldSunVector;
-uniform vec3 worldLightVector;
-uniform vec3 cameraPosition;
-uniform vec3 lightningShading;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
@@ -71,15 +52,28 @@ vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
-float sampleDepthMax4x4(in vec2 coord) {
-	// 4x4 pixel neighborhood using textureGather
-	vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
-	vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
-	vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
-	vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
+#if defined DISTANT_HORIZONS
+	float sampleDepthMax4x4DH(in vec2 coord) {
+		// 4x4 pixel neighborhood using textureGather
+		vec4 sampleDepth0 = textureGather(dhDepthTex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
+		vec4 sampleDepth1 = textureGather(dhDepthTex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
+		vec4 sampleDepth2 = textureGather(dhDepthTex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
+		vec4 sampleDepth3 = textureGather(dhDepthTex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
 
-	return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
-}
+		return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
+	}
+#else
+	float sampleDepthMax4x4(in vec2 coord) {
+		// 4x4 pixel neighborhood using textureGather
+		vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
+		vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
+		vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
+		vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
+
+		return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
+	}
+#endif
+
 
 //======// Main //================================================================================//
 void main() {
@@ -88,7 +82,13 @@ void main() {
 	ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
 	vec2 cloudUv = texelToUv(cloudTexel);
 
-	if (sampleDepthMax4x4(cloudUv) > 0.999999) {
+	if (
+	#if defined DISTANT_HORIZONS
+		min(sampleDepthMax4x4DH(cloudUv), loadDepth0(cloudTexel))
+	#else
+		sampleDepthMax4x4(cloudUv)
+	#endif
+	 > 0.999999) {
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 

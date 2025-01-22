@@ -37,6 +37,8 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D colortex0;
+
 uniform sampler2D colortex11; // Volumetric Fog scattering
 uniform sampler2D colortex12; // Volumetric Fog transmittance
 
@@ -74,8 +76,8 @@ void main() {
 
 	uint materialID = gbufferData0.y;
 
-	float depth = FetchDepthFix(screenTexel);
-	float sDepth = FetchDepthSoildFix(screenTexel);
+	float depth = loadDepth0(screenTexel);
+	float sDepth = loadDepth1(screenTexel);
 
 	#ifdef BORDER_FOG
 		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
@@ -86,6 +88,16 @@ void main() {
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
+	#if defined DISTANT_HORIZONS
+		if (depth > 0.999999) {
+			screenPos.z = loadDepth0DH(screenTexel);
+			viewPos = ScreenToViewSpaceDH(screenPos);
+		}
+		if (sDepth > 0.999999) {
+			sDepth = loadDepth1DH(screenTexel);
+			sViewPos = ScreenToViewSpaceDH(vec3(screenCoord, sDepth));
+		}
+	#endif
 
 	float viewDistance = length(viewPos);
 	float transparentDepth = distance(viewPos, sViewPos);
@@ -106,9 +118,21 @@ void main() {
 		refractedTexel = uvToTexel(refractedCoord);
 
 		depth = loadDepth0(refractedTexel);
+		sDepth = loadDepth1(refractedTexel);
 
 		// gbufferData0 = loadGbufferData0(refractedTexel);
 		viewPos = ScreenToViewSpace(vec3(refractedCoord, depth));
+		sViewPos = ScreenToViewSpace(vec3(refractedCoord, sDepth));
+		#if defined DISTANT_HORIZONS
+			if (depth > 0.999999) {
+				depth = loadDepth0DH(refractedTexel);
+				viewPos = ScreenToViewSpaceDH(vec3(refractedCoord, depth));
+			}
+			if (sDepth > 0.999999) {
+				sDepth = loadDepth1DH(refractedTexel);
+				sViewPos = ScreenToViewSpaceDH(vec3(refractedCoord, sDepth));
+			}
+		#endif
 	}
 
     sceneOut = loadSceneColor(refractedTexel);
@@ -129,7 +153,7 @@ void main() {
 
 		// Water fog
 		if (waterMask && isEyeInWater == 0) {
-			float waterDepth = abs(viewPos.z + ScreenToViewDepth(loadDepth1(refractedTexel)));
+			float waterDepth = distance(viewPos, sViewPos);
 			FogData waterFog = CalculateWaterFog(skyLightmap, max(transparentDepth, waterDepth), LdotV);
 			sceneOut = ApplyFog(sceneOut, waterFog);
 		}

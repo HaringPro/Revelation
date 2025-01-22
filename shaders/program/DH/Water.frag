@@ -1,4 +1,6 @@
 
+#define PASS_DH_WATER
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -12,24 +14,13 @@ layout (location = 2) out vec2 gbufferOut1;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D tex;
-
-#if defined NORMAL_MAPPING
-	uniform sampler2D normals;
-#endif
-
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
-#endif
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// Input //===============================================================================//
 
-flat in mat3 tbnMatrix;
+flat in vec3 flatNormal;
 
 in vec4 vertColor;
-in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
 
@@ -129,6 +120,8 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 
 //======// Main //================================================================================//
 void main() {
+    if (loadDepth0(ivec2(gl_FragCoord.xy)) < 1.0) { discard; return; }
+
 	vec3 worldNormal;
 	vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
@@ -139,6 +132,8 @@ void main() {
 			worldNormal = wave.normal;
 			gbufferOut1 = worldNormal.xy * 0.5 + 0.5;
 		#else
+			mat3 tbnMatrix = ConstructTBN(flatNormal);
+
 			vec3 minecraftPos = worldPos + cameraPosition;
 			#ifdef WATER_PARALLAX
 				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, worldDir * tbnMatrix);
@@ -151,21 +146,12 @@ void main() {
 		#endif
 
 		// Water normal clamp
-		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
+		worldNormal = normalize(worldNormal + flatNormal * inversesqrt(maxEps(dot(flatNormal, -worldDir))));
 		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 	} else {
-		vec4 albedo = texture(tex, texCoord) * vertColor;
+		vec4 albedo = vertColor;
 
-		if (albedo.a < 0.1) { discard; return; }
-
-		#if defined NORMAL_MAPPING
-			worldNormal = texture(normals, texCoord).rgb;
-			DecodeNormalTex(worldNormal);
-
-			worldNormal = tbnMatrix * worldNormal;
-		#else
-			worldNormal = tbnMatrix[2];
-		#endif
+		worldNormal = flatNormal;
 		gbufferOut0.z = Packup2x8U(encodeUnitVector(worldNormal));
 
 		#ifdef TRANSLUCENT_LIGHTING
@@ -195,7 +181,7 @@ void main() {
 			float distortFactor;
 			float worldDistSquared = dotSelf(worldPos);
 
-			vec3 normalOffset = tbnMatrix[2] * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+			vec3 normalOffset = flatNormal * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
 
 			if (saturate(shadowScreenPos) == shadowScreenPos) {

@@ -30,6 +30,17 @@ vec3 ScreenToViewSpace(in vec2 screenCoord, in float linearDepth) {
 	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z) * linearDepth;
 }
 
+vec3 ScreenToViewSpace(in vec2 screenCoord) {
+	vec3 NDCPos = vec3(screenCoord, loadDepth0(uvToTexel(screenCoord))) * 2.0 - 1.0;
+	#ifdef TAA_ENABLED
+		NDCPos.xy -= taaOffset;
+	#endif
+	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
+	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
+
+	return viewPos;
+}
+
 vec3 ViewToScreenSpaceRaw(in vec3 viewPos) {
 	vec3 NDCPos = projMAD(gbufferProjection, viewPos) * rcp(-viewPos.z);
 
@@ -77,7 +88,7 @@ float ViewToScreenDepth(in float depth) {
 }
 
 //======// Distant Horizons Transform Function //=================================================//
-/*
+
 #if defined DISTANT_HORIZONS
 	vec3 ScreenToViewSpaceRawDH(in vec3 screenPos) {	
 		vec3 NDCPos = screenPos * 2.0 - 1.0;
@@ -98,8 +109,8 @@ float ViewToScreenDepth(in float depth) {
 		return viewPos;
 	}
 
-	vec3 ScreenToViewSpaceDH(in vec2 coord) {
-		vec3 NDCPos = vec3(coord, texelFetch(dhDepthTex0, uvToTexel(coord), 0).x) * 2.0 - 1.0;
+	vec3 ScreenToViewSpaceDH(in vec2 screenCoord) {
+		vec3 NDCPos = vec3(screenCoord, loadDepth0DH(uvToTexel(screenCoord))) * 2.0 - 1.0;
 		#ifdef TAA_ENABLED
 			NDCPos.xy -= taaOffset;
 		#endif
@@ -142,4 +153,3 @@ float ViewToScreenDepth(in float depth) {
 		return (dhProjection[3].z - dhProjection[2].z * depth) / depth * 0.5 + 0.5;
 	}
 #endif
-*/

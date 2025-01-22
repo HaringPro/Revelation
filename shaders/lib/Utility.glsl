@@ -162,6 +162,12 @@ vec3 FromSphereMap(in vec2 coord) {
     return vec3(sincos(coord.x * TAU) * sin(coord.y), cos(coord.y)).xzy;
 }
 
+mat3 ConstructTBN(in vec3 n) {
+	vec3 t = normalize(vec3(abs(n.y) + n.z, 0.0, -n.x));
+	vec3 b = normalize(cross(t, n));
+	return mat3(t, b, n);
+}
+
 #if defined NORMAL_MAPPING
 	void DecodeNormalTex(inout vec3 normalTex) {
         if (any(greaterThan(normalTex, vec3(0.003)))) {
@@ -365,6 +371,8 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
     return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);
 }
 */
+
+//================================================================================================//
 
 struct FogData {
 	vec3 scattering;

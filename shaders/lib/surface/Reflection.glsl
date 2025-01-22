@@ -34,9 +34,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	vec4 CalculateSpecularReflections(Material material, in vec3 normal, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos, in float skylight, in float dither) {
 	#ifdef ROUGH_REFLECTIONS
 		if (material.isRough) {
-			vec3 tangent = normalize(cross(gbufferModelView[1].xyz, normal));
-			vec3 bitangent = normalize(cross(normal, tangent));
-			mat3 tbnMatrix = mat3(tangent, bitangent, normal);
+			mat3 tbnMatrix = ConstructTBN(normal);
 
 			vec3 tangentDir = worldDir * tbnMatrix;
 			vec3 halfway = tbnMatrix * sampleGGXVNDF(-tangentDir, material.roughness, RandNext2F());

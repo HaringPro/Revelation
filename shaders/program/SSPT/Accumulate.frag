@@ -28,8 +28,6 @@ layout (location = 2) out vec2 momentsHistory;
 
 #include "/lib/universal/Uniform.glsl"
 
-uniform float cameraVelocity;
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
