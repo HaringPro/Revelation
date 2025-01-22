@@ -141,7 +141,7 @@ void main() {
 		#else
 			vec3 minecraftPos = worldPos + cameraPosition;
 			#ifdef WATER_PARALLAX
-				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, normalize(worldPos - gbufferModelViewInverse[3].xyz) * tbnMatrix);
+				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, worldDir * tbnMatrix);
 			#else
 				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 			#endif
