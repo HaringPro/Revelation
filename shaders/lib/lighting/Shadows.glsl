@@ -81,7 +81,33 @@ vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither, in float searchS
 	return vec2(searchDepth, sssDepth * shadowProjectionInverse[2].z);
 }
 
-vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float penumbraScale) {
+vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
+	float NdotD = dot(normal, dir);
+	float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+	if (k < 0.0) return vec3(0.0);
+
+	return dir * eta - normal * (sqrt(k) + NdotD * eta);
+}
+
+#include "/lib/water/WaterWave.glsl"
+float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
+	float caustics = 0.0;
+
+	for (uint i = 0u; i < 9u; ++i) {
+		vec2 offset = (offset3x3[i] + dither) * 0.125;
+		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
+
+		vec2 waveCoord = worldPos.xz + offset;
+		waveCoord -= lightVector.xz / lightVector.y;
+		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
+
+		caustics += exp2(-dotSelf(offset - waveNormal) * 3e2);
+	}
+
+	return saturate(caustics * 0.7);
+}
+
+vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float dither, in float penumbraScale) {
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
 
 	vec2 penumbraRadius = penumbraScale * diagonal2(shadowProjection);
@@ -91,6 +117,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 	const mat2 rot = mat2(angleStep, -angleStep.y, angleStep.x);
 
 	vec3 result = vec3(0.0);
+	bool caustics = false;
 
 	for (uint i = 0u; i < PCF_SAMPLES; ++i, dir *= rot) {
 		float radius = (float(i) + dither) * rSteps;
@@ -102,13 +129,23 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in float dither, in float p
 		ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
 		float sampleDepth0 = step(shadowScreenPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
 		if (sampleDepth0 != sampleDepth1) {
-			result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+			float waterMask = texelFetch(shadowcolor1, sampleTexel, 0).w;
+			if (waterMask > 0.1) caustics = true;
+			else result += pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
 		} else 
 	#endif
 		{ result += sampleDepth1; }
 	}
 
-	return result * rSteps;
+	result *= rSteps;
+	if (caustics) {
+		// caustics *= rSteps;
+		// float causticAltitude = abs(caustics.x * 512.0 - 128.0 - worldPos.y - eyeAltitude);
+		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
+		result = vec3(sqr(CalculateWaterCaustics(worldPos + cameraPosition, lightVector, dither)));
+	}
+
+	return result;
 }
 
 //================================================================================================//

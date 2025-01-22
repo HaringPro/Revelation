@@ -12,8 +12,8 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 	float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + isotropicPhase * 0.3;
 	const vec3 sunTransmittance = fastExp(-waterExtinction * 5.0);
 
-	vec3 scattering = rPI * oneMinus(wetnessCustom * 0.8) * directIlluminance * 3e-2 * phase * sunTransmittance;
-	scattering += 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
+	vec3 scattering = rPI * oneMinus(wetnessCustom * 0.8) * directIlluminance * 2e-2 * phase * sunTransmittance;
+	scattering += 1e-2 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 	scattering *= oneMinus(transmittance) * skylight / waterExtinction;
 
 	return FogData(scattering, transmittance);
@@ -30,6 +30,17 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 		return dir * eta - normal * (sqrt(k) + NdotD * eta);
 	}
 
+	#include "/lib/water/WaterWave.glsl"
+	float CalculateWaterCaustics(in vec3 rayPos, in vec3 lightVector) {
+		vec2 waveCoord = rayPos.xz - rayPos.y * lightVector.xz / lightVector.y;
+		vec3 waveNormal = CalculateWaterNormal(waveCoord).xzy;
+		vec3 refractVector = fastRefract(vec3(0.0, 1.0, 0.0), waveNormal, 1.0 / WATER_REFRACT_IOR);
+
+		vec3 refractPos = vec3(0.0, 1.0, 0.0) - refractVector / refractVector.y;
+
+		return saturate(dotSelf(refractPos) * 32.0);
+	}
+
 	FogData UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
 		float rayLength = dotSelf(worldPos);
 		float norm = inversesqrt(rayLength);
@@ -44,11 +55,16 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 		float stepLength = rayLength * rSteps * UW_VOLUMETRIC_FOG_DENSITY;
 
+		vec3 rayStart = gbufferModelViewInverse[3].xyz + cameraPosition,
+			 rayStep  = worldDir * stepLength;
+		vec3 rayPos = rayStart + rayStep * dither;
+
 		vec3 shadowStep = mat3(shadowModelView) * worldDir * stepLength;
 			 shadowStep = diagonal3(shadowProjection) * shadowStep;
 		vec3 shadowPos = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz) + shadowStep * dither;
 
 		vec3 stepTransmittance = fastExp(-waterExtinction * stepLength);
+		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 		vec3 transmittance = vec3(1.0);
 
 		vec3 scatteringSun = vec3(0.0);
@@ -56,6 +72,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 
 		uint i = 0u;
 		while (++i < steps) {
+			rayPos += rayStep;
 			shadowPos += shadowStep;
 
 			vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
@@ -72,7 +89,7 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 				if (sampleSunlight.x != sampleDepth0) {
 					float waterDepth = abs(texelFetch(shadowcolor1, shadowTexel, 0).w * 512.0 - 128.0 - shadowPos.y - eyeAltitude);
 					if (waterDepth > 0.1) {
-						sampleSunlight = sqr(texelFetch(shadowcolor0, shadowTexel, 0).rgb * 2.0 - 1.0);
+						sampleSunlight = vec3(CalculateWaterCaustics(rayPos, lightVector));
 					} else {
 						vec3 shadowColorSample = cube(texelFetch(shadowcolor0, shadowTexel, 0).rgb);
 						sampleSunlight = shadowColorSample * (sampleSunlight - sampleDepth0) + vec3(sampleDepth0);
@@ -88,12 +105,11 @@ FogData CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV
 			transmittance *= stepTransmittance;
 		}
 
-		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 		float LdotV = dot(lightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + isotropicPhase * 0.3;
 
-		vec3 scattering = scatteringSun * 0.015 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
-		scattering += scatteringSky * 0.01 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
+		vec3 scattering = scatteringSun * 2e-2 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
+		scattering += scatteringSky * 1e-2 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
 		scattering *= oneMinus(stepTransmittance) / waterExtinction;
 
 		return FogData(scattering, transmittance);
