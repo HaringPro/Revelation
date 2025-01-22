@@ -277,7 +277,7 @@ void main() {
 
 						// Formula from https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
 						// float bssrdf = sqr(saturate(dot(worldDir, worldLightVector + 0.2 * worldNormal))) * 4.0;
-						sceneOut += subsurfaceScattering * sunlightMult * ao * oneMinus(NdotL);
+						sceneOut += subsurfaceScattering * sunlightMult * ao;
 					} else {
 						blockerSearch.x = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
 					}
@@ -322,8 +322,9 @@ void main() {
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 				// Sunlight diffuse
-				vec3 sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-				sceneOut += sunlightDiffuse;
+				vec3 sunlightDiffuse = DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
+				sunlightDiffuse += sssAmount * (0.6 * SUBSURFACE_SCATTERING_BRIGHTNESS) * oneMinus(NdotL) * distanceFade;
+				sceneOut += shadow * sunlightDiffuse;
 
 				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 				specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
