@@ -97,7 +97,7 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 		vec2 offset = (offset3x3[i] + dither) * 0.125;
 		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
 
-		vec2 waveCoord = worldPos.xz + offset;
+		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
 		waveCoord -= lightVector.xz / lightVector.y;
 		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
