@@ -79,10 +79,6 @@ void main() {
 	float depth = loadDepth0(screenTexel);
 	float sDepth = loadDepth1(screenTexel);
 
-	#ifdef BORDER_FOG
-		bool doBorderFog = depth < 1.0 && isEyeInWater == 0;
-	#endif
-
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
 	vec3 screenPos = vec3(screenCoord, depth);
@@ -90,7 +86,7 @@ void main() {
 	vec3 sViewPos = ScreenToViewSpace(vec3(screenCoord, sDepth));
 	#if defined DISTANT_HORIZONS
 		if (depth > 0.999999) {
-			screenPos.z = loadDepth0DH(screenTexel);
+			depth = screenPos.z = loadDepth0DH(screenTexel);
 			viewPos = ScreenToViewSpaceDH(screenPos);
 		}
 		if (sDepth > 0.999999) {
@@ -198,7 +194,11 @@ void main() {
 
 		// Border fog
 		#ifdef BORDER_FOG
-			if (doBorderFog) {
+			#if defined DISTANT_HORIZONS
+				#define far float(dhRenderDistance)
+			#endif
+
+			if (isEyeInWater == 0) {
 				float density = saturate(1.0 - exp2(-pow8(dotSelf(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
 				density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
 

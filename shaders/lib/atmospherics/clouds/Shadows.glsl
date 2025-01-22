@@ -42,7 +42,6 @@ float ReadCloudShadowMap(in sampler2D shadowMap, in vec3 rayPos) {
 
 //================================================================================================//
 
-#ifdef PASS_PREPARE
 float CalculateCloudShadows(in vec3 rayPos) {
 	// if (eyeAltitude > CLOUD_CU_ALTITUDE) return 1.0;
 
@@ -74,9 +73,9 @@ float CalculateCloudShadows(in vec3 rayPos) {
 		if (shadowAltitude > 0.0) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
 			#if 0
-				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CU_THICKNESS * cumulusExtinction * 0.2);
+				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CU_THICKNESS * cumulusExtinction);
 			#else
-				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * CLOUD_CU_THICKNESS * cumulusExtinction * 0.2);
+				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * CLOUD_CU_THICKNESS * cumulusExtinction);
 			#endif
 		}
 	}
@@ -87,4 +86,3 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	return max(0.04, cloudShadow);
 }
-#endif

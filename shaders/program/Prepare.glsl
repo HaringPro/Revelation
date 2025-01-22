@@ -229,6 +229,9 @@ uniform vec3 lightningShading;
 #ifdef CLOUD_SHADOWS
 uniform mat4 shadowModelView;
 uniform mat4 shadowModelViewInverse;
+#if defined DISTANT_HORIZONS
+uniform int dhRenderDistance;
+#endif
 #endif
 
 //======// Function //============================================================================//

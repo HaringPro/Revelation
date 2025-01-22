@@ -239,7 +239,7 @@ void main() {
 
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
-			// float cloudShadow = CalculateCloudShadows(worldPos + cameraPosition);
+			// float cloudShadow = CalculateCloudShadows(worldPos);
 			float cloudShadow = min(ReadCloudShadowMap(colortex10, worldPos), 1.0 - wetness * 0.6);
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;

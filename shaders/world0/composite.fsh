@@ -168,7 +168,7 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 		#endif
 
 		#ifdef VF_CLOUD_SHADOWS
-			// float cloudShadow = CalculateCloudShadows(rayPos);
+			// float cloudShadow = CalculateCloudShadows(rayPos - cameraPosition);
 			float cloudShadow = ReadCloudShadowMap(colortex10, rayPos - cameraPosition);
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
