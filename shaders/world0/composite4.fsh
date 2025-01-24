@@ -39,8 +39,7 @@ flat in vec3 skyIlluminance;
 
 uniform sampler2D colortex0;
 
-uniform sampler2D colortex11; // Volumetric Fog scattering
-uniform sampler2D colortex12; // Volumetric Fog transmittance
+uniform usampler2D colortex11; // Volumetric Fog
 
 #if defined DEPTH_OF_FIELD && CAMERA_FOCUS_MODE == 0
     uniform float centerDepthSmooth;
@@ -216,7 +215,7 @@ void main() {
 		if (isEyeInWater == 0) {
 			FogData volFogData = VolumetricFogSpatialUpscale(gl_FragCoord.xy, -viewPos.z);
 			sceneOut = ApplyFog(sceneOut, volFogData);
-			bloomyFogTrans = mean(volFogData.transmittance);
+			bloomyFogTrans = mean(volFogData[1]);
 		}
 	#endif
 
@@ -228,7 +227,7 @@ void main() {
 			FogData waterFog = CalculateWaterFog(saturate(eyeSkylightSmooth + 0.2), viewDistance, LdotV);
 		#endif
 		sceneOut = ApplyFog(sceneOut, waterFog);
-		bloomyFogTrans = mean(waterFog.transmittance);
+		bloomyFogTrans = mean(waterFog[1]);
 	}
 
 	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);

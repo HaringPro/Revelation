@@ -215,6 +215,24 @@ vec2 Unpack2x8U(in uint data) {
 float Unpack2x8UX(in uint data) { return float(data >> 8) * r255; }
 float Unpack2x8UY(in uint data) { return float(data & 0xFF) * r255; }
 
+uint PackupR11G11B10F(in vec3 data) {
+	uvec3 u = uvec3(data * 255.0 + 0.5);
+	return (u.x << 21) | (u.y << 10) | u.z;
+}
+
+vec3 UnpackR11G11B10F(in uint data) {
+	return vec3(float(data >> 21), float((data >> 10) & 0x7FF), float(data & 0x3FF)) * r255;
+}
+
+uint PackupR11G11B10(in vec3 data) {
+	uvec3 u = uvec3(data * vec3(2047.0, 2047.0, 1023.0) + 0.5);
+	return (u.x << 21) | (u.y << 10) | u.z;
+}
+
+vec3 UnpackR11G11B10(in uint data) {
+	return vec3(float(data >> 21) * rcp(2047.0), float((data >> 10) & 0x7FF) * rcp(2047.0), float(data & 0x3FF) * rcp(1023.0));
+}
+
 // https://github.com/Jessie-LC/open-source-utility-code/blob/main/advanced/packing.glsl
 
 // Octahedral Unit Vector encoding
@@ -374,12 +392,13 @@ vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
 
 //================================================================================================//
 
-struct FogData {
-	vec3 scattering;
-	vec3 transmittance;
-};
+// struct FogData {
+// 	vec3 scattering;
+// 	vec3 transmittance;
+// };
 
-#define ApplyFog(scene, fog) ((scene) * fog.transmittance + fog.scattering)
+#define FogData mat2x3
+#define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])
 
 //================================================================================================//
 

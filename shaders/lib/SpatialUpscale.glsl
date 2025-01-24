@@ -35,6 +35,11 @@
 
 #if defined PASS_COMPOSITE_4
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
+	FogData FetchFogData(in ivec2 texel) {
+		uvec2 packedData = texelFetch(colortex11, texel, 0).rg;
+		return FogData(UnpackR11G11B10F(packedData.x), UnpackR11G11B10(packedData.y));
+	}
+
 	FogData VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
 		ivec2 bias = ivec2(coord + frameCounter) % 2;
 		ivec2 texel = ivec2(coord) + bias * 2 - 2;
@@ -53,16 +58,11 @@
 			float weight = maxEps(exp2(abs(sampleDepth - linearDepth) * sigmaZ));
 
 			ivec2 halfTexel = sampleTexel >> 1;
-			sum.scattering += texelFetch(colortex11, halfTexel, 0).rgb * weight;
-			sum.transmittance += texelFetch(colortex12, halfTexel, 0).rgb * weight;
+			sum += FetchFogData(halfTexel) * weight;
 			sumWeight += weight;
 		}
 
-		float rSumWeight = rcp(sumWeight);
-		sum.scattering *= rSumWeight;
-		sum.transmittance *= rSumWeight;
-
-		return sum;
+		return sum * rcp(sumWeight);
 	}
 #endif
 #endif
