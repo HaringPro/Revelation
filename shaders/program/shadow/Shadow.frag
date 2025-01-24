@@ -81,7 +81,7 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 //======// Main //================================================================================//
 void main() {
 	if (isWater == 1u) {
-		#ifdef WATER_CAUSTICS
+		// #ifdef WATER_CAUSTICS
 			// float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
 			// vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 			// float caustics = CalculateWaterCaustics(vectorData, lightVector, dither);
@@ -91,12 +91,12 @@ void main() {
 			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
 			// #endif
 			shadowcolor1Out.w = vectorData.y * rcp(512.0) + 0.25;
-		#else
-			shadowcolor0Out = vec3(0.8);
+		// #else
+		// 	shadowcolor0Out = vec3(0.8);
 			// #ifdef RSM_ENABLED
 			// 	shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
 			// #endif
-		#endif
+		// #endif
 	} else {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
