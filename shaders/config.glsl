@@ -61,9 +61,9 @@
 	|   Buffer		|   Format          |   Resolution	|   Usage
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data -> Motion blur output
-	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history | Specular reflections, lighting of glass
+	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history | Specular & diffuse lighting of glass
 	|	colortex2	|   r8i	        	|	Full res  	|	Cloud frame index
-	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light -> Lighting data history
+	|	colortex3	|   rgba16f         |	Full res  	|	Current indirect light
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT, light colors, exposure
 	|	colortex6	|   rgba8           |	Full res  	|	Solid albedo, rain alpha
