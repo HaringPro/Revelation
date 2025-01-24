@@ -226,6 +226,8 @@ uniform vec3 worldLightVector;
 uniform vec3 cameraPosition;
 uniform vec3 lightningShading;
 
+uniform float worldTimeCounter;
+
 #ifdef CLOUD_SHADOWS
 uniform mat4 shadowModelView;
 uniform mat4 shadowModelViewInverse;
