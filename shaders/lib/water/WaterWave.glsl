@@ -10,21 +10,13 @@ float FetchNoise(in vec2 coord) {
 	return textureLod(noisetex, coord * rcp(256.0), 0.0).x;
 }
 
-#if 0
+#if defined PASS_DEFERRED_10 && defined WATER_CAUSTICS_SIMPLE
 float CalculateWaterHeight(in vec2 position) {
 	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
 
-	vec2 pos = vec2(0.4, 0.27) * position + vec2(0.8, 0.12) * waveTime;
-	pos += pos.yx * vec2(0.2, 1.3);
-	float waves = -2.0;
-
-	pos = vec2(0.76, 0.51) * position + vec2(-0.2, -0.3) * waveTime;
-	pos += pos.yx * vec2(0.1, 0.4);
-	waves -= 0.16 * sin(FetchNoise(pos) * TAU);
-
-	pos = vec2(1.4, 0.92) * position + vec2(1.1, -0.8) * waveTime;
+	vec2 pos = vec2(1.4, 0.92) * position + vec2(1.1, -0.8) * waveTime;
 	pos.y -= pos.x * 1.2;
-	waves += (FetchNoise(pos) - 1.0) * 0.24;
+	float waves = (FetchNoise(pos) - 1.0) * 0.24;
 
 	pos = vec2(3.5, 2.2) * position + vec2(2.2, 0.7) * waveTime;
 	pos.y += pos.x * 0.6;
@@ -34,7 +26,7 @@ float CalculateWaterHeight(in vec2 position) {
 	pos.y -= pos.x;
 	waves += (FetchNoise(pos) - 1.0) * 0.03;
 
-	return waves;
+	return waves * 1.5;
 }
 #else
 float CalculateWaterHeight(in vec2 position) {
