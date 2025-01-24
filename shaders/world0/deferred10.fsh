@@ -237,13 +237,14 @@ void main() {
 
 		bool doShadows = NdotL > 1e-3;
 		bool doSss = sssAmount > 1e-3;
+		bool inShadowMapRange = distanceFade < 1e-6;
 
 		// Shadows and SSS
         if (doShadows || doSss) {
 			vec3 shadow = sunlightMult;
 
 			// Apply shadowmap
-        	if (distanceFade < 1e-6) {
+        	if (inShadowMapRange) {
 				float distortFactor;
 				vec3 normalOffset = flatNormal * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 				vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
@@ -272,7 +273,7 @@ void main() {
 			}
 
 			// Process diffuse and specular highlights
-			if (doShadows && dot(shadow, vec3(1.0)) > 1e-6) {
+			if (doShadows && dot(shadow, vec3(1.0)) > 1e-6 || doSss && !inShadowMapRange) {
 				#ifdef SCREEN_SPACE_SHADOWS
 					#if defined NORMAL_MAPPING
 						vec3 viewFlatNormal = mat3(gbufferModelView) * flatNormal;
@@ -297,8 +298,9 @@ void main() {
 				float LdotH = LdotV * halfwayNorm + halfwayNorm;
 
 				// Sunlight diffuse
-				vec3 sunlightDiffuse = shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-				sceneOut += sunlightDiffuse;
+				vec3 sunlightDiffuse = DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
+				sunlightDiffuse += sssAmount * (SUBSURFACE_SCATTERING_BRIGHTNESS * 0.6) * distanceFade;
+				sceneOut += shadow * min(sunlightDiffuse, rPI);
 
 				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
 				specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
