@@ -107,9 +107,9 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
 
         #ifdef REAL_SKY_REFLECTIONS
-            if (rayPos.z >= 1.0) { hit = true; break; }
+            if (rayPos.z > 0.999999) { hit = true; break; }
         #else
-            if (rayPos.z >= 1.0) break;
+            if (rayPos.z > 0.999999) break;
         #endif
 
         float sampleDepth = loadDepth1DH(ivec2(rayPos.xy));

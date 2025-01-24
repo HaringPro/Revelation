@@ -40,6 +40,10 @@ uniform vec2 halfViewEnd;
 
 uniform int frameCounter;
 
+#if defined DISTANT_HORIZONS
+    uniform sampler2D dhDepthTex0;
+#endif
+
 //======// Function //============================================================================//
 
 const uint padRadius = 1;
@@ -122,6 +126,10 @@ void main() {
 
 	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 	float depth = loadDepth0(texel << 1);
+
+	#if defined DISTANT_HORIZONS
+		if (depth > 0.999999) depth = loadDepth0DH(texel << 1);
+	#endif
 	if (depth < 1.0) {
 		ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
         ivec2 texelEnd = ivec2(halfViewEnd) - 1;
