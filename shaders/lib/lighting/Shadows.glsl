@@ -210,7 +210,7 @@ float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, i
 
 	rayPos += rayStep * (dither + 1.0 - sssAmount);
 
-	float maxThickness = 0.03 * (2.0 - viewPos.z) * dhProjectionInverse[1].y;
+	float maxThickness = 0.02 * (2.0 - viewPos.z) * dhProjectionInverse[1].y;
 
 	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
 		if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
