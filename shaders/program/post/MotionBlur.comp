@@ -12,14 +12,13 @@
 */
 
 layout (local_size_x = 16, local_size_y = 16) in;
-
 const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
+//======// Image //===============================================================================//
 
 restrict writeonly uniform image2D colorimg0; // Motion blur output
 

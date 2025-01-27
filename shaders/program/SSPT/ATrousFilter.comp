@@ -22,7 +22,7 @@ const vec2 workGroupsRender = vec2(0.5f, 0.5f);
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
+//======// Image //===============================================================================//
 
 layout (rgba16f) restrict uniform image2D colorimg3;
 

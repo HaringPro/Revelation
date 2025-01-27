@@ -19,7 +19,7 @@ const vec2 workGroupsRender = vec2(1.0f, 1.0f);
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
+//======// Image //===============================================================================//
 
 layout (rgba16f) restrict uniform image2D colorimg1;
 
