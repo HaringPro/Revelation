@@ -186,7 +186,7 @@ void main() {
 
 #else
 
-#define PASS_PREPARE
+#define PASS_SKY_VIEW
 
 //======// Output //==============================================================================//
 

@@ -96,7 +96,7 @@ float CloudPlaneDensity(in vec2 rayPos) {
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
-			#if !defined PASS_PREPARE
+			#if !defined PASS_SKY_VIEW
 				// Detail shape of the cirrocumulus clouds
 				cirrocumulus += 0.016 * texture(noisetex, position * 3.0).z;
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;
@@ -182,7 +182,7 @@ float CloudHighDensity(in vec2 rayPos) {
 		if (cirrocumulus > 1e-6) {
 			position.x += (cirrocumulus - shift.x) * 0.2;
 
-			#if !defined PASS_PREPARE
+			#if !defined PASS_SKY_VIEW
 				// Detail shape of the cirrocumulus clouds
 				cirrocumulus += 0.016 * texture(noisetex, position * 3.0).z;
 				cirrocumulus += 0.01 * texture(noisetex, position * 5.0 + curl).z - 0.026;

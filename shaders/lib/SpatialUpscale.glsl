@@ -1,4 +1,4 @@
-#if defined PASS_DEFERRED_10
+#if defined PASS_DEFERRED_LIGHTING
 #if (defined SSPT_ENABLED && defined SVGF_ENABLED) || defined RSM_ENABLED
 	vec3 SpatialUpscale5x5(in ivec2 texel, in vec3 worldNormal, in float viewDistance, in float NdotV) {
 		float sumWeight = 0.2;
@@ -33,7 +33,7 @@
 
 //================================================================================================//
 
-#if defined PASS_COMPOSITE_4
+#if defined PASS_COMPOSITE
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
 	FogData FetchFogData(in ivec2 texel) {
 		uvec2 packedData = texelFetch(colortex11, texel, 0).rg;
