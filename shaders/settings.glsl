@@ -84,6 +84,7 @@ const float minCloudAbsorption	  = 0.02;
 /* Transparent */
 	#define WATER_PARALLAX // Enables water parallax
 	#define WATER_CAUSTICS // Enables water caustics
+	// #define WATER_CAUSTICS_DISPERSION // Enables water caustics dispersion
 	// #define WATER_CAUSTICS_SIMPLE // Much simpler caustics. Someone may like this better
 
 	#define WATER_REFRACT_IOR 1.25 	// [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.15 1.2 1.25 1.3 1.33 1.4 1.5 1.6]
