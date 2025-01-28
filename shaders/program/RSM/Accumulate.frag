@@ -41,7 +41,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
 
     float currViewDistance = length(viewPos);
 
-    prevCoord += (prevTaaOffset - taaOffset) * 0.125;
+    prevCoord += (prevTaaOffset - taaOffset) * 0.25;
 
     // Custom bilinear filter
     vec2 prevTexel = prevCoord * 0.5 * viewSize - vec2(0.5);
@@ -76,9 +76,9 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
     if (sumWeight > 1e-5) {
         prevLight *= 1.0 / sumWeight;
 
-        indirectHistory.a = min(prevLight.a, RSM_MAX_ACCUM_FRAMES);
+        indirectHistory.a = min(prevLight.a + 1.0, RSM_MAX_ACCUM_FRAMES);
 
-        float alpha = rcp(++indirectHistory.a);
+        float alpha = rcp(indirectHistory.a);
         indirectHistory.rgb = mix(prevLight.rgb, indirectHistory.rgb, alpha);
     }
 }
@@ -123,7 +123,7 @@ vec3 SpatialCurrent(in ivec2 texel, in vec3 worldNormal) {
             vec3 sampleNormal = FetchWorldNormal(loadGbufferData0(sampleTexel << 1));
 
             float weight = kernel[abs(x)][abs(y)];
-            weight *= pow16(max0(dot(sampleNormal, worldNormal)));
+            weight *= pow32(max0(dot(sampleNormal, worldNormal)));
 
             indirectData += sampleColor * weight;
             sumWeight += weight;

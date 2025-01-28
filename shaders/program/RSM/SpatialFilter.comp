@@ -45,8 +45,27 @@ uniform int frameCounter;
 const uint padRadius = 2;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 
-shared vec3 sharedLight[sharedSize.x][sharedSize.y];
-shared vec4 sharedData [sharedSize.x][sharedSize.y];
+shared uvec4 sharedData[sharedSize.y][sharedSize.x];
+
+uvec4 PackupSharedData(in ivec2 texel, in ivec2 offset) {
+    vec3 sharedIrradiance = texelFetch(colortex13, texel, 0).rgb;
+    vec4 sharedNormalDepth = texelFetch(colortex13, texel + offset, 0);
+    return uvec4(
+        packUnorm2x16(sharedIrradiance.xy),
+        floatBitsToUint(sharedIrradiance.z),
+        packUnorm2x16(sharedNormalDepth.xy),
+        packUnorm2x16(sharedNormalDepth.zw)
+    );
+}
+
+void UnpackSharedData(in uvec2 texel, out vec3 sharedIrradiance, out vec4 sharedNormalDepth) {
+    uvec4 sharedData = sharedData[texel.y][texel.x];
+
+    sharedIrradiance.xy  = unpackUnorm2x16(sharedData.x);
+    sharedIrradiance.z   = uintBitsToFloat(sharedData.y);
+    sharedNormalDepth.xy = unpackUnorm2x16(sharedData.z);
+    sharedNormalDepth.zw = unpackUnorm2x16(sharedData.w);
+}
 
 void SharedPreload() {
     ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
@@ -63,8 +82,7 @@ void SharedPreload() {
     ivec2 loadTexel = groupBase + localID;
     loadTexel = clamp(loadTexel, ivec2(0), texelEnd);
 
-    sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
-    sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + offsetToBR, 0);
+    sharedData[localID.y][localID.x] = PackupSharedData(loadTexel, offsetToBR);
 
     for (uint stage = 1u; stage < stageNum; ++stage) {
         localIndex = gl_LocalInvocationIndex + stage * groupArea;
@@ -75,8 +93,7 @@ void SharedPreload() {
             loadTexel = groupBase + localID;
             loadTexel = clamp(loadTexel, ivec2(0), texelEnd);
 
-            sharedLight[localID.x][localID.y] = texelFetch(colortex13, loadTexel, 0).rgb;
-            sharedData [localID.x][localID.y] = texelFetch(colortex13, loadTexel + offsetToBR, 0);
+            sharedData[localID.y][localID.x] = PackupSharedData(loadTexel, offsetToBR);
         }
     }
 
@@ -109,38 +126,35 @@ uint RandNext() { return randState = triple32(randState); }
 void main() {
     SharedPreload();
 
-	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-    float depth = loadDepth0(texel << 1);
-    if (depth < 1.0) {
-        uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
+    uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
 
-        vec3 indirectData = sharedLight[sharedTexel.x][sharedTexel.y];
-        vec4 normalDepthData = sharedData[sharedTexel.x][sharedTexel.y];
+    vec3 indirectData;
+    vec4 normalDepthData;
+    UnpackSharedData(sharedTexel, indirectData, normalDepthData);
 
-        vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
-        vec3 viewDir = ScreenToViewVectorRaw(screenCoord * 2.0);
-        vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
-        float sigmaZ = -4.0 * rLOG2 * saturate(dot(normalDepthData.xyz, -worldDir));
+    vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
+    vec3 viewDir = ScreenToViewVectorRaw(screenCoord * 2.0);
+    vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
+    float sigmaZ = -4.0 * rLOG2 * abs(dot(normalDepthData.xyz, worldDir));
 
-        float sumWeight = 1.0;
-        sharedTexel += ivec2(2.0 * (RandNext2F() - 0.5));
+    float sumWeight = 1.0;
+    sharedTexel += ivec2(2.0 * RandNext2F() - 1.0);
 
-        for (uint i = 0u; i < 16u; ++i) {
-            uvec2 sampleSharedTexel = sharedTexel + offset4x4[i];
-            vec4 sampleData = sharedData[sampleSharedTexel.x][sampleSharedTexel.y];
+    for (uint i = 0u; i < 16u; ++i) {
+        uvec2 sampleSharedTexel = sharedTexel + offset4x4[i];
 
-            float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
-            weight *= exp2(abs(sampleData.w - normalDepthData.w) * sigmaZ); // Distance weight
-            weight *= pow32(saturate(dot(sampleData.xyz, normalDepthData.xyz))); // Normal weight
+        vec3 sampleIrradiance;
+        vec4 sampleNormalDepth;
+        UnpackSharedData(sampleSharedTexel, sampleIrradiance, sampleNormalDepth);
 
-            vec3 sampleLight = sharedLight[sampleSharedTexel.x][sampleSharedTexel.y];
+        float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
+        weight *= exp2(abs(sampleNormalDepth.w - normalDepthData.w) * sigmaZ); // Distance weight
+        weight *= pow32(saturate(dot(sampleNormalDepth.xyz, normalDepthData.xyz))); // Normal weight
 
-            indirectData += sampleLight * weight;
-            sumWeight += weight;
-        }
-
-        indirectData *= rcp(sumWeight);
-
-        imageStore(colorimg3, texel, vec4(indirectData, 1.0));
+        indirectData += sampleIrradiance * weight;
+        sumWeight += weight;
     }
+
+    indirectData *= rcp(sumWeight);
+    imageStore(colorimg3, ivec2(gl_GlobalInvocationID.xy), vec4(indirectData, 1.0));
 }
