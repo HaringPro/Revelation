@@ -12,53 +12,41 @@ uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-//================================================================================================//
-
 #include "ShadowDistortion.glsl"
-
-vec3 WorldToShadowScreenPos(in vec3 worldPos) {
-	vec3 shadowPos = transMAD(shadowModelView, worldPos);
-	return projMAD(shadowProjection, shadowPos) * 0.5 + 0.5;
-}
-
-vec2 DistortShadowScreenPos(in vec2 shadowPos) {
-	shadowPos = shadowPos * 2.0 - 1.0;
-	shadowPos *= rcp(DistortionFactor(shadowPos));
-
-	return shadowPos * 0.5 + 0.5;
-}
 
 //================================================================================================//
 
 vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in float skyLightmap) {
 	const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
-	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
-	vec3 shadowScreenPos = WorldToShadowScreenPos(worldPos);
-
 	vec3 shadowNormal = mat3(shadowModelView) * worldNormal;
+	vec3 projectionScale = diagonal3(shadowProjection);
 	vec3 projectionInvScale = diagonal3(shadowProjectionInverse);
+
+	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
+	vec3 shadowPos = transMAD(shadowModelView, worldPos);
+	vec3 shadowClipPos = projectionScale * shadowPos + shadowProjection[3].xyz;
 
 	const float sqRadius = RSM_RADIUS * RSM_RADIUS;
 	const float rSteps = 1.0 / float(RSM_SAMPLES);
-	const float falloffScale = 9.0 / RSM_RADIUS;
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
-	vec2 offsetRadius = RSM_RADIUS * diagonal2(shadowProjection);
-	vec2 dir = sincos(dither * 32.0 * PI) * offsetRadius;
+	vec2 offsetRadius = RSM_RADIUS * projectionScale.xy;
+	vec2 dir = sincos(dither * 16.0 * PI) * offsetRadius;
 	dither *= rSteps;
 
 	vec3 sum = vec3(0.0);
 	for (uint i = 0u; i < RSM_SAMPLES; ++i, dir *= goldenRotate) {
 		float sampleRad 			= float(i) * rSteps + dither;
 
-		vec2 sampleCoord 			= shadowScreenPos.xy + dir * sampleRad;
-		ivec2 sampleTexel 			= ivec2(DistortShadowScreenPos(sampleCoord) * realShadowMapRes);
+		vec2 sampleClipCoord 		= shadowClipPos.xy + dir * sampleRad;
+		vec2 sampleScreenCoord		= sampleClipCoord * rcp(DistortionFactor(sampleClipCoord)) * 0.5 + 0.5;
+		ivec2 sampleTexel 			= ivec2(sampleScreenCoord * realShadowMapRes);
 
-		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 5.0 - 2.0;
+		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 10.0 - 5.0;
 
-		vec3 sampleVector 			= vec3(sampleCoord, sampleDepth) - shadowScreenPos;
+		vec3 sampleVector 			= vec3(sampleClipCoord, sampleDepth) - shadowClipPos;
 		sampleVector 				= projectionInvScale * sampleVector;
 
 		float sampleSqLen 	 		= dotSelf(sampleVector);
@@ -76,9 +64,9 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 		float bounce 				= dot(sampleNormal, -sampleDir);				
 		if (bounce < 1e-6) 			continue;
 
-		float falloff 	 			= rcp((sampleSqLen + 0.2) * falloffScale * inversesqrt(sampleRad));
+		float falloff 	 			= sampleRad / (sampleSqLen + RSM_RADIUS * rSteps * 0.25);
 
-		float skylightWeight 		= saturate(exp2(-sqr(sampleColor.z - skyLightmap)) * 2.5 - 1.5);
+		float skylightWeight 		= saturate(1.0 - sqr(sampleColor.z - skyLightmap) * 2.0);
 
 		// vec3 albedo 				= sRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
 		vec3 albedo 				= pow(texelFetch(shadowcolor0, sampleTexel, 0).rgb, vec3(2.2));
@@ -86,9 +74,9 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 		sum += albedo * falloff * saturate(diffuse * bounce) * skylightWeight;
 	}
 
-	sum *= sqRadius * rSteps * RSM_BRIGHTNESS;
+	sum *= sqRadius * rSteps * RSM_BRIGHTNESS * 0.5;
 
-	return sum * inversesqrt(maxEps(sum));
+	return sum;
 }
 
 #else

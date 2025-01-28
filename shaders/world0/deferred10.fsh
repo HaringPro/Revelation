@@ -399,15 +399,15 @@ void main() {
 		// Global illumination
 		#ifdef SSPT_ENABLED
 			#ifdef SVGF_ENABLED
-				float NdotV = abs(dot(worldNormal, -worldDir));
+				float NdotV = abs(dot(worldNormal, worldDir));
 				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * (ao * 0.5 + 0.5);
 			#else
 				sceneOut += texelFetch(colortex3, screenTexel >> 1, 0), 0).rgb * (ao * 0.5 + 0.5);
 			#endif
 		#elif defined RSM_ENABLED
-			float NdotV = abs(dot(worldNormal, -worldDir));
+			float NdotV = abs(dot(worldNormal, worldDir));
 			vec3 rsm = SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV);
-			sceneOut += sqr(rsm) * ao * (sunlightMult * rPI);
+			sceneOut += rsm * ao * sunlightMult;
 		#endif
 
 		// Specular reflections
