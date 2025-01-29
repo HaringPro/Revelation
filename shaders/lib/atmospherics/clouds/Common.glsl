@@ -48,7 +48,7 @@
 	#else
 		#define inf far
 	#endif
-    #define CLOUD_SHADOW_DISTANCE 		inf     // Render distance of cloud shadows. [inf 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
+    #define CLOUD_SHADOW_DISTANCE 		512.0     // Render distance of cloud shadows. [inf 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
 
 
 //================================================================================================//

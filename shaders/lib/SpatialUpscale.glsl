@@ -45,7 +45,7 @@
 		ivec2 texel = ivec2(coord) + bias * 2 - 2;
 
 		const ivec2 offset[5] = ivec2[5](
-			ivec2(-2, -2), ivec2(-2, 2), ivec2(0, 0), ivec2(2, -2), ivec2(2, 2)
+			ivec2(-1, -1), ivec2(-1, 1), ivec2(0, 0), ivec2(1, -1), ivec2(1, 1)
 		);
 
 		float sigmaZ = -1e2 / linearDepth;

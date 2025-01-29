@@ -15,68 +15,67 @@
 
 //================================================================================================//
 
-vec2 GetCloudShadowCoord(in vec3 rayPos) {
+vec2 WorldToCloudShadowCoord(in vec3 rayPos) {
 	// World space to shadow view space
 	rayPos = mat3(shadowModelView) * rayPos;
+
+	// Scale
+	rayPos.xy *= rcp(min(CLOUD_SHADOW_DISTANCE, inf));
 
 	// Distortion
 	rayPos.xy *= rcp(1.0 + length(rayPos.xy));
 
-	return rayPos.xy * rcp(CLOUD_SHADOW_DISTANCE) * 0.5 + 0.5;
+	return rayPos.xy * 0.5 + 0.5;
 }
 
-vec3 SetupCloudShadowPos(in vec2 texCoord) {
-	texCoord = texCoord * 2.0 - 1.0;
+vec3 CloudShadowToWorldCoord(in vec2 rayPos) {
+	rayPos = rayPos * 2.0 - 1.0;
 
 	// Distortion
-	texCoord *= rcp(1.0 + length(texCoord));
+	rayPos *= rcp(1.0 - length(rayPos));
+
+	// Scale
+	rayPos *= min(CLOUD_SHADOW_DISTANCE, inf);
 
 	// Shadow view space to world space
-	return mat3(shadowModelViewInverse) * vec3(texCoord * CLOUD_SHADOW_DISTANCE, 0.0);
-}
-
-float ReadCloudShadowMap(in sampler2D shadowMap, in vec3 rayPos) {
-	vec2 cloudShadowCoord = GetCloudShadowCoord(rayPos);
-	return textureBicubic(shadowMap, saturate(cloudShadowCoord)).a;
+	return mat3(shadowModelViewInverse) * vec3(rayPos, 0.0);
 }
 
 //================================================================================================//
 
 #ifdef PASS_SKY_VIEW
 float CalculateCloudShadows(in vec3 rayPos) {
-	// if (eyeAltitude > CLOUD_CU_ALTITUDE) return 1.0;
-
 	rayPos += cameraPosition;
 
 	float cloudShadow = 1.0;
 	#if defined CLOUD_ALTOSTRATUS
 	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
-		if (shadowAltitude > 0.0) {
+		if (shadowAltitude > 1e-6) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudMidDensity(planePos) * 5e2 * stratusExtinction);
+			cloudShadow = exp2(-CloudMidDensity(planePos) * (5e2 * stratusExtinction));
 		}
 	}
 	#endif
 	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
 	{	// Start from the cloud intersection plane and move towards the light vector.
 		float shadowAltitude = CLOUD_HIGH_ALTITUDE - rayPos.y;
-		if (shadowAltitude > 0.0) {
+		if (shadowAltitude > 1e-6) {
 			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudHighDensity(planePos) * 3e2 * cirrusExtinction);
+			cloudShadow = exp2(-CloudHighDensity(planePos) * (3e2 * cirrusExtinction));
 		}
 	}
 	#endif
 
 	#ifdef CLOUD_CUMULUS
 	{	// Start from the cloud intersection plane and move towards the light vector.
-		float shadowAltitude = 0.5 * (CLOUD_CU_ALTITUDE + cumulusMaxAltitude) - rayPos.y;
-		if (shadowAltitude > 0.0) {
+		float shadowAltitude = (CLOUD_CU_ALTITUDE + 0.33 * CLOUD_CU_THICKNESS) - rayPos.y;
+		if (shadowAltitude > 1e-6) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
 			#if 0
-				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * CLOUD_CU_THICKNESS * cumulusExtinction);
+				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * (0.5 * CLOUD_CU_THICKNESS * cumulusExtinction));
 			#else
-				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * CLOUD_CU_THICKNESS * cumulusExtinction);
+				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * (0.5 * CLOUD_CU_THICKNESS * cumulusExtinction));
 			#endif
 		}
 	}
@@ -85,6 +84,6 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	float timeFade = sqr(remap(0.08, 0.16, cloudLightVector.y));
 	cloudShadow = oneMinus(timeFade) + cloudShadow * timeFade;
 
-	return max(0.04, cloudShadow);
+	return cloudShadow;
 }
 #endif
