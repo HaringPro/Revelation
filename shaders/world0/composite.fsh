@@ -21,8 +21,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 11 */
-out uvec2 volFogOut;
+/* RENDERTARGETS: 11,12 */
+layout (location = 0) out vec3 scatteringOut;
+layout (location = 1) out vec3 transmittanceOut;
 
 //======// Input //===============================================================================//
 
@@ -223,6 +224,9 @@ void main() {
 		}
 	#endif
 
-	volFogOut.r = PackupR11G11B10F(volFogData[0]);
-	volFogOut.g = PackupR11G11B10(volFogData[1]);
+	scatteringOut = volFogData.scattering;
+	transmittanceOut = volFogData.transmittance;
+
+	// Apply bayer dithering to reduce banding artifacts
+	transmittanceOut += (dither - 0.5) * r255;
 }
