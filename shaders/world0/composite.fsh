@@ -51,9 +51,7 @@ uniform vec3 fogWind;
 #include "/lib/universal/Noise.glsl"
 
 #include "/lib/atmospherics/Global.glsl"
-#ifdef VF_CLOUD_SHADOWS
-	#include "/lib/atmospherics/clouds/Shadows.glsl"
-#endif
+#include "/lib/atmospherics/clouds/Shadows.glsl"
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
 
@@ -96,10 +94,11 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const float rSteps = 1.0 / float(steps);
 
 	const float toExp6 = 2.58497;
+	float maxFar = max(768.0, far);
 
 	float rayLength = dotSelf(worldPos);
 	float norm = inversesqrt(rayLength);
-	rayLength = min(rayLength * norm, far);
+	rayLength = min(rayLength * norm, maxFar);
 
 	vec3 worldDir = worldPos * norm;
 
@@ -119,7 +118,7 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	float LdotV = dot(worldLightVector, worldDir);
 	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.6) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.9) * 0.1, RayleighPhase(LdotV));
 	phase.x = mix(isotropicPhase, phase.x, 0.75);
-	float isotropicDensity = 128.0 / far * skyMask;
+	float isotropicDensity = 128.0 / maxFar * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
