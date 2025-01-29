@@ -43,7 +43,8 @@
     #define CLOUD_CC_COVERAGE           0.6     // Coverage of cirrocumulus clouds. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 /* Cloud shadows */
-    #define CLOUD_SHADOW_DISTANCE 		far     // Render distance of cloud shadows. [far 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
+	#define inf far
+    #define CLOUD_SHADOW_DISTANCE 		512.0     // Render distance of cloud shadows. [inf 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
 
 
 //================================================================================================//

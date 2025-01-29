@@ -91,7 +91,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
-FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
+FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const uint steps = VOLUMETRIC_FOG_SAMPLES;
 	const float rSteps = 1.0 / float(steps);
 
@@ -118,8 +118,8 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 	float LdotV = dot(worldLightVector, worldDir);
 	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.6) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.9) * 0.1, RayleighPhase(LdotV));
-	phase.x = mix(isotropicPhase, phase.x, 0.6);
-	float baseDensity = 6.0 / far;
+	phase.x = mix(isotropicPhase, phase.x, 0.75);
+	float isotropicDensity = 128.0 / far * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
@@ -128,15 +128,11 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 		vec3 rayPos = rayStart + stepLength * rayStep;
 		vec3 shadowPos = shadowStart + stepLength * shadowStep;
 
-		#if MC_VERSION < 11800
-			if (rayPos.y > 256.0) continue;
-		#else
-			if (rayPos.y > 384.0) continue;
-		#endif
+		if (rayPos.y > (CLOUD_CU_ALTITUDE + CLOUD_CU_THICKNESS)) continue;
 
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 stepFogmass = CalculateFogDensity(rayPos) + baseDensity;
+		vec2 stepFogmass = CalculateFogDensity(rayPos) + isotropicDensity;
 		stepFogmass *= stepExp * rayLength;
 
 		if (dot(stepFogmass, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
@@ -163,8 +159,9 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither) {
 
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
-			float cloudShadow = ReadCloudShadowMap(colortex10, rayPos - cameraPosition);
-			sampleShadow *= cloudShadow * cloudShadow;
+			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
+			float cloudShadow = texelFetch(colortex10, ivec2(cloudShadowCoord * vec2(256.0, 384.0)), 0).a;
+			sampleShadow *= saturate(cloudShadow * 10.0 - 9.0);
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
@@ -206,7 +203,7 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			volFogData = AirVolumetricFog(worldPos, dither);
+			volFogData = AirVolumetricFog(worldPos, dither, step(0.999999, screenPos.z));
 		}
 	#endif
 	#ifdef UW_VOLUMETRIC_FOG
