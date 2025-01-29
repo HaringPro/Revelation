@@ -125,7 +125,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
-	return vec4(clamp16f(reflection * brdf + highlights), brdf);
+	return clamp16f(vec4(reflection * brdf + highlights, brdf));
 }
 
 //======// Main //================================================================================//

@@ -302,9 +302,9 @@ void main() {
 				// Sunlight diffuse
 				vec3 sunlightDiffuse = DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 				sunlightDiffuse += sssAmount * (SUBSURFACE_SCATTERING_BRIGHTNESS * 0.6) * distanceFade;
-				sceneOut += shadow * min(sunlightDiffuse, rPI);
+				sceneOut += shadow * saturate(sunlightDiffuse);
 
-				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0);
+				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, saturate(NdotL), NdotH, material.roughness, material.f0);
 				specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
 			}
 		}
@@ -407,5 +407,8 @@ void main() {
 
 		// Specular highlights
 		sceneOut += specularHighlight;
+
+		// Output clamp
+		sceneOut = clamp16f(sceneOut);
 	}
 }
