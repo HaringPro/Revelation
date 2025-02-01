@@ -101,7 +101,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(loadGbufferData0(sampleTexel));
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
-        float sampleRoughness = sqr(1.0 - Unpack2x8(loadGbufferData1(sampleTexel).x).x);
+        float sampleRoughness = sqr(1.0 - loadGbufferData1(sampleTexel).x);
 
         float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 4.0) *
                        fastExp(-(abs(reflectionData.a - sampleData.a) * smoothness
