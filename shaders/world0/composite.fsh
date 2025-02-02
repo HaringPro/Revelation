@@ -99,7 +99,7 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const float rSteps = 1.0 / float(steps);
 
 	const float toExp6 = 2.58497;
-	float maxFar = max(768.0, far);
+	float maxFar = max(1024.0, far);
 
 	float rayLength = dotSelf(worldPos);
 	float norm = inversesqrt(rayLength);
@@ -121,9 +121,9 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.6) * 0.6 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.3 + HenyeyGreensteinPhase(LdotV, 0.9) * 0.1, RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.65 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.35, RayleighPhase(LdotV));
 	phase.x = mix(isotropicPhase, phase.x, 0.75);
-	float isotropicDensity = 128.0 / maxFar * skyMask;
+	float isotropicDensity = 80.0 / maxFar * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
