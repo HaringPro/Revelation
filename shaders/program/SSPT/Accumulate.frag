@@ -57,7 +57,7 @@ float EstimateSpatialVariance(in ivec2 texel, in float luma) {
             sqLuma += sampleLuma * sampleLuma * weight;
         }
     }
-    return abs(sqLuma - luma * luma);
+    return max0(sqLuma - luma * luma);
 }
 
 vec4 SpatialCurrent(in ivec2 texel) {
@@ -156,7 +156,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
 
         // See section 4.2 of the paper
         if (indirectHistory.a > 4.5) {
-            indirectCurrent.a = abs(momentsHistory.y - momentsHistory.x * momentsHistory.x);
+            indirectCurrent.a = max0(momentsHistory.y - momentsHistory.x * momentsHistory.x);
         } else {
             indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
         }
