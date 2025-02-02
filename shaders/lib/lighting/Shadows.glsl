@@ -192,10 +192,11 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
 	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
 
+	float viewDist = length(viewPos);
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += length(viewPos) * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
+	viewPos += viewDist * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
 
-	float absorption = 0.75 * approxSqrt(sssAmount);
+    float absorption = approxExp(-approxSqrt(viewDist)) * sssAmount;
 
 	float shadow = 1.0;
 
@@ -209,7 +210,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 
 	rayPos += rayStep * (dither + 1.0 - sssAmount);
 
-	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
+	float diffTolerance = 0.03 * (sssAmount - viewPos.z);
 
 	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
 		if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
@@ -220,8 +221,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 		float difference = ScreenToViewDepth(rayPos.z);
 		difference -= ScreenToViewDepth(sampleDepth);
 
-		if (clamp(difference, 0.0, maxThickness) == difference) shadow *= absorption;
-
+		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
+ 
 		if (shadow < 1e-3) break;
 	}
 
@@ -232,10 +233,11 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
 	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
 
+	float viewDist = length(viewPos);
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += length(viewPos) * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
+	viewPos += viewDist * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
 
-	float absorption = 0.75 * approxSqrt(sssAmount);
+    float absorption = approxExp(-approxSqrt(viewDist)) * sssAmount;
 
 	float shadow = 1.0;
 
@@ -249,7 +251,7 @@ float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, i
 
 	rayPos += rayStep * (dither + 1.0 - sssAmount);
 
-	float maxThickness = 0.02 * (2.0 - viewPos.z) * dhProjectionInverse[1].y;
+	float diffTolerance = 0.03 * (sssAmount - viewPos.z);
 
 	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
 		if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
@@ -260,7 +262,7 @@ float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, i
 		float difference = ScreenToViewDepthDH(rayPos.z);
 		difference -= ScreenToViewDepthDH(sampleDepth);
 
-		if (clamp(difference, 0.0, maxThickness) == difference) shadow *= absorption;
+		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
 
 		if (shadow < 1e-3) break;
 	}
