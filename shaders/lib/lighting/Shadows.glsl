@@ -190,8 +190,9 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 //================================================================================================//
 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
+	float viewDist = length(viewPos);
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += length(viewPos) * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
+	viewPos += viewDist * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
 
     vec3 endPos = ViewToScreenSpace(viewLightVector * -viewPos.z + viewPos);
     vec3 rayStep = normalize(endPos - rayPos);
@@ -205,8 +206,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 
 	rayPos += rayStep * (dither + 1.0 - sssAmount);
 
-	float maxThickness = 0.01 * (2.0 - viewPos.z) * gbufferProjectionInverse[1].y;
-    float absorption = step(1e-3, sssAmount) * sssAmount;
+	float diffTolerance = 0.03 * (sssAmount - viewPos.z);
+    float absorption = approxExp(-approxSqrt(viewDist)) * sssAmount;
 
 	float shadow = 1.0;
     for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
@@ -219,7 +220,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 			float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
 			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
 
-			if (traceDepthLinear - sampleDepthLinear < maxThickness) shadow *= absorption;
+			if (traceDepthLinear - sampleDepthLinear < diffTolerance) shadow *= absorption;
 		}
  
 		if (shadow < 1e-3) break;
