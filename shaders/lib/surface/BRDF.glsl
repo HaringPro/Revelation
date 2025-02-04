@@ -16,6 +16,12 @@ float FresnelSchlick(in float cosTheta, in float f0, in float f90) {
     return saturate(f0 + (f90 - f0) * pow5(1.0 - cosTheta));
 }
 
+vec3 FresnelSchlickMS(in float cosTheta, in vec3 f0, float roughness) {
+    float weight = rcp(1.0 + 5.0 * roughness * roughness); // Empirical compensation factor
+    vec3 fresnel = f0 + oneMinus(f0) * pow5(1.0 - cosTheta);
+    return mix(fresnel, vec3(1.0), weight); // Add energy compensation
+}
+
 // Lazanyi approximation correction
 vec3 FresnelLazanyi2019(in float cosTheta, in vec3 f0, in vec3 f82) {
     vec3 a = 17.6513846 * (f0 - f82) + 8.16666667 * oneMinus(f0);
@@ -163,7 +169,7 @@ float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float Ndot
     // Geometric term
     float G = G2SmithGGX(NdotL, NdotV, alpha2);
 
-	return min(F * D * G / (4.0 * NdotV), 5e2); // Prevent overflow
+	return F * D * G / (4.0 * NdotV);
 }
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_LIGHTING
@@ -210,8 +216,30 @@ float DiffuseBurley(in float LdotH, in float NdotV, in float NdotL, in float rou
 }
 
 // From https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
-// TODO: Implement
-float DiffuseTurquin() { return 0.0; }
+vec3 TurquinBRDF(in float NdotV, in float NdotL, in float NdotH, in float VdotH, in float f0, in float metallic, in float roughness, in vec3 albedo) {
+    vec3 F0 = mix(vec3(f0), albedo, metallic); 
+    float alpha2 = roughness * roughness;
+
+    // Fresnel term
+    vec3 F = FresnelSchlickMS(VdotH, F0, roughness);
+
+    // Distribution term
+    float D = NDFTrowbridgeReitz(NdotH, alpha2);   
+
+    // Geometric term
+    float G = G2SchlickGGX(NdotL, NdotV, alpha2);      
+
+    // Diffuse contribution with energy compensation
+    vec3 kD = oneMinus(F) * oneMinus(metallic);
+    vec3 diffuse = kD * albedo * rPI;
+
+    // Specular contribution
+    vec3 numerator = D * G * F; 
+    float denominator = 4.0 * NdotV * NdotL;
+    vec3 specular = numerator / maxEps(denominator);  
+
+    return (diffuse + specular) * NdotL;
+}
 
 //================================================================================================//
 
