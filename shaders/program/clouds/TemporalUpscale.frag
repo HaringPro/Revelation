@@ -172,7 +172,7 @@ void main() {
 			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
 			cloudOut = textureBicubic(colortex13, currCoord);
 		} else {
-			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
+			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
 			prevData = clamp16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 
@@ -184,10 +184,10 @@ void main() {
 
 				// Offcenter rejection
 				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.5 + 0.5;
+				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.75 + 0.25;
 
 				// Camera movement rejection
-				blendWeight *= exp2(-cameraVelocity * (1e-2 / frameTime)) * 0.5 + 0.5;
+				blendWeight *= exp2(-cameraVelocity * (4e-2 / frameTime)) * 0.75 + 0.25;
 
 				// Blend with current frame
 				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
