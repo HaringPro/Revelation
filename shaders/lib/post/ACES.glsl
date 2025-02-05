@@ -201,7 +201,7 @@ float CenterHue(in float hue, in float centerH) {
 	return hueCentered;
 }
 
-//--// ACES Fit //------------------------------------------------------------//
+//======// ACES Fit //============================================================================//
 
 vec3 RRTSweeteners(in vec3 aces) {
 	// --- Glow module --- //
@@ -379,7 +379,7 @@ vec3 AcademyFit(in vec3 rgb) {
 	return linearToSRGB(rgb);
 }
 
-//--// ACES Full //-----------------------------------------------------------//
+//======// ACES Full //===========================================================================//
 
 vec3 RRT(in vec3 aces) {
 	// --- Glow module --- //
