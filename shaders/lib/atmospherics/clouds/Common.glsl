@@ -16,7 +16,7 @@
     #define CLOUD_CUMULUS 	                    // Enables cumulus clouds
 //  #define CLOUD_CU_ADVANCED_POWDER            // Enables advanced powder effect for cumulus clouds
 
-    #define CLOUD_CU_SAMPLES 		   	22      // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
+    #define CLOUD_CU_SAMPLES 		   	24      // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
 
     #define CLOUD_CU_SUNLIGHT_SAMPLES 	4       // Sample count for sunlight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
     #define CLOUD_CU_SKYLIGHT_SAMPLES 	2       // Sample count for skylight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
