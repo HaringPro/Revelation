@@ -15,7 +15,7 @@
 
 #include "/lib/Utility.glsl"
 
-#define TONEMAP_OPERATOR AcademyFit // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
+#define TONEMAP_OPERATOR AgX_Minimal // [None AcademyFit AcademyFull AgX_Minimal AgX_Full Uchimura Lottes]
 
 #define BLOOM_INTENSITY 1.0 // Intensity of bloom. [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0 20.0]
 #define BLOOMY_FOG_INTENSITY 0.75 // Intensity of bloomy fog. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.75 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
@@ -84,7 +84,7 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel) {
 
 	bloomData *= rcp(sumWeight);
 
-	float bloomIntensity = BLOOM_INTENSITY * 0.05;
+	float bloomIntensity = BLOOM_INTENSITY * 0.075;
 	bloomIntensity *= fma(1.0 / max(exposure, 1.0), 0.75, 0.25);
 
 	scene = mix(scene, bloomData, bloomIntensity);
