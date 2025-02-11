@@ -121,7 +121,7 @@ float CalculateAutoExposure() {
             if (prefix > HISTOGRAM_LOWER_BOUND) {
                 float weight = prefix - HISTOGRAM_LOWER_BOUND;
                 sum = float(i) * weight;
-                sumWeight += weight;
+                sumWeight = weight;
                 break;
             }
         }
@@ -164,21 +164,16 @@ void main() {
 	#endif
 
  	#ifdef AUTO_EXPOSURE
-		exposure = CalculateAutoExposure();
+		float lumimance = CalculateAutoExposure();
 
-        const float K = 12.5;
-        const float cal = K / ISO;
-        const float m = 3.5, r = m - 0.01;
-        float targetExposure = exp2(AUTO_EV_BIAS) / (m - r * fastExp(-exposure * rcp(cal * r)));
+        const float K = 18.0; // Calibration constant
+        const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
 
+        float targetExposure = calibration * rcp(lumimance);
         float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
 
-        /* if (prevExposure > 1e-8)  */{
-            float blendRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-            exposure = mix(targetExposure, prevExposure, fastExp(-blendRate * frameTime));
-        // } else {
-        //     exposure = targetExposure;
-        }
+        float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+        exposure = mix(targetExposure, prevExposure, fastExp(-exposureRate * frameTime));
 	#else
 		exposure = exp2(-MANUAL_EV);
 	#endif
