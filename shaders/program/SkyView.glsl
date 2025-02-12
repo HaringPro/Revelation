@@ -166,7 +166,7 @@ void main() {
  	#ifdef AUTO_EXPOSURE
 		float lumimance = CalculateAutoExposure();
 
-        const float K = 18.0; // Calibration constant
+        const float K = 27.5; // Calibration constant
         const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
 
         float targetExposure = calibration * rcp(lumimance);
