@@ -59,7 +59,7 @@ void main() {
 			float longitude = float(v) * TAU * rSlices;
 			vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
 
-			vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction)).rgb;
+			vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
 			skySH += ToSphericalHarmonics(skyRadiance, direction);
 		}
 	}
