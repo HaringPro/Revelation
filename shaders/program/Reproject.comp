@@ -1,10 +1,10 @@
 /*
 --------------------------------------------------------------------------------
 
-	Revelation Shaders
+	Revoxelation Shaders
 
 	Copyright (C) 2024 HaringPro
-	Apache License 2.0
+	All Rights Reserved
 
     Pass: Reproject scene history and lighting data history (half-res)
 
@@ -61,11 +61,8 @@ void main() {
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {
-        vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
-        imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
-        // #if defined SSPT_ENABLED && !defined SSPT_TEMPORAL_INFINITE_BOUNCES
-        //     reprojectedHistory = texture(colortex3, previousCoord).rgb;
-        //     imageStore(colorimg4, screenTexel + ivec2(int(viewSize.x * 0.5), 0), vec4(reprojectedHistory, 1.0));
-        // #endif
+        vec4 reprojectedHistory = texture(colortex1, previousCoord);
+        reprojectedHistory.rgb = reprojectedHistory.a > 1.5 ? reprojectedHistory.rgb : vec3(0.0);
+        imageStore(colorimg4, screenTexel, vec4(reprojectedHistory.rgb, 1.0));
     }
 }
