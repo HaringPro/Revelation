@@ -409,6 +409,6 @@ void main() {
 		sceneOut += specularHighlight;
 
 		// Output clamp
-		sceneOut = clamp16f(sceneOut);
+		sceneOut = satU16f(sceneOut);
 	}
 }

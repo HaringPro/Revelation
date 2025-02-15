@@ -19,20 +19,31 @@ const float TAU 		= 6.28318530718;
 const float rTAU 		= 0.15915494310;
 const float rLOG2 		= 1.44269504089;
 const float PHI 		= 0.61803398875;
-//const float EPS 	    = 1e-6;
+const float EPS 	    = 0.000001;
 const float goldenAngle = 2.39996322973;
 
 const float r255 		= 0.00392156863;
 const float r240		= 0.00416666667;
+
+const float max8f		= 255.0;
+const float max16f		= 65535.0;
+const float max32f		= 4294967295.0;
 
 #define rcp(x) 			(1.0 / (x))
 #define oneMinus(x) 	(1.0 - (x))
 #define fastExp(x) 		exp2((x) * rLOG2)
 #define max0(x) 		max(x, 0.0)
 #define min1(x) 		min(x, 1.0)
-#define maxEps(x) 		max(x, 1e-6)
+#define maxEps(x) 		max(x, EPS)
+
 #define saturate(x) 	clamp(x, 0.0, 1.0)
-#define clamp16f(x) 	clamp(x, 0.0, 65535.0)
+#define satSnorm(x) 	clamp(x, -1.0, 1.0)
+#define satU8f(x) 		clamp(x, 0.0, max8f)
+#define satS8f(x) 		clamp(x, -max8f, max8f)
+#define satU16f(x) 		clamp(x, 0.0, max16f)
+#define satS16f(x) 		clamp(x, -max16f, max16f)
+#define satU32f(x) 		clamp(x, 0.0, max32f)
+#define satS32f(x) 		clamp(x, -max32f, max32f)
 
 #define transMAD(m, v)	(mat3(m) * (v) + (m)[3].xyz)
 #define diagonal2(m)	vec2((m)[0].x, (m)[1].y)
@@ -93,17 +104,17 @@ vec3  remap(float e0, float e1, vec3 x)  { return saturate((x - e0) * rcp(e1 - e
 float mean(vec3 v) { return dot(v, vec3(1.0 / 3.0)); }
 
 // https://iquilezles.org/articles/functions/
-// float almostIdentity(float x, float m, float n) {
-//     if (x > m) return x;
-//     float a = 2.0 * n - m;
-//     float b = 2.0 * m - 3.0 * n;
-//     float t = x / m;
-//     return (a * t + b) * t * t + n;
-// }
+float almostIdentity(float x, float m, float n) {
+    if (x > m) return x;
+    float a = 2.0 * n - m;
+    float b = 2.0 * m - 3.0 * n;
+    float t = x / m;
+    return (a * t + b) * t * t + n;
+}
 
-// float almostUnitIdentity(float x) {
-//     return x * x * (2.0 - x);
-// }
+float almostUnitIdentity(float x) {
+    return x * x * (2.0 - x);
+}
 
 float fastSign(float x) {
     return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
@@ -183,28 +194,28 @@ mat3 ConstructTBN(in vec3 n) {
 #endif
 
 float Packup2x8(in vec2 data) {
-	return dot(floor(data * 255.0 + 0.5), vec2(256.0 / 65535.0, 1.0 / 65535.0));
+	return dot(floor(data * max8f + 0.5), vec2(256.0 / max16f, 1.0 / max16f));
 }
 
 float PackupDithered2x8(in vec2 data, in float dither) {
-	return dot(floor(data * 255.0 + dither), vec2(256.0 / 65535.0, 1.0 / 65535.0));
+	return dot(floor(data * max8f + dither), vec2(256.0 / max16f, 1.0 / max16f));
 }
 
 vec2 Unpack2x8(in float data) {
-	float x, y = modf(data * (65535.0 / 256.0), x) * 256.0;
+	float x, y = modf(data * (max16f / 256.0), x) * 256.0;
 	return vec2(x, y) * r255;
 }
 
-float Packup2x8X(in float data) { return floor(data * (65535.0 / 256.0)) * r255; }
-float Packup2x8Y(in float data) { return fract(data * (65535.0 / 256.0)) * (256.0 * r255); }
+float Packup2x8X(in float data) { return floor(data * (max16f / 256.0)) * r255; }
+float Packup2x8Y(in float data) { return fract(data * (max16f / 256.0)) * (256.0 * r255); }
 
 uint Packup2x8U(in vec2 data) {
-	uvec2 u = uvec2(data * 255.0 + 0.5);
+	uvec2 u = uvec2(data * max8f + 0.5);
 	return (u.x << 8) | u.y;
 }
 
 uint PackupDithered2x8U(in vec2 data, in float dither) {
-	uvec2 u = uvec2(data * 255.0 + dither);
+	uvec2 u = uvec2(data * max8f + dither);
 	return (u.x << 8) | u.y;
 }
 
