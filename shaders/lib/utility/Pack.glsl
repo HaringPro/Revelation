@@ -28,6 +28,15 @@ vec2 Unpack2x8(in float data) {
 float Packup2x8X(in float data) { return floor(data * (max16f / 256.0)) * r255; }
 float Packup2x8Y(in float data) { return fract(data * (max16f / 256.0)) * (256.0 * r255); }
 
+float Packup2x8F(in vec2 data) {
+	return dot(floor(data * max8f + 0.5), vec2(256.0, 1.0));
+}
+
+vec2 Unpack2x8F(in float data) {
+	float x, y = modf(data * rcp(256.0), x) * 256.0;
+	return vec2(x, y) * r255;
+}
+
 uint Packup2x8U(in vec2 data) {
 	uvec2 u = uvec2(data * max8f + 0.5);
 	return (u.x << 8) | u.y;
