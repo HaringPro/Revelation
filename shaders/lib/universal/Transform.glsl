@@ -87,6 +87,12 @@ float ViewToScreenDepth(in float depth) {
 	return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
 }
 
+mat3 ConstructTBN(in vec3 n) {
+	vec3 t = normalize(vec3(abs(n.y) + n.z, 0.0, -n.x));
+	vec3 b = normalize(cross(t, n));
+	return mat3(t, b, n);
+}
+
 //======// Distant Horizons Transform Function //=================================================//
 
 #if defined DISTANT_HORIZONS

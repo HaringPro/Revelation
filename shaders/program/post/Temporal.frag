@@ -50,34 +50,6 @@ vec3 GetClosestFragment(in ivec2 texel, in float depth) {
     return closestFragment;
 }
 
-vec3 reinhard(in vec3 hdr) {
-    return hdr / (1.0 + GetLuminance(hdr));
-}
-vec3 invReinhard(in vec3 sdr) {
-    return sdr / (1.0 - GetLuminance(sdr));
-}
-
-vec3 RGBtoYCoCgR(in vec3 rgbColor) {
-    vec3 YCoCgRColor;
-
-    YCoCgRColor.y = rgbColor.r - rgbColor.b;
-    float temp = rgbColor.b + YCoCgRColor.y * 0.5;
-    YCoCgRColor.z = rgbColor.g - temp;
-    YCoCgRColor.x = temp + YCoCgRColor.z * 0.5;
-
-    return YCoCgRColor;
-}
-vec3 YCoCgRtoRGB(in vec3 YCoCgRColor) {
-    vec3 rgbColor;
-
-    float temp = YCoCgRColor.x - YCoCgRColor.z * 0.5;
-    rgbColor.g = YCoCgRColor.z + temp;
-    rgbColor.b = temp - YCoCgRColor.y * 0.5;
-    rgbColor.r = rgbColor.b + YCoCgRColor.y;
-
-    return rgbColor;
-}
-
 vec3 clipAABB(in vec3 boxMin, in vec3 boxMax, in vec3 prevSample) {
     vec3 p_clip = 0.5 * (boxMax + boxMin);
     vec3 e_clip = 0.5 * (boxMax - boxMin);
