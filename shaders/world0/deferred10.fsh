@@ -9,7 +9,6 @@
 	Apache License 2.0
 
 	Pass: Deferred lighting and sky rendering
-		  Store lighting data for global illumination
 		  Compute specular reflections
 
 --------------------------------------------------------------------------------
