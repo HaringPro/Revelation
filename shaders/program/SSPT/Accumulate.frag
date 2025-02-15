@@ -22,7 +22,7 @@
 /* RENDERTARGETS: 3,13,14 */
 layout (location = 0) out vec4 indirectCurrent;
 layout (location = 1) out vec4 indirectHistory;
-layout (location = 2) out vec2 momentsHistory;
+layout (location = 2) out vec2 varianceMoments;
 
 //======// Uniform //=============================================================================//
 
@@ -37,143 +37,94 @@ uniform float cameraVelocity;
 #include "/lib/universal/Noise.glsl"
 #include "/lib/universal/Offset.glsl"
 
-float EstimateSpatialVariance(in ivec2 texel, in float luma) {
-    const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
-
+void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in float currViewDistance) {
+    indirectCurrent.rgb = texelFetch(colortex3, texel, 0).rgb;
+    float luminance = GetLuminance(indirectCurrent.rgb);
     ivec2 texelEnd = ivec2(halfViewEnd);
 
-    float sqLuma = luma * luma;
-    luma *= kernel[0][0], sqLuma *= kernel[0][0];
+    // Estimate spatial variance
+    vec2 currMoments = vec2(luminance, luminance * luminance);
+    {
+        float sumWeight = 1.0;
 
-    for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
-            if (x == 0 && y == 0) continue;
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+                if (x == 0 && y == 0) continue;
 
-            ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), texelEnd);
-            float weight = kernel[abs(x)][abs(y)];
-            float sampleLuma = GetLuminance(texelFetch(colortex3, sampleTexel, 0).rgb);
+                ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), texelEnd);
+                vec3 sampleColor = texelFetch(colortex3, sampleTexel, 0).rgb;
+                float sampleLuma = GetLuminance(sampleColor);
 
-            luma   += sampleLuma * weight;
-            sqLuma += sampleLuma * sampleLuma * weight;
-        }
-    }
-    return max0(sqLuma - luma * luma);
-}
+                vec3 sampleNormal = FetchWorldNormal(loadGbufferData0(sampleTexel << 1));
+                float weight = saturate(dot(sampleNormal, worldNormal) * 20.0 - 19.0);
 
-vec4 SpatialCurrent(in ivec2 texel) {
-    // const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
-    const float h[24] = {1.0 / 256.0,   1.0 / 64.0,     3.0 / 128.0,    1.0 / 64.0, 1.0 / 256.0,
-                         1.0 / 64.0,    1.0 / 16.0,     3.0 / 32.0,     1.0 / 16.0, 1.0 / 64.0,
-                         3.0 / 128.0,   3.0 / 32.0,  /* 9.0 / 64.0 */   3.0 / 32.0, 3.0 / 128.0,
-                         1.0 / 64.0,    1.0 / 16.0,     3.0 / 32.0,     1.0 / 16.0, 1.0 / 64.0,
-                         1.0 / 256.0,   1.0 / 64.0,     3.0 / 128.0,    1.0 / 64.0, 1.0 / 256.0};
-
-    ivec2 texelEnd = ivec2(halfViewEnd);
-
-    vec3 filteredColor = texelFetch(colortex3, texel, 0).rgb;
-
-    // float luma = GetLuminance(filteredColor), sqLuma = luma * luma, maxLuma = luma;
-    float maxLuma = GetLuminance(filteredColor);
-    filteredColor *= 9.0 / 64.0;
-
-    for (uint i = 0u; i < 24u; ++i) {
-        ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), texelEnd);
-        vec3 currentColor = texelFetch(colortex3, sampleTexel, 0).rgb;
-
-        float weight = h[i];
-        float sampleLuma = GetLuminance(currentColor);
-        maxLuma = max(maxLuma, sampleLuma);
-
-        filteredColor += currentColor * weight;
-        // luma   += sampleLuma;
-        // sqLuma += sampleLuma * sampleLuma;
-    }
-
-    // momentsHistory = vec2(luma, sqLuma) * rcp(25.0);
-    return vec4(filteredColor, maxLuma);
-}
-
-void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in vec3 worldNormal) {
-    vec4 prevLight = vec4(0.0);
-    vec2 prevMoments = vec2(0.0);
-    float sumWeight = 0.0;
-
-    float currViewDistance = length(viewPos);
-
-    prevCoord += (prevTaaOffset - taaOffset) * 0.25;
-
-    // Custom bilinear filter
-    vec2 prevTexel = prevCoord * 0.5 * viewSize - vec2(0.5);
-    ivec2 floorTexel = ivec2(floor(prevTexel));
-    vec2 fractTexel = fract(prevTexel - floorTexel);
-
-    float bilinearWeight[4] = {
-        oneMinus(fractTexel.x) * oneMinus(fractTexel.y),
-        fractTexel.x           * oneMinus(fractTexel.y),
-        oneMinus(fractTexel.x) * fractTexel.y,
-        fractTexel.x           * fractTexel.y
-    };
-
-    ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
-    ivec2 texelEnd = ivec2(halfViewEnd);
-
-    for (uint i = 0u; i < 4u; ++i) {
-        ivec2 sampleTexel = floorTexel + offset2x2[i];
-        if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
-            vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
-
-            float diffZ = abs((currViewDistance - prevData.w) - cameraVelocity) / abs(currViewDistance);
-            float diffN = dot(prevData.xyz, worldNormal);
-            if (diffZ < 0.1 && diffN > 0.5) {
-                float weight = bilinearWeight[i];
-
-                prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
-                prevMoments += texelFetch(colortex14, sampleTexel, 0).xy * weight;
+                currMoments += vec2(sampleLuma, sampleLuma * sampleLuma) * weight;
+                indirectCurrent.rgb += sampleColor * weight;
                 sumWeight += weight;
             }
         }
+
+        sumWeight = 1.0 / sumWeight;
+        currMoments *= sumWeight;
+        indirectCurrent.rgb *= sumWeight;
     }
+    varianceMoments.xy = currMoments;
 
-    if (sumWeight > 1e-5) {
-        sumWeight = rcp(sumWeight);
-        prevLight *= sumWeight;
-        prevMoments *= sumWeight;
+    if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
+        vec4 prevDiffuse = vec4(0.0);
+        vec2 prevMoments = vec2(0.0);
+        float sumWeight = 0.0;
 
-        // indirectCurrent.rgb = SpatialCurrent(screenTexel);
-        indirectCurrent.rgb = texelFetch(colortex3, screenTexel, 0).rgb;
-        // indirectCurrent.rgb = textureSmoothFilter(colortex3, vec2(screenTexel + offsetToBR) * viewPixelSize).rgb;
+        prevCoord += (prevTaaOffset - taaOffset) * 0.25;
 
-        indirectHistory.a = min(++prevLight.a, SSPT_MAX_ACCUM_FRAMES);
-        float alpha = rcp(indirectHistory.a);
+        // Custom bilinear filter
+        vec2 prevTexel = prevCoord * 0.5 * viewSize - vec2(0.5);
+        ivec2 floorTexel = ivec2(floor(prevTexel));
+        vec2 fractTexel = prevTexel - vec2(floorTexel);
 
-        indirectCurrent.rgb = indirectHistory.rgb = mix(prevLight.rgb, indirectCurrent.rgb, alpha);
-        indirectHistory.rgb = satU16f(indirectHistory.rgb);
+        float bilinearWeight[4] = {
+            oneMinus(fractTexel.x) * oneMinus(fractTexel.y),
+            fractTexel.x           * oneMinus(fractTexel.y),
+            oneMinus(fractTexel.x) * fractTexel.y,
+            fractTexel.x           * fractTexel.y
+        };
 
-        float luminance = GetLuminance(indirectCurrent.rgb);
+        ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
 
-        vec2 currMoments = vec2(luminance, luminance * luminance);
-        momentsHistory = mix(prevMoments, currMoments, max(0.05, alpha));
+        for (uint i = 0u; i < 4u; ++i) {
+            ivec2 sampleTexel = floorTexel + offset2x2[i];
+            if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
+                vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
-        // See section 4.2 of the paper
-        if (indirectHistory.a > 4.5) {
-            indirectCurrent.a = max0(momentsHistory.y - momentsHistory.x * momentsHistory.x);
-        } else {
-            indirectCurrent.a = EstimateSpatialVariance(screenTexel, luminance);
+                if (abs((currViewDistance - prevData.w) - cameraVelocity) < 0.1 * abs(currViewDistance)) {
+                    float weight = bilinearWeight[i] * saturate(dot(prevData.xyz, worldNormal) * 8.0 - 7.0);
+
+                    prevDiffuse += texelFetch(colortex13, sampleTexel, 0) * weight;
+                    prevMoments += texelFetch(colortex14, sampleTexel, 0).xy * weight;
+                    sumWeight += weight;
+                }
+            }
         }
-    } else {
-        indirectCurrent = SpatialCurrent(screenTexel);
-        indirectHistory = vec4(indirectCurrent.rgb, 1.0);
+
+        if (sumWeight > 1e-6) {
+            sumWeight = 1.0 / sumWeight;
+            prevDiffuse *= sumWeight;
+            prevMoments *= sumWeight;
+
+            indirectHistory.a = min(prevDiffuse.a + 1.0, SSPT_MAX_ACCUM_FRAMES);
+            float alpha = rcp(indirectHistory.a);
+
+            // See section 4.2 of the paper
+            if (indirectHistory.a > 4.5) {
+                varianceMoments.xy = mix(prevMoments, varianceMoments.xy, alpha);
+            }
+
+            indirectCurrent.rgb = indirectHistory.rgb = mix(prevDiffuse.rgb, indirectCurrent.rgb, alpha);
+        }
     }
-}
 
-float sampleDepthMin4x4(in vec2 coord) {
-	// 4x4 pixel neighborhood using textureGather
-    vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
-    vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
-    vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
-    vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
-
-    return min(min(minOf(sampleDepth0), minOf(sampleDepth1)), min(minOf(sampleDepth2), minOf(sampleDepth3)));
+    indirectCurrent.a = varianceMoments.x * varianceMoments.x;
+    indirectCurrent.a = max0(varianceMoments.y - indirectCurrent.a) + (indirectCurrent.a + 0.1) * (64.0 / indirectHistory.a);
 }
 
 float GetClosestDepth(in ivec2 texel) {
@@ -196,40 +147,34 @@ void main() {
         ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
         if (currentCoord.x < 1.0) {
-            // vec3 closestFragment = GetClosestFragment(currentTexel, depth);
-            // float depth = sampleDepthMin4x4(currentCoord);
             ivec2 currentTexel = screenTexel << 1;
-            float depth = loadDepth0(currentTexel);
+            float depth = GetClosestDepth(currentTexel);
 
             indirectCurrent = indirectHistory = vec4(vec3(0.0), 1.0);
+            varianceMoments = vec2(0.0);
 
-            momentsHistory = vec2(0.0);
-
-            if (depth < 1.0) {
-                // currentTexel = ivec2(closestFragment.xy * viewSize);
-
-                vec3 screenPos = vec3(currentCoord, depth);
-
-                vec2 prevCoord = Reproject(screenPos).xy;
-                if (saturate(prevCoord) != prevCoord || worldTimeChanged) {
-                    indirectCurrent = SpatialCurrent(screenTexel);
-                    indirectHistory = vec4(indirectCurrent.rgb, 1.0);
-                } else {
-                    vec3 viewPos = ScreenToViewSpace(screenPos);
-                    vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
-                    TemporalFilter(screenTexel, prevCoord, viewPos, worldNormal);
-                }
+            if (depth > 0.999999) {
+                discard;
+                return;
             }
+            vec3 screenPos = vec3(currentCoord, depth);
+
+            vec2 prevCoord = Reproject(screenPos).xy;
+            vec3 viewPos = ScreenToViewSpace(screenPos);
+            vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
+            TemporalFilter(screenTexel, prevCoord, worldNormal, length(viewPos));
         } else {
             ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
             float depth = loadDepth0(currentTexel);
 
-            if (depth < 1.0) {
-                vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
-                float viewDistance = length(ScreenToViewSpace(vec3(currentCoord - vec2(1.0, 0.0), depth)));
-
-                indirectHistory = vec4(worldNormal, viewDistance);
+            if (depth > 0.999999) {
+                discard;
+                return;
             }
+            vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
+            float viewDistance = length(ScreenToViewSpace(vec3(currentCoord - vec2(1.0, 0.0), depth)));
+
+            indirectHistory = vec4(worldNormal, viewDistance);
         }
     }
 }
