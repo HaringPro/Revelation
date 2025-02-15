@@ -50,21 +50,24 @@ shared uvec4 sharedData[sharedSize.y][sharedSize.x];
 uvec4 PackupSharedData(in ivec2 texel, in ivec2 offset) {
     vec3 sharedIrradiance = texelFetch(colortex13, texel, 0).rgb;
     vec4 sharedNormalDepth = texelFetch(colortex13, texel + offset, 0);
+
     return uvec4(
         packUnorm2x16(sharedIrradiance.xy),
-        floatBitsToUint(sharedIrradiance.z),
-        packUnorm2x16(sharedNormalDepth.xy),
-        packUnorm2x16(sharedNormalDepth.zw)
+        packSnorm2x16(sharedNormalDepth.xy),
+        packSnorm2x16(vec2(sharedIrradiance.z, sharedNormalDepth.z)),
+        floatBitsToUint(sharedNormalDepth.w)
     );
 }
 
 void UnpackSharedData(in uvec2 texel, out vec3 sharedIrradiance, out vec4 sharedNormalDepth) {
     uvec4 sharedData = sharedData[texel.y][texel.x];
+    vec2 unpackedZ = unpackSnorm2x16(sharedData.z);
 
     sharedIrradiance.xy  = unpackUnorm2x16(sharedData.x);
-    sharedIrradiance.z   = uintBitsToFloat(sharedData.y);
-    sharedNormalDepth.xy = unpackUnorm2x16(sharedData.z);
-    sharedNormalDepth.zw = unpackUnorm2x16(sharedData.w);
+    sharedNormalDepth.xy = unpackSnorm2x16(sharedData.y);
+    sharedIrradiance.z = unpackedZ.x;
+    sharedNormalDepth.z = unpackedZ.y;
+    sharedNormalDepth.w  = uintBitsToFloat(sharedData.w);
 }
 
 void SharedPreload() {
