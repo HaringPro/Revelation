@@ -76,7 +76,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 
 	sum *= sqRadius * rSteps * RSM_BRIGHTNESS * 0.5;
 
-	return sum;
+	return saturate(sum);
 }
 
 #else
