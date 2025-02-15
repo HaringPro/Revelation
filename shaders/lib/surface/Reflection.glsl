@@ -27,7 +27,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 	float brdf = FresnelDielectric(NdotV, 0.02);
 
-	return vec4(clamp16f(reflection), brdf);
+	return vec4(satU16f(reflection), brdf);
 }
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_LIGHTING
@@ -66,7 +66,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
 			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
 
-			return vec4(clamp16f(reflection * brdf), targetDepth);
+			return vec4(satU16f(reflection * brdf), targetDepth);
 		} else
 	#endif
 		{
@@ -104,7 +104,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			}
 			sceneOut *= 1.0 - brdf;
 
-			return vec4(clamp16f(reflection * brdf), 0.0);
+			return vec4(satU16f(reflection * brdf), 0.0);
 		}
 	}
 #endif

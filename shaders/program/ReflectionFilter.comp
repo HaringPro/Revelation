@@ -115,7 +115,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     reflectionData *= 1.0 / sumWeight;
     reflectionData.rgb = pow(dotSelf(reflectionData.rgb), 0.5 / sharpenWeight) * normalize(maxEps(reflectionData.rgb));
 
-    return clamp16f(reflectionData);
+    return satU16f(reflectionData);
 }
 
 //======// Main //================================================================================//

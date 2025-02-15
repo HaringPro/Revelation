@@ -173,7 +173,7 @@ void main() {
 			cloudOut = textureBicubic(colortex13, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
-			prevData = clamp16f(prevData); // Fix black border artifacts
+			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 
 			// Checkerboard upscaling

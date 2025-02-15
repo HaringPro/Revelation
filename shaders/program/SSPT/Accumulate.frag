@@ -145,7 +145,7 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
         float alpha = rcp(indirectHistory.a);
 
         indirectCurrent.rgb = indirectHistory.rgb = mix(prevLight.rgb, indirectCurrent.rgb, alpha);
-        indirectHistory.rgb = clamp16f(indirectHistory.rgb);
+        indirectHistory.rgb = satU16f(indirectHistory.rgb);
 
         float luminance = GetLuminance(indirectCurrent.rgb);
 
