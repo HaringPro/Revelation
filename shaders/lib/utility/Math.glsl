@@ -15,6 +15,8 @@ const float max8f		 = 255.0;
 const float max16f		 = 65535.0;
 const float max32f		 = 4294967295.0;
 
+//================================================================================================//
+
 #define rcp(x) 			 (1.0 / (x))
 #define oneMinus(x) 	 (1.0 - (x))
 #define fastExp(x) 		 exp2((x) * rLOG2)
@@ -39,6 +41,8 @@ const float max32f		 = 4294967295.0;
 
 #define uvToTexel(coord) ivec2((coord) * viewSize)
 #define texelToUv(texel) ((vec2(texel) + 0.5) * viewPixelSize)
+
+//================================================================================================//
 
 float maxOf(vec2 v)   	 { return max(v.x, v.y); }
 float maxOf(vec3 v)   	 { return max(v.x, max(v.y, v.z)); }
@@ -88,6 +92,8 @@ float mean(vec3 v)       { return dot(v, vec3(1.0 / 3.0)); }
 
 float remap(float e0, float e1, float x) { return saturate((x - e0) * rcp(e1 - e0)); }
 vec3  remap(float e0, float e1, vec3 x)  { return saturate((x - e0) * rcp(e1 - e0)); }
+
+//================================================================================================//
 
 // https://iquilezles.org/articles/functions/
 float almostIdentity(in float x, in float m, in float n) {
@@ -161,4 +167,20 @@ float cubeLength(in vec2 v) {
 
 float quarticLength(in vec2 v) {
 	return sqrt2(pow4(v.x) + pow4(v.y));
+}
+
+//================================================================================================//
+
+mat4x3 ToSphericalHarmonics(in vec3 value, in vec3 dir) {
+	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
+    vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
+
+	return mat4x3(value * harmonics.x, value * harmonics.y, value * harmonics.z, value * harmonics.w);
+}
+
+vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
+	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
+    vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
+
+	return coeff * harmonics;
 }
