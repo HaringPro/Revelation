@@ -4,11 +4,14 @@
 //================================================================================================//
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
-	vec3 coeff = oneMinus(0.75 * albedo) * (28.0 / sssAmount);
-	// vec3 coeff = 30.0 / (albedo * sssAmount + 0.5);
+    #if 1
+	    vec3 coeff = oneMinus(0.75 * albedo) * (8.0 / sssAmount);
+    #else
+	    vec3 coeff = 2.5 / (albedo * sssAmount + 0.125);
+    #endif
 
-	vec3 subsurfaceScattering =  fastExp(0.35 * coeff * sssDepth) * HenyeyGreensteinPhase(-LdotV, 0.6);
-		 subsurfaceScattering += fastExp(0.1 * coeff * sssDepth) * (0.33 * HenyeyGreensteinPhase(-LdotV, 0.35) + 0.17 * rPI);
+	float phase = HenyeyGreensteinPhase(-LdotV, 0.65) * 0.25 + isotropicPhase * 0.75;
+	vec3 subsurfaceScattering = exp2(coeff * sssDepth) * phase;
 
 	return subsurfaceScattering * sssAmount * SUBSURFACE_SCATTERING_BRIGHTNESS;
 }
