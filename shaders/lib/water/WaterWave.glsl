@@ -15,16 +15,19 @@ float CalculateWaterHeight(in vec2 position) {
 	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
 
 	vec2 pos = vec2(1.4, 0.92) * position + vec2(1.1, -0.8) * waveTime;
+	// Manually rotate
 	pos.y -= pos.x * 1.2;
-	float waves = (FetchNoise(pos) - 1.0) * 0.24;
+	float waves = FetchNoise(pos) * 0.24 - 0.24;
 
 	pos = vec2(3.5, 2.2) * position + vec2(2.2, 0.7) * waveTime;
+	// Manually rotate
 	pos.y += pos.x * 0.6;
-	waves += (FetchNoise(pos) - 1.0) * 0.09;
+	waves += FetchNoise(pos) * 0.09 - 0.09;
 
 	pos = vec2(7.0, 3.9) * position + vec2(1.8, 0.8) * waveTime;
+	// Manually rotate
 	pos.y -= pos.x;
-	waves += (FetchNoise(pos) - 1.0) * 0.03;
+	waves += FetchNoise(pos) * 0.03 - 0.03;
 
 	return waves * 1.5;
 }
@@ -32,26 +35,31 @@ float CalculateWaterHeight(in vec2 position) {
 float CalculateWaterHeight(in vec2 position) {
 	float waveTime = frameTimeCounter * WATER_WAVE_SPEED;
 
-	vec2 pos = vec2(0.4, 0.27) * position + vec2(0.8, 0.12) * waveTime;
+	vec2 pos = vec2(0.4, 0.31) * position + vec2(0.8, 0.12) * waveTime;
+	// Manually rotate
 	pos += pos.yx * vec2(0.2, 1.3);
-	float waves = FetchNoise(pos) * 2.0 - 1.0;
-	waves = -2.0 * (waves * waves + 0.04);
+	float waves = FetchNoise(pos) - 1.0;
+	waves = waves * waves - 1.0;
 
-	pos = vec2(0.76, 0.51) * position + vec2(-0.2, -0.3) * waveTime;
+	pos = vec2(0.64, 0.42) * position + vec2(-0.16, -0.24) * waveTime;
+	// Manually rotate
 	pos += pos.yx * vec2(0.1, 0.4);
-	waves -= 0.16 * sin(FetchNoise(pos) * TAU);
+	waves += curve(FetchNoise(pos));
 
 	pos = vec2(1.4, 0.92) * position + vec2(1.1, -0.8) * waveTime;
+	// Manually rotate
 	pos.y -= pos.x * 1.2;
-	waves += (FetchNoise(pos) - 1.0) * 0.24;
+	waves += FetchNoise(pos) * 0.24 - 0.24;
 
 	pos = vec2(3.5, 2.2) * position + vec2(2.2, 0.7) * waveTime;
+	// Manually rotate
 	pos.y += pos.x * 0.6;
-	waves += (FetchNoise(pos) - 1.0) * 0.09;
+	waves += FetchNoise(pos) * 0.09 - 0.09;
 
 	pos = vec2(7.0, 3.9) * position + vec2(1.8, 0.8) * waveTime;
+	// Manually rotate
 	pos.y -= pos.x;
-	waves += (FetchNoise(pos) - 1.0) * 0.03;
+	waves += FetchNoise(pos) * 0.03 - 0.03;
 
 	return waves;
 }
@@ -106,24 +114,26 @@ float getwaves(vec2 position) {
 //================================================================================================//
 
 vec3 CalculateWaterNormal(in vec2 position) {
-	float wavesCenter = CalculateWaterHeight(position);
-	float wavesLeft   = CalculateWaterHeight(position + vec2(0.04, 0.0));
-	float wavesUp     = CalculateWaterHeight(position + vec2(0.0, 0.04));
+	float heightCenter = CalculateWaterHeight(position);
+	float heightLeft   = CalculateWaterHeight(position + vec2(0.05, 0.0));
+	float heightUp     = CalculateWaterHeight(position + vec2(0.0, 0.05));
 
-	vec2 wavesNormal  = vec2(wavesCenter - wavesLeft, wavesCenter - wavesUp);
-
-	return normalize(vec3(wavesNormal * WATER_WAVE_HEIGHT, 0.15));
+	vec2 waveNormal    = vec2(heightCenter - heightLeft, heightCenter - heightUp);
+	return normalize(vec3(waveNormal * WATER_WAVE_HEIGHT, 0.2));
 }
 
 vec3 CalculateWaterNormal(in vec2 position, in vec3 tangentViewDir) {
-	vec3 stepSize = vec3(tangentViewDir.xy * WATER_WAVE_HEIGHT * 0.4, -0.02);
-	stepSize.xy *= 0.02 / -tangentViewDir.z;
+	const uint steps = 16u;
+	const float rSteps = rcp(float(steps));
 
-    vec3 samplePos = vec3(position, 0.0) + stepSize;
+	vec3 rayStep = vec3(tangentViewDir.xy * WATER_WAVE_HEIGHT * 0.5, -rSteps);
+	rayStep.xy *= rSteps / -tangentViewDir.z;
+
+    vec3 samplePos = vec3(position, 0.0) + rayStep;
 	float sampleHeight = CalculateWaterHeight(samplePos.xy);
 
 	while (sampleHeight < samplePos.z) {
-        samplePos += stepSize;
+        samplePos += rayStep;
 		sampleHeight = CalculateWaterHeight(samplePos.xy);
 	}
 
