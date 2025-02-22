@@ -21,11 +21,4 @@
 
 //================================================================================================//
 
-//================================================================================================//
-
-struct FogData {
-	vec3 scattering;
-	vec3 transmittance;
-};
-
-#define ApplyFog(scene, fog) ((scene) * fog.transmittance + fog.scattering)
+#define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])

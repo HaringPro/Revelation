@@ -56,7 +56,7 @@ const float minCloudAbsorption	  = 0.02;
 	#define BLINDNESS_DARKNESS_FOG // Enables blindness & darkness fog
 
 	#define VOLUMETRIC_FOG // Enables volumetric fog
-	#define VOLUMETRIC_FOG_SAMPLES 14 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
+	#define VOLUMETRIC_FOG_SAMPLES 8 // Sample count of volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 24 28 30 40 50 70 100 150 200 300 500]
 	#define VOLUMETRIC_FOG_QUALITY 0 // [0 1]
 
 	// #define COLORED_VOLUMETRIC_FOG // Enables volumetric fog stained glass tint
@@ -70,7 +70,7 @@ const float minCloudAbsorption	  = 0.02;
 
 	#define UW_VOLUMETRIC_FOG // Enables underwater volumetric fog
 	#define UW_VOLUMETRIC_FOG_DENSITY 0.7 // Density of underwater volumetric fog. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0] [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
-	#define UW_VOLUMETRIC_FOG_SAMPLES 20 // Sample count of underwater volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
+	#define UW_VOLUMETRIC_FOG_SAMPLES 16 // Sample count of underwater volumetric fog. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
 	#ifndef CLOUD_SHADOWS
 		#undef VF_CLOUD_SHADOWS

@@ -21,9 +21,8 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 11,12 */
-layout (location = 0) out vec3 scatteringOut;
-layout (location = 1) out vec3 transmittanceOut;
+/* RENDERTARGETS: 11 */
+out uvec4 packedFogData;
 
 //======// Input //===============================================================================//
 
@@ -34,6 +33,8 @@ flat in mat2x3 fogExtinctionCoeff;
 flat in mat2x3 fogScatteringCoeff;
 
 //======// Uniform //=============================================================================//
+
+uniform usampler2D colortex11; // Volumetric Fog, linear depth
 
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
@@ -89,7 +90,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
-FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
+mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
 		const uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
@@ -99,7 +100,7 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const float rSteps = 1.0 / float(steps);
 
 	const float toExp6 = 2.58497;
-	float maxFar = max(1024.0, far);
+	float maxFar = max(2048.0, far);
 
 	float rayLength = dotSelf(worldPos);
 	float norm = inversesqrt(rayLength);
@@ -165,7 +166,7 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
 			float cloudShadow = texelFetch(colortex10, ivec2(cloudShadowCoord * vec2(256.0, 384.0)), 0).a;
-			sampleShadow *= saturate(cloudShadow * 10.0 - 9.0);
+			sampleShadow *= saturate(cloudShadow * 2.0 - 1.0);
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
@@ -186,10 +187,17 @@ FogData AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 1e-2, wetness * 0.4 + 0.2);
 	scattering *= eyeSkylightSmooth;
 
-	return FogData(scattering, transmittance);
+	return mat2x3(scattering, transmittance);
 }
 
 #include "/lib/water/WaterFog.glsl"
+
+mat2x3 UnpackFogData(in uvec3 data) {
+	vec2 unpackedZ = unpackHalf2x16(data.z);
+	vec3 scattering = vec3(unpackHalf2x16(data.x), unpackedZ.x);
+	vec3 transmittance = vec3(unpackUnorm2x16(data.y), unpackedZ.y);
+	return mat2x3(scattering, transmittance);
+}
 
 //======// Main //================================================================================//
 void main() {
@@ -210,7 +218,7 @@ void main() {
 
 	float dither = BlueNoiseTemporal(screenTexel);
 
-	FogData volFogData = FogData(vec3(0.0), vec3(1.0));
+	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
@@ -223,9 +231,24 @@ void main() {
 		}
 	#endif
 
-	scatteringOut = volFogData.scattering;
-	transmittanceOut = volFogData.transmittance;
+	// Temporal reprojection
+	#if 1
+    vec2 prevCoord = Reproject(screenPos).xy;
 
-	// Apply bayer dithering to reduce banding artifacts
-	transmittanceOut += (dither - 0.5) * r255;
+    if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
+        uvec4 reprojectedData = texture(colortex11, prevCoord);
+		mat2x3 reprojectedFog = UnpackFogData(reprojectedData.rgb);
+
+		float blendWeight = 0.9;
+		blendWeight *= exp2(abs(uintBitsToFloat(reprojectedData.a) + viewPos.z) * 32.0 / viewPos.z);
+
+        volFogData[0] = mix(volFogData[0], reprojectedFog[0], blendWeight);
+        volFogData[1] = mix(volFogData[1], reprojectedFog[1], blendWeight);
+	}
+	#endif
+
+	packedFogData.x = packHalf2x16(volFogData[0].rg);
+	packedFogData.y = packUnorm2x16(volFogData[1].rg);
+	packedFogData.z = packHalf2x16(vec2(volFogData[0].b, volFogData[1].b));
+	packedFogData.w = floatBitsToUint(-viewPos.z);
 }
