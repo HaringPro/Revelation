@@ -80,7 +80,7 @@ float CalculateAutoExposure() {
 	ivec2 tileSteps = ivec2(viewSize * tileSize);
     vec2 pixelSize = 1.0 / vec2(tileSteps);
 
-    #ifdef HISTOGRAM_AE
+    #if EXPOSURE_MODE == AUTO_HISTOGRAM
         float lumBucket[HISTOGRAM_BIN_COUNT];
 
         // Initialize luminance bucket
@@ -96,9 +96,9 @@ float CalculateAutoExposure() {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
             float luminance = GetLuminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = exp2(-0.25 * dotSelf(uv * 2.0 - 1.0));
+            float weight = exp2(-0.5 * dotSelf(uv - 0.5));
 
-            #ifdef HISTOGRAM_AE
+            #if EXPOSURE_MODE == AUTO_HISTOGRAM
                 // Build luminance bucket
                 float bin = histogramLumToBin(luminance);
                 lumBucket[uint(bin * float(HISTOGRAM_BIN_COUNT - 1u))] += weight;
@@ -109,7 +109,7 @@ float CalculateAutoExposure() {
         }
 	}
 
-    #ifdef HISTOGRAM_AE
+    #if EXPOSURE_MODE == AUTO_HISTOGRAM
         float norm = 1.0 / sumWeight;
 
         float prefix = 0.0;
