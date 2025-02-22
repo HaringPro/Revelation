@@ -46,6 +46,7 @@ uniform float timeNoon;
 uniform float timeMidnight;
 uniform float timeSunrise;
 uniform float timeSunset;
+uniform float cameraVelocity;
 
 uniform vec2 viewPixelSize;
 uniform vec2 viewSize;

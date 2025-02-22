@@ -43,8 +43,6 @@ uniform sampler2D shadowcolor1;
 
 uniform vec3 fogWind;
 
-uniform float cameraVelocity;
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//

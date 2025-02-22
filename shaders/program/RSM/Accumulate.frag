@@ -26,8 +26,6 @@ out vec4 indirectHistory;
 
 #include "/lib/universal/Uniform.glsl"
 
-uniform float cameraVelocity;
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
