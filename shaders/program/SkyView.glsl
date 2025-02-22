@@ -163,7 +163,9 @@ void main() {
 		skyIlluminance += auroraShading;
 	#endif
 
- 	#ifdef AUTO_EXPOSURE
+ 	#if EXPOSURE_MODE == MANUAL
+		exposure = exp2(-MANUAL_EV);
+	#else
 		float lumimance = CalculateAutoExposure();
 
         const float K = 27.5; // Calibration constant
@@ -174,8 +176,6 @@ void main() {
 
         float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
         exposure = mix(targetExposure, prevExposure, fastExp(-exposureRate * frameTime));
-	#else
-		exposure = exp2(-MANUAL_EV);
 	#endif
 }
 
