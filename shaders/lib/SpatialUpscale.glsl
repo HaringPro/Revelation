@@ -36,33 +36,34 @@
 
 #if defined PASS_COMPOSITE
 #if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
-	FogData VolumetricFogSpatialUpscale(in vec2 coord, in float linearDepth) {
-		ivec2 bias = ivec2(coord + frameCounter) % 2;
-		ivec2 texel = ivec2(coord) + bias * 2 - 2;
+	mat2x3 UnpackFogData(in uvec3 data) {
+		vec2 unpackedZ = unpackHalf2x16(data.z);
+		vec3 scattering = vec3(unpackHalf2x16(data.x), unpackedZ.x);
+		vec3 transmittance = vec3(unpackUnorm2x16(data.y), unpackedZ.y);
+		return mat2x3(scattering, transmittance);
+	}
 
-		const ivec2 offset[5] = ivec2[5](
-			ivec2(-1, -1), ivec2(-1, 1), ivec2(0, 0), ivec2(1, -1), ivec2(1, 1)
+	mat2x3 VolumetricFogSpatialUpscale(in ivec2 texel, in float linearDepth) {
+		const ivec2 offset[4] = ivec2[4](
+			ivec2(-1, -1), ivec2(-1, 1), ivec2(1, -1), ivec2(1, 1)
 		);
 
-		float sigmaZ = -1e2 / linearDepth;
-		FogData sum = FogData(vec3(0.0), vec3(0.0));
+		float sigmaZ = -64.0 / linearDepth;
+		mat2x3 sum = mat2x3(vec3(0.0), vec3(0.0));
 		float sumWeight = 0.0;
 
-		for (uint i = 0u; i < 5u; ++i) {
+		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
-			float sampleDepth = FetchLinearDepth(sampleTexel);
+			uvec4 sampleFogData = texelFetch(colortex11, sampleTexel, 0);
+
+			float sampleDepth = uintBitsToFloat(sampleFogData.w);
 			float weight = maxEps(exp2(abs(sampleDepth - linearDepth) * sigmaZ));
 
-			ivec2 halfTexel = sampleTexel >> 1;
-			sum.scattering += texelFetch(colortex11, halfTexel, 0).rgb * weight;
-			sum.transmittance += texelFetch(colortex12, halfTexel, 0).rgb * weight;
+			sum += UnpackFogData(sampleFogData.rgb) * weight;
 			sumWeight += weight;
 		}
 
-		float rSumWeight = rcp(sumWeight);
-		sum.scattering *= rSumWeight;
-		sum.transmittance *= rSumWeight;
-
+		sum *= rcp(sumWeight);
 		return sum;
 	}
 #endif

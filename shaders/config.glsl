@@ -21,8 +21,8 @@
 	const int 	colortex8Format 			= RGB16;
 	const int 	colortex9Format 			= RGBA16F;
 	const int 	colortex10Format 			= RGBA8;
-	const int 	colortex11Format 			= R11F_G11F_B10F;
-	const int 	colortex12Format 			= RGB8;
+	const int 	colortex11Format 			= RGBA32UI;
+	const int 	colortex12Format 			= ;
 	const int 	colortex13Format 			= RGBA16F;
 	const int 	colortex14Format 			= RG16;
 	const int 	colortex15Format 			= RGB16;
@@ -71,8 +71,8 @@
 	|	colortex8	|   rgb16           |	Full res  	|	Gbuffer data 1 -> Bloomy fog transmittance -> Final output
 	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history | Motion vector
 	|	colortex10	|   rgba8           |	256, 384   	|	Transmittance-View LUT, cloud shadow map
-	|	colortex11	|   r11f_g11f_b10f  |	Half res  	|	Volumetric fog scattering
-	|	colortex12	|   rgb8            |	Half res  	|	Volumetric fog transmittance
+	|	colortex11	|   rgba32ui        |	Half res  	|	Volumetric fog, linear depth
+	|	colortex12	|               	|	  			|	Unused
 	|	colortex13	|   rgba16f         |	Full res	|	Cloud data -> Indirect light history, frame index
 	|	colortex14	|   rg16            |	Full res	|	Variance history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
