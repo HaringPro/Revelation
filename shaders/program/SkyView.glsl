@@ -60,8 +60,8 @@ uniform vec3 lightningShading;
 	vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
 #endif
 
-#include "/lib/atmospherics/Global.glsl"
-#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
 
 const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
@@ -232,17 +232,17 @@ uniform mat4 shadowModelViewInverse;
 
 #include "/lib/universal/Noise.glsl"
 
-#include "/lib/atmospherics/Global.glsl"
-#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
 
 #ifdef AURORA
-	#include "/lib/atmospherics/Aurora.glsl"
+	#include "/lib/atmosphere/Aurora.glsl"
 #endif
 
-#include "/lib/atmospherics/clouds/Render.glsl"
+#include "/lib/atmosphere/clouds/Render.glsl"
 
 #ifdef CLOUD_SHADOWS
-    #include "/lib/atmospherics/clouds/Shadows.glsl"
+    #include "/lib/atmosphere/clouds/Shadows.glsl"
 #endif
 
 //======// Main //================================================================================//

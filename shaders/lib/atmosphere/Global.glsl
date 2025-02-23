@@ -1,33 +1,21 @@
 
 //================================================================================================//
 
-float moonlightMult = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
-
-const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
-
-const float mie_phase_g = 0.78;
-
 // #define PLANET_GROUND
 
 #define ATMOSPHERE_BOTTOM_ALTITUDE  1000.0 // [0.0 500.0 1000.0 2000.0 3000.0 4000.0 5000.0 6000.0 7000.0 8000.0 9000.0 10000.0 11000.0 12000.0 13000.0 14000.0 15000.0 16000.0]
 #define ATMOSPHERE_TOP_ALTITUDE     110000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
 
+#define VIEWER_BASE_ALTITUDE        64.0 // [0.0 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0 262144.0 524288.0 1048576.0 2097152.0 4194304.0 8388608.0 16777216.0 33554432.0 67108864.0 134217728.0 268435456.0 536870912.0 1073741824.0]
+
+
+const float planetRadius = 6371e3; // The average radius of the Earth: 6,371 kilometers
+const float mie_phase_g = 0.78;
+
+float viewerHeight = planetRadius + max(1.0, eyeAltitude + VIEWER_BASE_ALTITUDE);
+float moonlightMult = fma(abs(moonPhase - 4.0), 0.25, 0.2) * (NIGHT_BRIGHTNESS + nightVision * 0.02);
+
 //================================================================================================//
-
-#define TRANSMITTANCE_TEXTURE_WIDTH     256.0
-#define TRANSMITTANCE_TEXTURE_HEIGHT    64.0
-
-#define SCATTERING_TEXTURE_R_SIZE       32.0
-#define SCATTERING_TEXTURE_MU_SIZE      128.0
-#define SCATTERING_TEXTURE_MU_S_SIZE    32.0
-#define SCATTERING_TEXTURE_NU_SIZE      8.0
-
-#define IRRADIANCE_TEXTURE_WIDTH        64.0
-#define IRRADIANCE_TEXTURE_HEIGHT       16.0
-
-#define COMBINED_TEXTURE_WIDTH          256.0
-#define COMBINED_TEXTURE_HEIGHT         128.0
-#define COMBINED_TEXTURE_DEPTH          33.0
 
 struct AtmosphereParameters {
     // The solar irradiance at the top of the atmosphere.
@@ -136,9 +124,9 @@ const AtmosphereParameters atmosphereModel = AtmosphereParameters(
 const float atmosphere_bottom_radius_sq = atmosphereModel.bottom_radius * atmosphereModel.bottom_radius;
 const float atmosphere_top_radius_sq    = atmosphereModel.top_radius * atmosphereModel.top_radius;
 
-const float isotropicPhase = 0.25 * rPI;
-
 //================================================================================================//
+
+const float uniformPhase = 0.25 * rPI;
 
 float RayleighPhase(in float mu) {
 	const float c = 3.0 / 16.0 * rPI;
@@ -148,7 +136,7 @@ float RayleighPhase(in float mu) {
 // Henyey-Greenstein phase function (HG)
 float HenyeyGreensteinPhase(in float mu, in float g) {
 	float gg = g * g;
-    return isotropicPhase * oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
+    return uniformPhase * oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
 }
 
 // Cornette-Shanks phase function (CS)
@@ -157,7 +145,7 @@ float CornetteShanksPhase(in float mu, in float g) {
   	float pa = oneMinus(gg) * (1.5 / (2.0 + gg));
   	float pb = (1.0 + sqr(mu)) / pow1d5((1.0 + gg - 2.0 * g * mu));
 
-  	return isotropicPhase * pa * pb;
+  	return uniformPhase * pa * pb;
 }
 
 // Draine’s phase function
@@ -165,7 +153,7 @@ float DrainePhase(in float mu, in float g, in float a) {
 	float gg = g * g;
 	float pa = oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
 	float pb = (1.0 + a * sqr(mu)) / (1.0 + a * (1.0 + 2.0 * gg) / 3.0);
-	return isotropicPhase * pa * pb;
+	return uniformPhase * pa * pb;
 }
 
 // Mix between HG and Draine’s phase function (Paper: An Approximate Mie Scattering Function for Fog and Cloud Rendering)
@@ -189,7 +177,7 @@ float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
   	vec3 pa = oneMinus(gg) * (1.5 / (2.0 + gg));
 	vec3 pb = (1.0 + sqr(mu)) / pow1d5(1.0 + gg - 2.0 * g * mu);
 
-	return isotropicPhase * dot(pa * pb, w);
+	return uniformPhase * dot(pa * pb, w);
 }
 
 //================================================================================================//
@@ -265,26 +253,23 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 
 //================================================================================================//
 
-#define VIEWER_BASE_ALTITUDE 64.0 // [0.0 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0 262144.0 524288.0 1048576.0 2097152.0 4194304.0 8388608.0 16777216.0 33554432.0 67108864.0 134217728.0 268435456.0 536870912.0 1073741824.0]
-
-float viewerHeight = planetRadius + max(1.0, eyeAltitude + VIEWER_BASE_ALTITUDE);
-float horizonCos = rcp(viewerHeight * inversesqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq));
-float horizonAngle = fastAcos(horizonCos);
-
 const float scale = oneMinus(4.0 / skyViewRes.x);
 const float offset = 2.0 / float(skyViewRes.x);
 
-const vec2 cScale = vec2(skyViewRes.x / (skyViewRes.x + 1.0), 0.5);
+const vec2 scaleCoord = vec2(skyViewRes.x / (skyViewRes.x + 1.0), 0.5);
 
 // Reference: https://sebh.github.io/publications/egsr2020.pdf
 vec3 ToSkyViewLutParams(in vec2 coord) {
-	coord *= rcp(cScale);
+	coord *= rcp(scaleCoord);
 
 	// From unit range
 	coord.x = fract((coord.x - offset) * rcp(scale));
 
 	// Non-linear mapping of the altitude angle
 	coord.y = coord.y < 0.5 ? -sqr(1.0 - 2.0 * coord.y) : sqr(2.0 * coord.y - 1.0);
+
+    float horizonCos = rcp(viewerHeight * inversesqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq));
+    float horizonAngle = fastAcos(horizonCos);
 
 	float azimuthAngle = coord.x * TAU - PI;
 	float altitudeAngle = (coord.y + 1.0) * hPI - horizonAngle;
@@ -297,6 +282,9 @@ vec3 ToSkyViewLutParams(in vec2 coord) {
 vec2 FromSkyViewLutParams(in vec3 direction) {
 	vec2 coord = normalize(direction.xz);
 
+    float horizonCos = rcp(viewerHeight * inversesqrt(viewerHeight * viewerHeight - atmosphere_bottom_radius_sq));
+    float horizonAngle = fastAcos(horizonCos);
+
 	float azimuthAngle = atan(coord.x, -coord.y);
 	float altitudeAngle = horizonAngle - fastAcos(direction.y);
 
@@ -308,5 +296,5 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	// To unit range
 	coord.x = coord.x * scale + offset;
 
-	return saturate(coord * cScale);
+	return saturate(coord * scaleCoord);
 }

@@ -10,7 +10,7 @@ vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float 
 	    vec3 coeff = 2.5 / (albedo * sssAmount + 0.125);
     #endif
 
-	float phase = HenyeyGreensteinPhase(-LdotV, 0.65) * 0.25 + isotropicPhase * 0.75;
+	float phase = HenyeyGreensteinPhase(-LdotV, 0.65) * 0.25 + uniformPhase * 0.75;
 	vec3 subsurfaceScattering = exp2(coeff * sssDepth) * phase;
 
 	return subsurfaceScattering * sssAmount * SUBSURFACE_SCATTERING_BRIGHTNESS;

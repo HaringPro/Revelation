@@ -51,8 +51,8 @@ uniform vec3 fogWind;
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Noise.glsl"
 
-#include "/lib/atmospherics/Global.glsl"
-#include "/lib/atmospherics/clouds/Shadows.glsl"
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/clouds/Shadows.glsl"
 
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
 
@@ -118,7 +118,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 
 	float LdotV = dot(worldLightVector, worldDir);
 	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.65 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.35, RayleighPhase(LdotV));
-	phase.x = mix(isotropicPhase, phase.x, 0.75);
+	phase.x = mix(uniformPhase, phase.x, 0.75);
 	float isotropicDensity = 64.0 / maxFar * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {

@@ -2,7 +2,7 @@ uniform sampler2D noisetex;
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
-uniform sampler2D colortex2;
+uniform usampler2D colortex2;
 uniform sampler2D colortex3;
 uniform sampler2D colortex4;
 uniform sampler2D colortex5;

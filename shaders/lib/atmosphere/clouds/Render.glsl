@@ -11,7 +11,7 @@
 --------------------------------------------------------------------------------
 */
 
-#include "Layers.glsl"
+#include "/lib/atmosphere/clouds/Layers.glsl"
 
 //================================================================================================//
 
@@ -143,7 +143,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		#endif
 
 		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
-		scattering += scatteringSky * isotropicPhase * (powder * 0.5 + 0.5) * skyIlluminance;
+		scattering += scatteringSky * uniformPhase * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(stratusExtinction);
 
 		return vec4(scattering, absorption);
@@ -229,7 +229,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		#endif
 
 		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
-		scattering += scatteringSky * isotropicPhase * (powder * 0.5 + 0.5) * skyIlluminance;
+		scattering += scatteringSky * uniformPhase * (powder * 0.5 + 0.5) * skyIlluminance;
 		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
@@ -248,7 +248,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 		phases[0] = MiePhaseClouds(LdotV, vec3(0.65, -0.4, 0.9), vec3(0.65, 0.25, 0.1));
 
 		for (uint ms = 1u; ms < cloudMsCount; ++ms, falloff *= falloff) {
-			phases[ms] = mix(isotropicPhase, phases[0], falloff) * falloff;
+			phases[ms] = mix(uniformPhase, phases[0], falloff) * falloff;
 		}
 	}
 
@@ -344,7 +344,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);
 					float scatteringGround = fastExp(-opticalDepthGround);
 
-					vec2 scattering = vec2(scatteringSun + scatteringGround * (isotropicPhase * cloudLightVector.y), 
+					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
 										   scatteringSky + scatteringGround);
 
 					// Siggraph 2017's new formula
@@ -393,7 +393,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					#endif
 
 					vec3 scattering = stepScattering.x * rPI * directIlluminance;
-					scattering += stepScattering.y * isotropicPhase * skyIlluminance;
+					scattering += stepScattering.y * uniformPhase * skyIlluminance;
 
 					// Compute aerial perspective
 					#ifdef CLOUD_AERIAL_PERSPECTIVE

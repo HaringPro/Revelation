@@ -40,7 +40,7 @@ uniform float eyeAltitude;
 
 //======// Function //============================================================================//
 
-#include "/lib/atmospherics/Global.glsl"
+#include "/lib/atmosphere/Global.glsl"
 
 //======// Main //================================================================================//
 void main() {

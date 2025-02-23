@@ -58,19 +58,19 @@ flat in mat4x3 skySH;
 #include "/lib/universal/Offset.glsl"
 #include "/lib/universal/Noise.glsl"
 
-#include "/lib/atmospherics/Global.glsl"
-#include "/lib/atmospherics/Celestial.glsl"
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/Celestial.glsl"
 
 #ifdef AURORA
-	#include "/lib/atmospherics/Aurora.glsl"
+	#include "/lib/atmosphere/Aurora.glsl"
 #endif
 
 #if defined CLOUDS && !defined CLOUD_CBR_ENABLED
-	#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
-	#include "/lib/atmospherics/clouds/Render.glsl"
+	#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
+	#include "/lib/atmosphere/clouds/Render.glsl"
 #endif
 #ifdef CLOUD_SHADOWS
-	#include "/lib/atmospherics/clouds/Shadows.glsl"
+	#include "/lib/atmosphere/clouds/Shadows.glsl"
 #endif
 
 #include "/lib/lighting/Shadows.glsl"
