@@ -96,4 +96,8 @@ float smin(float a, float b, float k) {
     return min(a, b) - h * h * k * 0.25;
 }
 
+float remap(float value, float orignalMin, float orignalMax, float newMin, float newMax) {
+    return newMin + saturate((value - orignalMin) / (orignalMax - orignalMin)) * (newMax - newMin);
+}
+
 #endif

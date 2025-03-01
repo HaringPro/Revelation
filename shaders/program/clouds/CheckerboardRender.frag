@@ -38,14 +38,14 @@ uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 #include "/lib/universal/Noise.glsl"
 #include "/lib/universal/Offset.glsl"
 
-#include "/lib/atmospherics/Global.glsl"
-#include "/lib/atmospherics/PrecomputedAtmosphericScattering.glsl"
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
 
 #ifdef AURORA
-	#include "/lib/atmospherics/Aurora.glsl"
+	#include "/lib/atmosphere/Aurora.glsl"
 #endif
 
-#include "/lib/atmospherics/clouds/Render.glsl"
+#include "/lib/atmosphere/clouds/Render.glsl"
 
 vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 	vec2 NDCCoord = screenCoord * 2.0 - 1.0;

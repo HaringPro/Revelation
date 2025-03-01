@@ -59,7 +59,7 @@ mat3 RotateMatrix(in vec3 x, in vec3 y) {
     );
 }
 
-// https://www.shadertoy.com/view/XtGGRt
+// Source: https://www.shadertoy.com/view/XtGGRt
 vec3 nmzHash33(in vec3 q) {
     uvec3 p = uvec3(ivec3(q));
     p = p * uvec3(374761393U, 1103515245U, 668265263U) + p.zxy + p.yzx;

@@ -1,4 +1,4 @@
-// https://www.shadertoy.com/view/XtGGRt
+// Source: https://www.shadertoy.com/view/XtGGRt
 
 // Auroras by nimitz 2017 (twitter: @stormoid)
 // License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License

@@ -41,7 +41,7 @@ flat in vec3 skyIlluminance;
 #include "/lib/universal/Noise.glsl"
 #include "/lib/universal/Offset.glsl"
 
-#include "/lib/atmospherics/Global.glsl"
+#include "/lib/atmosphere/Global.glsl"
 
 #define PHYSICS_OCEAN_SUPPORT
 

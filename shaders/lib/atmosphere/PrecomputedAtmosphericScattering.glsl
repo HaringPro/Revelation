@@ -1,7 +1,22 @@
+// Bruneton, Eric. "Precomputed Atmospheric Scattering". EGSR 2008.
+// Source: https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html
 
-// Precomputed atmospheric scattering from https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html
+#define TRANSMITTANCE_TEXTURE_WIDTH     256.0
+#define TRANSMITTANCE_TEXTURE_HEIGHT    64.0
 
-//--// Utility functions //---------------------------------------------------//
+#define SCATTERING_TEXTURE_R_SIZE       32.0
+#define SCATTERING_TEXTURE_MU_SIZE      128.0
+#define SCATTERING_TEXTURE_MU_S_SIZE    32.0
+#define SCATTERING_TEXTURE_NU_SIZE      8.0
+
+#define IRRADIANCE_TEXTURE_WIDTH        64.0
+#define IRRADIANCE_TEXTURE_HEIGHT       16.0
+
+#define COMBINED_TEXTURE_WIDTH          256.0
+#define COMBINED_TEXTURE_HEIGHT         128.0
+#define COMBINED_TEXTURE_DEPTH          33.0
+
+//======// Utility functions //===================================================================//
 
 float ClampCosine(float mu) {
     return clamp(mu, -1.0, 1.0);
@@ -16,7 +31,7 @@ float SafeSqrt(float a) {
     return a * inversesqrt(a);
 }
 
-//--// Intersections //-------------------------------------------------------//
+//======// Intersections //=======================================================================//
 
 float DistanceToTopAtmosphereBoundary(
     float r,
@@ -41,7 +56,7 @@ bool RayIntersectsGround(
         return mu < 0.0 && r * r * (mu * mu - 1.0) + atmosphere_bottom_radius_sq >= 0.0;
 }
 
-//--// Coord Transforms //----------------------------------------------------//
+//======// Coord Transforms //====================================================================//
 
 float GetTextureCoordFromUnitRange(float x, float texture_size) {
     return 0.5 / texture_size + x * oneMinus(1.0 / texture_size);
@@ -51,7 +66,7 @@ float GetCombinedTextureCoordFromUnitRange(float x, float original_texture_size,
     return 0.5 / combined_texture_size + x * (original_texture_size / combined_texture_size - 1.0 / combined_texture_size);
 }
 
-//--// Transmittance Lookup //------------------------------------------------//
+//======// Transmittance Lookup //================================================================//
 
 vec2 GetTransmittanceTextureUvFromRMu(
     float r,
@@ -152,7 +167,7 @@ vec3 GetTransmittanceToSun(
                         mu_s - cos_theta_h);
 }
 
-//--// Scattering Lookup //---------------------------------------------------//
+//======// Scattering Lookup //===================================================================//
 
 vec4 GetScatteringTextureUvwzFromRMuMuSNu(
     float r,
@@ -242,7 +257,7 @@ vec3 GetCombinedScattering(
         return scattering;
 }
 
-//--// Irradiance Lookup //---------------------------------------------------//
+//======// Irradiance Lookup //===================================================================//
 
 vec3 GetIrradiance(
     float r,
@@ -256,7 +271,7 @@ vec3 GetIrradiance(
         return vec3(textureLod(COMBINED_TEXTURE_SAMPLER, vec3(uv, 32.5 / 33.0), 0.0));
 }
 
-//--// Rendering //-----------------------------------------------------------//
+//======// Rendering //===========================================================================//
 
 vec3 GetSkyRadiance(
     vec3 view_ray,
@@ -298,7 +313,7 @@ vec3 GetSkyRadiance(
         vec3 moon_single_mie_scattering;
         vec3 moon_scattering;
 
-        vec3 groundDiffuse = vec3(0.0);
+        vec3 ground = vec3(0.0);
         #ifdef PLANET_GROUND
             if (ray_r_mu_intersects_ground) {
                 vec3 planet_surface = camera + view_ray * DistanceToBottomAtmosphereBoundary(r, mu);
@@ -312,7 +327,7 @@ vec3 GetSkyRadiance(
                 float d = distance(camera, planet_surface);
                 vec3 surface_transmittance = GetTransmittance(r, mu, d, ray_r_mu_intersects_ground);
 
-                groundDiffuse = mix(sky_irradiance * 0.1, sun_irradiance * 0.05, wetness * 0.6) * surface_transmittance;
+                ground = mix(sky_irradiance, sun_irradiance * 0.5, wetness * 0.6) * atmosphereModel.ground_albedo * surface_transmittance;
             }
         #else
             ray_r_mu_intersects_ground = false;
@@ -329,7 +344,7 @@ vec3 GetSkyRadiance(
 
         rayleigh = mix(rayleigh, vec3(GetLuminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie + groundDiffuse) * oneMinus(wetness * 0.6);
+        return (rayleigh + mie + ground) * oneMinus(wetness * 0.6);
 }
 
 vec3 GetSkyRadianceToPoint(

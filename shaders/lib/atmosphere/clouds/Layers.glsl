@@ -14,13 +14,9 @@
 #if !defined INCLUDE_CLOUDS_LAYERS
 #define INCLUDE_CLOUDS_LAYERS
 
-#include "Common.glsl"
+#include "/lib/atmosphere/clouds/Common.glsl"
 
 //================================================================================================//
-
-float remap(float value, float orignalMin, float orignalMax, float newMin, float newMax) {
-    return newMin + saturate((value - orignalMin) / (orignalMax - orignalMin)) * (newMax - newMin);
-}
 
 float GetSmoothNoise(in vec2 coord) {
     vec2 whole = floor(coord);
