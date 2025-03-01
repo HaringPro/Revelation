@@ -76,7 +76,7 @@ flat in mat4x3 skySH;
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
 
-#if AO_ENABLED > 0
+#if AO_ENABLED > 0 && !defined SSPT_ENABLED
 	#include "/lib/lighting/AmbientOcclusion.glsl"
 #endif
 
@@ -208,7 +208,7 @@ void main() {
 		float dither = BlueNoiseTemporal(screenTexel);
 
 		// Ambient occlusion
-		#if AO_ENABLED > 0
+		#if AO_ENABLED > 0 && !defined SSPT_ENABLED
 			vec3 ao = vec3(1.0);
 			if (screenPos.z > 0.56) {
 			#if defined DISTANT_HORIZONS
@@ -394,9 +394,9 @@ void main() {
 		#ifdef SSPT_ENABLED
 			#ifdef SVGF_ENABLED
 				float NdotV = abs(dot(worldNormal, worldDir));
-				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV) * (ao * 0.5 + 0.5);
+				sceneOut += SpatialUpscale5x5(screenTexel >> 1, worldNormal, length(viewPos), NdotV);
 			#else
-				sceneOut += texelFetch(colortex3, screenTexel >> 1, 0), 0).rgb * (ao * 0.5 + 0.5);
+				sceneOut += texelFetch(colortex3, screenTexel >> 1, 0), 0).rgb;
 			#endif
 		#elif defined RSM_ENABLED
 			float NdotV = abs(dot(worldNormal, worldDir));
