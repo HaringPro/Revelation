@@ -58,8 +58,15 @@ void main() {
     ivec2 currentTexel = screenTexel << 1;
 	float depth = GetClosestDepth(currentTexel);
 	// float depth = loadDepth0(currentTexel);
+	#if defined DISTANT_HORIZONS
+		bool dhTerrainMask = depth > 0.999999;
+		if (dhTerrainMask) depth = loadDepth0DH(currentTexel);
+	#endif
 
 	if (depth < 1.0) {
+		#if defined DISTANT_HORIZONS
+            if (dhTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthDH(depth));
+		#endif
 		uvec4 gbufferData0 = loadGbufferData0(currentTexel);
 		vec3 worldNormal = FetchWorldNormal(gbufferData0);
 

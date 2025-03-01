@@ -91,7 +91,12 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #endif
 
 mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
-	const uint steps = VOLUMETRIC_FOG_SAMPLES;
+	#if defined DISTANT_HORIZONS
+		#define far float(dhRenderDistance)
+		const uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
+	#else
+		const uint steps = VOLUMETRIC_FOG_SAMPLES;
+	#endif
 	const float rSteps = 1.0 / float(steps);
 
 	const float toExp6 = 2.58497;
@@ -202,6 +207,13 @@ void main() {
 	vec3 screenPos = vec3(screenCoord, loadDepth0(screenTexel));
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
+	#if defined DISTANT_HORIZONS
+		if (screenPos.z > 0.999999) {
+			screenPos.z = loadDepth0DH(screenTexel);
+			viewPos = ScreenToViewSpaceDH(screenPos);
+		}
+	#endif
+
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
 	float dither = BlueNoiseTemporal(screenTexel);

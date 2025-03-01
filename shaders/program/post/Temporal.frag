@@ -28,29 +28,8 @@ layout (location = 2) out vec2 motionVectorOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D depthtex0;
-uniform sampler2D depthtex1;
-
-uniform sampler2D colortex0; // Scene data
-uniform sampler2D colortex1; // Scene history
-
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferProjectionInverse;
-
-uniform mat4 gbufferPreviousModelView;
-uniform mat4 gbufferPreviousProjection;
-
-uniform float near;
-uniform float far;
-
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-
-uniform vec2 viewSize;
-uniform vec2 viewPixelSize;
-uniform vec2 taaOffset;
+uniform sampler2D colortex0;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 

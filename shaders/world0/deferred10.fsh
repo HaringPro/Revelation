@@ -91,12 +91,18 @@ flat in mat4x3 skySH;
 //======// Main //================================================================================//
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-
-	float depth = loadDepth0(screenTexel);
-
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
-	vec3 screenPos = vec3(screenCoord, depth);
+
+	vec3 screenPos = vec3(screenCoord, loadDepth0(screenTexel));
 	vec3 viewPos = ScreenToViewSpace(screenPos);
+
+	#if defined DISTANT_HORIZONS
+		bool dhTerrainMask = screenPos.z > 0.999999;
+		if (dhTerrainMask) {
+			screenPos.z = loadDepth0DH(screenTexel);
+			viewPos = ScreenToViewSpaceDH(screenPos);
+		}
+	#endif
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -107,7 +113,7 @@ void main() {
 	vec3 albedoRaw = loadAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
 
-	if (depth > 0.999999 + materialID) {
+	if (screenPos.z > 0.999999 + float(materialID)) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
@@ -176,7 +182,7 @@ void main() {
 					sssAmount = 0.5;
 					break;
 				case 13u: // Leaves
-					sssAmount = 0.9;
+					sssAmount = 0.85;
 					break;
 				case 37u: case 39u: // Weak SSS
 					sssAmount = 0.5;
@@ -204,19 +210,30 @@ void main() {
 		// Ambient occlusion
 		#if AO_ENABLED > 0
 			vec3 ao = vec3(1.0);
-			if (depth > 0.56) {
+			if (screenPos.z > 0.56) {
+			#if defined DISTANT_HORIZONS
+				if (dhTerrainMask) {
 				#if AO_ENABLED == 1
-					ao *= CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+					ao.x = CalculateSSAODH(screenCoord, viewPos, viewNormal, dither);
 				#else
-					ao *= CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
+					ao.x = CalculateGTAODH(screenCoord, viewPos, viewNormal, dither);
 				#endif
+				} else
+			#endif
+				{
+				#if AO_ENABLED == 1
+					ao.x = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
+				#else
+					ao.x = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
+				#endif
+				}
+
 				#ifdef AO_MULTI_BOUNCE
 					ao = ApproxMultiBounce(ao.x, albedo);
 				#endif
-			} else depth += 0.38;
+			}
 		#else
 			const float ao = 1.0;
-			depth += step(0.56, depth) * 0.38;
 		#endif
 
 		// Cloud shadows
@@ -235,6 +252,9 @@ void main() {
 
 		float worldDistSquared = dotSelf(worldPos);
 		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * dotSelf(worldPos.xz)));
+		#if defined DISTANT_HORIZONS
+			distanceFade = saturate(distanceFade + float(dhTerrainMask));
+		#endif
 
 		bool doShadows = NdotL > 1e-3;
 		bool doSss = sssAmount > 1e-3;
@@ -259,7 +279,7 @@ void main() {
 
 						// Formula from https://www.alanzucconi.com/2017/08/30/fast-subsurface-scattering-1/
 						// float bssrdf = sqr(saturate(dot(worldDir, worldLightVector + 0.2 * worldNormal))) * 4.0;
-						sceneOut += subsurfaceScattering * sunlightMult * ao * oneMinus(NdotL);
+						sceneOut += subsurfaceScattering * sunlightMult * ao;
 					} else {
 						blockerSearch.x = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
 					}
@@ -282,7 +302,12 @@ void main() {
 						#define viewFlatNormal viewNormal
 					#endif
 
-					shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, viewFlatNormal, dither, sssAmount);
+				#if defined DISTANT_HORIZONS
+					if (dhTerrainMask)
+						shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadowDH(viewPos, screenPos, viewFlatNormal, dither, sssAmount);
+					else
+				#endif
+						shadow *= materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, screenPos, viewFlatNormal, dither, sssAmount);
 				#endif
 
 				// Apply parallax shadows

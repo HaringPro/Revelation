@@ -93,7 +93,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 #define SSPT_BLENDED_LIGHTMAP 0.0 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 
 vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
-	if (viewDir.z > max0(-viewPos.z)) return vec3(1.5);
+	if (viewDir.z > max0(-viewPos.z)) return vec3(1e6);
 
 	vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
 	vec3 rayDir = normalize(endPos - rayPos);
@@ -113,12 +113,15 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 		if (sampleDepth < rayPos.z) {
 			float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
 			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
+			#if defined DISTANT_HORIZONS
+				if (sampleDepth > 0.999999) sampleDepthLinear = ScreenToViewDepthDH(loadDepth0DH(ivec2(rayPos.xy)));
+			#endif
 
 			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
 		}
 	}
 
-	return vec3(1.5);
+	return vec3(1e6);
 }
 
 float CalculateBlocklightFalloff(in float blocklight) {
@@ -144,6 +147,12 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
     NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
 
+    #if defined DISTANT_HORIZONS
+        float screenDepthMax = ViewToScreenDepth(ScreenToViewDepthDH(1.0));
+    #else
+        #define screenDepthMax 1.0
+    #endif
+
 	vec3 sum = vec3(0.0);
 
 	#if SSPT_BOUNCES > 1
@@ -163,7 +172,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 			vec3 targetViewPos = ScreenToViewSpaceRaw(target.rayPos) + target.viewNormal * 1e-2;
 			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
-			if (target.rayPos.z < 1.0) {
+			if (target.rayPos.z < screenDepthMax) {
 				ivec2 targetTexel = ivec2(target.rayPos.xy);
 				vec3 sampleRadiance = texelFetch(colortex4, targetTexel >> 1, 0).rgb;
 
@@ -200,7 +209,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, nextFloat(noiseGenerator), screenPos);
 
-			if (hitPos.z < 1.0) {
+			if (hitPos.z < screenDepthMax) {
 				vec3 sampleRadiance = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
 
 				sum += sampleRadiance;

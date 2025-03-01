@@ -147,6 +147,10 @@ void main() {
         if (currentCoord.x < 1.0) {
             ivec2 currentTexel = screenTexel << 1;
             float depth = GetClosestDepth(currentTexel);
+            #if defined DISTANT_HORIZONS
+                bool dhTerrainMask = depth > 0.999999;
+                if (dhTerrainMask) depth = loadDepth0DH(currentTexel);
+            #endif
 
             indirectCurrent = indirectHistory = vec4(vec3(0.0), 1.0);
             varianceMoments = vec2(0.0);
@@ -158,19 +162,31 @@ void main() {
             vec3 screenPos = vec3(currentCoord, depth);
 
             vec2 prevCoord = Reproject(screenPos).xy;
+            #if defined DISTANT_HORIZONS
+                if (dhTerrainMask) prevCoord = ReprojectDH(screenPos).xy;
+            #endif
             vec3 viewPos = ScreenToViewSpace(screenPos);
             vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
             TemporalFilter(screenTexel, prevCoord, worldNormal, length(viewPos));
         } else {
             ivec2 currentTexel = (screenTexel << 1) - ivec2(viewWidth, 0);
             float depth = loadDepth0(currentTexel);
+            #if defined DISTANT_HORIZONS
+                bool dhTerrainMask = depth > 0.999999;
+                if (dhTerrainMask) depth = loadDepth0DH(currentTexel);
+            #endif
 
             if (depth > 0.999999) {
                 discard;
                 return;
             }
             vec3 worldNormal = FetchWorldNormal(loadGbufferData0(currentTexel));
-            float viewDistance = length(ScreenToViewSpace(vec3(currentCoord - vec2(1.0, 0.0), depth)));
+            vec3 screenPos = vec3(currentCoord - vec2(1.0, 0.0), depth);
+            vec3 viewPos = ScreenToViewSpace(screenPos);
+            #if defined DISTANT_HORIZONS
+                if (dhTerrainMask) viewPos = ScreenToViewSpaceDH(screenPos);
+            #endif
+            float viewDistance = length(viewPos);
 
             indirectHistory = vec4(worldNormal, viewDistance);
         }

@@ -25,40 +25,7 @@ layout (location = 1) out vec4 cloudOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D noisetex;
-
-uniform sampler2D colortex1; // Scene history
-
-uniform usampler2D colortex2; // Cloud frame index
-
-uniform sampler2D colortex9; // Previous clouds
-uniform sampler2D colortex13; // Current clouds
-
-uniform sampler2D depthtex0;
-uniform sampler2D depthtex1;
-
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjection;
-uniform mat4 gbufferProjectionInverse;
-
-uniform mat4 gbufferPreviousModelView;
-uniform mat4 gbufferPreviousProjection;
-
-uniform float near;
-uniform float far;
-uniform float frameTime;
-uniform float cameraVelocity;
-
-uniform vec3 cameraPosition;
-uniform vec3 previousCameraPosition;
-
-uniform vec2 viewSize;
-uniform vec2 viewPixelSize;
-uniform vec2 taaOffset;
-
-uniform int frameCounter;
-uniform bool worldTimeChanged;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
@@ -179,6 +146,11 @@ void main() {
 
 	float depth = loadDepth0(screenTexel);
 	frameOut = 0u;
+
+	#if defined DISTANT_HORIZONS
+		#define Reproject ReprojectDH
+		if (depth > 0.999999) depth = loadDepth0DH(screenTexel);
+	#endif
 
 	if (depth > 0.999999) {
 		frameOut = 1u;
