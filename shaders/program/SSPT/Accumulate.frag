@@ -81,10 +81,10 @@ void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in f
         vec2 fractTexel = prevTexel - vec2(floorTexel);
 
         float bilinearWeight[4] = {
-            oneMinus(fractTexel.x) * oneMinus(fractTexel.y),
-            fractTexel.x           * oneMinus(fractTexel.y),
-            oneMinus(fractTexel.x) * fractTexel.y,
-            fractTexel.x           * fractTexel.y
+            oms(fractTexel.x) * oms(fractTexel.y),
+            fractTexel.x      * oms(fractTexel.y),
+            oms(fractTexel.x) * fractTexel.y,
+            fractTexel.x      * fractTexel.y
         };
 
         ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
