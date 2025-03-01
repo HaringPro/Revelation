@@ -236,7 +236,7 @@ void main() {
         uvec4 reprojectedData = texture(colortex11, prevCoord);
 		mat2x3 reprojectedFog = UnpackFogData(reprojectedData.rgb);
 
-		float blendWeight = 0.9;
+		float blendWeight = 0.75;
 		blendWeight *= exp2(abs(uintBitsToFloat(reprojectedData.a) + viewPos.z) * 32.0 / viewPos.z);
 
         volFogData[0] = mix(volFogData[0], reprojectedFog[0], blendWeight);
