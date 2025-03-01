@@ -140,7 +140,7 @@ void main() {
 
 			if (offsetCoord.z < 0.999 && parallaxFade > 1e-5) {
 				#ifdef PARALLAX_DEPTH_WRITE
-					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) + oneMinus(offsetCoord.z) * PARALLAX_DEPTH);
+					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) + oms(offsetCoord.z) * PARALLAX_DEPTH);
 				#elif defined PARALLAX_SHADOW
 					if (dot(tbnMatrix[2], worldLightVector) > 1e-3) {
 						gbufferOut1.z = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, texSize, dither) * parallaxFade;
@@ -159,7 +159,7 @@ void main() {
 					float deltaY = (heightD - heightU) * 2.0;
 
 					vec3 pbN = vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-3));
-					normalTex.xyz = mix(normalTex.xyz, pbN, parallaxFade * oneMinus(pbN.z));
+					normalTex.xyz = mix(normalTex.xyz, pbN, parallaxFade * oms(pbN.z));
 				#endif
 			}
 		} else {

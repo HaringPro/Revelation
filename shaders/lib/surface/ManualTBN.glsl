@@ -15,7 +15,7 @@ mat3 CalculateTBNMatrix(in vec3 position, in vec2 coord) {
         vec3 tangent   = normalize(deltaPos2Perp * deltaUV1.x + deltaPos1Perp * deltaUV2.x);
         vec3 bitangent = normalize(deltaPos2Perp * deltaUV1.y + deltaPos1Perp * deltaUV2.y);
 
-        float invmax = inversesqrt(max(dotSelf(tangent), dotSelf(bitangent)));
+        float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
 
         return mat3(tangent * invmax, bitangent * invmax, normal);
     #else

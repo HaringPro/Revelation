@@ -1,0 +1,246 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revoxelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	All Rights Reserved
+
+    Pass: Multiple Axis-Aligned Filter for indirect diffuse irradiance
+	Reference:  https://cseweb.ucsd.edu/~liw086/maaf-egsr2017/MAAF_egsr2017.pdf
+				https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering://svgf_preprint.pdf
+                https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
+
+--------------------------------------------------------------------------------
+*/
+
+// #extension GL_NV_compute_shader_derivatives : enable
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0f, 1.0f);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Image //===============================================================================//
+
+layout (rgba16f) restrict uniform image2D colorimg3;
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Transform.glsl"
+
+// const uint padRadius = 1;
+// const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
+
+// shared float sharedVariance[sharedSize.x][sharedSize.y];
+
+// void SharedPreload() {
+//     ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
+
+//     const uint sharedArea = sharedSize.x * sharedSize.y;
+//     const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+//     const uint stageNum = (sharedArea - 1) / groupArea + 1;
+
+//     uint localIndex = gl_LocalInvocationIndex;
+//     ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+
+//     ivec2 loadTexel = groupBase + localID;
+//     // sharedVariance[localID.x][localID.y] = imageLoad(colorimg3, loadTexel).a;
+
+//     for (uint stage = 1u; stage < stageNum; ++stage) {
+//         localIndex = gl_LocalInvocationIndex + stage * groupArea;
+
+//         if (localIndex < sharedArea) {
+//             localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+
+//             loadTexel = groupBase + localID;
+//         	// sharedVariance[localID.x][localID.y] = imageLoad(colorimg3, loadTexel).a;
+//         }
+//     }
+
+//     memoryBarrierShared();
+//     barrier();
+// }
+
+// float CalculateVariance(in ivec2 texel) {
+//     // const float kernel[2] = float[2](1.0, 0.3);
+// 	const float kernel[2][2] = {{0.25, 0.125}, {0.125, 0.0625}};
+
+// 	float variance = 0.0;
+// 	for (int x = -1; x <= 1; ++x) {
+// 		for (int y = -1; y <= 1; ++y) {
+// 			ivec2 varianceTexel = texel + ivec2(x, y);
+// 			float weight = kernel[abs(x)][abs(y)];
+
+// 			variance += sharedVariance[varianceTexel.x][varianceTexel.y] * weight;
+// 		}
+// 	}
+
+// 	return variance * inversesqrt(max(1e-7, variance));
+// }
+
+#define uint2 uvec2
+// https://developer.nvidia.com/blog/optimizing-compute-shaders-for-l2-locality-using-thread-group-id-swizzling/
+// https://github.com/LouisBavoil/ThreadGroupIDSwizzling/blob/master/ThreadGroupTilingX.hlsl
+
+// Normally argument "dipatchGridDim" is parsed through a constant buffer. However, if for some reason it is a
+// static value, some DXC compiler versions will be unable to compile the code.
+// If that's the case for you, flip DXC_STATIC_DISPATCH_GRID_DIM definition from 0 to 1.
+#define DXC_STATIC_DISPATCH_GRID_DIM 0
+
+// Divide the 2D-Dispatch_Grid into tiles of dimension [N, DipatchGridDim.y]
+// “CTA” (Cooperative Thread Array) == Thread Group in DirectX terminology
+uint2 ThreadGroupTilingX(
+	const uint2 dipatchGridDim,		// Arguments of the Dispatch call (typically from a ConstantBuffer)
+	const uint2 ctaDim,			// Already known in HLSL, eg:[numthreads(8, 8, 1)] -> uint2(8, 8)
+	const uint maxTileWidth,		// User parameter (N). Recommended values: 8, 16 or 32.
+	const uint2 groupThreadID,		// SV_GroupThreadID
+	const uint2 groupId			// SV_GroupID
+)
+{
+	// A perfect tile is one with dimensions = [maxTileWidth, dipatchGridDim.y]
+	const uint Number_of_CTAs_in_a_perfect_tile = maxTileWidth * dipatchGridDim.y;
+
+	// Possible number of perfect tiles
+	const uint Number_of_perfect_tiles = dipatchGridDim.x / maxTileWidth;
+
+	// Total number of CTAs present in the perfect tiles
+	const uint Total_CTAs_in_all_perfect_tiles = Number_of_perfect_tiles * maxTileWidth * dipatchGridDim.y;
+	const uint vThreadGroupIDFlattened = dipatchGridDim.x * groupId.y + groupId.x;
+
+	// Tile_ID_of_current_CTA : current CTA to TILE-ID mapping.
+	const uint Tile_ID_of_current_CTA = vThreadGroupIDFlattened / Number_of_CTAs_in_a_perfect_tile;
+	const uint Local_CTA_ID_within_current_tile = vThreadGroupIDFlattened % Number_of_CTAs_in_a_perfect_tile;
+	uint Local_CTA_ID_y_within_current_tile;
+	uint Local_CTA_ID_x_within_current_tile;
+
+	if (Total_CTAs_in_all_perfect_tiles <= vThreadGroupIDFlattened)
+	{
+		// Path taken only if the last tile has imperfect dimensions and CTAs from the last tile are launched. 
+		uint X_dimension_of_last_tile = dipatchGridDim.x % maxTileWidth;
+	#ifdef DXC_STATIC_DISPATCH_GRID_DIM
+		X_dimension_of_last_tile = max(1, X_dimension_of_last_tile);
+	#endif
+		Local_CTA_ID_y_within_current_tile = Local_CTA_ID_within_current_tile / X_dimension_of_last_tile;
+		Local_CTA_ID_x_within_current_tile = Local_CTA_ID_within_current_tile % X_dimension_of_last_tile;
+	}
+	else
+	{
+		Local_CTA_ID_y_within_current_tile = Local_CTA_ID_within_current_tile / maxTileWidth;
+		Local_CTA_ID_x_within_current_tile = Local_CTA_ID_within_current_tile % maxTileWidth;
+	}
+
+	const uint Swizzled_vThreadGroupIDFlattened =
+		Tile_ID_of_current_CTA * maxTileWidth +
+		Local_CTA_ID_y_within_current_tile * dipatchGridDim.x +
+		Local_CTA_ID_x_within_current_tile;
+
+	uint2 SwizzledvThreadGroupID;
+	SwizzledvThreadGroupID.y = Swizzled_vThreadGroupIDFlattened / dipatchGridDim.x;
+	SwizzledvThreadGroupID.x = Swizzled_vThreadGroupIDFlattened % dipatchGridDim.x;
+
+	uint2 SwizzledvThreadID;
+	SwizzledvThreadID.x = ctaDim.x * SwizzledvThreadGroupID.x + groupThreadID.x;
+	SwizzledvThreadID.y = ctaDim.y * SwizzledvThreadGroupID.y + groupThreadID.y;
+
+	return SwizzledvThreadID.xy;
+}
+
+//======// Main //================================================================================//
+void main() {
+	// SharedPreload();
+
+	#if 0
+	ivec2 texel = ivec2(ThreadGroupTilingX(uvec2(ceil(viewSize * rcp(16.0))), uvec2(16, 16), 16, gl_LocalInvocationID.xy, gl_WorkGroupID.xy));
+	#else
+	ivec2 texel = ivec2(gl_GlobalInvocationID);
+	#endif
+
+	vec2 centerData = texelFetch(colortex14, texel, 0).zw;
+	#define linearDepth centerData.y
+
+	if (linearDepth < far) {
+		ivec2 texelEnd = ivec2(viewSize) - 2;
+
+		vec4 filteredColVar = imageLoad(colorimg3, texel);
+
+        vec3 worldNormal = FetchWorldNormal(centerData.x);
+
+		float centerLuma = GetLuminance(filteredColVar.rgb);
+		#define centerVariance filteredColVar.a
+
+		float frameIndex = texelFetch(colortex2, texel, 0).a;
+		float frameCurve = curve(saturate(frameIndex * 0.125));
+
+		// float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + padRadius));
+		// The 3x3 Gaussian prefilter is used in the paper, but it is enough without it
+		const float invSigmaL = maxOf(MAAF_OFFSET) * 3.0;
+		float variancePhi = -invSigmaL * inversesqrt(centerVariance + 0.0625);
+		variancePhi *= frameCurve;
+
+		float depthPhi = -128.0 * frameCurve;
+		float sigmaN = 64.0 * frameCurve;
+
+		// float sumWeight = frameCurve;
+		float sumWeight = min(frameCurve * 0.25 / (centerVariance + 0.25), 2.0);
+		// float sumWeight = 0.25;
+		filteredColVar *= sumWeight;
+		filteredColVar.a *= sumWeight; // Variance weighting
+		vec3 viewPos = ScreenToViewSpaceRaw(texelToUv(texel), linearDepth);
+		mat3 gbufferModelView = mat3(gbufferModelView);
+		vec3 viewFlatNormal = gbufferModelView * FetchFlatNormal(loadGbufferData0(texel));
+
+		// Calculate kernel basis
+		vec2 tangent = normalize(cross(viewFlatNormal, vec3(0.0, 0.0, 1.0)).xy);
+		tangent *= exp2(-0.25 * frameCurve / (centerVariance + 0.25));
+		tangent *= 1.0 + BlueNoiseTemporal(texel) * 2.0;
+		vec2 bitangent = vec2(tangent.y, -tangent.x);
+
+		float skewFactor = abs(dot(viewFlatNormal, normalize(viewPos))) * 0.8125 + 0.1875;
+		bitangent *= skewFactor;
+
+		vec2 sampleOffset = tangent * MAAF_OFFSET.x + bitangent * MAAF_OFFSET.y;
+
+		for (int i = -1; i <= 1; i += 2) {
+			ivec2 sampleTexel = clamp(texel + ivec2(float(i) * sampleOffset), ivec2(1), texelEnd);
+			vec2 sampleData = texelFetch(colortex14, sampleTexel, 0).zw;
+			#define sampleLinerDepth sampleData.y
+			vec3 sampleWorldNormal = FetchWorldNormal(sampleData.x);
+
+			vec4 sampleColVar = imageLoad(colorimg3, sampleTexel);
+			float sampleLuma = GetLuminance(sampleColVar.rgb);
+
+			vec3 sampleViewPos = ScreenToViewSpaceRaw(texelToUv(sampleTexel), sampleLinerDepth);
+			vec3 diffPos = sampleViewPos - viewPos;
+
+			float logWeightZ = abs(dot(diffPos, viewFlatNormal)) * depthPhi;
+			float logWeightL = abs(sampleLuma - centerLuma) * variancePhi;
+			// logWeightL = min(0.0, logWeightL + 0.5 * frameCurve * log2(centerVariance / sampleColVar.a));
+			float logWeightN = log2(saturate(dot(sampleWorldNormal, worldNormal))) * sigmaN;
+
+			bool cornerCheck = (sampleLuma > centerLuma) || (sdot(diffPos) > 1.0) || (dot(diffPos, gbufferModelView * sampleWorldNormal) > 1e-6);
+			float weight = exp2(mix(0.0, logWeightN + logWeightZ, cornerCheck) + logWeightL);
+			// float weight = exp2(logWeightN + logWeightZ + logWeightL);
+			// weight *= pow32(saturate(dot(sampleWorldNormal, worldNormal)));
+			// weight *= saturate(1.0 - fastAcos(saturate(dot(sampleWorldNormal, worldNormal))) * normalPhi);
+			// if (weight < 1e-5) continue;
+
+			sampleColVar.a *= weight; // Variance weighting
+			filteredColVar += sampleColVar * weight;
+			sumWeight += weight;
+		}
+
+		sumWeight = 1.0 / sumWeight;
+        filteredColVar *= sumWeight;
+		filteredColVar.a *= sumWeight; // Variance weighting
+		imageStore(colorimg3, texel, filteredColVar);
+	}
+}

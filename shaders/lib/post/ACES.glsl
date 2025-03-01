@@ -146,7 +146,7 @@ float GlowFwd(in float yc_in, in float glow_gain_in, in const float glow_mid) {
 float SigmoidShaper(in float x) {
 	// Sigmoid function in the range 0 to 1 spanning -2 to +2
 	float t = max0(1.0 - abs(0.5 * x));
-	float y = 1.0 + fastSign(x) * oneMinus(t * t);
+	float y = 1.0 + fastSign(x) * oms(t * t);
 
 	return 0.5 * y;
 }
@@ -217,7 +217,7 @@ vec3 RRTSweeteners(in vec3 aces) {
 	float centeredHue = CenterHue(hue, rrtRedHue);
 	float hueWeight = CubicBasisShaperFit(centeredHue, rrtRedWidth);
 
-	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oneMinus(rrtRedScale);
+	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oms(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
     aces = satU16f(aces);
@@ -395,7 +395,7 @@ vec3 RRT(in vec3 aces) {
 	float centeredHue = CenterHue(hue, rrtRedHue);
 	float hueWeight = CubicBasisShaperFit(centeredHue, rrtRedWidth);
 
-	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oneMinus(rrtRedScale);
+	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oms(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
     aces = satU16f(aces);

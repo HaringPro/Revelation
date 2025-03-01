@@ -1,0 +1,400 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revoxelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	All Rights Reserved
+
+	Pass: Path-trace indirect diffuse irradiance
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0f, 1.0f);
+
+#define PASS_PT_DIFFUSE
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+#define PT_DIFFUSE_SSPT
+#define PT_DIFFUSE_SSPT_STEPS 12 // [2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 40 48 64 128 256 512]
+#define PT_DIFFUSE_SSPT_STRIDE 2.0 // [0.0625 0.125 0.25 0.5 0.75 1.0 1.5 2.0 3.0 4.0 5.0 6.0 7.0 8.0]
+
+#define PT_DIFFUSE_TRACING_CLOUDS
+#define PT_DIFFUSE_RUSSIAN_ROULETTE
+#define PT_DIFFUSE_RR_MIN_BOUNCES 2 // [0 1 2 3 4 5 6 7 8 9 10 12 14 15 16 18 20 22 24 26 28 30 32 40 48 64 128 256 512]
+
+#define PT_DIFFUSE_SPP 1 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 20 50 100 200]
+#define PT_DIFFUSE_BOUNCES 3 // [1 2 3 4 5 6 7 8 9 10 12 14 15 16 18 20 22 24 26 28 30 32 40 48 64 128 256 512]
+
+#define PT_DIRECT_SPP 1 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 20 50 100 200]
+
+#define VXPT_DISTANCE 64 // [16 32 48 64 128 256 512 1024 2048 4096 8192]
+
+#include "/lib/voxel/Constant.glsl"
+
+//======// Image //===============================================================================//
+
+#if RENDER_MODE == 0
+    writeonly restrict uniform image2D colorimg2;
+#else
+    writeonly restrict uniform image2D colorimg3;
+#endif
+
+//======// Uniform //=============================================================================//
+
+uniform sampler2DShadow shadowtex1;
+uniform sampler2D shadowtex0;
+uniform sampler2D shadowcolor0;
+uniform sampler2D shadowcolor1;
+
+uniform sampler2D atlasTex;
+uniform sampler2D atlasTex_n;
+uniform sampler2D atlasTex_s;
+
+uniform vec3 fractCameraPos;
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Struct //==============================================================================//
+
+#include "/lib/universal/Material.glsl"
+
+struct TracingData {
+	Ray ray;
+    vec3 voxelPos;
+    vec3 normal;
+    vec3 irradiance;
+    vec3 contribution;
+};
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Offset.glsl"
+
+#include "/lib/atmosphere/Global.glsl"
+
+#include "/lib/lighting/DiffuseLighting.glsl"
+#ifdef CLOUD_SHADOWS
+	#include "/lib/atmosphere/clouds/Shadows.glsl"
+#endif
+
+float GetClosestDepth(in ivec2 texel) {
+    float depth = loadDepth0(texel);
+
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = offset3x3N[i] + texel;
+        float sampleDepth = loadDepth0(sampleTexel);
+        depth = min(depth, sampleDepth);
+    }
+
+    return depth;
+}
+
+#include "/lib/lighting/ShadowDistortion.glsl"
+
+vec3 ReadShadowMap(in vec3 worldPos) {
+	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
+	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
+    vec3 shadowPos = DistortShadowSpace(shadowClipPos) * 0.5 + 0.5;
+
+    float sampleDepth1 = texture(shadowtex1, shadowPos).x;
+#ifdef COLORED_SHADOWS
+	ivec2 sampleTexel = ivec2(shadowPos.xy * realShadowMapRes);
+    float sampleDepth0 = step(shadowPos.z, texelFetch(shadowtex0, sampleTexel, 0).x);
+    if (sampleDepth0 != sampleDepth1)
+        return pow4(texelFetch(shadowcolor0, sampleTexel, 0).rgb) * sampleDepth1;
+    else
+#endif
+    return vec3(sampleDepth1);
+}
+
+#include "/lib/voxel/Transform.glsl"
+#include "/lib/voxel/Intersect.glsl"
+
+bool ScreenSpaceRaytrace(inout vec3 rayPos, in vec3 rayDir, in float dither, out vec3 screenPos) {
+	if (rayDir.z > max0(-rayPos.z)) return false;
+
+	const float stepLength = PT_DIFFUSE_SSPT_STRIDE * 0.4 * rcp(float(PT_DIFFUSE_SSPT_STEPS));
+
+	vec3 rayStep = rayDir * stepLength;
+	rayPos += rayStep * dither;
+
+    bool hit = false;
+	for (uint i = 0u; i < PT_DIFFUSE_SSPT_STEPS; ++i, rayPos += rayStep) {
+        vec3 NDCPos = projMAD(gbufferProjection, rayPos) * rcp(-rayPos.z);
+		if (any(greaterThanEqual(abs(NDCPos.xy), vec2(1.0)))) break;
+
+        screenPos = NDCPos * 0.5 + 0.5;
+		float sampleDepth = loadDepth0(ivec2(screenPos.xy * viewSize));
+
+        float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
+        float difference = rayPos.z + sampleDepthLinear;
+        if (clamp(difference, 0.1 * rayPos.z, 0.0) == difference) {
+            hit = true;
+            break;
+        }
+        rayStep *= 1.1;
+	}
+
+	return hit;
+}
+
+vec3 PathTraceDiffuse(in vec3 worldPos, in vec3 normalOffset, in vec3 worldNormal, in NoiseGenerator noiseGenerator, in vec2 atlasSize, in float skyLightmap) {
+    vec3 voxelPosOffset = voxelizationRadius + fractCameraPos;
+    vec3 voxelPos = worldPos + voxelPosOffset + normalOffset;
+
+    vec3 irradiance = vec3(0.0);
+
+	vec3 directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
+	// vec3 skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
+
+    for (uint spp = 0u; spp < PT_DIFFUSE_SPP; ++spp) {
+        // Initialize tracing data
+        TracingData target;
+        target.voxelPos = voxelPos;
+        target.normal = worldNormal;
+		target.irradiance = vec3(0.0);
+		target.contribution = vec3(1.0);
+        float hitSkylight = skyLightmap;
+        #ifdef PT_DIFFUSE_SSPT
+            vec3 viewRayPos = mat3(gbufferModelView) * (target.voxelPos - voxelPosOffset);
+        #endif
+
+        for (uint bounce = 1u; bounce <= PT_DIFFUSE_BOUNCES; ++bounce) {
+			target.ray = InitializeRay(target.voxelPos, sampleCosineVector(target.normal, nextVec2(noiseGenerator)));
+			float dither = nextFloat(noiseGenerator);
+
+            ivec2 targetTexel = ivec2(0), voxelTexel = ivec2(0);
+			float rayLength = 0.0;
+
+            #ifdef PT_DIFFUSE_SSPT
+                vec3 viewRayDir = mat3(gbufferModelView) * target.ray.dir;
+                vec3 screenRayPos;
+                if (ScreenSpaceRaytrace(viewRayPos, viewRayDir, dither, screenRayPos)) {
+                    targetTexel = uvToTexel(screenRayPos.xy);
+
+                    vec3 sampleRadiance = texelFetch(colortex4, targetTexel >> 1, 0).rgb;
+                    // sampleRadiance *= saturate(dot(target.normal, target.ray.dir) * 0.75 + 0.25);
+                    target.irradiance += sampleRadiance * target.contribution;
+                    // uvec4 gbufferData0 = loadGbufferData0(targetTexel);
+                    // target.normal = FetchWorldNormal(gbufferData0);
+                    // hitSkylight = Unpack2x8UY(gbufferData0.x);
+
+                    // target.voxelPos = transMAD(gbufferModelViewInverse, viewRayPos) + voxelPosOffset;
+                    // target.contribution *= loadAlbedo(targetTexel);
+                    break;
+                } else
+            #endif
+            if (VoxelSpaceRaytrace(target, targetTexel, voxelTexel, rayLength, atlasSize)) {
+                uint voxelID = uint(texelFetch(shadowcolor1, voxelTexel, 0).w * 255.0);
+                vec4 voxelColor = texelFetch(shadowcolor0, voxelTexel, 0);
+                hitSkylight = voxelColor.w;
+
+                int lod = min(4, int(bounce + 1u) >> 1u);
+                vec3 targetAlbedoRaw = texelFetch(atlasTex, targetTexel >> lod, lod).rgb * voxelColor.rgb;
+                vec3 targetAlbedo = pow(targetAlbedoRaw, vec3(2.2)); // Fast approximation of gamma correction.
+
+                // Apply albedo
+                target.contribution *= targetAlbedo;
+
+                vec3 targetWorldPos = target.voxelPos - voxelPosOffset;
+
+                // Emissive
+				#if EMISSIVE_MODE > 0 && defined SPECULAR_MAPPING
+	                vec4 specularTex = texelFetch(atlasTex_s, targetTexel, 0);
+                    #if TEXTURE_FORMAT == 0
+                        float emissiveness = specularTex.a * step(specularTex.a, 0.999);
+                    #else
+                        float emissiveness = specularTex.b;
+                    #endif
+				    emissiveness = pow(emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+
+				    target.irradiance += emissiveness * 4.0 * sdot(targetAlbedo) * target.contribution;
+				#endif
+				#if EMISSIVE_MODE < 2
+					// Hard-coded emissive
+					vec3 emissive = HardCodeEmissive(voxelID, targetAlbedo, targetAlbedoRaw, targetWorldPos);
+					target.irradiance += emissive * EMISSIVE_BRIGHTNESS * target.contribution;
+				#endif
+
+                // Sunlight
+                float NdotL = dot(target.normal, worldLightVector) * saturate(hitSkylight * 1e2);
+                if (NdotL > 1e-3) {
+                    normalOffset = target.normal * (sdot(targetWorldPos) * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+
+                    #ifdef CLOUD_SHADOWS
+                        float cloudShadow = min(ReadCloudShadowMap(colortex10, targetWorldPos), 1.0 - wetness * 0.6);
+                    #else
+                        float cloudShadow = 1.0 - wetness * 0.96;
+                    #endif
+                    vec3 sunlightDiffuse = directIlluminance * ReadShadowMap(targetWorldPos + normalOffset) * (rPI * NdotL * cloudShadow);
+                    target.irradiance += sunlightDiffuse * target.contribution;
+                }
+
+                #ifdef PT_DIFFUSE_SSPT
+                    viewRayPos = mat3(gbufferModelView) * targetWorldPos;
+                #endif
+            } else {
+                // Skylight
+                #ifdef PT_DIFFUSE_TRACING_CLOUDS
+                    ivec2 skyViewTexel = ivec2(vec2(256.0, 384.0) * FromSkyViewLutParams(target.ray.dir) + vec2(0.0, 192.0));
+                #else
+                    ivec2 skyViewTexel = ivec2(vec2(256.0, 384.0) * FromSkyViewLutParams(target.ray.dir));
+                #endif
+                vec3 skyRadiance = texelFetch(colortex5, skyViewTexel, 0).rgb;
+
+                target.irradiance += skyRadiance * target.contribution * remap(0.3, 0.7, hitSkylight);
+                break;
+            }
+
+            // Russian roulette
+            #ifdef PT_DIFFUSE_RUSSIAN_ROULETTE
+                if (bounce >= PT_DIFFUSE_RR_MIN_BOUNCES) {
+                    float probability = saturate(GetLuminance(target.contribution));
+                    if (probability < dither) break;
+                    target.contribution *= rcp(probability);
+                }
+            #endif
+        }
+
+        irradiance += target.irradiance;
+    }
+
+    return satU16f(irradiance * rcp(float(PT_DIFFUSE_SPP)));
+}
+
+vec3 PathTraceDirect(in vec3 worldPos, in vec3 normalOffset, in vec3 worldNormal, in NoiseGenerator noiseGenerator, in vec2 atlasSize, in vec3 albedo, in Material material) {
+    vec3 voxelPosOffset = voxelizationRadius + fractCameraPos;
+    vec3 voxelPos = worldPos + voxelPosOffset + normalOffset;
+
+    vec3 radiance = vec3(0.0);
+    vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
+
+	vec3 directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
+	// vec3 skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
+
+    vec3 diffuseAlbedo = albedo * oms(material.metalness);
+    vec3 specularAlbedo = oms(material.metalness * oms(albedo));
+
+    for (uint spp = 0u; spp < PT_DIRECT_SPP; ++spp) {
+        TracingData target = TracingData(InitializeRay(voxelPos, generateConeVector(worldLightVector, nextVec2(noiseGenerator), atmosphereModel.sun_angular_radius)), voxelPos, worldNormal, vec3(0.0), vec3(1.0));
+
+        float NdotL = dot(worldNormal, target.ray.dir);
+        if (NdotL < 1e-5) break;
+
+        ivec2 targetTexel = ivec2(0), voxelTexel = ivec2(0);
+        float rayLength = 0.0;
+
+        if (!VoxelSpaceRaytrace(target, targetTexel, voxelTexel, rayLength, atlasSize)) {
+            float LdotV = abs(dot(target.ray.dir, worldDir));
+            float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+            float NdotV = abs(dot(worldNormal, -worldDir));
+            float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
+            float LdotH = LdotV * halfwayNorm + halfwayNorm;
+
+            target.contribution *= DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo) * diffuseAlbedo
+                                 + SpecularBRDF(LdotH, NdotV, NdotL, NdotH, material.roughness, material.f0) * specularAlbedo;
+
+            radiance += target.contribution;
+        }
+    }
+
+    #ifdef CLOUD_SHADOWS
+        float cloudShadow = min(ReadCloudShadowMap(colortex10, worldPos), 1.0 - wetness * 0.6);
+    #else
+        float cloudShadow = 1.0 - wetness * 0.96;
+    #endif
+
+    return radiance * directIlluminance * (rcp(float(PT_DIRECT_SPP)) * cloudShadow);
+}
+
+//======// Main //================================================================================//
+void main() {
+    ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
+    #if RENDER_MODE == 1
+        // ivec2 checkerboard = checkerboardOffset2x2[frameCounter % 4];
+        // ivec2 currentTexel = screenTexel * 2 + checkerboard;
+        #define currentTexel screenTexel
+
+        // float depth = GetClosestDepth(currentTexel);
+        float depth = loadDepth0(screenTexel);
+
+        if (depth < 1.0) {
+            uvec4 gbufferData0 = loadGbufferData0(currentTexel);
+            vec3 flatNormal = FetchFlatNormal(gbufferData0);
+            #ifdef NORMAL_MAPPING
+                vec3 worldNormal = FetchWorldNormal(gbufferData0);
+            #else
+                #define worldNormal flatNormal
+            #endif
+
+            vec2 screenCoord = texelToUv(currentTexel);
+            vec3 viewPos = ScreenToViewSpace(vec3(screenCoord, depth));
+            vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
+
+            NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter/*  >> 2 */));
+            vec2 atlasSize = vec2(textureSize(atlasTex, 0));
+            vec3 normalOffset = flatNormal * (length(worldPos) * 2e-4 + 1e-4);
+			float skyLightmap = Unpack2x8UY(gbufferData0.x);
+
+            vec3 irradianceDiffuse = PathTraceDiffuse(worldPos, normalOffset, worldNormal, noiseGenerator, atlasSize, skyLightmap);
+			imageStore(colorimg3, screenTexel, vec4(irradianceDiffuse, 1.0));
+        }
+    #else
+        float depth = loadDepth0(screenTexel);
+
+        if (depth < 1.0) {
+            uvec4 gbufferData0 = loadGbufferData0(screenTexel);
+            vec3 flatNormal = FetchFlatNormal(gbufferData0);
+            #ifdef NORMAL_MAPPING
+                vec3 worldNormal = FetchWorldNormal(gbufferData0);
+            #else
+                #define worldNormal flatNormal
+            #endif
+
+            vec3 screenPos = vec3(texelToUv(gl_GlobalInvocationID.xy), depth);
+            vec3 viewPos = ScreenToViewSpace(screenPos);
+            vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
+
+            NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
+            vec2 atlasSize = vec2(textureSize(atlasTex, 0));
+            vec3 normalOffset = flatNormal * (length(worldPos) * 2e-4 + 1e-4);
+            vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
+			float skyLightmap = Unpack2x8UY(gbufferData0.x);
+
+            #ifdef SPECULAR_MAPPING
+                vec4 gbufferData1 = loadGbufferData1(screenTexel);
+                vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
+                Material material = GetMaterialData(specularTex);
+            #else
+                Material material = Material(1.0, 0.0, DEFAULT_DIELECTRIC_F0, 0.0, false, false);
+            #endif
+
+            vec3 radiance = PathTraceDiffuse(worldPos, normalOffset, worldNormal, noiseGenerator, atlasSize, skyLightmap) * albedo * oms(material.metalness)
+                          + PathTraceDirect(worldPos, normalOffset, worldNormal, noiseGenerator, atlasSize, albedo, material);
+
+            radiance += texelFetch(colortex1, screenTexel, 0).rgb * oms(material.metalness * oms(albedo));
+
+            vec2 prevCoord = Reproject(screenPos).xy;
+            float frameIndex = 1.0;
+
+            if (distance(prevCoord, screenPos.xy) < 1e-6) {
+                vec4 prevRadiance = texture(colortex2, prevCoord);
+
+                radiance += prevRadiance.rgb * prevRadiance.a;
+                radiance *= rcp(++prevRadiance.a);
+                frameIndex = prevRadiance.a;
+            }
+
+            imageStore(colorimg2, screenTexel, vec4(radiance, frameIndex));
+        }
+    #endif
+}

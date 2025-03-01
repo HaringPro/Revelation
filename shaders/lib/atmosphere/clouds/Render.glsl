@@ -61,7 +61,7 @@ float CloudVolumeGroundLightOD(in vec3 rayPos) {
 }
 
 float CloudPowderEffect(in float depth, in float height, in float factor) {
-    return depth * (height + oneMinus(height) * factor);
+    return depth * (height + oms(height) * factor);
 }
 
 //================================================================================================//
@@ -71,7 +71,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 	if (density > 1e-6) {
 		// Siggraph 2017's new formula
 		float opticalDepth = density * stepT * rLOG2;
-		float absorption = oneMinus(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
+		float absorption = oms(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
 
 		const float stepSize = 128.0 / float(CLOUD_MID_SUNLIGHT_SAMPLES);
 		vec2 rayPos = rayPos;
@@ -125,9 +125,9 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 		scatteringSky += 0.4 * exp2(-opticalDepth * 0.04);
 
 		// Compute powder effect
-		// float powder = 2.0 * fastExp(-density * 36.0) * oneMinus(fastExp(-density * 72.0));
+		// float powder = 2.0 * fastExp(-density * 36.0) * oms(fastExp(-density * 72.0));
 		float powder = rcp(fastExp(-density * (PI * 3.0 / stratusExtinction)) * 0.75 + 0.25) - 1.0;
-		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
+		powder += oms(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -144,7 +144,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ldo
 
 		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
 		scattering += scatteringSky * uniformPhase * (powder * 0.5 + 0.5) * skyIlluminance;
-		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(stratusExtinction);
+		scattering *= oms(0.6 * wetness) * absorption * rcp(stratusExtinction);
 
 		return vec4(scattering, absorption);
 	}
@@ -157,7 +157,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 	if (density > 1e-6) {
 		// Siggraph 2017's new formula
 		float opticalDepth = density * stepT * rLOG2;
-		float absorption = oneMinus(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
+		float absorption = oms(max(exp2(-opticalDepth), exp2(-opticalDepth * 0.25) * 0.7));
 
 		const float stepSize = 128.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
 		vec2 rayPos = rayPos;
@@ -211,9 +211,9 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 		scatteringSky += 0.4 * exp2(-opticalDepth * 0.04);
 
 		// Compute powder effect
-		float powder = 2.0 * fastExp(-density * 22.0) * oneMinus(fastExp(-density * 44.0));
+		float powder = 2.0 * fastExp(-density * 22.0) * oms(fastExp(-density * 44.0));
 		// float powder = rcp(fastExp(-density * (PI * 3.0 / cirrusExtinction)) * 0.6 + 0.4) - 1.0;
-		powder += oneMinus(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
+		powder += oms(powder) * sqr(LdotV * 0.5 + 0.5) * saturate(density * 5.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -230,7 +230,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float Ld
 
 		vec3 scattering = scatteringSun * rPI * powder * directIlluminance;
 		scattering += scatteringSky * uniformPhase * (powder * 0.5 + 0.5) * skyIlluminance;
-		scattering *= oneMinus(0.6 * wetness) * absorption * rcp(cirrusExtinction);
+		scattering *= oms(0.6 * wetness) * absorption * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
 	}
@@ -268,16 +268,16 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 			if (intersection.y > 0.0) { // Intersect the volume
 				// Special treatment for the eye inside the volume
-				float withinVolumeSmooth = oneMinus(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oneMinus(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
+				float withinVolumeSmooth = oms(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oms(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
 				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
 				#if defined PASS_SKY_VIEW
 					uint raySteps = uint(CLOUD_CU_SAMPLES * 0.6);
-					raySteps = uint(float(raySteps) * oneMinus(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CU_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oneMinus(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oms(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
 				// const float nearStepSize = 3.0;
@@ -361,11 +361,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						float powder = CloudPowderEffect(depthProbability, verticalProbability, powderFactor);
 					#else
 						float powder = 0.2 * rcp(fastExp(-stepDensity * (PI / cumulusExtinction)) * 0.85 + 0.15) - 0.2;
-						powder += oneMinus(powder) * powderFactor * saturate(stepDensity * 3.0);
+						powder += oms(powder) * powderFactor * saturate(stepDensity * 3.0);
 					#endif
 
 					// Compute the integral of the scattering over the step
-					float stepIntegral = transmittance * oneMinus(stepTransmittance);
+					float stepIntegral = transmittance * oms(stepTransmittance);
 					stepScattering += vec2(powder, powder * 0.5 + 0.5) * scattering * stepIntegral;
 					transmittance *= stepTransmittance;	
 
@@ -374,7 +374,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 				float absorption = 1.0 - transmittance;
 				if (absorption > minCloudAbsorption) {
-					stepScattering *= oneMinus(0.6 * wetness) * rcp(cumulusExtinction);
+					stepScattering *= oms(0.6 * wetness) * rcp(cumulusExtinction);
 					rayHitPos /= rayHitPosWeight;
 					FromPlanetCurvePos(rayHitPos);
 					rayHitPos -= cameraPosition;

@@ -243,7 +243,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 		if (shape > 0.03 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
+			position.xy += curlNoise * 0.25 * oms(heightFraction);
 
 			vec4 highFreqNoises = texture(colortex15, position * 6.0 - shift);
 			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
@@ -286,7 +286,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 		if (shape > 0.02 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
+			position.xy += curlNoise * 0.25 * oms(heightFraction);
 
 			vec3 highFreqNoises = texture(colortex15, position * 8.0 - shift).xyz;
 			float detail = dot(highFreqNoises, vec3(0.625, 0.25, 0.125));
@@ -329,7 +329,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 		if (shape > 0.04 && detail) {
 			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
+			position.xy += curlNoise * 0.25 * oms(heightFraction);
 
 			vec4 highFreqNoises = texture(colortex15, position * 6.0 - shift);
 			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));

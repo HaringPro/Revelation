@@ -3,7 +3,7 @@
         if (any(greaterThan(normalTex, vec3(0.003)))) {
 			normalTex = normalTex * 2.0 - 1.0 + r255;
 			#if TEXTURE_FORMAT == 0
-				normalTex.z = sqrt(saturate(oneMinus(dotSelf(normalTex.xy))));
+				normalTex.z = sqrt(saturate(oms(sdot(normalTex.xy))));
 			#else
 				normalTex = normalize(normalTex);
 			#endif

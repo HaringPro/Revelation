@@ -12,9 +12,9 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 	float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + uniformPhase * 0.3;
 	const vec3 sunTransmittance = fastExp(-waterExtinction * 5.0);
 
-	vec3 scattering = rPI * oneMinus(wetnessCustom * 0.8) * directIlluminance * 2e-2 * phase * sunTransmittance;
+	vec3 scattering = rPI * oms(wetnessCustom * 0.8) * directIlluminance * 2e-2 * phase * sunTransmittance;
 	scattering += 1e-2 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
-	scattering *= oneMinus(transmittance) * skylight / waterExtinction;
+	scattering *= oms(transmittance) * skylight / waterExtinction;
 
 	return mat2x3(scattering, transmittance);
 }
@@ -24,7 +24,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 #if defined PASS_VOLUMETRIC_FOG
 	vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 		float NdotD = dot(normal, dir);
-		float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+		float k = 1.0 - eta * eta * oms(NdotD * NdotD);
 		if (k < 0.0) return vec3(0.0);
 
 		return dir * eta - normal * (sqrt(k) + NdotD * eta);
@@ -38,11 +38,11 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 
 		vec3 refractPos = vec3(0.0, 1.0, 0.0) - refractVector / refractVector.y;
 
-		return saturate(dotSelf(refractPos) * 32.0);
+		return saturate(sdot(refractPos) * 32.0);
 	}
 
 	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
-		float rayLength = dotSelf(worldPos);
+		float rayLength = sdot(worldPos);
 		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, far);
 
@@ -108,9 +108,9 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		float LdotV = dot(lightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.7 + uniformPhase * 0.3;
 
-		vec3 scattering = scatteringSun * 2e-2 * oneMinus(wetnessCustom * 0.8) * phase * directIlluminance;
+		vec3 scattering = scatteringSun * 2e-2 * oms(wetnessCustom * 0.8) * phase * directIlluminance;
 		scattering += scatteringSky * 1e-2 * mix(skyIlluminance * 0.4, vec3(GetLuminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
-		scattering *= oneMinus(stepTransmittance) / waterExtinction;
+		scattering *= oms(stepTransmittance) / waterExtinction;
 
 		return mat2x3(scattering, transmittance);
 	}

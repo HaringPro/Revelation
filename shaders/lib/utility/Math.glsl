@@ -18,7 +18,7 @@ const float max32f		 = 4294967295.0;
 //================================================================================================//
 
 #define rcp(x) 			 (1.0 / (x))
-#define oneMinus(x) 	 (1.0 - (x))
+#define oms(x) 	 		 (1.0 - (x))
 #define fastExp(x) 		 exp2((x) * rLOG2)
 #define max0(x) 		 max(x, 0.0)
 #define min1(x) 		 min(x, 1.0)
@@ -82,8 +82,8 @@ float curve(float x)  	 { return sqr(x) * (3.0 - 2.0 * x); }
 vec2  curve(vec2 x)	  	 { return sqr(x) * (3.0 - 2.0 * x); }
 vec3  curve(vec3 x)	  	 { return sqr(x) * (3.0 - 2.0 * x); }
 
-float dotSelf(vec2 x) 	 { return dot(x, x); }
-float dotSelf(vec3 x) 	 { return dot(x, x); }
+float sdot(vec2 x) 	 	 { return dot(x, x); }
+float sdot(vec3 x) 	 	 { return dot(x, x); }
 
 vec2  sincos(float x)    { return vec2(sin(x), cos(x)); }
 vec2  cossin(float x)    { return vec2(cos(x), sin(x)); }

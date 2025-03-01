@@ -150,7 +150,7 @@ void main() {
         vec4 sampleNormalDepth;
         UnpackSharedData(sampleSharedTexel, sampleIrradiance, sampleNormalDepth);
 
-        float weight = exp2(-0.1 * dotSelf(offset4x4[i]));
+        float weight = exp2(-0.1 * sdot(offset4x4[i]));
         weight *= exp2(abs(sampleNormalDepth.w - normalDepthData.w) * sigmaZ); // Distance weight
         weight *= pow32(saturate(dot(sampleNormalDepth.xyz, normalDepthData.xyz))); // Normal weight
 

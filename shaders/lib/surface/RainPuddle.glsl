@@ -26,7 +26,7 @@ void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specT
         float porosity = saturate(specTex.b * (255.0 / 64.0) - step(64.5, specTex.b * 255.0));
 
         puddles *= 1.0 - porosity;
-        wetAlbedo *= oneMinus(porosity * wetAlbedo);
+        wetAlbedo *= oms(porosity * wetAlbedo);
     #endif
     albedo = mix(albedo, wetAlbedo, puddles);
 

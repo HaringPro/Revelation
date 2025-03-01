@@ -111,7 +111,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 	bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, screenPos);
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
-		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+		float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 4e3;
 		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
@@ -169,18 +169,18 @@ void main() {
 	//==// Translucent lighting //================================================================//
 	#ifdef TRANSLUCENT_LIGHTING
 		// Sunlight
-		vec3 sunlightMult = oneMinus(wetness * 0.96) * directIlluminance;
+		vec3 sunlightMult = oms(wetness * 0.96) * directIlluminance;
 		float NdotL = dot(worldNormal, worldLightVector);
 
 		vec3 sunlightDiffuse = vec3(0.0);
 		vec3 specularHighlight = vec3(0.0);
 
-		// float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * dotSelf(worldPos.xz)));
+		// float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * sdot(worldPos.xz)));
 
 		// Shadows
 		if (NdotL > 1e-3) {
 			float distortFactor;
-			float worldDistSquared = dotSelf(worldPos);
+			float worldDistSquared = sdot(worldPos);
 
 			vec3 normalOffset = flatNormal * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
 			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
@@ -230,7 +230,7 @@ void main() {
 			sceneOut.rgb *= lighting * rPI;
 
 			vec4 specularReflections = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
-			sceneOut.rgb = specularReflections.rgb + sceneOut.rgb * oneMinus(specularReflections.a);
+			sceneOut.rgb = specularReflections.rgb + sceneOut.rgb * oms(specularReflections.a);
 		}
 
 		// Specular highlights

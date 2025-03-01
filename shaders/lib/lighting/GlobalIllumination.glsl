@@ -49,7 +49,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 		vec3 sampleVector 			= vec3(sampleClipCoord, sampleDepth) - shadowClipPos;
 		sampleVector 				= projectionInvScale * sampleVector;
 
-		float sampleSqLen 	 		= dotSelf(sampleVector);
+		float sampleSqLen 	 		= sdot(sampleVector);
 		if (sampleSqLen > sqRadius) continue;
 
 		vec3 sampleDir 				= sampleVector * inversesqrt(sampleSqLen);

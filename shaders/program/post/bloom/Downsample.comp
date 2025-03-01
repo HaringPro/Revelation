@@ -58,7 +58,7 @@ vec3 CalculateBloomTile(in vec2 uv) {
 
 	for (int y = -BLOOM_BLUR_SAMPLES; y <= BLOOM_BLUR_SAMPLES; ++y) {
 		for (int x = -BLOOM_BLUR_SAMPLES; x <= BLOOM_BLUR_SAMPLES; ++x) {
-			float weight = exp2(-dotSelf(vec2(x, y)) * 0.25);
+			float weight = exp2(-sdot(vec2(x, y)) * 0.25);
 
 			bloomTile += sampleTile(uv + vec2(x, y) * viewPixelSize) * weight;
 			sumWeight += weight;
