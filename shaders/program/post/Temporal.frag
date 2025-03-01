@@ -22,7 +22,7 @@ layout (location = 0) out vec4 temporalOut;
 layout (location = 1) out vec3 clearOut;
 
 #ifdef MOTION_BLUR
-/* RENDERTARGETS: 1,4,9 */
+/* RENDERTARGETS: 1,4,3 */
 layout (location = 2) out vec2 motionVectorOut;
 #endif
 

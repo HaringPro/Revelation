@@ -7,6 +7,19 @@ vec3 sRGBtoLinear(in vec3 color) {
 	return mix(color * 0.07739938, pow((color + 0.055) * 0.94786729, vec3(2.4)), lessThan(vec3(0.04045), color));
 }
 
+// https://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
+vec3 linearToSRGBApprox(in vec3 color) {
+    // vec3 S1 = color * inversesqrt(color);
+    // vec3 S2 = S1 * inversesqrt(S1);
+    // vec3 S3 = S2 * inversesqrt(S2);
+    // return 0.585122381 * S1 + 0.783140355 * S2 - 0.368262736 * S3;
+    return pow(color, vec3(1.0 / 2.223));
+}
+
+vec3 sRGBtoLinearApprox(in vec3 color) {
+    return color * (color * (color * 0.305306011 + 0.682171111) + 0.012522878);
+}
+
 float GetLuminance(in vec3 color) {
     // https://en.wikipedia.org/wiki/Luma_(video)
     // const vec3 coeff = vec3(0.2722287168, 0.6740817658, 0.0536895174);

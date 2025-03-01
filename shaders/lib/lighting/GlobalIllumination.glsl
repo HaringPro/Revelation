@@ -68,8 +68,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 
 		float skylightWeight 		= saturate(1.0 - sqr(sampleColor.z - skyLightmap) * 2.0);
 
-		// vec3 albedo 				= sRGBtoLinear(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
-		vec3 albedo 				= pow(texelFetch(shadowcolor0, sampleTexel, 0).rgb, vec3(2.2));
+		vec3 albedo 				= sRGBtoLinearApprox(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
 
 		sum += albedo * falloff * saturate(diffuse * bounce) * skylightWeight;
 	}
