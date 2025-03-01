@@ -142,7 +142,7 @@ void main() {
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		vec2 lightmap = Unpack2x8U(gbufferData0.x);
-		lightmap.y = isEyeInWater == 1 ? 1.0 : lightmap.y;
+		lightmap.y = saturate(lightmap.y + float(isEyeInWater));
 
 		vec3 flatNormal = FetchFlatNormal(gbufferData0);
 		#ifdef NORMAL_MAPPING
@@ -155,19 +155,16 @@ void main() {
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			vec4 gbufferData1 = loadGbufferData1(screenTexel);
 			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
-		#else
-			vec4 specularTex;
-		#endif
 
-		// Apply rain puddles
+		// Compute rain puddles
 		#ifdef RAIN_PUDDLES
 			if (wetnessCustom > 1e-2) {
-				if (clamp(materialID, 9u, 12u) != materialID && materialID != 20u && materialID != 40u)
+				if (clamp(materialID, 9u, 12u) != materialID && materialID != 20u && materialID != 40u) {
 					CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
+				}
 			}
 		#endif
 
-		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 			Material material = GetMaterialData(specularTex);
 			specularOut = specularTex.rg;
 		#else
