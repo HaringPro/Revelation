@@ -143,7 +143,10 @@ const float minCloudAbsorption	  = 0.02;
 	#define RSM_MAX_ACCUM_FRAMES  64.0 // Maximum accumulated frames for RSM.  [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 /* Ambient Occlusion */
-	#define AO_ENABLED 1 // Enables ambient occlusion. [0 1 2]
+	#define OFF 0
+	#define SSAO 1
+	#define GTAO 2
+	#define AO_ENABLED SSAO // Enables ambient occlusion. [OFF SSAO GTAO]
 	#define AO_MULTI_BOUNCE // Enables ambient occlusion multi-bounce
 
 /* Shadows */
