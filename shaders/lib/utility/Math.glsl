@@ -184,3 +184,11 @@ vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
 
 	return coeff * harmonics;
 }
+
+//================================================================================================//
+
+mat3 ConstructTBN(in vec3 n) {
+	vec3 t = normalize(vec3(abs(n.y) + n.z, 0.0, -n.x));
+	vec3 b = normalize(cross(t, n));
+	return mat3(t, b, n);
+}
