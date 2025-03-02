@@ -37,7 +37,7 @@ layout (location = 2) out vec2 varianceMoments;
 
 void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in float currViewDistance) {
     indirectCurrent.rgb = texelFetch(colortex3, texel, 0).rgb;
-    float luminance = GetLuminance(indirectCurrent.rgb);
+    float luminance = luminance(indirectCurrent.rgb);
     ivec2 texelEnd = ivec2(halfViewEnd);
 
     // Estimate spatial variance
@@ -51,7 +51,7 @@ void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in f
 
                 ivec2 sampleTexel = clamp(texel + ivec2(x, y), ivec2(0), texelEnd);
                 vec3 sampleColor = texelFetch(colortex3, sampleTexel, 0).rgb;
-                float sampleLuma = GetLuminance(sampleColor);
+                float sampleLuma = luminance(sampleColor);
 
                 vec3 sampleNormal = FetchWorldNormal(loadGbufferData0(sampleTexel << 1));
                 float weight = saturate(dot(sampleNormal, worldNormal) * 20.0 - 19.0);

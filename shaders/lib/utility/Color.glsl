@@ -20,7 +20,7 @@ vec3 sRGBtoLinearApprox(in vec3 color) {
     return color * (color * (color * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
-float GetLuminance(in vec3 color) {
+float luminance(in vec3 color) {
     // https://en.wikipedia.org/wiki/Luma_(video)
     // const vec3 coeff = vec3(0.2722287168, 0.6740817658, 0.0536895174);
     const vec3 coeff = vec3(0.2126, 0.7152, 0.0722);
@@ -28,7 +28,7 @@ float GetLuminance(in vec3 color) {
 }
 
 vec3 colorSaturation(in vec3 color, in float saturation) {
-    return mix(vec3(GetLuminance(color)), color, saturation);
+    return mix(vec3(luminance(color)), color, saturation);
 }
 
 // Modified from https://github.com/Jessie-LC/open-source-utility-code/blob/main/advanced/blackbody.glsl
@@ -49,14 +49,14 @@ vec3 blackbody(in float t) {
 
 vec3 karisAverage(in vec3 color) {
     const float k = 1e-3; // Empirical constant
-    return color / (1.0 + k * GetLuminance(color));
+    return color * rcp(1.0 + k * luminance(color));
 }
 
 vec3 reinhard(in vec3 hdr) {
-    return hdr / (1.0 + GetLuminance(hdr));
+    return hdr * rcp(1.0 + luminance(hdr));
 }
 vec3 invReinhard(in vec3 sdr) {
-    return sdr / (1.0 - GetLuminance(sdr));
+    return sdr * rcp(1.0 - luminance(sdr));
 }
 
 // https://en.wikipedia.org/wiki/YCoCg

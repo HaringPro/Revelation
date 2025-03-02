@@ -97,10 +97,10 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 		vec4 sampleD = loadAlbedo(tileBase - vec2(0.0, bias.y));
 
 		// Get heights from albedo luminance
-		float heightR = GetLuminance(sampleR.rgb * sampleR.a);
-		float heightL = GetLuminance(sampleL.rgb * sampleL.a);
-		float heightU = GetLuminance(sampleU.rgb * sampleU.a);
-		float heightD = GetLuminance(sampleD.rgb * sampleD.a);
+		float heightR = luminance(sampleR.rgb * sampleR.a);
+		float heightL = luminance(sampleL.rgb * sampleL.a);
+		float heightU = luminance(sampleU.rgb * sampleU.a);
+		float heightD = luminance(sampleD.rgb * sampleD.a);
 
 		// Get normal from height differences
 		float deltaX = (heightL - heightR) * AGN_STRENGTH;
