@@ -37,11 +37,11 @@ layout (location = 2) out vec2 varianceMoments;
 
 void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in float currViewDistance) {
     indirectCurrent.rgb = texelFetch(colortex3, texel, 0).rgb;
-    float luminance = luminance(indirectCurrent.rgb);
+    float luma = luminance(indirectCurrent.rgb);
     ivec2 texelEnd = ivec2(halfViewEnd);
 
     // Estimate spatial variance
-    vec2 currMoments = vec2(luminance, luminance * luminance);
+    vec2 currMoments = vec2(luma, luma * luma);
     {
         float sumWeight = 1.0;
 

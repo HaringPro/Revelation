@@ -374,7 +374,7 @@ vec3 AcademyFit(in vec3 rgb) {
 	rgb = RRTAndODTFit(rgb);
 
 	// Global desaturation
-	rgb = mix(vec3(luminance(rgb)), rgb, odtSatFactor);
+	rgb = colorSaturation(rgb, odtSatFactor);
 
 	return linearToSRGB(rgb);
 }
