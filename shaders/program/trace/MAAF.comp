@@ -174,7 +174,7 @@ void main() {
 
         vec3 worldNormal = FetchWorldNormal(centerData.x);
 
-		float centerLuma = GetLuminance(filteredColVar.rgb);
+		float centerLuma = luminance(filteredColVar.rgb);
 		#define centerVariance filteredColVar.a
 
 		float frameIndex = texelFetch(colortex2, texel, 0).a;
@@ -216,7 +216,7 @@ void main() {
 			vec3 sampleWorldNormal = FetchWorldNormal(sampleData.x);
 
 			vec4 sampleColVar = imageLoad(colorimg3, sampleTexel);
-			float sampleLuma = GetLuminance(sampleColVar.rgb);
+			float sampleLuma = luminance(sampleColVar.rgb);
 
 			vec3 sampleViewPos = ScreenToViewSpaceRaw(texelToUv(sampleTexel), sampleLinerDepth);
 			vec3 diffPos = sampleViewPos - viewPos;

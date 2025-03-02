@@ -258,7 +258,7 @@ vec3 PathTraceDiffuse(in vec3 worldPos, in vec3 normalOffset, in vec3 worldNorma
             // Russian roulette
             #ifdef PT_DIFFUSE_RUSSIAN_ROULETTE
                 if (bounce >= PT_DIFFUSE_RR_MIN_BOUNCES) {
-                    float probability = saturate(GetLuminance(target.contribution));
+                    float probability = saturate(luminance(target.contribution));
                     if (probability < dither) break;
                     target.contribution *= rcp(probability);
                 }

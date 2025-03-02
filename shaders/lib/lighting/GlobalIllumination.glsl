@@ -190,7 +190,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
             // Russian roulette
 			if (bounce >= SSPT_RR_MIN_BOUNCES) {
-				float probability = saturate(GetLuminance(target.contribution));
+				float probability = saturate(luminance(target.contribution));
 				if (probability < dither) break;
 				target.contribution *= rcp(probability);
 			}

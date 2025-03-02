@@ -4,7 +4,7 @@
 		float sumWeight = 1.0;
 
 		vec4 sum = texelFetch(colortex3, texel, 0);
-		float centerLuma = GetLuminance(sum.rgb);
+		float centerLuma = luminance(sum.rgb);
 
 		float variancePhi = -2.0 * inversesqrt(sum.a + EPS);
 		float sigmaZ = -2.0 * NdotV;
@@ -19,7 +19,7 @@
 			vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
 
 			float weight = pow32(saturate(dot(prevData.rgb, worldNormal)));
-			weight *= exp2(distance(prevData.a, viewDistance) * sigmaZ + abs(centerLuma - GetLuminance(sampleLight.rgb)) * variancePhi);
+			weight *= exp2(distance(prevData.a, viewDistance) * sigmaZ + abs(centerLuma - luminance(sampleLight.rgb)) * variancePhi);
 
 			if (weight < 1e-5) continue;
 
