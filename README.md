@@ -1,5 +1,5 @@
 <h1 align = "center"> Revelation </h1>
-<p  align = "center"> A explorative shaderpack for Minecraft: Java Edition, aiming to balance performance and image quality. </p>
+<p  align = "center"> An explorative shaderpack for Minecraft: Java Edition, aiming to balance performance and image quality. </p>
 <p  align = "center"> Currently working in progress, more features will be added in the future. </p>
 
 ![Screenshot](https://github.com/user-attachments/assets/af647400-bd69-4349-ab14-79c865ef118d)
