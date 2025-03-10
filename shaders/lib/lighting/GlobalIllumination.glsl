@@ -1,6 +1,6 @@
 #ifdef RSM_ENABLED
 /* Reflective Shadow Maps */
-// Referrence: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
+// Reference: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
 
 #define RSM_SAMPLES 16 // [4 8 12 16 20 24 32 48 64 96 128 256]
 #define RSM_RADIUS 10.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 15.0 20.0 25.0 30.0 40.0 50.0 70.0 100.0]

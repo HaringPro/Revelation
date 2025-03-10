@@ -1,12 +1,17 @@
 /*
 --------------------------------------------------------------------------------
 
-	Referrence: 
-		https://www.slideshare.net/guerrillagames/the-realtime-volumetric-cloudscapes-of-horizon-zero-dawn
-		http://www.frostbite.com/2015/08/physically-based-unified-volumetric-rendering-in-frostbite/
-		https://odr.chalmers.se/server/api/core/bitstreams/c8634b02-1b52-40c7-a75c-d8c7a9594c2c/content
-		https://advances.realtimerendering.com/s2017/Nubis%20-%20Authoring%20Realtime%20Volumetric%20Cloudscapes%20with%20the%20Decima%20Engine%20-%20Final.pptx
-		https://advances.realtimerendering.com/s2022/SIGGRAPH2022-Advances-NubisEvolved-NoVideos.pdf
+	References:
+		[Schneider, 2015] Andrew Schneider. “The Real-Time Volumetric Cloudscapes Of Horizon: Zero Dawn”. SIGGRAPH 2015.
+			https://www.slideshare.net/guerrillagames/the-realtime-volumetric-cloudscapes-of-horizon-zero-dawn
+		[Schneider, 2016] Andrew Schneider. "GPU Pro 7: Real Time Volumetric Cloudscapes". p.p. (97-128) CRC Press, 2016.
+			https://www.taylorfrancis.com/chapters/edit/10.1201/b21261-11/real-time-volumetric-cloudscapes-andrew-schneider
+		[Schneider, 2017] Andrew Schneider. "Nubis: Authoring Realtime Volumetric Cloudscapes with the Decima Engine". SIGGRAPH 2017.
+			https://advances.realtimerendering.com/s2017/Nubis%20-%20Authoring%20Realtime%20Volumetric%20Cloudscapes%20with%20the%20Decima%20Engine%20-%20Final.pptx
+		[Schneider, 2022] Andrew Schneider. "Nubis, Evolved: Real-Time Volumetric Clouds for Skies, Environments, and VFX". SIGGRAPH 2022.
+			https://advances.realtimerendering.com/s2022/SIGGRAPH2022-Advances-NubisEvolved-NoVideos.pdf
+		[Hillaire, 2016] Sebastien Hillaire. “Physically based Sky, Atmosphere and Cloud Rendering”. SIGGRAPH 2016.
+			https://www.ea.com/frostbite/news/physically-based-sky-atmosphere-and-cloud-rendering
 
 --------------------------------------------------------------------------------
 */
@@ -218,134 +223,44 @@ float CloudHighDensity(in vec2 rayPos) {
 
 //================================================================================================//
 
-#if 0
-	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
-		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
-		if (baseCoverage < 1e-6) return 0.0;
+float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
+	vec2 coverageMap = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).yz;
+	float coverage = coverageMap.x * coverageMap.y;
+	if (coverage < 1e-2) return 0.0;
 
-		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
+	// Remap the height of the clouds to the range of [0, 1]
+	float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
-		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
+	vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
+	vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
-		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
-		float shape = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
+	vec4 lowFreqNoises = texture(depthtex2, position * 0.175);
+	float shape = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
+	shape = remap(lowFreqNoises.x - 1.0, 1.0, shape);
 
-		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape) + (baseCoverage - 0.75) * 0.7;
+	// Coveage profile
+	shape = remap(1.0 - coverage * (2.0 + wetness * 0.5) * CLOUD_CU_COVERAGE, 1.0, shape);
 
-		// Use two remap functions to carve out the gradient shape
-		float gradienShape = saturate(heightFraction * 4.0) * saturate(6.0 - heightFraction * 6.0);
+	// Vertical profile
+	shape -= remap(0.2, 1.0, heightFraction) * 0.3;
+	shape *= saturate(heightFraction * 5.0);
 
-		shape *= gradienShape * (0.4 + wetness * 0.1 + CLOUD_CU_COVERAGE);
-		shape -= heightFraction * 0.5 + 0.3;
+	// Detail shape
+	float detailNoise = 0.5;
+	if (shape > 0.02 && detail) {
+		vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
+		position.xy += curlNoise * 0.2 * oms(heightFraction);
 
-		if (shape > 0.03 && detail) {
-			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
+		vec3 highFreqNoises = texture(colortex15, position * 6.0 - shift).xyz;
+		detailNoise = dot(highFreqNoises, vec3(0.625, 0.25, 0.125));
 
-			vec4 highFreqNoises = texture(colortex15, position * 6.0 - shift);
-			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
-
-			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
-
-			shape = remap(detail * 0.06, 0.3, shape);
-		} else {
-			shape = remap(0.03, 0.3, shape);
-		}
-
-		// shape *= saturate(0.01 + heightFraction * 1.15) * saturate(5.0 - heightFraction * 5.0);
-
-		return shape;
+		// Transition from wispy shapes to billowy shapes over height
+		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 8.0));
 	}
-#elif 1
-	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
-		vec2 coverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).xz;
-		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
-		if (dot(coverage, vec2(1.0)) < 1e-3) return 0.0;
+	shape = remap(detailNoise * 0.15, 0.25, shape);
 
-		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
-
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
-		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
-
-		vec4 lowFreqNoises = texture(depthtex2, position * 0.22);
-		float shape = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
-
-		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape) + coverage.x * 0.6;
-
-		// Use two remap functions to carve out the gradient shape
-		float gradienShape = saturate(heightFraction * 3.0) * saturate(6.0 - heightFraction * 6.0);
-
-        float localCoverage = saturate(coverage.y * 3.0 - 0.55) * 0.5 + 0.5;
-		shape *= gradienShape * localCoverage * (0.28 + wetness * 0.07 + CLOUD_CU_COVERAGE);
-		shape -= heightFraction * 0.4 + 0.6;
-
-		if (shape > 0.02 && detail) {
-			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
-
-			vec3 highFreqNoises = texture(colortex15, position * 8.0 - shift).xyz;
-			float detail = dot(highFreqNoises, vec3(0.625, 0.25, 0.125));
-
-			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
-
-			shape = remap(detail * 0.04, 0.3, shape);
-		} else {
-			shape = remap(0.02, 0.3, shape);
-		}
-
-		// shape *= saturate(0.01 + heightFraction * 1.15) * saturate(5.0 - heightFraction * 5.0);
-
-		return shape;
-	}
-#else
-	float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
-		float baseCoverage = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).x;
-		// baseCoverage = saturate(baseCoverage * 1.2 - 0.2);
-		if (baseCoverage < 1e-6) return 0.0;
-
-		// Remap the height of the clouds to the range of [0, 1]
-		float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
-
-		vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
-		vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
-
-		vec4 lowFreqNoises = texture(depthtex2, position * 0.2);
-		float shape = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
-
-		shape = remap(lowFreqNoises.x - 1.0, 1.0, shape);
-		shape = remap(1.0 - baseCoverage, 1.0, shape);
-
-		// Use two remap functions to carve out the gradient shape
-		float gradienShape = saturate(heightFraction * 4.0) * saturate(5.0 - heightFraction * 5.0);
-
-		shape *= gradienShape * (0.24 + wetness * 0.06 + CLOUD_CU_COVERAGE);
-		shape -= heightFraction * 0.4 + 0.16;
-
-		if (shape > 0.04 && detail) {
-			vec2 curlNoise = texture(noisetex, position.xz * 5e-2).xy;
-			position.xy += curlNoise * 0.25 * oneMinus(heightFraction);
-
-			vec4 highFreqNoises = texture(colortex15, position * 6.0 - shift);
-			float detail = dot(highFreqNoises, vec4(0.8, 0.32, 0.12, 0.04));
-
-			// Transition from wispy shapes to billowy shapes over height
-			detail = mix(1.0 - detail, detail, saturate(heightFraction * 10.0));
-
-			shape = remap(detail * 0.08, 0.4, shape);
-		} else {
-			shape = remap(0.04, 0.4, shape);
-		}
-
-		// shape *= saturate(0.01 + heightFraction * 1.15) * saturate(5.0 - heightFraction * 5.0);
-
-		return shape;
-	}
-#endif
+	float densityProfile = saturate(heightFraction * 1.75 + 0.25);
+	return shape * densityProfile;
+}
 
 #endif
