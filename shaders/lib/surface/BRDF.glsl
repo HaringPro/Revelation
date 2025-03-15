@@ -245,10 +245,8 @@ vec3 TurquinBRDF(in float NdotV, in float NdotL, in float NdotH, in float VdotH,
 
 // From https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
-    // Randomness clamping
-    #ifdef SPECULAR_DIFFUSION_CLAMP
-        xy.y *= 0.5;
-    #endif
+    // Importance sampling bias
+    xy.x = mix(xy.x, 1.0, SPECULAR_IMPORTANCE_SAMPLING_BIAS);
 
     // Transform viewer direction to the hemisphere configuration
     viewDir = normalize(vec3(roughness * viewDir.xy, viewDir.z));
