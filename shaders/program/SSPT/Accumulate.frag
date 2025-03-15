@@ -122,7 +122,7 @@ void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in f
     }
 
     indirectCurrent.a = varianceMoments.x * varianceMoments.x;
-    indirectCurrent.a = max0(varianceMoments.y - indirectCurrent.a) + (indirectCurrent.a + 0.1) * (64.0 / indirectHistory.a);
+    indirectCurrent.a = max0(varianceMoments.y - indirectCurrent.a) + (indirectCurrent.a + 0.1) * (32.0 / indirectHistory.a);
 }
 
 float GetClosestDepth(in ivec2 texel) {

@@ -32,6 +32,8 @@ layout (rgba16f) restrict uniform image2D colorimg3;
 
 //======// Function //============================================================================//
 
+#include "/lib/universal/Noise.glsl"
+
 const uint padRadius = 1;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 
@@ -64,22 +66,6 @@ void SharedPreload() {
     memoryBarrierShared();
     barrier();
 }
-
-uint triple32(uint x) {
-    // https://nullprogram.com/blog/2018/07/31/
-    x ^= x >> 17;
-    x *= 0xed5ad4bbu;
-    x ^= x >> 11;
-    x *= 0xac4c1b51u;
-    x ^= x >> 15;
-    x *= 0x31848babu;
-    x ^= x >> 14;
-    return x;
-}
-
-uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
-uint RandNext() { return randState = triple32(randState); }
-#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
 
 float CalculateVariance(in ivec2 texel) {
     // const float kernel[2] = float[2](1.0, 0.3);
@@ -143,7 +129,7 @@ void main() {
 	float frameCurve = curve(saturate(frameIndex * 0.125));
 
 	float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + padRadius));
-	const float invSigmaL = 2.5 * float(ATROUS_FILTER_SIZE);
+	const float invSigmaL = 4.0 * float(ATROUS_FILTER_SIZE);
 	float variancePhi = -invSigmaL * inversesqrt(variance + EPS);
 	variancePhi *= frameCurve;
 
@@ -151,7 +137,7 @@ void main() {
 	const float sigmaN = 48.0;
 
 	float sumWeight = 1.0;
-	ivec2 randTexel = texel + ivec2((RandNext2F() - 0.5) * float(ATROUS_FILTER_SIZE));
+	ivec2 randTexel = texel + ivec2((R2(BlueNoiseTemporal(texel)) - 0.5) * float(ATROUS_FILTER_SIZE));
 
 	for (uint i = 0u; i < 8u; ++i) {
 		ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(1), texelEnd);
