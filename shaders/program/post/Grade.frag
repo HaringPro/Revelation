@@ -21,9 +21,9 @@
 #define BLOOMY_FOG_INTENSITY 0.75 // Intensity of bloomy fog. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.75 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 #define PURKINJE_SHIFT // Enables purkinje shift effect
-#define PURKINJE_SHIFT_STRENGTH 0.4 // Strength of purkinje shift effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define PURKINJE_SHIFT_STRENGTH 0.3 // Strength of purkinje shift effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
-// #define VIGNETTE_ENABLED
+// #define VIGNETTE_ENABLED // Enables vignetting effect
 #define VIGNETTE_STRENGTH 1.0 // Strength of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 #define VIGNETTE_ROUNDNESS 0.5 // Roundness of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
@@ -114,6 +114,17 @@ const mat3 XYZtoSRGB = mat3(
 	vec3(0.0556300797, 	-0.2039769589,  1.0569715142)
 );
 
+// See section 3.4 of http://www.diva-portal.org/smash/get/diva2:24136/FULLTEXT01.pdf
+vec3 PurkinjeShift(in vec3 image) {
+	const vec3 rodResponse = vec3(0.05, 0.55, 0.40);
+
+	vec3 xyz = image * sRGBtoXYZ;
+	vec3 scotopic = xyz * max0(1.33 * (1.0 + (xyz.y + xyz.z) / xyz.x) - 1.68);
+
+	float purkinjeLuma = dot(scotopic * XYZtoSRGB, rodResponse);
+	return mix(image, purkinjeLuma * vec3(0.56, 0.72, 1.0), exp2(-(256.0 / PURKINJE_SHIFT_STRENGTH) * purkinjeLuma));
+}
+
 vec3 None(in vec3 x) {
 	return linearToSRGB(x);
 }
@@ -190,9 +201,7 @@ void main() {
 
 	// Purkinje shift
 	#ifdef PURKINJE_SHIFT
-		float luma = dot(HDRImage, vec3(0.25, 0.4, 0.35));
-		float purkinjeFactor = exp2(-4e2 / PURKINJE_SHIFT_STRENGTH * luma) * exposure / (exposure + 1.0);
-		HDRImage = mix(HDRImage, vec3(0.7, 1.1, 1.5) * luma, purkinjeFactor);
+		HDRImage = PurkinjeShift(HDRImage);
 	#endif
 
 	// Exposure
