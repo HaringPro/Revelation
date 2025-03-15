@@ -18,6 +18,9 @@ void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float v
 			vec3 transmittance = fastExp(-fogExtinctionCoeff * viewDistance * 3.0);
 			fogTransmittance = dot(transmittance, vec3(0.4));
 
+			vec3 directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
+			vec3 skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
+
 			vec3 scattering = skyIlluminance * 2.0 + directIlluminance * 0.03;
 			scattering *= 3.0 * oneMinus(wetnessCustom * 0.7);
 

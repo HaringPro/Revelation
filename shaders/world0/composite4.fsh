@@ -30,11 +30,6 @@
 layout (location = 0) out vec3 sceneOut;
 layout (location = 1) out float bloomyFogTrans;
 
-//======// Input //===============================================================================//
-
-flat in vec3 directIlluminance;
-flat in vec3 skyIlluminance;
-
 //======// Uniform //=============================================================================//
 
 uniform sampler2D colortex0;

@@ -17,9 +17,6 @@
 
 //======// Output //==============================================================================//
 
-flat out vec3 directIlluminance;
-flat out vec3 skyIlluminance;
-
 flat out mat2x3 fogExtinctionCoeff;
 flat out mat2x3 fogScatteringCoeff;
 
@@ -47,9 +44,6 @@ uniform vec3 frScattering;
 //======// Main //================================================================================//
 void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
-
-	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
-	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
 
 	float mieDensityMult = VF_MIE_DENSITY * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
 
