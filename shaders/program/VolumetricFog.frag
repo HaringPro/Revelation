@@ -97,7 +97,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const float toExp6 = 2.58497;
 	float maxFar = max(2048.0, far);
 
-	float rayLength = dotSelf(worldPos);
+	float rayLength = sdot(worldPos);
 	float norm = inversesqrt(rayLength);
 	rayLength = min(rayLength * norm, maxFar);
 
@@ -167,8 +167,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
 		vec3 stepTransmittance = exp2(-opticalDepth);
 
-		vec3 stepScattering = transmittance * oneMinus(stepTransmittance) / maxEps(opticalDepth);
-		// stepScattering *= 2.0 * oneMinus(fastExp(-opticalDepth * 4.0)); // Powder Effect
+		vec3 stepScattering = transmittance * oms(stepTransmittance) / maxEps(opticalDepth);
+		// stepScattering *= 2.0 * oms(fastExp(-opticalDepth * 4.0)); // Powder Effect
 
 		scatteringSun += fogScatteringCoeff * (stepFogmass * phase) * sampleShadow * stepScattering;
 		scatteringSky += fogScatteringCoeff * stepFogmass * stepScattering;

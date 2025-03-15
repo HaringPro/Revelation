@@ -28,14 +28,14 @@ float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 		// vec3 rayPos = cosineWeightedHemisphereSample(n, RandNext2F()) * radius + viewPos;
 		// vec3 difference = ScreenToViewSpace(ViewToScreenSpaceRaw(rayPos).xy) - viewPos;
 		vec3 difference = ScreenToViewSpace(coord + rot * radius) - viewPos;
-		float diffSqLen = dotSelf(difference);
+		float diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
 		}
 
 		difference = ScreenToViewSpace(coord - rot * radius) - viewPos;
-		diffSqLen = dotSelf(difference);
+		diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
@@ -49,7 +49,7 @@ float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 /* Ground-Truth Ambient Occlusion */
 // Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
-	float viewDistance = dotSelf(viewPos);
+	float viewDistance = sdot(viewPos);
 	vec3 viewDir = viewPos * -inversesqrt(max(0.5, viewDistance));
 
 	float norm = inversesqrt(viewDistance);
@@ -75,7 +75,7 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 		vec3 axisV = cross(directionV, viewDir);
 		vec3 projNormalV = normal - axisV * dot(normal, axisV);
 
-		float lenV = dotSelf(projNormalV);
+		float lenV = sdot(projNormalV);
 		float normV = inversesqrt(lenV);
 		lenV *= normV;
 
@@ -92,7 +92,7 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 			vec2 sTexCoord = coord + offset;
 			vec3 sHorizonV = ScreenToViewSpace(sTexCoord) - viewPos;
 
-			float sLenV = dotSelf(sHorizonV);
+			float sLenV = sdot(sHorizonV);
 			float sNormV = inversesqrt(sLenV);
 			sLenV *= sNormV;
 
@@ -104,7 +104,7 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 			sTexCoord = coord - offset;
 			sHorizonV = ScreenToViewSpace(sTexCoord) - viewPos;
 
-			sLenV = dotSelf(sHorizonV);
+			sLenV = sdot(sHorizonV);
 			sNormV = inversesqrt(sLenV);
 			sLenV *= sNormV;
 
@@ -144,14 +144,14 @@ float CalculateSSAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 		// vec3 rayPos = cosineWeightedHemisphereSample(n, RandNext2F()) * radius + viewPos;
 		// vec3 difference = ScreenToViewSpace(ViewToScreenSpaceRaw(rayPos).xy) - viewPos;
 		vec3 difference = ScreenToViewSpaceDH(coord + rot * radius) - viewPos;
-		float diffSqLen = dotSelf(difference);
+		float diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
 		}
 
 		difference = ScreenToViewSpaceDH(coord - rot * radius) - viewPos;
-		diffSqLen = dotSelf(difference);
+		diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
 			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
@@ -165,7 +165,7 @@ float CalculateSSAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 /* Ground-Truth Ambient Occlusion */
 // Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
-	float viewDistance = dotSelf(viewPos);
+	float viewDistance = sdot(viewPos);
 	vec3 viewDir = viewPos * -inversesqrt(max(0.5, viewDistance));
 
 	float norm = inversesqrt(viewDistance);
@@ -191,7 +191,7 @@ float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 		vec3 axisV = cross(directionV, viewDir);
 		vec3 projNormalV = normal - axisV * dot(normal, axisV);
 
-		float lenV = dotSelf(projNormalV);
+		float lenV = sdot(projNormalV);
 		float normV = inversesqrt(lenV);
 		lenV *= normV;
 
@@ -208,7 +208,7 @@ float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 			vec2 sTexCoord = coord + offset;
 			vec3 sHorizonV = ScreenToViewSpaceDH(sTexCoord) - viewPos;
 
-			float sLenV = dotSelf(sHorizonV);
+			float sLenV = sdot(sHorizonV);
 			float sNormV = inversesqrt(sLenV);
 			sLenV *= sNormV;
 
@@ -220,7 +220,7 @@ float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 			sTexCoord = coord - offset;
 			sHorizonV = ScreenToViewSpaceDH(sTexCoord) - viewPos;
 
-			sLenV = dotSelf(sHorizonV);
+			sLenV = sdot(sHorizonV);
 			sNormV = inversesqrt(sLenV);
 			sLenV *= sNormV;
 

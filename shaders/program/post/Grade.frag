@@ -96,7 +96,7 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel) {
 
 	if (rainStrength > 1e-2) {
 		float rain = texelFetch(colortex6, texel, 0).a * RAIN_VISIBILITY;
-		scene = scene * oneMinus(rain) + bloomData * rain * 1.2;
+		scene = scene * oms(rain) + bloomData * rain * 1.2;
 	}
 }
 
@@ -142,7 +142,7 @@ vec3 Uchimura(in vec3 x) {
 
     const float l0 = ((maxDisplayBrightness - linearStart) * linearLength) / contrast;
     const float L0 = linearStart - linearStart / contrast;
-    const float L1 = linearStart + oneMinus(linearStart) / contrast;
+    const float L1 = linearStart + oms(linearStart) / contrast;
     const float S0 = linearStart + l0;
     const float S1 = linearStart + contrast * l0;
     const float C2 = contrast * maxDisplayBrightness / (maxDisplayBrightness - S1);
@@ -211,7 +211,7 @@ void main() {
 	#ifdef VIGNETTE_ENABLED
 		vec2 clipCoord = gl_FragCoord.xy * viewPixelSize * 2.0 - 1.0;
 		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
-		HDRImage *= fastExp(-0.4 * dotSelf(clipCoord) * VIGNETTE_STRENGTH);
+		HDRImage *= fastExp(-0.4 * sdot(clipCoord) * VIGNETTE_STRENGTH);
 	#endif
 
 	// Debug sky-view

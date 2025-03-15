@@ -247,8 +247,8 @@ void main() {
 		vec3 sunlightMult = cloudShadow * directIlluminance;
 		vec3 specularHighlight = vec3(0.0);
 
-		float worldDistSquared = dotSelf(worldPos);
-		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * dotSelf(worldPos.xz)));
+		float worldDistSquared = sdot(worldPos);
+		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * sdot(worldPos.xz)));
 		#if defined DISTANT_HORIZONS
 			distanceFade = saturate(distanceFade + float(dhTerrainMask));
 		#endif
@@ -312,7 +312,7 @@ void main() {
 					#if !defined SPECULAR_MAPPING
 						vec4 gbufferData1 = loadGbufferData1(screenTexel);
 					#endif
-					shadow *= oneMinus(gbufferData1.z);
+					shadow *= oms(gbufferData1.z);
 				#endif
 
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
@@ -326,7 +326,7 @@ void main() {
 				sceneOut += shadow * saturate(sunlightDiffuse);
 
 				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, saturate(NdotL), NdotH, material.roughness, material.f0);
-				specularHighlight *= oneMinus(material.metalness * oneMinus(albedo));
+				specularHighlight *= oms(material.metalness * oms(albedo));
 			}
 		}
 
@@ -363,14 +363,14 @@ void main() {
 			#ifndef SSPT_ENABLED
 				if (emissive.a * lightmap.x > 1e-5) {
 					lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-					sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
+					sceneOut += lightmap.x * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor * emissive.a;
 				}
 			#endif
 
 			sceneOut += emissive.rgb * EMISSIVE_BRIGHTNESS;
 		#elif !defined SSPT_ENABLED
 			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-			sceneOut += lightmap.x * (ao * oneMinus(lightmap.x) + lightmap.x) * blocklightColor;
+			sceneOut += lightmap.x * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor;
 		#endif
 
 		// Handheld light
@@ -380,7 +380,7 @@ void main() {
 				float attenuation = rcp(1.0 + worldDistSquared) * NdotL;
 				float irradiance = attenuation * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS;
 
-				sceneOut += irradiance * (ao - oneMinus(ao) * sqr(attenuation)) * blocklightColor;
+				sceneOut += irradiance * (ao - oms(ao) * sqr(attenuation)) * blocklightColor;
 			}
 		#endif
 
@@ -410,7 +410,7 @@ void main() {
 
 				// Metallic diffuse elimination
 				material.metalness *= 0.2 * lightmap.y + 0.8;
-				albedo *= oneMinus(material.metalness);
+				albedo *= oms(material.metalness);
 			} else
 		#endif
 		// Clear buffer

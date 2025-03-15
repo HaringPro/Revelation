@@ -83,7 +83,7 @@ vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither, in float searchS
 
 vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 	float NdotD = dot(normal, dir);
-	float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+	float k = 1.0 - eta * eta * oms(NdotD * NdotD);
 	if (k < 0.0) return vec3(0.0);
 
 	return dir * eta - normal * (sqrt(k) + NdotD * eta);
@@ -107,7 +107,7 @@ vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in float d
 		for (uint j = 0u; j < 3u; ++j) {
 			vec2 waveNormal = CalculateWaterNormal(waveCoord - lightOffset[j]).xy;
 
-			caustics[j] += exp2(-dotSelf(offset - waveNormal) * 1e3);
+			caustics[j] += exp2(-sdot(offset - waveNormal) * 1e3);
 		}
 	}
 
@@ -125,7 +125,7 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
 		vec2 waveNormal = CalculateWaterNormal(waveCoord - lightOffset).xy;
 
-		caustics += exp2(-dotSelf(offset - waveNormal) * 1e3);
+		caustics += exp2(-sdot(offset - waveNormal) * 1e3);
 	}
 
 	return sqr(max(caustics, 0.4) * 0.5 + 0.2);

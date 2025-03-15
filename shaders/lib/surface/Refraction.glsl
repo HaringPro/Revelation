@@ -4,7 +4,7 @@
 
 vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
     float NdotD = dot(normal, dir);
-    float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+    float k = 1.0 - eta * eta * oms(NdotD * NdotD);
     if (k < 0.0) return vec3(0.0);
 
     return dir * eta - normal * (sqrt(k) + NdotD * eta);
@@ -41,7 +41,7 @@ vec2 CalculateRefractedCoord(in bool waterMask, in vec3 viewPos, in vec3 viewNor
 	if (waterMask) {
 		vec2 waveNormal = gbufferData1.xy * 2.0 - 1.0;
 
-		waveNormal *= min(transparentDepth, 16.0) * inversesqrt(dotSelf(viewPos)) * (REFRACTION_STRENGTH * 0.1);
+		waveNormal *= min(transparentDepth, 16.0) * inversesqrt(sdot(viewPos)) * (REFRACTION_STRENGTH * 0.1);
 		refractedCoord = waveNormal + screenPos.xy;
 	} else {
 		vec3 refractedDir = fastRefract(normalize(viewPos), viewNormal, 1.0 / GLASS_REFRACT_IOR);

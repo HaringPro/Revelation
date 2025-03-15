@@ -20,7 +20,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, RAYTRACE_SAMPLES, screenPos);
 	if (hit) {
 		screenPos.xy *= viewPixelSize;
-		float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+		float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
 		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
@@ -44,7 +44,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			float NdotL = dot(normal, lightDir);
 			if (NdotL < 1e-6) return vec4(0.0);
 
-			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, uint(RAYTRACE_SAMPLES * oneMinus(material.roughness)), screenPos);
+			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, uint(RAYTRACE_SAMPLES * oms(material.roughness)), screenPos);
 
 			vec3 reflection;
 			if (hit) {
@@ -87,7 +87,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, RAYTRACE_SAMPLES, screenPos);
 			if (hit) {
 				screenPos.xy *= viewPixelSize;
-				float edgeFade = screenPos.x * screenPos.y * oneMinus(screenPos.x) * oneMinus(screenPos.y);
+				float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
 				edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 3e3;
 				reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 			}

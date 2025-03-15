@@ -27,7 +27,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 #if defined PASS_VOLUMETRIC_FOG
 	vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 		float NdotD = dot(normal, dir);
-		float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+		float k = 1.0 - eta * eta * oms(NdotD * NdotD);
 		if (k < 0.0) return vec3(0.0);
 
 		return dir * eta - normal * (sqrt(k) + NdotD * eta);
@@ -41,11 +41,11 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 
 		vec3 refractPos = vec3(0.0, 1.0, 0.0) - refractVector / refractVector.y;
 
-		return saturate(dotSelf(refractPos) * 32.0);
+		return saturate(sdot(refractPos) * 32.0);
 	}
 
 	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
-		float rayLength = dotSelf(worldPos);
+		float rayLength = sdot(worldPos);
 		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, far);
 

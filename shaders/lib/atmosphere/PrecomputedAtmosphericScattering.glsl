@@ -59,7 +59,7 @@ bool RayIntersectsGround(
 //======// Coord Transforms //====================================================================//
 
 float GetTextureCoordFromUnitRange(float x, float texture_size) {
-    return 0.5 / texture_size + x * oneMinus(1.0 / texture_size);
+    return 0.5 / texture_size + x * oms(1.0 / texture_size);
 }
 
 float GetCombinedTextureCoordFromUnitRange(float x, float original_texture_size, float combined_texture_size) {
@@ -249,7 +249,7 @@ vec3 GetCombinedScattering(
         vec3 uvw0 = vec3((tex_x + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
         vec3 uvw1 = vec3((tex_x + 1.0 + uvwz.y) / SCATTERING_TEXTURE_NU_SIZE, uvwz.z, uvwz.w);
 
-        vec4 combined_scattering = textureLod(COMBINED_TEXTURE_SAMPLER, uvw0, 0.0) * oneMinus(lerp) + textureLod(COMBINED_TEXTURE_SAMPLER, uvw1, 0.0) * lerp;
+        vec4 combined_scattering = textureLod(COMBINED_TEXTURE_SAMPLER, uvw0, 0.0) * oms(lerp) + textureLod(COMBINED_TEXTURE_SAMPLER, uvw1, 0.0) * lerp;
 
         vec3 scattering = vec3(combined_scattering);
         single_mie_scattering = GetExtrapolatedSingleMieScattering(combined_scattering);
@@ -344,7 +344,7 @@ vec3 GetSkyRadiance(
 
         rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie + ground) * oneMinus(wetness * 0.6);
+        return (rayleigh + mie + ground) * oms(wetness * 0.6);
 }
 
 vec3 GetSkyRadianceToPoint(
@@ -416,7 +416,7 @@ vec3 GetSkyRadianceToPoint(
 
         rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie) * oneMinus(wetness * 0.6);
+        return (rayleigh + mie) * oms(wetness * 0.6);
 }
 
 vec3 GetSunAndSkyIrradiance(

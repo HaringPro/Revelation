@@ -5,7 +5,7 @@
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
     #if 1
-	    vec3 coeff = oneMinus(0.75 * albedo) * (8.0 / sssAmount);
+	    vec3 coeff = oms(0.75 * albedo) * (8.0 / sssAmount);
     #else
 	    vec3 coeff = 2.5 / (albedo * sssAmount + 0.125);
     #endif

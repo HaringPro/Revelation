@@ -136,13 +136,13 @@ float RayleighPhase(in float mu) {
 // Henyey-Greenstein phase function (HG)
 float HenyeyGreensteinPhase(in float mu, in float g) {
 	float gg = g * g;
-    return uniformPhase * oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
+    return uniformPhase * oms(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
 }
 
 // Cornette-Shanks phase function (CS)
 float CornetteShanksPhase(in float mu, in float g) {
 	float gg = g * g;
-  	float pa = oneMinus(gg) * (1.5 / (2.0 + gg));
+  	float pa = oms(gg) * (1.5 / (2.0 + gg));
   	float pb = (1.0 + sqr(mu)) / pow1d5((1.0 + gg - 2.0 * g * mu));
 
   	return uniformPhase * pa * pb;
@@ -151,7 +151,7 @@ float CornetteShanksPhase(in float mu, in float g) {
 // Draine’s phase function
 float DrainePhase(in float mu, in float g, in float a) {
 	float gg = g * g;
-	float pa = oneMinus(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
+	float pa = oms(gg) / pow1d5(1.0 + gg - 2.0 * g * mu);
 	float pb = (1.0 + a * sqr(mu)) / (1.0 + a * (1.0 + 2.0 * gg) / 3.0);
 	return uniformPhase * pa * pb;
 }
@@ -168,13 +168,13 @@ float HG_DrainePhase(in float mu, in float d) {
 
 // Klein-Nishina phase function
 float KleinNishinaPhase(in float mu, in float e) {
-	return e / (TAU * (e * oneMinus(mu) + 1.0) * log(2.0 * e + 1.0));
+	return e / (TAU * (e * oms(mu) + 1.0) * log(2.0 * e + 1.0));
 }
 
 // CS phase function for clouds
 float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
 	vec3 gg = g * g;
-  	vec3 pa = oneMinus(gg) * (1.5 / (2.0 + gg));
+  	vec3 pa = oms(gg) * (1.5 / (2.0 + gg));
 	vec3 pb = (1.0 + sqr(mu)) / pow1d5(1.0 + gg - 2.0 * g * mu);
 
 	return uniformPhase * dot(pa * pb, w);
@@ -184,7 +184,7 @@ float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
 
 vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {
 	float PdotD = dot(pos, dir);
-	float delta = sqr(PdotD) - dotSelf(pos) + sqr(rad);
+	float delta = sqr(PdotD) - sdot(pos) + sqr(rad);
 
 	if (delta >= 0.0) {
 		delta *= inversesqrt(delta);
@@ -253,7 +253,7 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 
 //================================================================================================//
 
-const float scale = oneMinus(4.0 / skyViewRes.x);
+const float scale = oms(4.0 / skyViewRes.x);
 const float offset = 2.0 / float(skyViewRes.x);
 
 const vec2 scaleCoord = vec2(skyViewRes.x / (skyViewRes.x + 1.0), 0.5);

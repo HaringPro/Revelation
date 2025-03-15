@@ -181,7 +181,7 @@ void main() {
 				vec4 reflectionData = texelFetch(colortex1, refractedTexel, 0);
 
 				vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
-				reflectionData.rgb *= oneMinus(material.metalness * oneMinus(albedo));
+				reflectionData.rgb *= oms(material.metalness * oms(albedo));
 				sceneOut += reflectionData.rgb;
 			}
 		#endif
@@ -193,7 +193,7 @@ void main() {
 			#endif
 
 			if (isEyeInWater == 0) {
-				float density = saturate(1.0 - exp2(-pow8(dotSelf(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
+				float density = saturate(1.0 - exp2(-pow8(sdot(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
 				density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
 
 				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;

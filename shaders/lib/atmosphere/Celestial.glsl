@@ -19,7 +19,7 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
         // Physical sun model from http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
         const vec3 alpha = vec3(0.397, 0.503, 0.652);
 
-        float centerToEdge = saturate(oneMinus(cosTheta) / oneMinus(cosRadius));
+        float centerToEdge = saturate(oms(cosTheta) / oms(cosRadius));
         vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
         vec3 finalLuminance = sunIlluminance * factor;
 

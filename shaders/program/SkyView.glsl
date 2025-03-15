@@ -96,7 +96,7 @@ float CalculateAutoExposure() {
             vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
             float luminance = luminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
 
-            float weight = exp2(-0.5 * dotSelf(uv - 0.5));
+            float weight = exp2(-0.5 * sdot(uv - 0.5));
 
             #if EXPOSURE_MODE == AUTO_HISTOGRAM
                 // Build luminance bucket

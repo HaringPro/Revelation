@@ -54,7 +54,7 @@ uniform float frameTimeCounter;
 
 vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 	float NdotD = dot(normal, dir);
-	float k = 1.0 - eta * eta * oneMinus(NdotD * NdotD);
+	float k = 1.0 - eta * eta * oms(NdotD * NdotD);
 	if (k < 0.0) return vec3(0.0);
 
 	return dir * eta - normal * (sqrt(k) + NdotD * eta);
@@ -72,7 +72,7 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 		waveCoord += lightVector.xz / lightVector.y;
 		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
-		caustics += exp2(-dotSelf(offset - waveNormal) * 3e2);
+		caustics += exp2(-sdot(offset - waveNormal) * 3e2);
 	}
 
 	return saturate(caustics * 0.75);
@@ -101,7 +101,7 @@ void main() {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
 
-        if (albedo.a > oneMinus(r255)) {
+        if (albedo.a > oms(r255)) {
 			shadowcolor0Out = albedo.rgb * vectorData;
 		} else {
 			albedo.a = approxSqrt(approxSqrt(albedo.a));
