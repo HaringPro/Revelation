@@ -11,14 +11,7 @@ float Calculate3DNoise(in vec3 position) {
     return mix(rg.x, rg.y, b.z);
 }
 
-float bayer2(vec2 a)   { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
-
-float bayer4(vec2 a)   { return bayer2 (0.5   * a) * 0.25     + bayer2(a); }
-float bayer8(vec2 a)   { return bayer4 (0.5   * a) * 0.25     + bayer2(a); }
-float bayer16(vec2 a)  { return bayer4 (0.25  * a) * 0.0625   + bayer4(a); }
-float bayer32(vec2 a)  { return bayer8 (0.25  * a) * 0.0625   + bayer4(a); }
-float bayer64(vec2 a)  { return bayer8 (0.125 * a) * 0.015625 + bayer8(a); }
-float bayer128(vec2 a) { return bayer16(0.125 * a) * 0.015625 + bayer8(a); }
+//================================================================================================//
 
 float hash1(vec2 p) {
 	vec3 p3  = fract(vec3(p.xyx) * 443.897);
@@ -38,6 +31,8 @@ vec2 hash2(vec3 p3) {
 	return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+//================================================================================================//
+
 // A perfect integer hash function from https://nullprogram.com/blog/2018/07/31/
 uint triple32(uint x) {
 	// exact bias: 0.020888578919738908
@@ -54,37 +49,61 @@ uint triple32(uint x) {
 #if defined RANDOM_NOISE
 	uint randState = triple32(uint(gl_FragCoord.x + viewWidth * gl_FragCoord.y) + uint(viewWidth * viewHeight) * frameCounter);
 	uint RandNext() { return randState = triple32(randState); }
-	//#define RandNext2()  	uvec2(RandNext(), RandNext())
-	//#define RandNext3()  	uvec3(RandNext2(), RandNext())
-	//#define RandNext4()  	uvec4(RandNext3(), RandNext())
-	#define RandNextF()  	(float(RandNext()) / float(0xffffffffu))
-	#define RandNext2F() 	(vec2(RandNext()) / float(0xffffffffu))
-	//#define RandNext3F() 	(vec3(RandNext3()) / float(0xffffffffu))
-	//#define RandNext4F() 	(vec4(RandNext4()) / float(0xffffffffu))
+	#define RandNext2()  uvec2(RandNext(), RandNext())
+	#define RandNext3()  uvec3(RandNext2(), RandNext())
+	#define RandNext4()  uvec4(RandNext3(), RandNext())
+	#define RandNextF()  (float(RandNext()) / float(0xffffffffu))
+	#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
+	#define RandNext3F() (vec3(RandNext3()) / float(0xffffffffu))
+	#define RandNext4F() (vec4(RandNext4()) / float(0xffffffffu))
 #endif
 
+//================================================================================================//
+
 // Rn sequence from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-const float PHI2 = 1.32471795724;
-const float PHI3 = 1.22074408460;
+float R1(in int n) {
+    const float g = 1.6180339887498948482;
+    const float a = 1.0 / g;
+	return fract(0.5 + n * a);
+}
 
 float R1(in int n, in float seed) {
-	return fract(seed + n * PHI);
+    const float g = 1.6180339887498948482;
+    const float a = 1.0 / g;
+	return fract(seed + n * a);
+}
+
+vec2 R2(in int n) {
+    const float g = 1.32471795724474602596;
+    const vec2 a = 1.0 / vec2(g, g * g);
+	return fract(0.5 + n * a);
 }
 
 vec2 R2(in int n, in vec2 seed) {
-    const vec2 alpha = 1.0 / vec2(PHI2, PHI2 * PHI2);
-	return fract(seed + n * alpha);
+    const float g = 1.32471795724474602596;
+    const vec2 a = 1.0 / vec2(g, g * g);
+	return fract(seed + n * a);
+}
+
+vec3 R3(in int n) {
+    const float g = 1.22074408460575947536;
+    const vec3 a = 1.0 / vec3(g, g * g, g * g * g);
+	return fract(0.5 + n * a);
 }
 
 vec3 R3(in int n, in vec3 seed) {
-    const vec3 alpha = 1.0 / vec3(PHI3, PHI3 * PHI3, PHI3 * PHI3 * PHI3);
-	return fract(seed + n * alpha);
+    const float g = 1.22074408460575947536;
+    const vec3 a = 1.0 / vec3(g, g * g, g * g * g);
+	return fract(seed + n * a);
 }
 
 vec2 R2(in float n) {
-	const vec2 alpha = 1.0 / vec2(PHI2, PHI2 * PHI2);
-	return fract(0.5 + n * alpha);
+    const float g = 1.32471795724474602596;
+    const vec2 a = 1.0 / vec2(g, g * g);
+	return fract(0.5 + n * a);
 }
+
+//================================================================================================//
 
 float BlueNoise(in ivec2 texel) {
 	return texelFetch(noisetex, texel & 255, 0).a;
@@ -98,25 +117,45 @@ float BlueNoiseTemporal(in ivec2 texel) {
 	#endif
 }
 
+//================================================================================================//
+
+float bayer2(vec2 a) {
+    a = floor(a);
+    return fract(dot(a, vec2(0.5, a.y * 0.75)));
+}
+
+float bayer4(vec2 a)   { return bayer2 (0.5 * a) * 0.25 + bayer2(a); }
+float bayer8(vec2 a)   { return bayer4 (0.5 * a) * 0.25 + bayer2(a); }
+float bayer16(vec2 a)  { return bayer8 (0.5 * a) * 0.25 + bayer2(a); }
+float bayer32(vec2 a)  { return bayer16(0.5 * a) * 0.25 + bayer2(a); }
+float bayer64(vec2 a)  { return bayer32(0.5 * a) * 0.25 + bayer2(a); }
+float bayer128(vec2 a) { return bayer64(0.5 * a) * 0.25 + bayer2(a); }
+
 float Bayer64Temporal(in vec2 coord) {
 	#ifdef TAA_ENABLED
 		return R1(frameCounter % 256, bayer64(coord));
 	#else
-		return bayer8(0.125 * coord) * 0.015625 + bayer8(coord);
+		return bayer32(0.5 * a) * 0.25 + bayer2(a);
 	#endif
 }
 
+//================================================================================================//
+
+// Interleaved Gradient Noise
+// https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
+// https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
 float InterleavedGradientNoise(in vec2 coord) {
 	return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 }
 
 float InterleavedGradientNoiseTemporal(in vec2 coord) {
 	#ifdef TAA_ENABLED
-		return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y + 0.00623715 * (frameCounter & 63)));
-	#else
-		return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
+        coord += 5.588238 * float(frameCounter % 64);
 	#endif
+    return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 }
+
+//================================================================================================//
 
 // From Peter Shirley's 'Realistic Ray Tracing (2nd Edition)' book, pg. 60
 float TentFilter(in float x) {
@@ -126,6 +165,8 @@ float TentFilter(in float x) {
 vec2 TentFilter(in vec2 x) {
 	return vec2(TentFilter(x.x), TentFilter(x.y));
 }
+
+//================================================================================================//
 
 /***************************************************************************
  # Copyright (c) 2015-21, NVIDIA CORPORATION. All rights reserved.
@@ -171,8 +212,7 @@ vec2 TentFilter(in vec2 x) {
     \param[in] v 16-bit values in the LSBs of each component (higher bits don't matter).
     \return 32-bit value.
 */
-uint interleave_32bit(uvec2 v)
-{
+uint interleave_32bit(uvec2 v) {
     uint x = v.x & 0x0000ffffu;              // x = ---- ---- ---- ---- fedc ba98 7654 3210
     uint y = v.y & 0x0000ffffu;
 
@@ -200,13 +240,11 @@ uint interleave_32bit(uvec2 v)
     \param[in] iterations Number of iterations (the authors recommend 16 at a minimum).
     \return Two pseudorandom numbers (the block cipher of (v0,v1)).
 */
-uvec2 blockCipherTEA(uint v0, uint v1)
-{
+uvec2 blockCipherTEA(uint v0, uint v1) {
     uint sum = 0u;
     const uint delta = 0x9e3779b9u;
     const uint k[4] = uint[4](0xa341316cu, 0xc8013ea4u, 0xad90777du, 0x7e95761eu); // 128-bit key.
-    for (int i = 0; i < 16; i++)
-    {
+    for (uint i = 0u; i < 16u; ++i) {
         sum += delta;
         v0 += ((v1 << 4) + k[0]) ^ (v1 + sum) ^ ((v1 >> 5) + k[1]);
         v1 += ((v0 << 4) + k[2]) ^ (v0 + sum) ^ ((v0 >> 5) + k[3]);
@@ -214,7 +252,7 @@ uvec2 blockCipherTEA(uint v0, uint v1)
     return uvec2(v0, v1);
 }
 
-struct NoiseGenerator{
+struct NoiseGenerator {
     uint currentNum;
 };
 
