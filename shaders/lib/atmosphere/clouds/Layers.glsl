@@ -225,8 +225,8 @@ float CloudHighDensity(in vec2 rayPos) {
 
 float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	vec2 coverageMap = texture(noisetex, rayPos.xz * 1e-6 - cloudWindCu.xz * 2e-5).yz;
-	float coverage = coverageMap.x * coverageMap.y;
-	if (coverage < 1e-2) return 0.0;
+	float coverage = coverageMap.x * coverageMap.y + 0.125;
+	if (coverage < 0.25) return 0.0;
 
 	// Remap the height of the clouds to the range of [0, 1]
 	float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
@@ -239,7 +239,8 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	shape = remap(lowFreqNoises.x - 1.0, 1.0, shape);
 
 	// Coveage profile
-	shape = remap(1.0 - coverage * (2.0 + wetness * 0.5) * CLOUD_CU_COVERAGE, 1.0, shape);
+	coverage = saturate(coverage * (1.65 + wetness * 0.5) * CLOUD_CU_COVERAGE);
+	shape = 2.0 * coverage * remap(1.0 - coverage, 1.0, shape);
 
 	// Vertical profile
 	shape -= remap(0.2, 1.0, heightFraction) * 0.3;

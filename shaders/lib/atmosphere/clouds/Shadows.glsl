@@ -52,42 +52,55 @@ vec3 CloudShadowToWorldCoord(in vec2 rayPos) {
 float CalculateCloudShadows(in vec3 rayPos) {
 	rayPos += cameraPosition;
 
-	float cloudShadow = 1.0;
-	#if defined CLOUD_ALTOSTRATUS
-	{	// Start from the cloud intersection plane and move towards the light vector.
-		float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
-		if (shadowAltitude > 1e-6) {
-			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudMidDensity(planePos) * (5e2 * stratusExtinction));
-		}
-	}
-	#endif
-	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
-	{	// Start from the cloud intersection plane and move towards the light vector.
-		float shadowAltitude = CLOUD_HIGH_ALTITUDE - rayPos.y;
-		if (shadowAltitude > 1e-6) {
-			vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
-			cloudShadow = exp2(-CloudHighDensity(planePos) * (3e2 * cirrusExtinction));
-		}
-	}
-	#endif
+	float cloudShadow = 0.0;
+	// #if defined CLOUD_ALTOSTRATUS
+	// {	// Start from the cloud intersection plane and move towards the light vector.
+	// 	float shadowAltitude = CLOUD_MID_ALTITUDE - rayPos.y;
+	// 	if (shadowAltitude > 1e-6) {
+	// 		vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
+	// 		cloudShadow += CloudMidDensity(planePos) * (5e2 * stratusExtinction);
+	// 	}
+	// }
+	// #endif
+	// #if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
+	// {	// Start from the cloud intersection plane and move towards the light vector.
+	// 	float shadowAltitude = CLOUD_HIGH_ALTITUDE - rayPos.y;
+	// 	if (shadowAltitude > 1e-6) {
+	// 		vec2 planePos = rayPos.xz + cloudLightVector.xz * (shadowAltitude / cloudLightVector.y);
+	// 		cloudShadow += CloudHighDensity(planePos) * (3e2 * cirrusExtinction);
+	// 	}
+	// }
+	// #endif
 
 	#ifdef CLOUD_CUMULUS
+	const float transmittanceCoeff = 0.25 * CLOUD_CU_THICKNESS * cumulusExtinction;
+
 	{	// Start from the cloud intersection plane and move towards the light vector.
-		float shadowAltitude = (CLOUD_CU_ALTITUDE + 0.33 * CLOUD_CU_THICKNESS) - rayPos.y;
+		float shadowAltitude = (CLOUD_CU_ALTITUDE + 0.225 * CLOUD_CU_THICKNESS) - rayPos.y;
+		if (shadowAltitude > 1e-6) {
+			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
+			#if 1
+				cloudShadow += CloudVolumeSunlightOD(cloudPos, 0.5) * transmittanceCoeff;
+			#else
+				cloudShadow += CloudVolumeDensity(cloudPos, false) * transmittanceCoeff;
+			#endif
+		}
+	}
+	{	// Start from the cloud intersection plane and move towards the light vector.
+		float shadowAltitude = (CLOUD_CU_ALTITUDE + 0.275 * CLOUD_CU_THICKNESS) - rayPos.y;
 		if (shadowAltitude > 1e-6) {
 			vec3 cloudPos = rayPos + cloudLightVector * (shadowAltitude / cloudLightVector.y);
 			#if 0
-				cloudShadow *= exp2(-CloudVolumeSunlightOD(cloudPos, 0.5) * (0.2 * CLOUD_CU_THICKNESS * cumulusExtinction));
+				cloudShadow += CloudVolumeSunlightOD(cloudPos, 0.5) * transmittanceCoeff;
 			#else
-				cloudShadow *= exp2(-CloudVolumeDensity(cloudPos, true) * (0.2 * CLOUD_CU_THICKNESS * cumulusExtinction));
+				cloudShadow += CloudVolumeDensity(cloudPos, false) * transmittanceCoeff;
 			#endif
 		}
 	}
 	#endif
 
-	float timeFade = sqr(remap(0.08, 0.16, cloudLightVector.y));
-	cloudShadow = oneMinus(timeFade) + cloudShadow * timeFade;
+	float timeFade = sqr(remap(0.05, 0.1, cloudLightVector.y));
+	cloudShadow = oms(timeFade) + exp2(-cloudShadow) * timeFade;
 
 	return cloudShadow;
 }

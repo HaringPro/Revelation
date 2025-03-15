@@ -315,7 +315,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					// See slide 92 of [Schneider, 2017]
 					float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
-					float depthProbability = 0.05 + pow(stepDensity * 4.0, remap(heightFraction, 0.3, 0.85, 0.5, 2.0));
+					float depthProbability = 0.05 + pow(stepDensity * 5.0, remap(heightFraction, 0.25, 0.75, 0.5, 1.5));
 					float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.8);
 					float inScatterProbability = depthProbability * verticalProbability;
 
