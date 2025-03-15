@@ -233,7 +233,7 @@ uniform int dhRenderDistance;
 
 //======// Function //============================================================================//
 
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"

@@ -35,7 +35,7 @@ uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 
 //======// Function //============================================================================//
 
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmosphere/Global.glsl"

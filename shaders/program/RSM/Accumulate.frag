@@ -30,7 +30,7 @@ out vec4 indirectHistory;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in vec3 worldNormal) {

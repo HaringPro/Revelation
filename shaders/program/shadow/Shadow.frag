@@ -50,7 +50,7 @@ uniform float frameTimeCounter;
 //======// Function //============================================================================//
 
 #include "/lib/universal/Offset.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 
 vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 	float NdotD = dot(normal, dir);

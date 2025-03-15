@@ -32,7 +32,7 @@ layout (location = 2) out vec2 varianceMoments;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in float currViewDistance) {

@@ -56,7 +56,7 @@ flat in mat4x3 skySH;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Offset.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/Celestial.glsl"

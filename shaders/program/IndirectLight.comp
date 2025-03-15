@@ -30,7 +30,7 @@ writeonly restrict uniform image2D colorimg3;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmosphere/Global.glsl"

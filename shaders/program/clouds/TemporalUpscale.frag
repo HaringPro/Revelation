@@ -31,7 +31,7 @@ layout (location = 1) out vec4 cloudOut;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 vec4 textureCatmullRom(in sampler2D tex, in vec2 coord) {

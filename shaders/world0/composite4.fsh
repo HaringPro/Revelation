@@ -50,7 +50,7 @@ uniform usampler2D colortex11; // Volumetric Fog, linear depth
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/CommonFog.glsl"

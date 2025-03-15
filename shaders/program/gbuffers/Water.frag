@@ -47,7 +47,7 @@ flat in vec3 skyIlluminance;
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
-#include "/lib/universal/Noise.glsl"
+#include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
