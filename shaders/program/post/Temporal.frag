@@ -103,10 +103,13 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define currentLoad(offset) RGBtoYCoCgR(texelFetchOffset(colortex0, texel, 0, offset).rgb);
+#define currentLoad(offset) RGBtoYCoCgR(texelFetchOffset(colortex0, texel, 0, offset).rgb)
 
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
+
+#define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
+#define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
 
 vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     ivec2 texel = uvToTexel(screenCoord + taaOffset * 0.5);
@@ -114,7 +117,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     vec3 currentSample = loadSceneColor(texel);
     vec2 prevCoord = screenCoord - motionVector;
 
-    if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 0.0);
+    if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 1.0);
 
     vec3 sample0 = RGBtoYCoCgR(currentSample);
 
@@ -132,8 +135,8 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
 
     #ifdef TAA_VARIANCE_CLIPPING
         // Variance clip
-        vec3 clipAvg = (sample0 + sample1 + sample2 + sample3 + sample4 + sample5 + sample6 + sample7 + sample8) * rcp(9.0);
-        vec3 clipAvg2 = (sample0 * sample0 + sample1 * sample1 + sample2 * sample2 + sample3 * sample3 + sample4 * sample4 + sample5 * sample5 + sample6 * sample6 + sample7 * sample7 + sample8 * sample8) * rcp(9.0);
+        vec3 clipAvg = mean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+        vec3 clipAvg2 = sqrMean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
 
         vec3 variance = sqrt(abs(clipAvg2 - clipAvg * clipAvg)) * TAA_AGGRESSION;
         clipMin = min(clipAvg - variance, clipMin);
@@ -155,12 +158,12 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
     float blendWeight = clamp(++frameIndex, 1.0, TAA_MAX_ACCUM_FRAMES);
     blendWeight /= blendWeight + 1.0;
 
-    vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-    float offcenterWeight = sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.25 + 0.75;
+    vec2 pixelCenterDist = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+    float offcenterWeight = sqrt(pixelCenterDist.x * pixelCenterDist.y) * 0.25 + 0.75;
     blendWeight *= offcenterWeight;
 
     currentSample = mix(reinhard(currentSample), reinhard(prevSample), blendWeight);
-    return vec4(invReinhard(currentSample), frameIndex * offcenterWeight);
+    return vec4(invReinhard(currentSample), frameIndex);
 }
 
 //======// Main //================================================================================//

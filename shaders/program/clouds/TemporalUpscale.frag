@@ -140,6 +140,11 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
     return sum / weightSum;
 }
 
+#define currentLoad(offset) texelFetchOffset(colortex13, currTexel, 0, offset)
+
+#define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
+#define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
+
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
@@ -176,6 +181,35 @@ void main() {
 			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 
+			ivec2 currTexel = clamp(screenTexel / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
+			vec4 sample0 = texelFetch(colortex13, currTexel, 0);
+
+			// Variance clip
+			#ifdef CLOUD_VARIANCE_CLIP
+			float velocityWeight = sqr(cameraVelocity * rcp(frameTime));
+			velocityWeight /= 1.0 + velocityWeight;
+
+			if (velocityWeight > 0.125) {
+				vec4 sample1 = currentLoad(ivec2(-1,  1));
+				vec4 sample2 = currentLoad(ivec2( 0,  1));
+				vec4 sample3 = currentLoad(ivec2( 1,  1));
+				vec4 sample4 = currentLoad(ivec2(-1,  0));
+				vec4 sample5 = currentLoad(ivec2( 1,  0));
+				vec4 sample6 = currentLoad(ivec2(-1, -1));
+				vec4 sample7 = currentLoad(ivec2( 0, -1));
+				vec4 sample8 = currentLoad(ivec2( 1, -1));
+
+				vec4 clipAvg = mean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+				vec4 clipAvg2 = sqrMean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+
+				vec4 variance = sqrt(abs(clipAvg2 - clipAvg * clipAvg)) * 2.0;
+				vec4 clipMin = clipAvg - variance;
+				vec4 clipMax = clipAvg + variance;
+
+				prevData = mix(prevData, clamp(prevData, clipMin, clipMax), velocityWeight);
+			}
+			#endif
+
 			// Checkerboard upscaling
 			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
 			if (screenTexel % CLOUD_CBR_SCALE == offset) {
@@ -183,16 +217,16 @@ void main() {
 				float blendWeight = 1.0 - rcp(max(float(min(frameOut, CLOUD_MAX_ACCUM_FRAMES)) - cloudRenderArea, 1.0));
 
 				// Offcenter rejection
-				vec2 distToPixelCenter = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
-				blendWeight *= sqrt(distToPixelCenter.x * distToPixelCenter.y) * 0.75 + 0.25;
+				vec2 pixelCenterDist = 1.0 - abs(fract(prevCoord * viewSize) * 2.0 - 1.0);
+				blendWeight *= sqrt(pixelCenterDist.x * pixelCenterDist.y) * 0.5 + 0.5;
 
-				// Camera movement rejection
-				blendWeight *= exp2(-cameraVelocity * (4e-2 / frameTime)) * 0.75 + 0.25;
+				#ifndef CLOUD_VARIANCE_CLIP
+					// Camera movement rejection
+					blendWeight *= exp2(-cameraVelocity * (0.125 / frameTime)) * 0.75 + 0.25;
+				#endif
 
 				// Blend with current frame
-				ivec2 currTexel = clamp((screenTexel - offset) / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
-				cloudOut = mix(texelFetch(colortex13, currTexel, 0), prevData, saturate(blendWeight));
-
+				cloudOut = mix(sample0, prevData, saturate(blendWeight));
 			} else cloudOut = prevData;
 		}
 	} else {

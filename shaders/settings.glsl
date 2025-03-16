@@ -41,7 +41,8 @@ const float minCloudAbsorption	  = 0.02;
 
 	#define CLOUD_CBR_ENABLED // Enables cloud checkerboard rendering
 	#define CLOUD_CBR_SCALE 2 // Upscaling factor for cloud checkerboard rendering. [2 3 4]
-	#define CLOUD_MAX_ACCUM_FRAMES 40 // Maximum number of accumulated frames for cloud temporal upscaling. [16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128 132 136 140 144 148 152 156 160 164 168 172 176 180 184 188 192 196 200 204 208 212 216 220 224 228 232 236 240 244 248 252]
+	#define CLOUD_MAX_ACCUM_FRAMES 48 // Maximum number of accumulated frames for cloud temporal upscaling. [16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120 124 128 132 136 140 144 148 152 156 160 164 168 172 176 180 184 188 192 196 200 204 208 212 216 220 224 228 232 236 240 244 248 252]
+	// #define CLOUD_VARIANCE_CLIP // Enables variance clipping for cloud temporal upscaling
 
 	const int cloudRenderArea = CLOUD_CBR_SCALE * CLOUD_CBR_SCALE;
 
