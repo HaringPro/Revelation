@@ -339,9 +339,8 @@ void main() {
 				#ifdef AURORA
 					skylight += 0.2 * auroraShading;
 				#endif
-				skylight *= worldNormal.y * 2.0 + 3.0;
 
-				sceneOut += skylight * cube(lightmap.y) * ao;
+				sceneOut += skylight * PI * cube(lightmap.y) * ao;
 
 				// Bounced light
 			#ifndef RSM_ENABLED

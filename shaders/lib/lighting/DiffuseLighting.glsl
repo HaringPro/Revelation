@@ -17,10 +17,9 @@ vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float 
 }
 
 float CalculateApproxBouncedLight(in vec3 normal) {
-	vec3 bounceVector = normalize(worldLightVector + vec3(2.0, -6.0, 2.0));
-	float bounce = saturate(dot(normal, bounceVector) * 0.5 + 0.5);
+	float bounce = saturate(dot(worldLightVector, vec3(0.01, 0.03, 0.01)));
 
-	return approxSqrt(bounce) * 5e-2;
+	return approxSqrt(bounce * oms(0.8 * normal.y)) * (0.5 * rPI);
 }
 
 //================================================================================================//
