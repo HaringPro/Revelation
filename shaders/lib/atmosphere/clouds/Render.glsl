@@ -60,7 +60,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CU_ALTITUDE + 40.0)) * cumulusExtinction * 0.1;
+    return max0(rayPos.y - (CLOUD_CU_ALTITUDE + 50.0)) * cumulusExtinction * 0.125;
 }
 
 //================================================================================================//
@@ -92,7 +92,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		float scatteringSun = 0.0; {
 			float falloff = cloudMsFalloff;
 
-			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
+			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= 0.5) {
 				scatteringSun += exp2(opticalDepthSun) * phases[ms];
 				opticalDepthSun *= falloff;
 			}
@@ -159,7 +159,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		float scatteringSun = 0.0; {
 			float falloff = cloudMsFalloff;
 
-			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
+			for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= 0.5) {
 				scatteringSun += exp2(opticalDepthSun) * phases[ms];
 				opticalDepthSun *= falloff;
 			}
@@ -206,9 +206,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 	// Compute phases for clouds' sunlight multi-scattering
 	float phases[cloudMsCount]; {
 		float falloff = cloudMsFalloff;
-		phases[0] = MiePhaseClouds(LdotV, vec3(0.65, -0.4, 0.9), vec3(0.65, 0.25, 0.1));
+		phases[0] = MiePhaseClouds(LdotV, vec3(0.7, -0.4, 0.9), vec3(0.65, 0.25, 0.1));
 
-		for (uint ms = 1u; ms < cloudMsCount; ++ms, falloff *= falloff) {
+		for (uint ms = 1u; ms < cloudMsCount; ++ms, falloff *= 0.5) {
 			phases[ms] = mix(uniformPhase, phases[0], falloff) * falloff;
 		}
 	}
@@ -289,7 +289,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float scatteringSun = 0.0; {
 						float falloff = cloudMsFalloff;
 
-						for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= falloff) {
+						for (uint ms = 0u; ms < cloudMsCount; ++ms, falloff *= 0.5) {
 							scatteringSun += exp2(opticalDepthSun) * phases[ms];
 							opticalDepthSun *= falloff;
 						}
@@ -303,7 +303,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute the optical depth of ground light through clouds
 					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);
-					float scatteringGround = fastExp(-opticalDepthGround);
+					float scatteringGround = exp2(-(opticalDepthGround * rLOG2 + 0.5));
 
 					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
 										   scatteringSky + scatteringGround);

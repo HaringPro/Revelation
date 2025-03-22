@@ -58,12 +58,10 @@ const float cloudMsFalloff 			= CLOUD_MS_FALLOFF;
 const float cumulusMaxAltitude 		= CLOUD_CU_ALTITUDE + CLOUD_CU_THICKNESS;
 const float cumulusTopOffset        = 500.0;
 
-const float cumulusExtinction 		= 0.12;
-// const float cumulusScattering 	= 0.11;
+const float cumulusExtinction 		= 0.11;
 
-const float stratusExtinction 		= 0.1;
-const float cirrusExtinction 		= 0.08;
-// const float cirrusScattering 	= 0.1;
+const float stratusExtinction 		= 0.09;
+const float cirrusExtinction 		= 0.07;
 
 uniform sampler3D depthtex2;    // 3D perlin-worley & worley noise texture
 uniform sampler3D colortex15;   // 3D worley noise texture

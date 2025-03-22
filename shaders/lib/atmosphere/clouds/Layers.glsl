@@ -260,7 +260,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	}
 	shape = remap(detailNoise * 0.15, 0.25, shape);
 
-	float densityProfile = saturate(heightFraction * 0.875 + 0.125);
+	float densityProfile = saturate(heightFraction * 1.35 + 0.15);
 	return shape * densityProfile;
 }
 
