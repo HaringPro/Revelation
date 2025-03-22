@@ -60,23 +60,17 @@ vec3 invReinhard(in vec3 sdr) {
 }
 
 // https://en.wikipedia.org/wiki/YCoCg
-vec3 RGBtoYCoCgR(in vec3 rgbColor) {
-    vec3 YCoCgRColor;
-
-    YCoCgRColor.y = rgbColor.r - rgbColor.b;
-    float temp = rgbColor.b + YCoCgRColor.y * 0.5;
-    YCoCgRColor.z = rgbColor.g - temp;
-    YCoCgRColor.x = temp + YCoCgRColor.z * 0.5;
-
-    return YCoCgRColor;
+vec3 sRGBToYCoCg(in vec3 rgb) {
+    return mat3(
+        0.25,  0.50, -0.25,
+        0.50,  0.00,  0.50,
+        0.25, -0.50, -0.25
+    ) * rgb;
 }
-vec3 YCoCgRtoRGB(in vec3 YCoCgRColor) {
-    vec3 rgbColor;
-
-    float temp = YCoCgRColor.x - YCoCgRColor.z * 0.5;
-    rgbColor.g = YCoCgRColor.z + temp;
-    rgbColor.b = temp - YCoCgRColor.y * 0.5;
-    rgbColor.r = rgbColor.b + YCoCgRColor.y;
-
-    return rgbColor;
+vec3 YCoCgToSRGB(in vec3 YCoCg) {
+    return mat3(
+         1.0,  1.0,  1.0,
+         1.0,  0.0, -1.0,
+        -1.0,  1.0, -1.0
+    ) * YCoCg;
 }

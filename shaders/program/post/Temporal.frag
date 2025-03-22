@@ -103,7 +103,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
     return color / (l0 + l1 + l2 + l3 + l4);
 }
 
-#define currentLoad(offset) RGBtoYCoCgR(texelFetchOffset(colortex0, texel, 0, offset).rgb)
+#define currentLoad(offset) sRGBToYCoCg(texelFetchOffset(colortex0, texel, 0, offset).rgb)
 
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
@@ -119,8 +119,7 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
 
     if (saturate(prevCoord) != prevCoord) return vec4(currentSample, 1.0);
 
-    vec3 sample0 = RGBtoYCoCgR(currentSample);
-
+    vec3 sample0 = sRGBToYCoCg(currentSample);
     vec3 sample1 = currentLoad(ivec2(-1,  1));
     vec3 sample2 = currentLoad(ivec2( 0,  1));
     vec3 sample3 = currentLoad(ivec2( 1,  1));
@@ -149,9 +148,9 @@ vec4 CalculateTAA(in vec2 screenCoord, in vec2 motionVector) {
         vec3 prevSample = texture(colortex1, prevCoord).rgb;
     #endif
 
-    prevSample = RGBtoYCoCgR(prevSample);
+    prevSample = sRGBToYCoCg(prevSample);
     prevSample = clipAABB(clipMin, clipMax, prevSample);
-    prevSample = YCoCgRtoRGB(prevSample);
+    prevSample = YCoCgToSRGB(prevSample);
 
     float frameIndex = texture(colortex1, prevCoord).a;
 

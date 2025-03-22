@@ -1,7 +1,7 @@
 //======// Constants //===========================================================================//
 
-const float min_ev = -8.48;
-const float max_ev = 5.52;
+const float min_ev = -9.5;
+const float max_ev = 5.5;
 const float middle_grey = 0.18;
 
 const float slope = 2.0;
@@ -41,7 +41,7 @@ const vec3 rotation = vec3(2.0, -1.0, -3.0);
 //   https://github.com/sobotka/AgX
 
 // 0: Default, 1: Golden, 2: Punchy, 3: Custom
-#define AGX_LOOK 0 // [0 1 2 3]
+#define AGX_LOOK 3 // [0 1 2 3]
 
 // Mean error^2: 3.6705141e-06
 vec3 agxDefaultContrastApprox_6th(vec3 x) {
@@ -133,8 +133,8 @@ vec3 agxLook(vec3 val) {
     #else
         // Custom
         const vec3 slope = vec3(1.0);
-        const vec3 power = vec3(1.3);
-        const float sat = 1.15;
+        const vec3 power = vec3(1.25);
+        const float sat = 1.25;
     #endif
 
     // ASC CDL
