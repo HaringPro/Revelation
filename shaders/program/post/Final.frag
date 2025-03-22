@@ -34,6 +34,7 @@ uniform sampler2D colortex4; // Bloom tiles
 // uniform sampler2D colortex6;
 // uniform usampler2D colortex7;
 uniform sampler2D colortex8; // LDR scene image
+uniform sampler2D colortex10; // Cloud shadow map
 #ifdef FSR_ENABLED
 	uniform sampler2D colortex15; // FSR EASU output
 #endif
@@ -175,6 +176,12 @@ void main() {
 					finalOut = vec3(1.0);
 				}
 			}
+		}
+	#endif
+
+	#ifdef DEBUG_CLOUD_SHADOWS
+		if (min(screenTexel, textureSize(colortex10, 0)) == screenTexel) {
+			finalOut = vec3(texelFetch(colortex10, screenTexel, 0).a);
 		}
 	#endif
 
