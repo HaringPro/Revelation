@@ -24,23 +24,12 @@ writeonly restrict uniform image2D colorimg3;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D depthtex0;
-
-uniform sampler2D colortex13; // Previous indirect light
-
-uniform mat4 gbufferModelViewInverse;
-uniform mat4 gbufferProjectionInverse;
-
-uniform vec2 viewPixelSize;
-uniform vec2 viewSize;
-uniform vec2 halfViewSize;
-uniform vec2 halfViewEnd;
-
-uniform int frameCounter;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
 #include "/lib/universal/Offset.glsl"
+#include "/lib/universal/Random.glsl"
 
 const uint padRadius = 2;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
@@ -48,8 +37,8 @@ const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 shared uvec4 sharedData[sharedSize.y][sharedSize.x];
 
 uvec4 PackupSharedData(in ivec2 texel, in ivec2 offset) {
-    vec3 sharedIrradiance = texelFetch(colortex13, texel, 0).rgb;
-    vec4 sharedNormalDepth = texelFetch(colortex13, texel + offset, 0);
+    vec3 sharedIrradiance = texelFetch(colortex2, texel, 0).rgb;
+    vec4 sharedNormalDepth = texelFetch(colortex2, texel + offset, 0);
 
     return uvec4(
         packUnorm2x16(sharedIrradiance.xy),
@@ -109,26 +98,11 @@ vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
-uint triple32(uint x) {
-    // https://nullprogram.com/blog/2018/07/31/
-    x ^= x >> 17;
-    x *= 0xed5ad4bbu;
-    x ^= x >> 11;
-    x *= 0xac4c1b51u;
-    x ^= x >> 15;
-    x *= 0x31848babu;
-    x ^= x >> 14;
-    return x;
-}
-
-uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
-uint RandNext() { return randState = triple32(randState); }
-#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
-
 //======// Main //================================================================================//
 void main() {
     SharedPreload();
 
+    ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
     uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
 
     vec3 indirectData;
@@ -141,7 +115,7 @@ void main() {
     float sigmaZ = -4.0 * rLOG2 * abs(dot(normalDepthData.xyz, worldDir));
 
     float sumWeight = 1.0;
-    sharedTexel += ivec2(2.0 * RandNext2F() - 1.0);
+	sharedTexel += ivec2((R2(BlueNoiseTemporal(screenTexel))) * 2.0 - 1.0);
 
     for (uint i = 0u; i < 16u; ++i) {
         uvec2 sampleSharedTexel = sharedTexel + offset4x4[i];
@@ -150,7 +124,7 @@ void main() {
         vec4 sampleNormalDepth;
         UnpackSharedData(sampleSharedTexel, sampleIrradiance, sampleNormalDepth);
 
-        float weight = exp2(-0.1 * sdot(offset4x4[i]));
+        float weight = exp2(-0.125 * sdot(offset4x4[i]));
         weight *= exp2(abs(sampleNormalDepth.w - normalDepthData.w) * sigmaZ); // Distance weight
         weight *= pow32(saturate(dot(sampleNormalDepth.xyz, normalDepthData.xyz))); // Normal weight
 
@@ -159,5 +133,5 @@ void main() {
     }
 
     indirectData *= rcp(sumWeight);
-    imageStore(colorimg3, ivec2(gl_GlobalInvocationID.xy), vec4(indirectData, 1.0));
+    imageStore(colorimg3, screenTexel, vec4(indirectData, 1.0));
 }

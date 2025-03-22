@@ -19,7 +19,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 3,13,14 */
+/* RENDERTARGETS: 3,2,14 */
 layout (location = 0) out vec4 indirectCurrent;
 layout (location = 1) out vec4 indirectHistory;
 layout (location = 2) out vec2 varianceMoments;
@@ -92,12 +92,12 @@ void TemporalFilter(in ivec2 texel, in vec2 prevCoord, in vec3 worldNormal, in f
         for (uint i = 0u; i < 4u; ++i) {
             ivec2 sampleTexel = floorTexel + offset2x2[i];
             if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
-                vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
+                vec4 prevData = texelFetch(colortex2, sampleTexel + offsetToBR, 0);
 
                 if (abs((currViewDistance - prevData.w) - cameraVelocity) < 0.1 * abs(currViewDistance)) {
                     float weight = bilinearWeight[i] * saturate(dot(prevData.xyz, worldNormal) * 8.0 - 7.0);
 
-                    prevDiffuse += texelFetch(colortex13, sampleTexel, 0) * weight;
+                    prevDiffuse += texelFetch(colortex2, sampleTexel, 0) * weight;
                     prevMoments += texelFetch(colortex14, sampleTexel, 0).xy * weight;
                     sumWeight += weight;
                 }

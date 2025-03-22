@@ -16,7 +16,7 @@
 			ivec2 sampleTexel = clamp(texel + offset5x5N[i], ivec2(0), texelEnd);
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
 
-			vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
+			vec4 prevData = texelFetch(colortex2, sampleTexel + offsetToBR, 0);
 
 			float weight = pow32(saturate(dot(prevData.rgb, worldNormal)));
 			weight *= exp2(distance(prevData.a, viewDistance) * sigmaZ + abs(centerLuma - luminance(sampleLight.rgb)) * variancePhi);

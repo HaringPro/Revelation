@@ -19,7 +19,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2,9 */
+/* RENDERTARGETS: 13,9 */
 layout (location = 0) out uint frameOut;
 layout (location = 1) out vec4 cloudOut;
 
@@ -140,7 +140,7 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
     return sum / weightSum;
 }
 
-#define currentLoad(offset) texelFetchOffset(colortex13, currTexel, 0, offset)
+#define currentLoad(offset) texelFetchOffset(colortex2, currTexel, 0, offset)
 
 #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
 #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
@@ -162,7 +162,7 @@ void main() {
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 		vec2 prevCoord = Reproject(vec3(screenCoord, 1.0)).xy;
-		uint frameIndex = texture(colortex2, prevCoord).x;
+		uint frameIndex = texture(colortex13, prevCoord).x;
 
 		bool disocclusion = worldTimeChanged;
 		// Offscreen invalidation
@@ -175,14 +175,14 @@ void main() {
 		if (disocclusion) {
 			const float currScale = rcp(float(CLOUD_CBR_SCALE));
 			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
-			cloudOut = textureBicubic(colortex13, currCoord);
+			cloudOut = textureBicubic(colortex2, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
 			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 
 			ivec2 currTexel = clamp(screenTexel / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
-			vec4 sample0 = texelFetch(colortex13, currTexel, 0);
+			vec4 sample0 = texelFetch(colortex2, currTexel, 0);
 
 			// Variance clip
 			#ifdef CLOUD_VARIANCE_CLIP

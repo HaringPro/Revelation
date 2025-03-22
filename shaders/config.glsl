@@ -12,7 +12,7 @@
 
 	const int 	colortex0Format 			= R11F_G11F_B10F;
 	const int 	colortex1Format 			= RGBA16F;
-	const int 	colortex2Format 			= R8I;
+	const int 	colortex2Format 			= RGBA16F;
 	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
 	const int 	colortex5Format 			= R11F_G11F_B10F;
@@ -23,7 +23,7 @@
 	const int 	colortex10Format 			= RGBA8;
 	const int 	colortex11Format 			= RGBA32UI;
 	const int 	colortex12Format 			= ;
-	const int 	colortex13Format 			= RGBA16F;
+	const int 	colortex13Format 			= R8I;
 	const int 	colortex14Format 			= RG16;
 	const int 	colortex15Format 			= RGB16;
 
@@ -62,7 +62,7 @@
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history, global exposure | Specular & diffuse lighting of glass
-	|	colortex2	|   r8i	        	|	Full res  	|	Cloud frame index
+	|	colortex2	|   rgba16f         |	Full res	|	Cloud data -> Indirect diffuse lighting history, frame index
 	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse lighting -> Motion vector
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history, global illuminances -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT
@@ -73,7 +73,7 @@
 	|	colortex10	|   rgba8           |	256, 384   	|	Transmittance-View LUT, cloud shadow map
 	|	colortex11	|   rgba32ui        |	Half res  	|	Volumetric fog, linear depth
 	|	colortex12	|               	|	  			|	Unused
-	|	colortex13	|   rgba16f         |	Full res	|	Cloud data -> Indirect diffuse lighting history, frame index
+	|	colortex13	|   r8i	        	|	Full res  	|	Cloud frame index
 	|	colortex14	|   rg16            |	Full res	|	Variance history
 	|	colortex15	|   rgb16           |	Double res	|	FSR EASU output
 

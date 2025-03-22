@@ -19,7 +19,7 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 13 */
+/* RENDERTARGETS: 2 */
 out vec4 indirectHistory;
 
 //======// Uniform //=============================================================================//
@@ -59,14 +59,14 @@ void TemporalFilter(in ivec2 screenTexel, in vec2 prevCoord, in vec3 viewPos, in
     for (uint i = 0u; i < 4u; ++i) {
         ivec2 sampleTexel = floorTexel + offset2x2[i];
         if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
-            vec4 prevData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
+            vec4 prevData = texelFetch(colortex2, sampleTexel + offsetToBR, 0);
 
             float diffZ = abs((currViewDistance - prevData.w) - cameraVelocity) / abs(currViewDistance);
             float diffN = dot(prevData.xyz, worldNormal);
             if (diffZ < 0.1 && diffN > 0.5) {
                 float weight = bilinearWeight[i];
 
-                prevLight += texelFetch(colortex13, sampleTexel, 0) * weight;
+                prevLight += texelFetch(colortex2, sampleTexel, 0) * weight;
                 sumWeight += weight;
             }
         }

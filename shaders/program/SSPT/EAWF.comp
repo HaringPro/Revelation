@@ -93,7 +93,7 @@ void main() {
 	ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
 	ivec2 texelEnd = ivec2(halfViewEnd) - 1;
 
-	vec4 normalDepthData = texelFetch(colortex13, texel + offsetToBR, 0);
+	vec4 normalDepthData = texelFetch(colortex2, texel + offsetToBR, 0);
 	// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 
 	const ivec2 offset[8] = {
@@ -125,7 +125,7 @@ void main() {
 	vec4 filteredColVar = imageLoad(colorimg3, texel);
 	float centerLuma = luminance(filteredColVar.rgb);
 
-	float frameIndex = texelFetch(colortex13, texel, 0).a;
+	float frameIndex = texelFetch(colortex2, texel, 0).a;
 	float frameCurve = curve(saturate(frameIndex * 0.125));
 
 	float variance = CalculateVariance(ivec2(gl_LocalInvocationID.xy + padRadius));
@@ -141,7 +141,7 @@ void main() {
 
 	for (uint i = 0u; i < 8u; ++i) {
 		ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(1), texelEnd);
-		vec4 sampleData = texelFetch(colortex13, sampleTexel + offsetToBR, 0);
+		vec4 sampleData = texelFetch(colortex2, sampleTexel + offsetToBR, 0);
 
 		vec4 sampleColVar = imageLoad(colorimg3, sampleTexel);
 		float sampleLuma = luminance(sampleColVar.rgb);
