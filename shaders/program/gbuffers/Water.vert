@@ -35,7 +35,7 @@ attribute vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex5;
+uniform sampler2D colortex4; // Global illuminances
 
 uniform vec3 chunkOffset;
 

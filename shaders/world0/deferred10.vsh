@@ -31,7 +31,8 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex5;
+uniform sampler2D colortex4; // Global illuminances
+uniform sampler2D colortex5; // Sky-View LUT
 
 uniform int moonPhase;
 

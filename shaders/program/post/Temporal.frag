@@ -11,6 +11,8 @@
 --------------------------------------------------------------------------------
 */
 
+const bool colortex0MipmapEnabled = true;
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -25,6 +27,10 @@ layout (location = 1) out vec3 clearOut;
 /* RENDERTARGETS: 1,4,3 */
 layout (location = 2) out vec2 motionVectorOut;
 #endif
+
+//======// Input //===============================================================================//
+
+flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
@@ -190,4 +196,7 @@ void main() {
     #else
         temporalOut = vec4(loadSceneColor(screenTexel), 1.0/*  + texture(colortex1, screenCoord - motionVector).a */);
     #endif
+
+    // Store the global exposure in the bottom-left corner of the history buffer
+    temporalOut.a = screenTexel == ivec2(0) ? exposure : temporalOut.a;
 }

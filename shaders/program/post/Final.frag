@@ -154,7 +154,7 @@ void main() {
 	#endif
 
 	#ifdef DEBUG_CLOUD_SHADOWS
-		if (min(screenTexel, textureSize(colortex10, 0)) == screenTexel) {
+		if (all(lessThan(screenTexel, textureSize(colortex10, 0)))) {
 			finalOut = vec3(texelFetch(colortex10, screenTexel, 0).a);
 		}
 	#endif

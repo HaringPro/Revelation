@@ -26,7 +26,7 @@ in vec3 vaPosition;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex5;
+uniform sampler2D colortex4; // Global illuminances
 
 //======// Main //================================================================================//
 void main() {

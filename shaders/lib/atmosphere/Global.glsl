@@ -256,11 +256,9 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 const float scale = oms(4.0 / skyViewRes.x);
 const float offset = 2.0 / float(skyViewRes.x);
 
-const vec2 scaleCoord = vec2(skyViewRes.x / (skyViewRes.x + 1.0), 0.5);
-
 // Reference: https://sebh.github.io/publications/egsr2020.pdf
 vec3 ToSkyViewLutParams(in vec2 coord) {
-	coord *= rcp(scaleCoord);
+	coord.y *= 2.0;
 
 	// From unit range
 	coord.x = fract((coord.x - offset) * rcp(scale));
@@ -296,5 +294,5 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	// To unit range
 	coord.x = coord.x * scale + offset;
 
-	return saturate(coord * scaleCoord);
+	return saturate(coord * vec2(1.0, 0.5));
 }

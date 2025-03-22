@@ -32,21 +32,15 @@
 /* RENDERTARGETS: 8 */
 layout (location = 0) out vec3 LDRImageOut;
 
-//======// Input //===============================================================================//
-
-flat in float exposure;
-
 //======// Uniform //=============================================================================//
 
-#ifdef MOTION_BLUR
-	uniform sampler2D colortex0; // Motion blur output
-#else
-	uniform sampler2D colortex1; // TAA output
-#endif
+uniform sampler2D colortex0; // Motion blur output
+uniform sampler2D colortex1; // TAA output
 uniform sampler2D colortex4; // Bloom tiles
 uniform sampler2D colortex5; // Sky-View LUT
 uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex8; // Bloomy fog transmittance
+uniform sampler2D colortex10; // Transmittance-View LUT
 
 uniform float aspectRatio;
 uniform float rainStrength;
@@ -65,7 +59,7 @@ const vec2 bloomTileOffset[7] = vec2[7](
 	vec2(0.3281, 0.6563)
 );
 
-void CombineBloomAndFog(inout vec3 scene, in ivec2 texel) {
+void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	vec3 bloomData = vec3(0.0);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
@@ -187,6 +181,7 @@ vec3 Lottes(in vec3 x) {
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+	float exposure = loadExposure();
 
 	#ifdef MOTION_BLUR
 		vec3 HDRImage = texelFetch(colortex0, screenTexel, 0).rgb;
@@ -196,7 +191,7 @@ void main() {
 
 	// Bloom and fog
 	#ifdef BLOOM_ENABLED
-		CombineBloomAndFog(HDRImage, screenTexel);
+		CombineBloomAndFog(HDRImage, screenTexel, exposure);
 	#endif
 
 	// Purkinje shift
@@ -204,7 +199,7 @@ void main() {
 		HDRImage = PurkinjeShift(HDRImage);
 	#endif
 
-	// Exposure
+	// Apply exposure
 	HDRImage *= exposure;
 
 	// Vignetting
@@ -216,7 +211,11 @@ void main() {
 
 	// Debug sky-view
 	#ifdef DEBUG_SKYVIEW
-		HDRImage = texelFetch(colortex5, screenTexel >> 1, 0).rgb;
+		if (all(lessThan(screenTexel, ivec2(skyViewRes.x, skyViewRes.y << 1)))) {
+			HDRImage = texelFetch(colortex5, screenTexel, 0).rgb;
+		} else if (all(lessThan(screenTexel, ivec2(skyViewRes.x, skyViewRes.y) << 1))) {
+			HDRImage = texelFetch(colortex10, screenTexel - ivec2(skyViewRes.x, 0), 0).rgb;
+		}
 	#endif
 
 	// Tone mapping

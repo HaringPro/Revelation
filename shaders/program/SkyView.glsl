@@ -6,9 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass:
-    - Vertex Shader:   Compute illuminances and exposure
-    - Fragment Shader: Compute Sky-View LUT, Transmittance-View LUT, cloud shadows, store illuminances and exposure
+    Pass: Compute Sky-View LUT, Transmittance-View LUT, cloud shadows
 
 --------------------------------------------------------------------------------
 */
@@ -26,8 +24,6 @@ noperspective out vec2 screenCoord;
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
-flat out float exposure;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -35,148 +31,15 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler3D colortex0; // Combined atmospheric LUT
-uniform sampler2D colortex1; // Scene history
-uniform sampler2D colortex5; // Previous exposure
-
-uniform int moonPhase;
-
-uniform float frameTime;
-
-uniform float eyeAltitude;
-uniform float nightVision;
-uniform float wetness;
-
-uniform vec2 viewPixelSize;
-uniform vec2 viewSize;
-
-uniform vec3 worldSunVector;
-uniform vec3 lightningShading;
-
-//======// Function //============================================================================//
-
-#ifdef AURORA
-	float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
-	vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
-#endif
-
-#include "/lib/atmosphere/Global.glsl"
-#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
-
-const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
-const float autoEvRangeInv = 1.0 / autoEvRange;
-
-float histogramLumToBin(in float lum) {
-    return saturate(log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv));
-}
-
-float histogramBinToLum(in float bin) {
-    return exp2(bin * (autoEvRange / HISTOGRAM_BIN_COUNT) + AUTO_EV_MIN);
-}
-
-float CalculateAutoExposure() {
-    const float tileSize = exp2(-float(AUTO_EXPOSURE_LOD));
-
-	ivec2 tileSteps = ivec2(viewSize * tileSize);
-    vec2 pixelSize = 1.0 / vec2(tileSteps);
-
-    #if EXPOSURE_MODE == AUTO_HISTOGRAM
-        float lumBucket[HISTOGRAM_BIN_COUNT];
-
-        // Initialize luminance bucket
-        for (uint i = 0u; i < HISTOGRAM_BIN_COUNT; ++i) lumBucket[i] = 0.0;
-    #endif
-
-    float sum = 0.0;
-    float sumWeight = 0.0;
-
-    // Compute luminance for each tile
-	for (uint x = 0u; x < tileSteps.x; ++x) {
-        for (uint y = 0u; y < tileSteps.y; ++y) {
-            vec2 uv = (vec2(x, y) + 0.5) * pixelSize;
-            float luminance = luminance(textureLod(colortex1, uv, AUTO_EXPOSURE_LOD).rgb);
-
-            float weight = exp2(-0.5 * sdot(uv - 0.5));
-
-            #if EXPOSURE_MODE == AUTO_HISTOGRAM
-                // Build luminance bucket
-                float bin = histogramLumToBin(luminance);
-                lumBucket[uint(bin * float(HISTOGRAM_BIN_COUNT - 1u))] += weight;
-            #else
-                sum += clamp(log2(luminance), AUTO_EV_MIN, AUTO_EV_MAX) * weight;
-            #endif
-            sumWeight += weight;
-        }
-	}
-
-    #if EXPOSURE_MODE == AUTO_HISTOGRAM
-        float norm = 1.0 / sumWeight;
-
-        float prefix = 0.0;
-        sum = sumWeight = 0.0;
-
-        uint i = 0u;
-        for (; i < HISTOGRAM_BIN_COUNT; ++i) {
-            prefix += lumBucket[i] * norm;
-            if (prefix > HISTOGRAM_LOWER_BOUND) {
-                float weight = prefix - HISTOGRAM_LOWER_BOUND;
-                sum = float(i) * weight;
-                sumWeight = weight;
-                break;
-            }
-        }
-        for (; i < HISTOGRAM_BIN_COUNT; ++i) {
-            prefix += lumBucket[i] * norm;
-            if (prefix > HISTOGRAM_UPPER_BOUND) {
-                float weight = prefix - HISTOGRAM_UPPER_BOUND;
-                sum += float(i) * weight;
-                sumWeight += weight;
-                break;
-            }
-        }
-
-        sum = histogramBinToLum(sum / sumWeight);
-    #else
-        sum = exp2(sum / sumWeight);
-    #endif
-
-	return sum;
-}
+uniform sampler2D colortex4; // Global illuminances
 
 //======// Main //================================================================================//
 void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	screenCoord = vaUV0;
 
-	vec3 camera = vec3(0.0, viewerHeight, 0.0);
-	vec3 sunIrradiance, moonIrradiance;
-	skyIlluminance = GetSunAndSkyIrradiance(camera, worldSunVector, sunIrradiance, moonIrradiance);
-
-    // Fix the sunlight misalignment at sunrise and sunset
-	sunIrradiance *= 1.0 - curve(saturate(1.0 - worldSunVector.y * 32.0));
-
-    // Irradiance to illuminance
-	directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
-
-    skyIlluminance += lightningShading * 4e-3;
-	#ifdef AURORA
-		skyIlluminance += auroraShading;
-	#endif
-
- 	#if EXPOSURE_MODE == MANUAL
-		exposure = exp2(-MANUAL_EV);
-	#else
-		float lumimance = CalculateAutoExposure();
-
-        const float K = 37.5; // Calibration constant
-        const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
-
-        float targetExposure = calibration * rcp(lumimance);
-        float prevExposure = texelFetch(colortex5, ivec2(skyViewRes.x, 4), 0).x;
-
-        float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-        exposure = mix(targetExposure, prevExposure, fastExp(-exposureRate * frameTime));
-	#endif
+	directIlluminance = loadDirectIllum();
+	skyIlluminance = loadSkyIllum();
 }
 
 #else
@@ -184,10 +47,6 @@ void main() {
 #define PASS_SKY_VIEW
 
 //======// Output //==============================================================================//
-
-/*
-const bool colortex1MipmapEnabled = true;
-*/
 
 /* RENDERTARGETS: 5,10 */
 layout (location = 0) out vec3 skyViewOut;
@@ -199,8 +58,6 @@ noperspective in vec2 screenCoord;
 
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
-
-flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
@@ -252,25 +109,8 @@ uniform int dhRenderDistance;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    // Store some data in the rightmost column of the texture
-	if (screenTexel.x == skyViewRes.x) {
-		switch (screenTexel.y) {
-            case 0:
-                skyViewOut = directIlluminance;
-                break;
-
-            case 1:
-                skyViewOut = skyIlluminance;
-                break;
-
-            case 4:
-                skyViewOut.x = exposure;
-                break;
-
-            default:
-                skyViewOut = vec3(0.0);
-		}
-	} else if (screenTexel.y > skyViewRes.y) {
+    // Render sky and transmittance view LUTs
+	if (screenTexel.y >= skyViewRes.y) {
 		// Sky map with clouds
 
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));

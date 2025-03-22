@@ -27,8 +27,6 @@ in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex5;
-
 uniform float wetness;
 uniform float biomeSandstorm;
 uniform float biomeGreenVapor;
