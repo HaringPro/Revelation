@@ -25,61 +25,40 @@ out vec3 finalOut;
 
 //======// Uniform //=============================================================================//
 
-// uniform sampler2D colortex0;
-// uniform sampler2D colortex1; // Scene history
-// uniform usampler2D colortex2;
-// uniform sampler2D colortex3;
-uniform sampler2D colortex4; // Bloom tiles
-// uniform sampler2D colortex5;
-// uniform sampler2D colortex6;
-// uniform usampler2D colortex7;
-uniform sampler2D colortex8; // LDR scene image
-uniform sampler2D colortex10; // Cloud shadow map
-#ifdef FSR_ENABLED
-	uniform sampler2D colortex15; // FSR EASU output
-#endif
-
-uniform float sunAngle;
-uniform vec2 viewPixelSize;
-
-uniform vec3 skyColor;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
+
+#include "/lib/universal/Random.glsl"
 
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 
-#define CasLoad(texel) texelFetch(colortex8, texel, 0).rgb
+#define casLoad(offset) texelFetchOffset(colortex8, texel, 0, offset).rgb
 
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
 // https://gpuopen.com/wp-content/uploads/2019/07/FidelityFX-CAS.pptx
 vec3 FsrCasFilter(in ivec2 texel) {
 	#ifndef CAS_ENABLED
-		return CasLoad(texel);
+		return casLoad(ivec2(0, 0));
 	#endif
 
-	vec3 a = CasLoad(texel + ivec2(-1, -1));
-	vec3 b = CasLoad(texel + ivec2( 0, -1));
-	vec3 c = CasLoad(texel + ivec2( 1, -1));
-	vec3 d = CasLoad(texel + ivec2(-1,  0));
-	vec3 e = CasLoad(texel);
-	vec3 f = CasLoad(texel + ivec2( 1,  0));
-	vec3 g = CasLoad(texel + ivec2(-1,  1));
-	vec3 h = CasLoad(texel + ivec2( 0,  1));
-	vec3 i = CasLoad(texel + ivec2( 1,  1));
+	vec3 a = casLoad(ivec2(-1, -1));
+	vec3 b = casLoad(ivec2( 0, -1));
+	vec3 c = casLoad(ivec2( 1, -1));
+	vec3 d = casLoad(ivec2(-1,  0));
+	vec3 e = casLoad(ivec2( 0,  0));
+	vec3 f = casLoad(ivec2( 1,  0));
+	vec3 g = casLoad(ivec2(-1,  1));
+	vec3 h = casLoad(ivec2( 0,  1));
+	vec3 i = casLoad(ivec2( 1,  1));
 
 	vec3 minColor = minOf(a, b, c, d, e, f, g, h, i);
 	vec3 maxColor = maxOf(a, b, c, d, e, f, g, h, i);
 
     vec3 sharpeningAmount = sqrt(min(1.0 - maxColor, minColor) / maxColor);
     vec3 w = sharpeningAmount * -(0.125 + 0.075 * CAS_STRENGTH);
-
-	//float minG = minOf(a.g, b.g, c.g, d.g, e.g, f.g, g.g, h.g, i.g);
-	//float maxG = maxOf(a.g, b.g, c.g, d.g, e.g, f.g, g.g, h.g, i.g);
-
-    //float sharpeningAmount = sqrt(min(1.0 - maxG, minG) / maxG);
-    //float w = sharpeningAmount * mix(-0.125, -0.2, CAS_STRENGTH);
 
 	return ((b + d + f + h) * w + e) / (4.0 * w + 1.0);
 }
@@ -126,11 +105,6 @@ vec3 textureCatmullRomFast(in sampler2D tex, in vec2 position, in const float sh
 
 	return color / (l0 + l1 + l2 + l3 + l4);
 }
-
-float bayer2(vec2 a)   { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
-float bayer4(vec2 a)   { return bayer2 (0.5  * a) * 0.25   + bayer2(a); }
-float bayer8(vec2 a)   { return bayer4 (0.5  * a) * 0.25   + bayer2(a); }
-float bayer16(vec2 a)  { return bayer4 (0.25 * a) * 0.0625 + bayer4(a); }
 
 #include "/lib/universal/TextRenderer.glsl"
 

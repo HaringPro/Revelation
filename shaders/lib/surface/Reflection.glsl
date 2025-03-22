@@ -34,10 +34,11 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	vec4 CalculateSpecularReflections(Material material, in vec3 normal, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos, in float skylight, in float dither) {
 	#ifdef ROUGH_REFLECTIONS
 		if (material.isRough) {
+    		NoiseGenerator noiseGenerator = initNoiseGenerator(uvec2(gl_FragCoord.xy), uint(frameCounter));
 			mat3 tbnMatrix = ConstructTBN(normal);
 
 			vec3 tangentDir = worldDir * tbnMatrix;
-			vec3 halfway = tbnMatrix * sampleGGXVNDF(-tangentDir, material.roughness, RandNext2F());
+			vec3 halfway = tbnMatrix * sampleGGXVNDF(-tangentDir, material.roughness, nextVec2(noiseGenerator));
 
 			vec3 lightDir = reflect(worldDir, halfway);
 

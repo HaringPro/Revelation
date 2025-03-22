@@ -36,22 +36,7 @@ layout (rgba16f) restrict uniform image2D colorimg1;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Offset.glsl"
-
-uint triple32(uint x) {
-    // https://nullprogram.com/blog/2018/07/31/
-    x ^= x >> 17;
-    x *= 0xed5ad4bbu;
-    x ^= x >> 11;
-    x *= 0xac4c1b51u;
-    x ^= x >> 15;
-    x *= 0x31848babu;
-    x ^= x >> 14;
-    return x;
-}
-
-uint randState = triple32(uint(gl_GlobalInvocationID.x + viewSize.x * gl_GlobalInvocationID.y) + uint(viewSize.x * viewSize.y) * frameCounter);
-uint RandNext() { return randState = triple32(randState); }
-#define RandNext2F() (vec2(RandNext()) / float(0xffffffffu))
+#include "/lib/universal/Random.glsl"
 
 // https://alakhag.github.io/posts/sg/
 float sphericalGaussian(in vec3 v, in vec3 p, in float lambda) {
@@ -134,7 +119,8 @@ void main() {
             vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
             vec3 worldNormal = FetchWorldNormal(loadGbufferData0(screenTexel));
 
-            reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, RandNext2F() - 0.5);
+            vec2 randOffset = R2(BlueNoiseTemporal(screenTexel));
+            reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, randOffset);
         }
     #endif
 
