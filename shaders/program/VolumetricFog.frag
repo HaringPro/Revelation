@@ -178,8 +178,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 		if (dot(transmittance, vec3(1.0)) < 1e-3) break; // Faster than maxOf()
 	}
 
-	vec3 directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
-	vec3 skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
+	vec3 directIlluminance = loadDirectIllum();
+	vec3 skyIlluminance = loadSkyIllum();
 
 	vec3 scattering = scatteringSun * rPI * directIlluminance;
 	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 1e-2, wetness * 0.4 + 0.2);

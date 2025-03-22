@@ -90,6 +90,6 @@ void main() {
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
 
-	directIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 0), 0).rgb;
-	skyIlluminance = texelFetch(colortex5, ivec2(skyViewRes.x, 1), 0).rgb;
+	directIlluminance = loadDirectIllum();
+	skyIlluminance = loadSkyIllum();
 }
