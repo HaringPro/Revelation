@@ -13,6 +13,7 @@ float Calculate3DNoise(in vec3 position) {
 
 //================================================================================================//
 
+// Hash
 float hash1(vec2 p) {
 	vec3 p3  = fract(vec3(p.xyx) * 443.897);
     p3 += dot(p3, p3.zyx + 19.19);
@@ -93,6 +94,7 @@ vec2 R2(in float n) {
 
 //================================================================================================//
 
+// Blue Noise
 float BlueNoise(in ivec2 texel) {
 	return texelFetch(noisetex, texel & 255, 0).a;
 }
@@ -107,6 +109,7 @@ float BlueNoiseTemporal(in ivec2 texel) {
 
 //================================================================================================//
 
+// Bayer Dithering
 float bayer2(vec2 a) {
     a = floor(a);
     return fract(dot(a, vec2(0.5, a.y * 0.75)));
@@ -261,4 +264,84 @@ vec2 nextVec2(inout NoiseGenerator noiseGenerator) {
 NoiseGenerator initNoiseGenerator(uvec2 texelIndex, uint frameIndex) {
     uint seed = blockCipherTEA(interleave_32bit(texelIndex), frameIndex).x;
     return NoiseGenerator(seed);
+}
+
+//================================================================================================//
+
+// Halton Sequence
+// https://en.wikipedia.org/wiki/Halton_sequence
+float Halton(uint b, uint i) {
+    float r = 0.0;
+    float f = 1.0;
+    while (i > 0u) {
+        f *= 1.0 / float(b);
+        r += f * float(i % b);
+        i /= b;
+    }
+    return r;
+}
+
+float Halton2(uint i) {
+    return float(bitfieldReverse(i)) * 2.3283064365386963e-10; // / 0x100000000
+}
+
+vec2 Halton23(uint i) {
+    return vec2(Halton2(i), Halton(3, i));
+}
+
+vec2 Halton35(uint i) {
+    return vec2(Halton(3, i), Halton(5, i));
+}
+
+//================================================================================================//
+
+// Hammersley Sequence
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+float radicalInverse_VdC(uint bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+}
+
+vec2 Hammersley(uint i, uint N) {
+    return vec2(float(i) / float(N), radicalInverse_VdC(i));
+}
+
+//================================================================================================//
+
+// Sobol Sequence
+// https://www.shadertoy.com/view/sd2Xzm
+uvec2 Sobol(uint n) {
+    uvec2 p = uvec2(0u);
+    uvec2 d = uvec2(0x80000000u);
+
+    for (; n != 0u; n >>= 1u) {
+        if ((n & 1u) != 0u)
+            p ^= d;
+
+        d.x >>= 1u; // 1st dimension Sobol matrix, is same as base 2 Van der Corput
+        d.y ^= d.y >> 1u; // 2nd dimension Sobol matrix
+    }
+
+    return p;
+}
+
+// EDIT: updated with a new hash that fixes an issue with the old one.
+// Details in the post linked at the top.
+uint OwenHash(uint x, uint seed) { // Works best with random seeds
+    x ^= x * 0x3d20adeau;
+    x += seed;
+    x *= (seed >> 16) | 1u;
+    x ^= x * 0x05526c56u;
+    x ^= x * 0x53a22864u;
+    return x;
+}
+
+uint OwenScramble(uint p, uint seed) {
+    p = bitfieldReverse(p);
+    p = OwenHash(p, seed);
+    return bitfieldReverse(p);
 }
