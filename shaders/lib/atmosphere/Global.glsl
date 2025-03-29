@@ -71,7 +71,7 @@ struct AtmosphereParameters {
 
 const AtmosphereParameters atmosphereModel = AtmosphereParameters(
     // The solar irradiance at the top of the atmosphere.
-    vec3(0.9420, 1.0269, 1.0242),
+    vec3(8.6532812118e-1, 1.0, 9.7675514221e-1),
     // The sun's angular radius. Warning: the implementation uses approximations
     // that are valid only if this angle is smaller than 0.1 radians.
 	0.004675,
