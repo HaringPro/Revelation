@@ -60,7 +60,6 @@ flat in vec3 skyIlluminance;
 #else
 	#include "/lib/water/WaterWave.glsl"
 #endif
-// #include "/lib/water/WaterFog.glsl"
 #ifdef CLOUD_SHADOWS
 	#include "/lib/atmosphere/clouds/Shadows.glsl"
 #endif
@@ -73,7 +72,7 @@ flat in vec3 skyIlluminance;
 vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 worldDir) {
 	skylight = remap(0.3, 0.7, cube(skylight));
 
-	float NdotV = abs(dot(normal, -worldDir));
+	float NdotV = abs(dot(normal, worldDir));
     // Unroll the reflect function manually
 	vec3 rayDir = worldDir + normal * NdotV * 2.0;
 
@@ -83,7 +82,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 	bool withinWater = isEyeInWater == 1 && materialID == 3u;
 
 	vec3 reflection = vec3(0.0);
-	vec3 highlights = vec3(0.0);
 	if (skylight > 1e-3 && !withinWater) {
 		vec2 skyViewCoord = FromSkyViewLutParams(rayDir) + vec2(0.0, 0.5);
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
@@ -113,7 +111,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
-	return satU16f(vec4(reflection * brdf + highlights, brdf));
+	return satU16f(vec4(reflection * brdf, brdf));
 }
 
 //======// Main //================================================================================//
