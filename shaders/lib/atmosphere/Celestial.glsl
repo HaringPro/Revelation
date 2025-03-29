@@ -1,18 +1,19 @@
 
-#define SUN_RADIUS_MULT 2.0 // Multiplier of the sun radius (1.0 = real sun radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0]
+#define SUN_RADIUS_MULT 1.0 // Multiplier of the sun radius (1.0 = real sun radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0]
 
 #define STARS_INTENSITY 0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 #define STARS_COVERAGE  0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
 // #define GALAXY // Enables the rendering of the galaxy
 // #define GALAXY_ROTATION // Enables the rotation of the galaxy
-#define GALAXY_INTENSITY 0.06 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#define GALAXY_INTENSITY 0.025 // [0.0 0.005 0.01 0.02 0.025 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 //================================================================================================//
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
     const float cosRadius = cos(atmosphereModel.sun_angular_radius * SUN_RADIUS_MULT);
-	const vec3 sunIlluminance = atmosphereModel.solar_irradiance * 126.6e3;
+	const vec3 sunIlluminance = atmosphereModel.solar_irradiance * sunIntensity;
+    const vec3 sunRadiance = sunIlluminance / (TAU * oms(cosRadius));
 
     float cosTheta = dot(worldDir, sunVector);
     if (cosTheta >= cosRadius) {
@@ -21,19 +22,15 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 
         float centerToEdge = saturate(oms(cosTheta) / oms(cosRadius));
         vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
-        vec3 finalLuminance = sunIlluminance * factor;
+        vec3 finalLuminance = sunRadiance * factor;
 
         return finalLuminance;
-    #if 0
     } else {
-        // Fake sun bloom from https://www.shadertoy.com/view/slSXRW
+        // Fake sun bloom
         float offset = cosRadius - cosTheta;
-        float gaussianBloom = 4e-4 * exp2(-offset * 6e4);
-        float invBloom = 4e-4 / (1.0 + offset * 1e5);
-        vec3 sunBloom = sunIlluminance * (gaussianBloom + invBloom);
+        vec3 sunBloom = sunRadiance / (1.0 + offset * 2e5) * sqr(cosTheta);
 
-        return sunBloom;
-    #endif
+        return sunBloom * 1e-3;
     }
 }
 

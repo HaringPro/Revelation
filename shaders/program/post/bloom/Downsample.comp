@@ -21,15 +21,12 @@ layout (local_size_x = 8, local_size_y = 8) in;
 
 //======// Image //===============================================================================//
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
+writeonly uniform image2D colorimg4;
 
 //======// Uniform //=============================================================================//
 
-#if DOWNSAMPLE_LEVEL == 0
-	uniform sampler2D colortex1; // TAA image output
-#else
-	uniform sampler2D colortex4; // Bloom tile input
-#endif
+uniform sampler2D colortex1; // TAA image output
+uniform sampler2D colortex4; // Bloom tile input
 
 uniform vec2 viewSize;
 uniform vec2 viewPixelSize;
@@ -37,10 +34,11 @@ uniform vec2 viewPixelSize;
 //======// Function //============================================================================//
 
 #if DOWNSAMPLE_LEVEL == 0
-	#define sampleTile(uv) karisAverage(textureLod(colortex1, uv, 0.0).rgb)
+	#define bloomTileTex colortex1
 #else
-	#define sampleTile(uv) textureLod(colortex4, uv, 0.0).rgb
+	#define bloomTileTex colortex4
 #endif
+#define loadTile(uv) textureLod(bloomTileTex, uv, 0.0).rgb
 
 const vec2 bloomTileOffset[7] = vec2[7](
 	vec2(0.0000, 0.0000),
@@ -54,13 +52,19 @@ const vec2 bloomTileOffset[7] = vec2[7](
 
 vec3 CalculateBloomTile(in vec2 uv) {
 	vec3  bloomTile = vec3(0.0);
-	float sumWeight = 1e-6;
+	float sumWeight = EPS;
 
 	for (int y = -BLOOM_BLUR_SAMPLES; y <= BLOOM_BLUR_SAMPLES; ++y) {
 		for (int x = -BLOOM_BLUR_SAMPLES; x <= BLOOM_BLUR_SAMPLES; ++x) {
+			vec3 sampleTile = loadTile(uv + vec2(x, y) * viewPixelSize);
 			float weight = exp2(-sdot(vec2(x, y)) * 0.25);
 
-			bloomTile += sampleTile(uv + vec2(x, y) * viewPixelSize) * weight;
+			#if DOWNSAMPLE_LEVEL == 0
+				// weight *= karisAverage(sampleTile);
+				sampleTile *= karisAverage(sampleTile);
+			#endif
+
+			bloomTile += sampleTile * weight;
 			sumWeight += weight;
 		}
 	}

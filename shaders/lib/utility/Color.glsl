@@ -47,9 +47,8 @@ vec3 blackbody(in float t) {
     return color * rcp(maxOf(color)); // Normalize to 1.0
 }
 
-vec3 karisAverage(in vec3 color) {
-    const float k = 1e-3; // Empirical constant
-    return color * rcp(1.0 + k * luminance(color));
+float karisAverage(in vec3 color) {
+    return rcp(1.0 + 0.125 * luminance(color));
 }
 
 vec3 reinhard(in vec3 hdr) {
