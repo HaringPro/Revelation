@@ -61,7 +61,7 @@
 	|   Buffer		|   Format          |   Resolution	|   Usage
 	|———————————————|———————————————————|———————————————|———————————————————————————
 	|	colortex0	|   r11f_g11f_b10f  |	Full res  	|	Scene data
-	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history, global exposure | Specular & diffuse lighting of glass
+	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history, global exposure | Specular lighting of translucent
 	|	colortex2	|   rgba16f         |	Full res	|	Cloud data -> Indirect diffuse lighting history, frame index
 	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse lighting -> Motion vector
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history, global illuminances -> Bloom tiles

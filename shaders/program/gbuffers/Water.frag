@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 1,7,8 */
-layout (location = 0) out vec4 sceneOut;
+layout (location = 0) out vec4 lightingOut;
 layout (location = 1) out uvec3 gbufferOut0;
 layout (location = 2) out vec2 gbufferOut1;
 
@@ -61,6 +61,9 @@ flat in vec3 skyIlluminance;
 	#include "/lib/water/WaterWave.glsl"
 #endif
 // #include "/lib/water/WaterFog.glsl"
+#ifdef CLOUD_SHADOWS
+	#include "/lib/atmosphere/clouds/Shadows.glsl"
+#endif
 
 #include "/lib/lighting/Shadows.glsl"
 #include "/lib/lighting/DiffuseLighting.glsl"
@@ -86,21 +89,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
 
 		reflection = skyRadiance * skylight;
-
-		#ifndef TRANSLUCENT_LIGHTING
-			// Specular highlights
-			float NdotL = dot(normal, worldLightVector);
-
-			if (NdotL > 1e-3) {
-				float LdotV = dot(worldLightVector, -worldDir);
-				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-				float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
-				float LdotH = LdotV * halfwayNorm + halfwayNorm;
-
-				vec3 transmittance = texture(colortex10, skyViewCoord).rgb * (sunIntensity * skylight) * mix(1.0, moonlightMult, sunAngle > 0.5);
-				highlights = transmittance * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
-			}
-		#endif
 	}
 
 	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
@@ -153,7 +141,6 @@ void main() {
 
 		// Water normal clamp
 		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
-		sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 	} else {
 		vec4 albedo = texture(tex, texCoord) * vertColor;
 
@@ -169,87 +156,59 @@ void main() {
 		#endif
 		gbufferOut0.z = Packup2x8U(encodeUnitVector(worldNormal));
 
-		#ifdef TRANSLUCENT_LIGHTING
-			sceneOut.rgb = albedo.rgb;
-			sceneOut.a = albedo.a * TRANSLUCENT_LIGHTING_BLENDED_FACTOR;
-		#else
-			sceneOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
-		#endif
-
 		gbufferOut1.x = Packup2x8(albedo.rg);
 		gbufferOut1.y = Packup2x8(albedo.ba);
 	}
 
 	//==// Translucent lighting //================================================================//
-	#ifdef TRANSLUCENT_LIGHTING
-		// Sunlight
-		vec3 sunlightMult = oms(wetness * 0.96) * directIlluminance;
-		float NdotL = dot(worldNormal, worldLightVector);
 
-		vec3 sunlightDiffuse = vec3(0.0);
-		vec3 specularHighlight = vec3(0.0);
+	// Indirect specular lighting
+	lightingOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
 
-		// float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * sdot(worldPos.xz)));
-
-		// Shadows
-		if (NdotL > 1e-3) {
-			float distortFactor;
-			float worldDistSquared = sdot(worldPos);
-
-			vec3 normalOffset = tbnMatrix[2] * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
-			vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
-
-			if (saturate(shadowScreenPos) == shadowScreenPos) {
-				float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
-
-				float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
-				shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
-
-				vec3 shadow = PercentageCloserFilter(shadowScreenPos, worldPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
-
-				if (dot(shadow, vec3(1.0)) > 1e-6) {
-					float LdotV = dot(worldLightVector, -worldDir);
-					float NdotV = abs(dot(worldNormal, -worldDir));
-					float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
-					float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
-					float LdotH = LdotV * halfwayNorm + halfwayNorm;
-
-					shadow *= sunlightMult;
-
-					sunlightDiffuse = shadow * NdotL * rPI;
-					float f0 = F0FromIOR(materialID == 3u ? WATER_REFRACT_IOR : GLASS_REFRACT_IOR);
-					specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
-				}
-			}
-		}
-
-		if (materialID != 3u) {
-			vec3 lighting = sunlightDiffuse;
-
-			if (lightmap.y > 1e-5) {
-				// Skylight
-				vec3 skylight = skyIlluminance * 0.75;
-				skylight = mix(skylight, directIlluminance * 1e-3, wetness * 0.5 + 0.2);
-				skylight *= worldNormal.y * 1.2 + 1.8;
-
-				lighting += skylight * cube(lightmap.y);
-
-				// Bounced light
-				float bounce = CalculateApproxBouncedLight(worldNormal);
-				bounce *= pow5(lightmap.y);
-				lighting += bounce * sunlightMult;
-			}
-
-			if (lightmap.x > 1e-5) lighting += CalculateBlocklightFalloff(lightmap.x) * blackbody(float(BLOCKLIGHT_TEMPERATURE));
-			sceneOut.rgb *= lighting * rPI;
-
-			vec4 specularReflections = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
-			sceneOut.rgb = specularReflections.rgb + sceneOut.rgb * oms(specularReflections.a);
-		}
-
-		// Specular highlights
-		sceneOut.rgb += specularHighlight;
+	// Cloud shadows
+	#ifdef CLOUD_SHADOWS
+		// float cloudShadow = CalculateCloudShadows(worldPos);
+		vec2 cloudShadowCoord = WorldToCloudShadowCoord(worldPos);
+		float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).a;
+		cloudShadow = min(cloudShadow, 1.0 - wetness * 0.6);
+	#else
+		float cloudShadow = 1.0 - wetness * 0.96;
 	#endif
+
+	// Sunlight
+	vec3 sunlightMult = cloudShadow * directIlluminance;
+	float NdotL = dot(worldNormal, worldLightVector);
+
+	// Direct specular lighting
+	if (NdotL > 1e-3) {
+		float distortFactor;
+		float worldDistSquared = sdot(worldPos);
+
+		vec3 normalOffset = tbnMatrix[2] * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
+		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
+
+		if (saturate(shadowScreenPos) == shadowScreenPos) {
+			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
+
+			float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
+			shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
+
+			vec3 shadow = PercentageCloserFilter(shadowScreenPos, worldPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
+
+			if (dot(shadow, vec3(1.0)) > 1e-6) {
+				float LdotV = dot(worldLightVector, -worldDir);
+				float NdotV = abs(dot(worldNormal, -worldDir));
+				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
+				float NdotH = saturate((NdotL + NdotV) * halfwayNorm);
+				float LdotH = LdotV * halfwayNorm + halfwayNorm;
+
+				shadow *= sunlightMult;
+
+				float f0 = F0FromIOR(materialID == 3u ? WATER_REFRACT_IOR : GLASS_REFRACT_IOR);
+				lightingOut.rgb += shadow * SpecularBRDF(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), f0);
+			}
+		}
+	}
 
 	//============================================================================================//
 

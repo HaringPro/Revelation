@@ -149,7 +149,7 @@ void main() {
 		if (waterMask) { // Water
 			// Specular lighting of water
 			vec4 blendedData = texelFetch(colortex1, screenTexel, 0);
-			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
+			#if 1
 				blendedData.rgb -= sceneOut * blendedData.a;
 			#else
 				blendedData.rgb = waterMask && isEyeInWater == 1 ? blendedData.rgb - sceneOut * blendedData.a : blendedData.rgb;
@@ -157,13 +157,13 @@ void main() {
 
 			sceneOut += blendedData.rgb;
 		} else if (materialID == 2u) { // Glass
-			// Glass tint
+			// Glass absorption
 			vec4 translucents = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
 			sceneOut *= exp2(5.0 * (translucents.rgb - 1.0) * approxSqrt(approxSqrt(translucents.a)));
 
-			// Specular and diffuse lighting of glass
+			// Specular lighting of glass
 			vec4 blendedData = texelFetch(colortex1, screenTexel, 0);
-			#if TRANSLUCENT_LIGHTING_BLENDED_MODE == 1
+			#if 1
 				blendedData.rgb -= sceneOut * blendedData.a;
 			#endif
 
