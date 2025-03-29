@@ -240,7 +240,8 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	// Coveage profile
 	coverage = saturate(coverage * (1.65 + wetness * 0.5) * CLOUD_CU_COVERAGE);
-	shape = 2.0 * coverage * remap(1.0 - coverage, 1.0, shape);
+	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
+	shape = 2.0 * saturate(shape + coverage - 1.0);
 
 	// Vertical profile
 	shape -= remap(0.2, 1.0, heightFraction) * 0.3;
