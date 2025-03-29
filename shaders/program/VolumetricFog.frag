@@ -117,7 +117,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.65 + HenyeyGreensteinPhase(LdotV, -0.3) * 0.35, RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.7 + HenyeyGreensteinPhase(LdotV, -0.35) * 0.3, RayleighPhase(LdotV));
 	phase.x = mix(uniformPhase, phase.x, 0.75);
 	float isotropicDensity = 64.0 / maxFar * skyMask;
 
