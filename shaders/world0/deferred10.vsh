@@ -22,7 +22,9 @@
 flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
-flat out mat4x3 skySH;
+#ifndef SSPT_ENABLED
+	flat out mat4x3 skySH;
+#endif
 
 //======// Attribute //===========================================================================//
 
@@ -50,20 +52,22 @@ void main() {
 	directIlluminance = loadDirectIllum();
 	skyIlluminance = loadSkyIllum();
 
-	skySH = mat4x3(0.0);
-	const float rSlices = 1.0 / float(SH_SLICES);
+	#ifndef SSPT_ENABLED
+		skySH = mat4x3(0.0);
+		const float rSlices = 1.0 / float(SH_SLICES);
 
-	for (uint h = 0u; h < SH_SLICES; ++h) {
-		float latitude = float(h) * PI * rSlices;
-		vec2 latitudeSincos = sincos(latitude);
-		for (uint v = 0u; v < SH_SLICES; ++v) {
-			float longitude = float(v) * TAU * rSlices;
-			vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
+		for (uint h = 0u; h < SH_SLICES; ++h) {
+			float latitude = float(h) * PI * rSlices;
+			vec2 latitudeSincos = sincos(latitude);
+			for (uint v = 0u; v < SH_SLICES; ++v) {
+				float longitude = float(v) * TAU * rSlices;
+				vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
 
-			vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
-			skySH += ToSphericalHarmonics(skyRadiance, direction);
+				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
+				skySH += ToSphericalHarmonics(skyRadiance, direction);
+			}
 		}
-	}
 
-	skySH *= rSlices * rSlices;
+		skySH *= rSlices * rSlices;
+	#endif
 }

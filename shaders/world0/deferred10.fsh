@@ -37,7 +37,9 @@ layout (location = 2) out vec2 specularOut;
 flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
-flat in mat4x3 skySH;
+#ifndef SSPT_ENABLED
+	flat in mat4x3 skySH;
+#endif
 
 //======// Uniform //=============================================================================//
 
