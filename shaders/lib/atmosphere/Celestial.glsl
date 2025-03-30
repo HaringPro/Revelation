@@ -36,26 +36,6 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 
 //================================================================================================//
 
-mat3 RotateMatrix(in vec3 x, in vec3 y) {
-    float d = dot(x, y);
-    float id = 1.0 - d;
-
-    vec3 cr = cross(y, x);
-    float s = length(cr);
-
-    vec3 m = cr / s;
-    vec3 m2 = m * m * id + d;
-
-    vec3 sm = s * m;
-    vec3 w = (m.xy * id).xxy * m.yzz;
-
-    return mat3(
-        m2.x      , w.x - sm.z, w.y + sm.y,
-        w.x + sm.z, m2.y      , w.z - sm.x,
-        w.y - sm.y, w.z + sm.x, m2.z
-    );
-}
-
 // Source: https://www.shadertoy.com/view/XtGGRt
 vec3 nmzHash33(in vec3 q) {
     uvec3 p = uvec3(ivec3(q));
@@ -65,8 +45,7 @@ vec3 nmzHash33(in vec3 q) {
 }
 
 vec3 RenderStars(in vec3 worldDir) {
-	mat3 rot = RotateMatrix(vec3(0.0, 1.0, 0.0), worldSunVector);
-	vec3 p = worldDir * rot;
+	vec3 p = rotate(worldDir, worldSunVector, vec3(0.0, 0.0, 1.0));
 
     vec3 c = vec3(0.0);
     const float res = 768.0;
@@ -77,10 +56,10 @@ vec3 RenderStars(in vec3 worldDir) {
 
         vec2 rn = nmzHash33(id).xy;
 
-        float c2 = 1.0 - saturate(length(q) * 3.3);
-              c2 *= step(rn.x, STARS_COVERAGE * 0.01 + sqr(i) * 0.001);
+        float c2 = 1.0 - saturate(length(q) * 2.5);
+              c2 *= step(rn.x, STARS_COVERAGE * 0.001 + sqr(i) * 0.001);
 
-        c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.0), rn.y) * 0.3 + 0.06);
+        c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.0), rn.y) * 0.2 + 0.05);
         p *= 1.3;
     }
 
@@ -93,8 +72,7 @@ uniform sampler2D colortex12;
 
 vec3 RenderGalaxy(in vec3 worldDir) {
     #ifdef GALAXY_ROTATION
-        mat3 rot = RotateMatrix(vec3(0.0, 1.0, 0.0), worldSunVector);
-        worldDir *= rot;
+        worldDir = rotate(worldDir, worldSunVector, vec3(0.0, 0.0, 1.0));
     #endif
 
     // Convert to spherical coordinates

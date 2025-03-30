@@ -192,3 +192,12 @@ mat3 ConstructTBN(in vec3 n) {
 	vec3 b = normalize(cross(t, n));
 	return mat3(t, b, n);
 }
+
+// https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+vec3 rotate(in vec3 v, in vec3 a, in vec3 b) {
+	float cosTheta = dot(a, b);
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+	vec3 k = normalize(cross(a, b)); // Axis of rotation
+
+	return v * cosTheta + cross(k, v) * sinTheta + k * dot(k, v);
+}
