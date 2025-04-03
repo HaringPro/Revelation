@@ -103,7 +103,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
 		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-		float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+		float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
@@ -170,7 +170,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
 		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-		float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+		float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
@@ -264,11 +264,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					if (rayPos.y < CLOUD_CU_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
 
 					// Compute sample cloud density
-					#if defined PASS_SKY_VIEW
-						float stepDensity = CloudVolumeDensity(rayPos, false);
-					#else
-						float stepDensity = CloudVolumeDensity(rayPos, true);
-					#endif
+					float heightFraction;
+					float stepDensity = CloudVolumeDensity(rayPos, heightFraction);
 
 					if (stepDensity < 1e-5) continue;
 
@@ -299,7 +296,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float opticalDepthSky = CloudVolumeSkylightOD(rayPos, lightNoise.y) * -rLOG2;
 					// See slide 85 of [Schneider, 2017]
 					// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-					float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+					float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 					// Compute the optical depth of ground light through clouds
 					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);
@@ -313,9 +310,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute In-Scatter Probability
 					// See slide 92 of [Schneider, 2017]
-					float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
-
-					float depthProbability = 0.05 + pow(stepDensity * 5.0, remap(heightFraction, 0.25, 0.75, 0.5, 1.5));
+					float depthProbability = 0.05 + pow(stepDensity * 6.0, remap(heightFraction, 0.3, 0.85, 0.5, 1.5));
 					float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.8);
 					float inScatterProbability = depthProbability * verticalProbability;
 
