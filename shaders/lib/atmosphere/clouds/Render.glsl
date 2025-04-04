@@ -241,27 +241,30 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oms(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
+				// From [Schneider, 2022]
 				// const float nearStepSize = 3.0;
 				// const float farStepSizeOffset = 60.0;
 				// const float stepAdjustmentDistance = 16384.0;
 
-				// float stepSize = nearStepSize + (farStepSizeOffset / stepAdjustmentDistance) * max0(endLength - startLength);
+				// float stepSize = nearStepSize + (farStepSizeOffset / stepAdjustmentDistance) * stepLength;
 
 				float stepSize = stepLength * rcp(float(raySteps));
 
 				vec3 rayStep = stepSize * rayDir;
 				ToPlanetCurvePos(rayStep);
-				vec3 rayPos = (intersection.x + stepSize * dither) * rayDir + cameraPosition;
+
+				vec3 rayOrigin = (intersection.x + stepSize * dither) * rayDir;
+				vec3 rayPos = rayOrigin + cameraPosition;
 				ToPlanetCurvePos(rayPos);
 
-				vec3 rayHitPos = vec3(0.0);
-				float rayHitPosWeight = 0.0;
+				float rayLengthWeighted = 0.0;
+				float raySumWeight = 0.0;
 
 				vec2 stepScattering = vec2(0.0);
 				float transmittance = 1.0;
 
 				for (uint i = 0u; i < raySteps; ++i, rayPos += rayStep) {
-					if (rayPos.y < CLOUD_CU_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
+					// if (rayPos.y < CLOUD_CU_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
 
 					// Compute sample cloud density
 					float heightFraction;
@@ -269,8 +272,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					if (stepDensity < 1e-5) continue;
 
-					rayHitPos += rayPos * transmittance;
-					rayHitPosWeight += transmittance;
+					rayLengthWeighted += stepSize * transmittance;
+					raySumWeight += transmittance;
 
 					#if defined PASS_SKY_VIEW
 						vec2 lightNoise = vec2(0.5);
@@ -324,16 +327,13 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 				float absorption = 1.0 - transmittance;
 				if (absorption > minCloudAbsorption) {
-					stepScattering *= oms(0.6 * wetness) * rcp(cumulusExtinction);
-					rayHitPos /= rayHitPosWeight;
-					FromPlanetCurvePos(rayHitPos);
-					rayHitPos -= cameraPosition;
+					vec3 rayPosWeighted = rayOrigin + (rayLengthWeighted / raySumWeight) * rayDir;
 
 					#ifdef CLOUD_LOCAL_LIGHTING
 						// Compute local lighting
 						vec3 sunIrradiance, moonIrradiance;
 						vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
-						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayHitPos, worldSunVector, sunIrradiance, moonIrradiance);
+						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayPosWeighted, worldSunVector, sunIrradiance, moonIrradiance);
 						vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 		
 						skyIlluminance += lightningShading * 4e-3;
@@ -342,13 +342,14 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
+					stepScattering *= oms(0.6 * wetness) * rcp(cumulusExtinction);
 					vec3 scattering = stepScattering.x * rPI * directIlluminance;
 					scattering += stepScattering.y * uniformPhase * skyIlluminance;
 
 					// Compute aerial perspective
 					#ifdef CLOUD_AERIAL_PERSPECTIVE
 						vec3 airTransmittance;
-						vec3 aerialPerspective = GetSkyRadianceToPoint(rayHitPos, worldSunVector, airTransmittance) * skyIntensity;
+						vec3 aerialPerspective = GetSkyRadianceToPoint(rayPosWeighted, worldSunVector, airTransmittance) * skyIntensity;
 
 						scattering *= airTransmittance;
 						scattering += aerialPerspective * absorption;
