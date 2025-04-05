@@ -107,7 +107,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
-		float powder = 2.0 * fastExp(-density * 22.0) * oms(fastExp(-density * 44.0));
+		float powder = 2.0 * oms(exp2(-density * 64.0));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -174,7 +174,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
-		float powder = 2.0 * fastExp(-density * 24.0) * oms(fastExp(-density * 48.0));
+		float powder = 2.0 * oms(exp2(-density * 128.0));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -397,7 +397,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 	bool planetIntersection = RayIntersectsGround(r, mu);
 
 	// Mid-cloud family
-	#if defined CLOUD_ALTOSTRATUS
+	#ifdef CLOUD_ALTOSTRATUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_MID_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_MID_ALTITUDE)) { // Above clouds
 			float cloudDistance = (planetRadius + CLOUD_MID_ALTITUDE - r) / mu;
