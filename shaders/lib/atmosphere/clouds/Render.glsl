@@ -230,14 +230,14 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 			if (intersection.y > 0.0) { // Intersect the volume
 				// Special treatment for the eye inside the volume
 				float withinVolumeSmooth = oms(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oms(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
-				float stepLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
+				float rayLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
 				#if defined PASS_SKY_VIEW
 					uint raySteps = uint(CLOUD_CU_SAMPLES * 0.6);
 					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.4)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CU_SAMPLES;
-					// raySteps = uint(raySteps * min1(0.5 + max0(stepLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
+					// raySteps = uint(raySteps * min1(0.5 + max0(rayLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
 					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oms(abs(rayDir.y) * 0.4))); // Reduce ray steps for vertical rays
 				#endif
 
@@ -246,9 +246,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				// const float farStepSizeOffset = 60.0;
 				// const float stepAdjustmentDistance = 16384.0;
 
-				// float stepSize = nearStepSize + (farStepSizeOffset / stepAdjustmentDistance) * stepLength;
+				// float stepSize = nearStepSize + (farStepSizeOffset / stepAdjustmentDistance) * rayLength;
 
-				float stepSize = stepLength * rcp(float(raySteps));
+				float stepSize = rayLength * rcp(float(raySteps));
 
 				vec3 rayStep = stepSize * rayDir;
 				ToPlanetCurvePos(rayStep);
@@ -263,14 +263,41 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				vec2 stepScattering = vec2(0.0);
 				float transmittance = 1.0;
 
-				for (uint i = 0u; i < raySteps; ++i, rayPos += rayStep) {
-					// if (rayPos.y < CLOUD_CU_ALTITUDE || rayPos.y > cumulusMaxAltitude) continue;
+				// float cloudTest = 0.0;
+				// float stepDensityPrev = 1.0;
+				// uint zeroDensityCounter = 0u;
+
+				for (uint i = 0u; i < raySteps; ++i) {
+					// Advance to the next sample position
+					rayPos += rayStep;
+
+					// if (cloudTest < 1e-5) {
+					// 	cloudTest = CloudVolumeDensity(rayPos, false);
+					// 	if (cloudTest < 1e-5) {
+					// 		rayPos += rayStep * 2.0;
+					// 	} else {
+					// 		rayPos -= rayStep;
+					// 	}
+					// 	continue;
+					// }
 
 					// Compute sample cloud density
 					float heightFraction;
 					float stepDensity = CloudVolumeDensity(rayPos, heightFraction);
 
 					if (stepDensity < 1e-5) continue;
+
+					// if (stepDensity + stepDensityPrev < 1e-5) {
+					// 	++zeroDensityCounter;
+					// }
+
+					// if (stepDensity < 1e-5 || zeroDensityCounter > 10u) {
+					// 	cloudTest = 0.0;
+					// 	zeroDensityCounter = 0u;
+					// 	continue;
+					// }
+
+					// stepDensityPrev = stepDensity;
 
 					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
@@ -322,6 +349,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					stepScattering += inScatterProbability * scattering * stepIntegral;
 					transmittance *= stepTransmittance;	
 
+					// Break if the cloud has reached the minimum transmittance
 					if (transmittance < minCloudTransmittance) break;
 				}
 
