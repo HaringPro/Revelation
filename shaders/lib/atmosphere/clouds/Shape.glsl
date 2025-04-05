@@ -158,7 +158,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	// Coveage profile
 	float coverage = cloudMap.x + cloudMap.y - 1.0;
-	coverage = saturate(mix(coverage * 1.75 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.2));
+	coverage = saturate(mix(coverage * 2.0 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.2));
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
@@ -171,9 +171,9 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 	vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
-	vec4 lowFreqNoises = texture(depthtex2, position * 0.175);
+	vec4 lowFreqNoises = texture(depthtex2, position * 0.25);
 	float baseNoise = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
-	baseNoise = remap(baseNoise - 1.0, 1.0, lowFreqNoises.x) * 1.5;
+	baseNoise = remap(baseNoise - 1.0, 1.0, lowFreqNoises.x);
 
 	// // Vertical profile
 	// float verticalProfile = ConstructVerticalProfile(heightFraction, cloudMap.z);
@@ -184,28 +184,28 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	// if (dimensionalProfile < 1e-3) return 0.0;
 
 	// float cloudDensity = 1.5 * saturate(baseNoise + dimensionalProfile - 1.0);
-	coverage -= remap(0.2, 1.0, heightFraction / cloudType) * 0.2;
-	float cloudDensity = 1.5 * saturate(baseNoise + coverage - 1.0);
-	cloudDensity *= saturate(heightFraction * 5.0);
+	coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
+	float cloudDensity = 2.0 * saturate(baseNoise + coverage - 1.0);
+	cloudDensity *= saturate(heightFraction * 6.0);
 
 	// Detail shape
 	float detailNoise = 0.5;
 	#if !defined PASS_SKY_VIEW
 	if (cloudDensity > 0.025 && detail) {
-		vec2 curlNoise = texture(noisetex, position.xz * 0.075).xy;
+		vec2 curlNoise = texture(noisetex, position.xz * 0.05).xy;
 		position.xy += curlNoise * 0.25 * oms(heightFraction);
 
-		vec3 highFreqNoises = texture(colortex15, position * 8.0 - shift).xyz;
+		vec3 highFreqNoises = texture(colortex15, position * 4.0 - shift).xyz;
 		detailNoise = dot(highFreqNoises, vec3(0.625, 0.25, 0.125));
 
 		// Transition from wispy shapes to billowy shapes over height
-		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 8.0));
+		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 10.0));
 	}
 	#endif
-	cloudDensity = remap(detailNoise * 0.125, 0.35, cloudDensity);
+	cloudDensity = remap(detailNoise * 0.25, 0.375, cloudDensity);
 
-	// float densityProfile = saturate(heightFraction * 1.5 + 0.25);
-	return cloudDensity;
+	float densityProfile = saturate(heightFraction * 1.5 + 0.25);
+	return cloudDensity * densityProfile;
 }
 
 float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
@@ -213,7 +213,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
 
 	// Coveage profile
 	float coverage = cloudMap.x + cloudMap.y - 1.0;
-	coverage = saturate(mix(coverage * 1.75 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.2));
+	coverage = saturate(mix(coverage * 2.0 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.2));
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
@@ -226,9 +226,9 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
 	vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
 	vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
-	vec4 lowFreqNoises = texture(depthtex2, position * 0.175);
+	vec4 lowFreqNoises = texture(depthtex2, position * 0.25);
 	float baseNoise = dot(lowFreqNoises.yzw, vec3(0.625, 0.25, 0.125));
-	baseNoise = remap(baseNoise - 1.0, 1.0, lowFreqNoises.x) * 1.5;
+	baseNoise = remap(baseNoise - 1.0, 1.0, lowFreqNoises.x);
 
 	// // Vertical profile
 	// float verticalProfile = ConstructVerticalProfile(heightFraction, cloudMap.z);
@@ -239,28 +239,28 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
 	// if (dimensionalProfile < 1e-3) return 0.0;
 
 	// float cloudDensity = 1.5 * saturate(baseNoise + dimensionalProfile - 1.0);
-	coverage -= remap(0.2, 1.0, heightFraction / cloudType) * 0.2;
-	float cloudDensity = 1.5 * saturate(baseNoise + coverage - 1.0);
-	cloudDensity *= saturate(heightFraction * 5.0);
+	coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
+	float cloudDensity = 2.0 * saturate(baseNoise + coverage - 1.0);
+	cloudDensity *= saturate(heightFraction * 6.0);
 
 	// Detail shape
 	float detailNoise = 0.5;
 	#if !defined PASS_SKY_VIEW
 	if (cloudDensity > 0.025) {
-		vec2 curlNoise = texture(noisetex, position.xz * 0.075).xy;
+		vec2 curlNoise = texture(noisetex, position.xz * 0.05).xy;
 		position.xy += curlNoise * 0.25 * oms(heightFraction);
 
-		vec3 highFreqNoises = texture(colortex15, position * 8.0 - shift).xyz;
+		vec3 highFreqNoises = texture(colortex15, position * 4.0 - shift).xyz;
 		detailNoise = dot(highFreqNoises, vec3(0.625, 0.25, 0.125));
 
 		// Transition from wispy shapes to billowy shapes over height
-		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 8.0));
+		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 10.0));
 	}
 	#endif
-	cloudDensity = remap(detailNoise * 0.125, 0.35, cloudDensity);
+	cloudDensity = remap(detailNoise * 0.25, 0.375, cloudDensity);
 
-	// float densityProfile = saturate(heightFraction * 1.5 + 0.25);
-	return cloudDensity;
+	float densityProfile = saturate(heightFraction * 1.5 + 0.25);
+	return cloudDensity * densityProfile;
 }
 
 #endif
