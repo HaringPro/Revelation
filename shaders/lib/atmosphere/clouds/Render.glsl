@@ -272,7 +272,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					if (stepDensity < 1e-5) continue;
 
-					rayLengthWeighted += stepSize * transmittance;
+					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
 
 					#if defined PASS_SKY_VIEW
