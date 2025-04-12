@@ -63,7 +63,7 @@ flat in vec3 skyIlluminance;
 
 uniform sampler2D noisetex;
 
-uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
+uniform sampler3D COMBINED_TEXTURE_SAMPLER;
 
 uniform float nightVision;
 uniform float wetness;
