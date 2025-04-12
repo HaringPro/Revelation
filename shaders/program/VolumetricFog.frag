@@ -95,13 +95,17 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	const float rSteps = 1.0 / float(steps);
 
 	const float toExp6 = 2.58497;
-	float maxFar = max(2048.0, far);
 
 	float rayLength = sdot(worldPos);
 	float norm = inversesqrt(rayLength);
-	rayLength = min(rayLength * norm, maxFar);
-
 	vec3 worldDir = worldPos * norm;
+
+	#ifdef VF_CLOUD_SHADOWS
+		float rayLengthMax = maxEps(planetRadius + cumulusMaxAltitude - viewerHeight) / max(0.125, worldDir.y);
+	#else
+		#define rayLengthMax far
+	#endif
+	rayLength = mix(rayLength * norm, rayLengthMax, skyMask);
 
 	vec3 rayStart = gbufferModelViewInverse[3].xyz + cameraPosition,
 		 rayStep  = worldDir * rayLength;
@@ -117,9 +121,9 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.7 + HenyeyGreensteinPhase(LdotV, -0.35) * 0.3, RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.65 + HenyeyGreensteinPhase(LdotV, -0.35) * 0.35, RayleighPhase(LdotV));
 	phase.x = mix(uniformPhase, phase.x, 0.75);
-	float isotropicDensity = 64.0 / maxFar * skyMask;
+	float isotropicFog = 64.0 / rayLengthMax * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
@@ -128,14 +132,12 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 		vec3 rayPos = rayStart + stepLength * rayStep;
 		vec3 shadowPos = shadowStart + stepLength * shadowStep;
 
-		if (rayPos.y > (CLOUD_CU_ALTITUDE + CLOUD_CU_THICKNESS)) continue;
-
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 stepFogmass = CalculateFogDensity(rayPos) + isotropicDensity;
+		vec2 stepFogmass = CalculateFogDensity(rayPos) + isotropicFog;
 		stepFogmass *= stepExp * rayLength;
 
-		if (dot(stepFogmass, vec2(1.0)) < 1e-6) continue; // Faster than maxOf()
+		if (dot(stepFogmass, vec2(1.0)) < 1e-4) continue; // Faster than maxOf()
 
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -160,8 +162,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
-			float cloudShadow = texelFetch(colortex10, ivec2(cloudShadowCoord * vec2(256.0, 384.0)), 0).a;
-			sampleShadow *= saturate(cloudShadow * 2.0 - 1.0);
+			float cloudShadow = texture(colortex10, cloudShadowCoord).a;
+			sampleShadow *= cloudShadow;
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
@@ -181,7 +183,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 directIlluminance = loadDirectIllum();
 	vec3 skyIlluminance = loadSkyIllum();
 
-	vec3 scattering = scatteringSun * rPI * directIlluminance;
+	vec3 scattering = scatteringSun * directIlluminance;
 	scattering += scatteringSky * mix(skyIlluminance, directIlluminance * 1e-2, wetness * 0.4 + 0.2);
 	scattering *= eyeSkylightSmooth;
 

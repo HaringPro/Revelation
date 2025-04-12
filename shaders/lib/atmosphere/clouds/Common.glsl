@@ -15,6 +15,10 @@
 /* Low-cloud family */
     #define CLOUD_CUMULUS 	                    // Enables cumulus clouds
 
+	#ifndef CLOUD_CUMULUS
+		#undef CLOUD_SHADOWS
+	#endif
+
     #define CLOUD_CU_SAMPLES 		   	28      // Sample count for cumulus clouds ray marching. [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 36 40 50 60 100]
 
     #define CLOUD_CU_SUNLIGHT_SAMPLES 	5       // Sample count for sunlight optical depth calculation. [2 3 4 5 6 7 8 9 10 12 15 17 20]
@@ -43,12 +47,12 @@
 
 /* Cloud shadows */
 	#if defined DISTANT_HORIZONS
-		#define INF float(dhRenderDistance)
+		#define CSD_INF float(dhRenderDistance)
 	#else
-		#define INF far
+		#define CSD_INF far
 	#endif
-    #define CLOUD_SHADOW_DISTANCE 		512.0     // Render distance of cloud shadows. [INF 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
-
+    #define CLOUD_SHADOW_DISTANCE 		512.0   // Render distance of cloud shadows. [CSD_INF 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
+    #define CLOUD_SHADOW_SAMPLES 	    16      // Sample count for cloud shadows. [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 25 30 35 40 45 50]
 
 //================================================================================================//
 
