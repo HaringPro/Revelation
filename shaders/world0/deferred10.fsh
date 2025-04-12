@@ -43,10 +43,6 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-#if defined CLOUDS && !defined CLOUD_CBR_ENABLED
-	uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
-#endif
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//
@@ -67,10 +63,6 @@ flat in vec3 skyIlluminance;
 	#include "/lib/atmosphere/Aurora.glsl"
 #endif
 
-#if defined CLOUDS && !defined CLOUD_CBR_ENABLED
-	#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
-	#include "/lib/atmosphere/clouds/Render.glsl"
-#endif
 #ifdef CLOUD_SHADOWS
 	#include "/lib/atmosphere/clouds/Shadows.glsl"
 #endif
@@ -115,6 +107,8 @@ void main() {
 	vec3 albedoRaw = loadAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
 
+	float dither = BlueNoiseTemporal(screenTexel);
+
 	if (screenPos.z > 0.999999 + float(materialID)) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
 		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
@@ -131,11 +125,13 @@ void main() {
 		sceneOut = skyRadiance + transmittance * celestial;
 
 		#ifdef CLOUDS
-			#ifndef CLOUD_CBR_ENABLED
-				float dither = Bayer64Temporal(gl_FragCoord.xy);
-				vec4 cloudData = RenderClouds(worldDir/* , skyRadiance */, dither);
-			#else
+			// Dither offset
+			screenCoord += viewPixelSize * (dither * 2.0 - 1.0);
+
+			#ifdef CLOUD_CBR_ENABLED
 				vec4 cloudData = textureBicubic(colortex9, screenCoord);
+			#else
+				vec4 cloudData = textureBicubic(colortex2, screenCoord);
 			#endif
 			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
@@ -203,8 +199,6 @@ void main() {
 
 		float LdotV = dot(worldLightVector, -worldDir);
 		float NdotL = dot(worldNormal, worldLightVector);
-
-		float dither = BlueNoiseTemporal(screenTexel);
 
 		// Ambient occlusion
 		#if AO_ENABLED > 0 && !defined SSPT_ENABLED

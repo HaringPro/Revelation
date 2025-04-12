@@ -30,7 +30,11 @@ uniform sampler2D colortex4; // Global illuminances
 
 //======// Main //================================================================================//
 void main() {
-    gl_Position = vec4(vaPosition * (2.0 / CLOUD_CBR_SCALE) - 1.0, 1.0);
+	#ifdef CLOUD_CBR_ENABLED
+    	gl_Position = vec4(vaPosition * (2.0 / CLOUD_CBR_SCALE) - 1.0, 1.0);
+	#else
+    	gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
+	#endif
 
 	directIlluminance = loadDirectIllum();
 	skyIlluminance = loadSkyIllum();

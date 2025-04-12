@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/clouds/CheckerboardRender.frag"
+#include "/program/clouds/Render.frag"

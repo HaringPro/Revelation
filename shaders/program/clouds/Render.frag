@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Checkerboard render low-res clouds
+	Pass: Checkerboard render clouds
 	Reference: https://www.intel.com/content/dam/develop/external/us/en/documents/checkerboard-rendering-for-real-time-upscaling-on-intel-integrated-graphics.pdf
 			   https://developer.nvidia.com/sites/default/files/akamai/gameworks/samples/DeinterleavedTexturing.pdf
 
@@ -29,7 +29,7 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
+uniform sampler3D COMBINED_TEXTURE_SAMPLER;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -79,21 +79,36 @@ vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-	ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
+	#ifdef CLOUD_CBR_ENABLED
+		ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
+	#else
+		#define cloudTexel screenTexel
+	#endif
 	vec2 cloudUv = texelToUv(cloudTexel);
 
 	if (
-	#if defined DISTANT_HORIZONS
-		min(sampleDepthMax4x4DH(cloudUv), loadDepth0(cloudTexel))
+	#ifdef CLOUD_CBR_ENABLED
+		#if defined DISTANT_HORIZONS
+			min(sampleDepthMax4x4DH(cloudUv), loadDepth0(cloudTexel))
+		#else
+			sampleDepthMax4x4(cloudUv)
+		#endif
 	#else
-		sampleDepthMax4x4(cloudUv)
+		#if defined DISTANT_HORIZONS
+			min(loadDepth0DH(cloudTexel), loadDepth0(cloudTexel))
+		#else
+			loadDepth0(cloudTexel)
+		#endif
 	#endif
-	 > 0.999999) {
+	> 0.999999) {
+		#ifdef CLOUD_CBR_ENABLED
+			float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
+		#else
+			float dither = BlueNoiseTemporal(cloudTexel);
+		#endif
+
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
-
-		// Checkerboard dithering
-		float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
 
 		cloudOut = RenderClouds(worldDir, dither);
 	} else {
