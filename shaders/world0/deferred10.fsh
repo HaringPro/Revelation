@@ -8,7 +8,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Deferred lighting and sky rendering
+	Pass: Deferred lighting and sky combination
 		  Compute specular reflections
 
 --------------------------------------------------------------------------------
@@ -332,20 +332,21 @@ void main() {
 			}
 		}
 
-		// Skylight and bounced light
+		// Skylight and bounced sunlight
 		#ifndef SSPT_ENABLED
 			if (lightmap.y > 1e-5) {
 				// Skylight
-				vec3 skylight = FromSphericalHarmonics(skySH, worldNormal);
-				skylight = mix(directIlluminance * 5e-3, skylight, cloudShadow * 0.5 + 0.5) + lightningShading * 1e-3;
+				vec3 skylight = lightningShading;
 				#ifdef AURORA
 					skylight += 0.2 * auroraShading;
 				#endif
+				skylight *= 1e-3 * (worldNormal.y * 0.5 + 0.5);
+				skylight += FromSphericalHarmonics(skySH, worldNormal);
 
 				sceneOut += skylight * PI * cube(lightmap.y) * ao;
 
-				// Bounced light
 			#ifndef RSM_ENABLED
+				// Bounced sunlight
 				float bounce = CalculateApproxBouncedLight(worldNormal);
 				bounce *= pow5(lightmap.y);
 				sceneOut += bounce * sunlightMult * ao;
