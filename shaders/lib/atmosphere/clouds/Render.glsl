@@ -222,7 +222,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	//================================================================================================//
 
-	// Low-cloud family
+	// Low-level clouds
 	#ifdef CLOUD_CUMULUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_CU_ALTITUDE) // Below clouds
 		 || (clamp(eyeAltitude, CLOUD_CU_ALTITUDE, cumulusMaxAltitude) == eyeAltitude) // In clouds
@@ -400,7 +400,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	bool planetIntersection = RayIntersectsGround(r, mu);
 
-	// Mid-cloud family
+	// Mid-level clouds
 	#ifdef CLOUD_ALTOSTRATUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_MID_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_MID_ALTITUDE)) { // Above clouds
@@ -430,7 +430,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 		}
 	#endif
 
-	// High-cloud family
+	// High-level clouds
 	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_HIGH_ALTITUDE) // Below clouds
 		 || (planetIntersection && eyeAltitude > CLOUD_HIGH_ALTITUDE)) { // Above clouds
