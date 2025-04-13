@@ -85,7 +85,7 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
-mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
+mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
 		const uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
@@ -96,38 +96,51 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 
 	const float toExp6 = 2.58497;
 
+	vec3 rayStart = gbufferModelViewInverse[3].xyz;
+
 	float rayLength = sdot(worldPos);
 	float norm = inversesqrt(rayLength);
+	rayLength *= norm;
 	vec3 worldDir = worldPos * norm;
 
+	float skyUniformFog = 0.0;
+	if (skyMask) {
 	#ifdef VF_CLOUD_SHADOWS
+		if (eyeAltitude > CLOUD_CU_ALTITUDE || (worldDir.y < 0.0 && eyeAltitude < 0.0)) {
+			return mat2x3(vec3(0.0), vec3(1.0));
+		}
+
 		const float cumulusTopRadius = planetRadius + cumulusMaxAltitude;
-		float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
+		vec2 intersection = RaySphericalShellIntersection(viewerHeight, worldDir.y, planetRadius, cumulusTopRadius);
+		// float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
 
-		// Check if the ray is outside the cumulus top
-		if (worldDir.y > 0.0 && rayLengthMax < 0.0) return mat2x3(vec3(0.0), vec3(1.0));
+		if (intersection.y < 0.0) return mat2x3(vec3(0.0), vec3(1.0));
+
+		rayLength = clamp(intersection.y - intersection.x, EPS, 4096.0);
+		rayStart += worldDir * intersection.x;
 	#else
-		#define rayLengthMax far
+		rayLength = far;
 	#endif
-	rayLength = mix(rayLength * norm, rayLengthMax, skyMask);
 
-	vec3 rayStart = gbufferModelViewInverse[3].xyz + cameraPosition,
-		 rayStep  = worldDir * rayLength;
+		skyUniformFog = 32.0 / rayLength;
+	}
 
-	vec3 shadowStart = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz),
+	vec3 rayStep = worldDir * rayLength;
+
+	vec3 shadowStart = WorldPosToShadowPos(rayStart),
 		 shadowStep  = mat3(shadowModelView) * rayStep;
 	     shadowStep = diagonal3(shadowProjection) * shadowStep;
 
 	rayLength *= toExp6 * 0.2 * rSteps;
+	rayStart += cameraPosition;
+
+	float LdotV = dot(worldLightVector, worldDir);
+	vec2 phase = vec2(HG_DrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
+	phase.x = mix(uniformPhase, phase.x, 0.65); // Trick to fit the multi-scattering
 
 	vec3 scatteringSun = vec3(0.0);
 	vec3 scatteringSky = vec3(0.0);
 	vec3 transmittance = vec3(1.0);
-
-	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HG_DrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
-	phase.x = mix(uniformPhase, phase.x, 0.65);
-	float isotropicFog = 64.0 / rayLengthMax * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
 		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
@@ -138,7 +151,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 stepFogmass = CalculateFogDensity(rayPos) + isotropicFog;
+		vec2 stepFogmass = CalculateFogDensity(rayPos) + skyUniformFog;
 		stepFogmass *= stepExp * rayLength;
 
 		if (dot(stepFogmass, vec2(1.0)) < 1e-4) continue; // Faster than maxOf()
@@ -226,7 +239,7 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			volFogData = AirVolumetricFog(worldPos, dither, step(0.999999, screenPos.z));
+			volFogData = AirVolumetricFog(worldPos, dither, screenPos.z > 0.999999);
 		}
 	#endif
 	#ifdef UW_VOLUMETRIC_FOG
