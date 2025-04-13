@@ -125,8 +125,8 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 transmittance = vec3(1.0);
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HG_DrainePhase(LdotV, 15.0), RayleighPhase(LdotV));
-	phase.x = mix(uniformPhase, phase.x, 0.75);
+	vec2 phase = vec2(HG_DrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
+	phase.x = mix(uniformPhase, phase.x, 0.65);
 	float isotropicFog = 64.0 / rayLengthMax * skyMask;
 
 	for (uint i = 0u; i < steps; ++i) {
