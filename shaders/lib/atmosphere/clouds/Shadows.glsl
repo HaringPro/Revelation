@@ -72,7 +72,8 @@ float CalculateCloudShadows(in vec3 rayPos) {
 		if (transmittance > 2.0) break;
 	}
 
-	float cloudShadow = fastExp(-transmittance * stepLength);
+	// float cloudShadow = exp2(-(cumulusExtinction * rLOG2) * transmittance * stepLength);
+	float cloudShadow = exp2(-(0.25 * rLOG2) * transmittance * stepLength);
 
 	float timeFade = sqr(remap(0.05, 0.1, cloudLightVector.y));
 	return oms(timeFade) + cloudShadow * timeFade;

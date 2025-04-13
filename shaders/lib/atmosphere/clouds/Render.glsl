@@ -62,9 +62,9 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
     return opticalDepth * (cumulusExtinction * 0.25);
 }
 
-float CloudVolumeGroundLightOD(in vec3 rayPos) {
+float CloudVolumeGroundLightOD(in float density, in float height) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return max0(rayPos.y - (CLOUD_CU_ALTITUDE + 50.0)) * cumulusExtinction * 0.125;
+    return density * height * CLOUD_CU_THICKNESS * cumulusExtinction;
 }
 
 //================================================================================================//
@@ -333,8 +333,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 					// Compute the optical depth of ground light through clouds
-					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);
-					float scatteringGround = exp2(-(opticalDepthGround * rLOG2 + 1.0));
+					float opticalDepthGround = CloudVolumeGroundLightOD(stepDensity, heightFraction);
+					float scatteringGround = fastExp(-opticalDepthGround);
 
 					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
 										   scatteringSky + scatteringGround);

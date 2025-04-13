@@ -167,7 +167,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
 			float cloudShadow = texture(colortex10, cloudShadowCoord).x;
-			sampleShadow *= cloudShadow;
+			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
