@@ -15,9 +15,9 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 	vec3 directIlluminance = loadDirectIllum();
 	vec3 skyIlluminance = loadSkyIllum();
 
-	vec3 scattering = oms(wetnessCustom * 0.8) * 1e-2 * phase * directIlluminance * sunTransmittance;
-	scattering += 1e-2 * mix(skyIlluminance * 0.4, vec3(luminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
-	scattering *= oms(transmittance) * skylight / waterExtinction;
+	vec3 scattering = oms(wetnessCustom * 0.8) * phase * directIlluminance * sunTransmittance;
+	scattering += uniformPhase * mix(skyIlluminance, vec3(luminance(skyIlluminance) * 0.25), 0.7 * wetnessCustom);
+	scattering *= oms(transmittance) * skylight / waterExtinction * 1e-2;
 
 	return mat2x3(scattering, transmittance);
 }
@@ -114,9 +114,9 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		vec3 directIlluminance = loadDirectIllum();
 		vec3 skyIlluminance = loadSkyIllum();
 
-		vec3 scattering = scatteringSun * 1e-2 * oms(wetnessCustom * 0.8) * phase * directIlluminance;
-		scattering += scatteringSky * 1e-2 * mix(skyIlluminance * 0.4, vec3(luminance(skyIlluminance) * 0.1), 0.7 * wetnessCustom);
-		scattering *= oms(stepTransmittance) / waterExtinction;
+		vec3 scattering = scatteringSun * oms(wetnessCustom * 0.8) * phase * directIlluminance;
+		scattering += scatteringSky * uniformPhase * mix(skyIlluminance, vec3(luminance(skyIlluminance) * 0.25), 0.7 * wetnessCustom);
+		scattering *= oms(stepTransmittance) / waterExtinction * 1e-2;
 
 		return mat2x3(scattering, transmittance);
 	}

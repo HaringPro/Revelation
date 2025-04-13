@@ -51,7 +51,7 @@ void main() {
 	if (index == 0) {
 		vec3 camera = vec3(0.0, viewerHeight, 0.0);
 		vec3 sunIrradiance, moonIrradiance;
-		illuminance[1] = GetSunAndSkyIrradiance(camera, worldSunVector, sunIrradiance, moonIrradiance);
+		illuminance[1] = GetSunAndSkyIrradiance(camera, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
 
 		// Fix the sunlight misalignment at sunrise and sunset
 		sunIrradiance *= 1.0 - curve(saturate(1.0 - worldSunVector.y * 32.0));

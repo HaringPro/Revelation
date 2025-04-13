@@ -14,15 +14,15 @@ void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float v
     // Powdered snow fog
 	#ifdef POWDERED_SNOW_FOG
 		if (isEyeInWater == 3) {
-			const vec3 fogExtinctionCoeff = vec3(0.8, 0.7, 0.4);
-			vec3 transmittance = fastExp(-fogExtinctionCoeff * viewDistance * 3.0);
+			const vec3 fogExtinctionCoeff = vec3(0.35, 0.65, 0.75);
+			vec3 transmittance = fastExp(-fogExtinctionCoeff * viewDistance * 2.0);
 			fogTransmittance = dot(transmittance, vec3(0.4));
 
 			vec3 directIlluminance = loadDirectIllum();
 			vec3 skyIlluminance = loadSkyIllum();
 
-			vec3 scattering = skyIlluminance * 2.0 + directIlluminance * 0.03;
-			scattering *= 3.0 * oms(wetnessCustom * 0.7);
+			vec3 scattering = skyIlluminance + directIlluminance * 0.2 * oms(wetnessCustom * 0.8);
+			scattering *= rPI;
 
 			scene = mix(scattering * eyeSkylightSmooth, scene, transmittance);
 		}

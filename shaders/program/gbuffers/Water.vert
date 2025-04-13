@@ -16,7 +16,6 @@ out vec3 worldPos;
 out vec3 viewPos;
 
 flat out vec3 directIlluminance;
-flat out vec3 skyIlluminance;
 
 //======// Attribute //===========================================================================//
 
@@ -91,5 +90,4 @@ void main() {
 	#endif
 
 	directIlluminance = loadDirectIllum();
-	skyIlluminance = loadSkyIllum();
 }

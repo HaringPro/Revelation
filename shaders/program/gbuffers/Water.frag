@@ -37,7 +37,6 @@ in vec3 worldPos;
 in vec3 viewPos;
 
 flat in vec3 directIlluminance;
-flat in vec3 skyIlluminance;
 
 //======// Struct //==============================================================================//
 

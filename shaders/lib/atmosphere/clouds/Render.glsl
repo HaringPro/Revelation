@@ -59,7 +59,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
         // opticalDepth += density;
     }
 
-    return opticalDepth * (cumulusExtinction * 0.1);
+    return opticalDepth * (cumulusExtinction * 0.25);
 }
 
 float CloudVolumeGroundLightOD(in vec3 rayPos) {
@@ -107,7 +107,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
 		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-		float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+		float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
@@ -117,7 +117,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 			// Compute local lighting
 			vec3 sunIrradiance, moonIrradiance;
 			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_MID_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance);
+			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
 			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
 			skyIlluminance += lightningShading * 4e-3;
@@ -127,7 +127,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		#endif
 
 		vec3 scattering = scatteringSun * rPI * directIlluminance;
-		scattering += scatteringSky * uniformPhase * skyIlluminance;
+		scattering += scatteringSky * (uniformPhase * rPI) * skyIlluminance;
 		scattering *= oms(0.6 * wetness) * absorption * powder * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
@@ -174,7 +174,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
 		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-		float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+		float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
@@ -184,7 +184,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 			// Compute local lighting
 			vec3 sunIrradiance, moonIrradiance;
 			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_HIGH_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance);
+			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
 			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
 			skyIlluminance += lightningShading * 4e-3;
@@ -194,7 +194,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		#endif
 
 		vec3 scattering = scatteringSun * rPI * directIlluminance;
-		scattering += scatteringSky * uniformPhase * skyIlluminance;
+		scattering += scatteringSky * (uniformPhase * rPI) * skyIlluminance;
 		scattering *= oms(0.6 * wetness) * absorption * powder * rcp(cirrusExtinction);
 
 		return vec4(scattering, absorption);
@@ -330,11 +330,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float opticalDepthSky = CloudVolumeSkylightOD(rayPos, lightNoise.y) * -rLOG2;
 					// See slide 85 of [Schneider, 2017]
 					// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-					float scatteringSky = exp2(1.0 + max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
+					float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 					// Compute the optical depth of ground light through clouds
 					float opticalDepthGround = CloudVolumeGroundLightOD(rayPos);
-					float scatteringGround = exp2(-(opticalDepthGround * rLOG2 + 0.5));
+					float scatteringGround = exp2(-(opticalDepthGround * rLOG2 + 1.0));
 
 					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
 										   scatteringSky + scatteringGround);
@@ -365,7 +365,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						// Compute local lighting
 						vec3 sunIrradiance, moonIrradiance;
 						vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
-						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayPosWeighted, worldSunVector, sunIrradiance, moonIrradiance);
+						vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + rayPosWeighted, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
 						vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 		
 						skyIlluminance += lightningShading * 4e-3;
@@ -376,7 +376,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					stepScattering *= oms(0.6 * wetness) * rcp(cumulusExtinction);
 					vec3 scattering = stepScattering.x * rPI * directIlluminance;
-					scattering += stepScattering.y * uniformPhase * skyIlluminance;
+					scattering += stepScattering.y * (uniformPhase * rPI) * skyIlluminance;
 
 					// Compute aerial perspective
 					#ifdef CLOUD_AERIAL_PERSPECTIVE
