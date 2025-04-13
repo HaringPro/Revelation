@@ -20,7 +20,7 @@
 	const int 	colortex7Format 			= RGBA16UI;
 	const int 	colortex8Format 			= RGB16;
 	const int 	colortex9Format 			= RGBA16F;
-	const int 	colortex10Format 			= RGBA8;
+	const int 	colortex10Format 			= R16;
 	const int 	colortex11Format 			= RGBA32UI;
 	const int 	colortex12Format 			= ;
 	const int 	colortex13Format 			= R8I;
@@ -70,7 +70,7 @@
 	|	colortex7	|   rgba16ui        |	Full res  	|	Gbuffer data 0
 	|	colortex8	|   rgb16           |	Full res  	|	Gbuffer data 1 -> Bloomy fog transmittance -> LDR output
 	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history
-	|	colortex10	|   rgba8           |	256, 384   	|	Transmittance-View LUT, cloud shadow map
+	|	colortex10	|   r16             |	256, 384   	|	Cloud shadow map
 	|	colortex11	|   rgba32ui        |	Half res  	|	Volumetric fog, linear depth
 	|	colortex12	|               	|	  			|	Unused
 	|	colortex13	|   r8i	        	|	Full res  	|	Cloud frame index

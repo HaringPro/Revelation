@@ -101,7 +101,11 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 	vec3 worldDir = worldPos * norm;
 
 	#ifdef VF_CLOUD_SHADOWS
-		float rayLengthMax = maxEps(planetRadius + cumulusMaxAltitude - viewerHeight) / max(0.125, worldDir.y);
+		const float cumulusTopRadius = planetRadius + cumulusMaxAltitude;
+		float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
+
+		// Check if the ray is outside the cumulus top
+		if (worldDir.y > 0.0 && rayLengthMax < 0.0) return mat2x3(vec3(0.0), vec3(1.0));
 	#else
 		#define rayLengthMax far
 	#endif
@@ -162,7 +166,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in float skyMask) {
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
-			float cloudShadow = texture(colortex10, cloudShadowCoord).a;
+			float cloudShadow = texture(colortex10, cloudShadowCoord).x;
 			sampleShadow *= cloudShadow;
 		#endif
 

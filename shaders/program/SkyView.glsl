@@ -6,7 +6,7 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-    Pass: Compute Sky-View LUT, Transmittance-View LUT, cloud shadows
+    Pass: Compute Sky-View LUT, cloud shadow map
 
 --------------------------------------------------------------------------------
 */
@@ -50,7 +50,7 @@ void main() {
 
 /* RENDERTARGETS: 5,10 */
 layout (location = 0) out vec3 skyViewOut;
-layout (location = 1) out vec4 transmittanceOut;
+layout (location = 1) out float cloudShadowOut;
 
 //======// Input //===============================================================================//
 
@@ -109,29 +109,26 @@ uniform int dhRenderDistance;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    // Render sky and transmittance view LUTs
+    // Render sky-view LUTs
 	if (screenTexel.y >= skyViewRes.y) {
-		// Sky map with clouds
-
+		// With clouds
 		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut.rgb) * skyIntensity;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
 
 		#ifdef CLOUDS
             vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
-            transmittanceOut.rgb *= cloudData.a;
         #endif
 	} else {
-		// Raw sky map
-
+		// Raw
 		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector, transmittanceOut.rgb) * skyIntensity;
+		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
 	}
 
     // Render cloud shadow map
     #ifdef CLOUD_SHADOWS
         vec3 rayPos = CloudShadowToWorldCoord(screenCoord);
-        transmittanceOut.a = CalculateCloudShadows(rayPos);
+        cloudShadowOut = CalculateCloudShadows(rayPos);
     #endif
 }
 

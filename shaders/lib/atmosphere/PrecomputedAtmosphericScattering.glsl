@@ -347,6 +347,76 @@ vec3 GetSkyRadiance(
         return (rayleigh + mie + ground) * oms(wetness * 0.6);
 }
 
+vec3 GetSkyRadiance(
+    vec3 view_ray,
+    vec3 sun_direction
+    ) {
+		vec3 camera = vec3(0.0, viewerHeight, 0.0);
+        // Compute the distance to the top atmosphere boundary along the view ray,
+        // assuming the viewer is in space (or NaN if the view ray does not intersect
+        // the atmosphere).
+        float r = length(camera);
+        float rmu = dot(camera, view_ray);
+        float distance_to_top_atmosphere_boundary = -rmu - sqrt(rmu * rmu - r * r + atmosphere_top_radius_sq);
+
+        // If the viewer is in space and the view ray intersects the atmosphere, move
+        // the viewer to the top atmosphere boundary (along the view ray):
+        if (distance_to_top_atmosphere_boundary > 0.0) {
+            camera += view_ray * distance_to_top_atmosphere_boundary;
+            r = atmosphereModel.top_radius;
+            rmu += distance_to_top_atmosphere_boundary;
+        } else if (r > atmosphereModel.top_radius) {
+            // If the view ray does not intersect the atmosphere, simply return 0.
+            return vec3(0.0);
+        }
+
+        // Compute the r, mu, mu_s and nu parameters needed for the texture lookups.
+        float mu = rmu / r;
+        float mu_s = dot(camera, sun_direction) / r;
+        float nu = dot(view_ray, sun_direction);
+
+        vec3 sun_single_mie_scattering;
+        vec3 sun_scattering;
+
+        vec3 moon_single_mie_scattering;
+        vec3 moon_scattering;
+
+        vec3 ground = vec3(0.0);
+        #ifdef PLANET_GROUND
+            bool ray_r_mu_intersects_ground = RayIntersectsGround(r, mu);
+
+            if (ray_r_mu_intersects_ground) {
+                vec3 planet_surface = camera + view_ray * DistanceToBottomAtmosphereBoundary(r, mu);
+
+                float r = length(planet_surface);
+                float mu_s = dot(planet_surface, sun_direction) / r;
+
+                vec3 sky_irradiance = GetIrradiance(r, mu_s) + GetIrradiance(r, -mu_s) * moonlightMult;
+                vec3 sun_irradiance = atmosphereModel.solar_irradiance * GetTransmittanceToSun(r, mu_s);
+
+                float d = distance(camera, planet_surface);
+                vec3 surface_transmittance = GetTransmittance(r, mu, d, ray_r_mu_intersects_ground);
+
+                ground = mix(sky_irradiance, sun_irradiance * 0.5, wetness * 0.6) * atmosphereModel.ground_albedo * surface_transmittance;
+            }
+        #else
+            bool ray_r_mu_intersects_ground = false;
+        #endif
+
+        sun_scattering = GetCombinedScattering(r, mu, mu_s, nu, ray_r_mu_intersects_ground, sun_single_mie_scattering);
+        moon_scattering = GetCombinedScattering(r, mu, -mu_s, -nu, ray_r_mu_intersects_ground, moon_single_mie_scattering);
+
+        vec3 rayleigh = sun_scattering * RayleighPhase(nu)
+                     + moon_scattering * RayleighPhase(-nu) * moonlightMult;
+
+        vec3 mie = sun_single_mie_scattering * CornetteShanksPhase(nu, mie_phase_g)
+                + moon_single_mie_scattering * CornetteShanksPhase(-nu, mie_phase_g) * moonlightMult;
+
+        rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
+
+        return (rayleigh + mie + ground) * oms(wetness * 0.6);
+}
+
 vec3 GetSkyRadianceToPoint(
     //vec3 camera,
     vec3 point,

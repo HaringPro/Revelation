@@ -43,6 +43,8 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler3D COMBINED_TEXTURE_SAMPLER;
+
 #include "/lib/universal/Uniform.glsl"
 
 //======// Struct //==============================================================================//
@@ -57,6 +59,7 @@ flat in vec3 skyIlluminance;
 #include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
 #include "/lib/atmosphere/Celestial.glsl"
 
 #ifdef AURORA
@@ -111,18 +114,20 @@ void main() {
 
 	if (screenPos.z > 0.999999 + float(materialID)) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
-		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
+		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
 
-		vec3 celestial = RenderSun(worldDir, worldSunVector);
-		vec3 moonDisc = mix(albedo, luminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
-		#ifdef GALAXY
-			celestial += mix(RenderGalaxy(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
-		#else
-			celestial += mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
-		#endif
+		if (!RayIntersectsGround(viewerHeight, worldDir.y)) {
+			vec3 celestial = RenderSun(worldDir, worldSunVector);
+			vec3 moonDisc = mix(albedo, luminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
+			#ifdef GALAXY
+				celestial += mix(RenderGalaxy(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+			#else
+				celestial += mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+			#endif
 
-		vec3 transmittance = texture(colortex10, skyViewCoord).rgb;
-		sceneOut = skyRadiance + transmittance * celestial;
+			vec3 transmittance = GetTransmittanceToTopAtmosphereBoundary(viewerHeight, worldDir.y);
+			sceneOut += celestial * mix(vec3(1.0), transmittance, step(viewerHeight, atmosphereModel.top_radius));
+		}
 
 		#ifdef CLOUDS
 			// Dither offset
@@ -232,8 +237,8 @@ void main() {
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(worldPos);
-			vec2 cloudShadowCoord = WorldToCloudShadowCoord(worldPos);
-			float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).a;
+			vec2 cloudShadowCoord = WorldToCloudShadowCoord(worldPos) + rcp(256.0) * (dither * 2.0 - 1.0);
+			float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).x;
 			cloudShadow = min(cloudShadow, 1.0 - wetness * 0.6);
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;

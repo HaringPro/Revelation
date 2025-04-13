@@ -30,7 +30,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 8 */
-layout (location = 0) out vec3 LDRImageOut;
+out vec3 LDRImageOut;
 
 //======// Uniform //=============================================================================//
 
@@ -40,7 +40,6 @@ uniform sampler2D colortex4; // Bloom tiles
 uniform sampler2D colortex5; // Sky-View LUT
 uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex8; // Bloomy fog transmittance
-uniform sampler2D colortex10; // Transmittance-View LUT
 
 uniform float aspectRatio;
 uniform float rainStrength;
@@ -213,8 +212,6 @@ void main() {
 	#ifdef DEBUG_SKYVIEW
 		if (all(lessThan(screenTexel, ivec2(skyViewRes.x, skyViewRes.y << 1)))) {
 			HDRImage = texelFetch(colortex5, screenTexel, 0).rgb;
-		} else if (all(lessThan(screenTexel, ivec2(skyViewRes.x, skyViewRes.y) << 1))) {
-			HDRImage = texelFetch(colortex10, screenTexel - ivec2(skyViewRes.x, 0), 0).rgb;
 		}
 	#endif
 
