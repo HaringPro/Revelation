@@ -157,6 +157,7 @@ float DrainePhase(in float mu, in float g, in float a) {
 }
 
 // Mix between HG and Draine’s phase function (Paper: An Approximate Mie Scattering Function for Fog and Cloud Rendering)
+// d is the water droplet diameters in µm
 float HG_DrainePhase(in float mu, in float d) {
 	float gHG = fastExp(-0.0990567 / (d - 1.67154));
 	float gD  = fastExp(-2.20679 / (d + 3.91029) - 0.428934);
