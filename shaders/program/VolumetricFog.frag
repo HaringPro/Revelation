@@ -89,6 +89,10 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 	}
 #endif
 
+#ifndef CLOUD_SHADOWS
+	#undef VF_CLOUD_SHADOWS
+#endif
+
 mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
@@ -127,7 +131,6 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 		rayLength = far;
 		skyUniformFog = 48.0 / far;
 	#endif
-
 	}
 
 	vec3 rayStep = worldDir * rayLength;
@@ -179,10 +182,6 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 				ivec2 shadowTexel = ivec2(shadowScreenPos.xy * realShadowMapRes);
 				sampleShadow = step(shadowScreenPos.z, texelFetch(shadowtex1, shadowTexel, 0).x);
 			}
-		#endif
-
-		#ifndef CLOUD_SHADOWS
-			#undef VF_CLOUD_SHADOWS
 		#endif
 
 		#ifdef VF_CLOUD_SHADOWS
