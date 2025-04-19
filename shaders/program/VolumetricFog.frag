@@ -175,6 +175,10 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 			}
 		#endif
 
+		#ifndef CLOUD_SHADOWS
+			#undef VF_CLOUD_SHADOWS
+		#endif
+
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
 			vec2 cloudShadowCoord = ConvertCloudShadowPos(projMAD(shadowProjectionInverse, shadowPos));
