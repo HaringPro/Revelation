@@ -111,7 +111,7 @@ vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in float d
 		}
 	}
 
-	return sqr(max(caustics, 0.4) * 0.5 + 0.2);
+	return sqr(max(caustics, 0.4) * 0.75);
 }
 #else
 float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
@@ -128,7 +128,7 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 		caustics += exp2(-sdot(offset - waveNormal) * 1e3);
 	}
 
-	return sqr(max(caustics, 0.4) * 0.5 + 0.2);
+	return sqr(max(caustics, 0.4) * 0.75);
 }
 #endif
 
