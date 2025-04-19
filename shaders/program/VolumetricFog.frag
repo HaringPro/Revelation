@@ -38,6 +38,9 @@ uniform sampler2D shadowcolor1;
 
 uniform vec3 fogWind;
 
+uniform float biomeSandstorm;
+uniform float biomeSnowstorm;
+
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
@@ -49,6 +52,7 @@ uniform vec3 fogWind;
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/clouds/Shadows.glsl"
 
+// x: Mie y: Rayleigh
 const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
 
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
@@ -67,19 +71,19 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 #if VOLUMETRIC_FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - vec2(2.0));
+		return exp2(min((SEA_LEVEL - rayPos.y) * falloffScale, 0.0) - vec2(1.0 - (biomeSandstorm + biomeSnowstorm) * 2.0, 1.0));
 	}
 #elif VOLUMETRIC_FOG_QUALITY == 1
 	/* Medium */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		vec2 density = exp2(min((SEA_LEVEL + 16.0 - rayPos.y) * falloffScale, 0.1) - 2.0);
+		vec2 density = exp2(min((SEA_LEVEL - rayPos.y) * falloffScale, 0.0) - vec2(1.0 - (biomeSandstorm + biomeSnowstorm), 1.0));
 
 		rayPos *= 0.07;
 		rayPos += fogWind;
 		float noise = Calculate3DNoise(rayPos) * 3.0;
 		noise -= Calculate3DNoise(rayPos * 4.0 + fogWind);
 
-		density.x *= saturate(noise * 8.0 - 6.0) * 1.4;
+		density.x *= saturate(noise * 8.0 - 6.0) * (1.5 + biomeSandstorm + biomeSnowstorm);
 
 		return density;
 	}
@@ -117,11 +121,13 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 
 		rayLength = clamp(intersection.y - intersection.x, EPS, 4096.0);
 		rayStart += worldDir * intersection.x;
+
+		skyUniformFog = 48.0 / 4096.0;
 	#else
 		rayLength = far;
+		skyUniformFog = 48.0 / far;
 	#endif
 
-		skyUniformFog = 32.0 / rayLength;
 	}
 
 	vec3 rayStep = worldDir * rayLength;
@@ -135,7 +141,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 
 	float LdotV = dot(worldLightVector, worldDir);
 	vec2 phase = vec2(HG_DrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
-	phase.x = mix(uniformPhase, phase.x, 0.65); // Trick to fit the multi-scattering
+	phase.x = mix(uniformPhase, phase.x, 0.75); // Trick to fit the multi-scattering
 
 	vec3 scatteringSun = vec3(0.0);
 	vec3 scatteringSky = vec3(0.0);
