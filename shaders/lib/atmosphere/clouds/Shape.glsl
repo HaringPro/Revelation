@@ -96,7 +96,7 @@ float CloudHighDensity(in vec2 rayPos) {
 	float density = 0.0;
 
 	#ifdef CLOUD_CIRROCUMULUS
-	/* Cirrocumulus clouds */ if (localCoverage > 0.5) {
+	/* Cirrocumulus clouds */ if (localCoverage > 0.4) {
 		vec2 position = rayPos * 6e-5 - (shift + curl) * 0.5;
 
 		float baseCoverage = texture(noisetex, position * 0.08).z * 0.75 + 0.25;
@@ -104,24 +104,24 @@ float CloudHighDensity(in vec2 rayPos) {
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
-		cirrocumulus += texture(noisetex, (position - shift) * 0.9).z - 0.2;
+		cirrocumulus += texture(noisetex, position - shift).z - 0.5;
 
-		cirrocumulus = saturate(saturate(cirrocumulus) + saturate((baseCoverage + localCoverage) * (2.0 + CLOUD_CC_COVERAGE) - 2.15) - 1.0);
-		if (cirrocumulus > EPS) {
-			position.x += (cirrocumulus - shift.x) * 0.125;
+		cirrocumulus = remap(1.0 - saturate((baseCoverage + localCoverage) * 1.5 * (1.0 + CLOUD_CC_COVERAGE) - 1.65), 1.0, saturate(cirrocumulus));
+		// if (cirrocumulus > EPS) {
+			// position.x += (cirrocumulus - shift.x) * 0.125;
 
-			#if !defined PASS_SKY_VIEW
-				// Detail shape of the cirrocumulus clouds
-				cirrocumulus += 0.17 * texture(noisetex, position * 2.0).z;
-				cirrocumulus += 0.13 * texture(noisetex, position * 4.0 + curl).z - 0.15;
-			#endif
+			// #if !defined PASS_SKY_VIEW
+			// 	// Detail shape of the cirrocumulus clouds
+			// 	cirrocumulus += 0.1 * texture(noisetex, position * 2.0).z - 0.08;
+			// 	cirrocumulus += 0.06 * texture(noisetex, position * 4.0 + curl).z;
+			// #endif
 
 			density += pow4(saturate(cirrocumulus * 2.0));
-		}
+		// }
 	}
 	#endif
 	#ifdef CLOUD_CIRRUS
-	/* Cirrus clouds */ if (density < 0.1) {
+	/* Cirrus clouds */ if (localCoverage < 0.6) {
 		shift = cloudWindCi * CLOUD_WIND_SPEED;
 		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 3e-3 + 0.6;
 		const vec2 angle = cossin(goldenAngle);
