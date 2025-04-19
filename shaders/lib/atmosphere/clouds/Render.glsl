@@ -267,7 +267,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				float transmittance = 1.0;
 
 				// float cloudTest = 0.0;
-				// float stepDensityPrev = 1.0;
 				// uint zeroDensityCounter = 0u;
 
 				for (uint i = 0u; i < raySteps; ++i) {
@@ -277,9 +276,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					// if (cloudTest < 1e-5) {
 					// 	cloudTest = CloudVolumeDensity(rayPos, false);
 					// 	if (cloudTest < 1e-5) {
-					// 		rayPos += rayStep * 2.0;
-					// 	} else {
-					// 		rayPos -= rayStep;
+					// 		rayPos += rayStep;
 					// 	}
 					// 	continue;
 					// }
@@ -288,19 +285,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float heightFraction;
 					float stepDensity = CloudVolumeDensity(rayPos, heightFraction);
 
-					if (stepDensity < 1e-5) continue;
-
-					// if (stepDensity + stepDensityPrev < 1e-5) {
+					// if (stepDensity < 1e-5) {
 					// 	++zeroDensityCounter;
 					// }
 
-					// if (stepDensity < 1e-5 || zeroDensityCounter > 10u) {
+					// if (zeroDensityCounter > 5u) {
 					// 	cloudTest = 0.0;
 					// 	zeroDensityCounter = 0u;
 					// 	continue;
 					// }
-
-					// stepDensityPrev = stepDensity;
 
 					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
