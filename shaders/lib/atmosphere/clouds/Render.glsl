@@ -176,7 +176,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
-		float powder = PI * oms(exp2(-(density * 24.0 + 0.15)));
+		float powder = PI * oms(exp2(-(density * 32.0 + 0.1)));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
