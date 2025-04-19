@@ -127,7 +127,7 @@ void main() {
 
     // Render cloud shadow map
     #ifdef CLOUD_SHADOWS
-        vec3 rayPos = CloudShadowToWorldCoord(screenCoord);
+        vec3 rayPos = CloudShadowToWorldPos(screenCoord);
         cloudShadowOut = CalculateCloudShadows(rayPos);
     #endif
 }

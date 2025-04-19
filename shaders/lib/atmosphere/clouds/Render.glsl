@@ -225,15 +225,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 	// Low-level clouds
 	#ifdef CLOUD_CUMULUS
 		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_CU_ALTITUDE) // Below clouds
-		 || (clamp(eyeAltitude, CLOUD_CU_ALTITUDE, cumulusMaxAltitude) == eyeAltitude) // In clouds
-		 || (rayDir.y < 0.0 && eyeAltitude > cumulusMaxAltitude)) { // Above clouds
+		 || (clamp(eyeAltitude, CLOUD_CU_ALTITUDE, cumulusTopAltitude) == eyeAltitude) // In clouds
+		 || (rayDir.y < 0.0 && eyeAltitude > cumulusTopAltitude)) { // Above clouds
 
 			// Compute cloud spherical shell intersection
-			vec2 intersection = RaySphericalShellIntersection(r, mu, planetRadius + CLOUD_CU_ALTITUDE, planetRadius + cumulusMaxAltitude);
+			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
 
 			if (intersection.y > 0.0) { // Intersect the volume
 				// Special treatment for the eye inside the volume
-				float withinVolumeSmooth = oms(saturate((eyeAltitude - cumulusMaxAltitude + 5e2) * 2e-3)) * oms(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
+				float withinVolumeSmooth = oms(saturate((eyeAltitude - cumulusTopAltitude + 5e2) * 2e-3)) * oms(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
 				float rayLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
 
 				#if defined PASS_SKY_VIEW

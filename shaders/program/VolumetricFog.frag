@@ -110,7 +110,6 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 			return mat2x3(vec3(0.0), vec3(1.0));
 		}
 
-		const float cumulusTopRadius = planetRadius + cumulusMaxAltitude;
 		vec2 intersection = RaySphericalShellIntersection(viewerHeight, worldDir.y, planetRadius, cumulusTopRadius);
 		// float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
 
@@ -129,7 +128,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 
 	vec3 shadowStart = WorldPosToShadowPos(rayStart),
 		 shadowStep  = mat3(shadowModelView) * rayStep;
-	     shadowStep = diagonal3(shadowProjection) * shadowStep;
+	     shadowStep  = diagonal3(shadowProjection) * shadowStep;
 
 	rayLength *= toExp6 * 0.2 * rSteps;
 	rayStart += cameraPosition;
@@ -178,7 +177,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
-			vec2 cloudShadowCoord = WorldToCloudShadowCoord(rayPos - cameraPosition);
+			vec2 cloudShadowCoord = ConvertCloudShadowPos(projMAD(shadowProjectionInverse, shadowPos));
 			float cloudShadow = texture(colortex10, cloudShadowCoord).x;
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif

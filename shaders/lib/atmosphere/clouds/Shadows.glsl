@@ -24,7 +24,7 @@
 
 //================================================================================================//
 
-vec2 WorldToCloudShadowCoord(in vec3 rayPos) {
+vec2 WorldToCloudShadowPos(in vec3 rayPos) {
 	// World space to shadow view space
 	rayPos = mat3(shadowModelView) * rayPos;
 
@@ -37,7 +37,7 @@ vec2 WorldToCloudShadowCoord(in vec3 rayPos) {
 	return rayPos.xy * 0.5 + 0.5;
 }
 
-vec3 CloudShadowToWorldCoord(in vec2 rayPos) {
+vec3 CloudShadowToWorldPos(in vec2 rayPos) {
 	rayPos = rayPos * 2.0 - 1.0;
 
 	// Distortion
@@ -50,6 +50,16 @@ vec3 CloudShadowToWorldCoord(in vec2 rayPos) {
 	return mat3(shadowModelViewInverse) * vec3(rayPos, 0.0);
 }
 
+vec2 ConvertCloudShadowPos(in vec3 shadowPos) {
+	// Scale
+	shadowPos.xy *= rcp(min(CLOUD_SHADOW_DISTANCE, CSD_INF));
+
+	// Distortion
+	shadowPos.xy *= rcp(1.0 + length(shadowPos.xy));
+
+	return shadowPos.xy * 0.5 + 0.5;
+}
+
 //================================================================================================//
 
 #ifdef PASS_SKY_VIEW
@@ -58,24 +68,23 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	rayPos += cameraPosition;
 
-	vec2 intersection = RaySphericalShellIntersection(rayPos + vec3(0.0, planetRadius, 0.0), cloudLightVector, planetRadius + CLOUD_CU_ALTITUDE, planetRadius + cumulusMaxAltitude);
+	vec2 intersection = RaySphericalShellIntersection(rayPos + vec3(0.0, planetRadius, 0.0), cloudLightVector, cumulusBottomRadius, cumulusTopRadius);
 	float stepLength = (intersection.y - intersection.x) * rcp(float(steps));
 
 	rayPos += cloudLightVector * intersection.x;
 	vec3 rayStep = cloudLightVector * stepLength;
 
-	float transmittance = 0.0;
+	float opticalDepth = 0.0;
 
 	// Raymarch along the light vector
 	for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
-		transmittance += CloudVolumeDensity(rayPos, false);
-		if (transmittance > 2.0) break;
+		opticalDepth += CloudVolumeDensity(rayPos, false);
+		if (opticalDepth > 2.0) break;
 	}
 
-	// float cloudShadow = exp2(-(cumulusExtinction * rLOG2) * transmittance * stepLength);
-	float cloudShadow = exp2(-(0.25 * rLOG2) * transmittance * stepLength);
+	float cloudShadow = exp2(-(cumulusExtinction * rLOG2) * opticalDepth * stepLength);
 
-	float timeFade = sqr(remap(0.05, 0.1, cloudLightVector.y));
+	float timeFade = remap(0.05, 0.1, cloudLightVector.y);
 	return oms(timeFade) + cloudShadow * timeFade;
 }
 #endif
