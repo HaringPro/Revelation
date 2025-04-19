@@ -153,7 +153,6 @@ void main() {
 		// float cloudShadow = CalculateCloudShadows(worldPos);
 		vec2 cloudShadowCoord = WorldToCloudShadowCoord(worldPos);
 		float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).x;
-		cloudShadow = min(cloudShadow, 1.0 - wetness * 0.6);
 	#else
 		float cloudShadow = 1.0 - wetness * 0.96;
 	#endif
