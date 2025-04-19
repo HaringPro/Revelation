@@ -7,17 +7,17 @@ const vec3 waterExtinction = 1e-2 + waterAbsorption;
 mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV) {
 	float fogDensity = WATER_FOG_DENSITY * max(waterDepth, 1.0);
 
-	vec3 transmittance = fastExp(-waterExtinction * fogDensity);
+	vec3 transmittance = exp2(-rLOG2 * waterExtinction * fogDensity);
 
-	float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.75 + uniformPhase * 0.25;
-	const vec3 sunTransmittance = fastExp(-waterExtinction * 5.0);
+	float phase = HenyeyGreensteinPhase(LdotV, 0.85) * 0.75 + uniformPhase * 0.25;
+	const vec3 sunTransmittance = exp2(-rLOG2 * waterExtinction * 8.0);
 
 	vec3 directIlluminance = loadDirectIllum();
 	vec3 skyIlluminance = loadSkyIllum();
 
 	vec3 scattering = oms(wetnessCustom * 0.8) * phase * directIlluminance * sunTransmittance;
 	scattering += uniformPhase * mix(skyIlluminance, vec3(luminance(skyIlluminance) * 0.25), 0.7 * wetnessCustom);
-	scattering *= oms(transmittance) * skylight / waterExtinction * 1e-2;
+	scattering *= oms(transmittance) * skylight * 0.25;
 
 	return mat2x3(scattering, transmittance);
 }
@@ -41,7 +41,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 
 		vec3 refractPos = vec3(0.0, 1.0, 0.0) - refractVector / refractVector.y;
 
-		return saturate(sdot(refractPos) * 32.0);
+		return saturate(1.0 - sdot(refractPos) * 32.0);
 	}
 
 	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
@@ -66,12 +66,11 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 			 shadowStep = diagonal3(shadowProjection) * shadowStep;
 		vec3 shadowPos = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz) + shadowStep * dither;
 
-		vec3 stepTransmittance = fastExp(-waterExtinction * stepLength);
+		vec3 stepTransmittance = exp2(-rLOG2 * waterExtinction * stepLength);
 		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 		vec3 transmittance = vec3(1.0);
 
 		vec3 scatteringSun = vec3(0.0);
-		vec3 scatteringSky = vec3(0.0);
 
 		uint i = 0u;
 		while (++i < steps) {
@@ -98,26 +97,26 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 						sampleSunlight = shadowColorSample * (sampleSunlight - sampleDepth0) + vec3(sampleDepth0);
 					}
 
-					sampleSunlight *= fastExp(-waterExtinction * 0.6 * UW_VOLUMETRIC_FOG_DENSITY * max(waterDepth, 6.0));
+					sampleSunlight *= exp2(-rLOG2 * waterExtinction * UW_VOLUMETRIC_FOG_DENSITY * max(waterDepth, 8.0));
 				}
 			}
 
 			scatteringSun += sampleSunlight * transmittance;
-			scatteringSky += transmittance;
 
 			transmittance *= stepTransmittance;
 		}
 
 		float LdotV = dot(lightVector, worldDir);
-		float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.75 + uniformPhase * 0.25;
+		float phase = HenyeyGreensteinPhase(LdotV, 0.85) * 0.75 + uniformPhase * 0.25;
 
 		vec3 directIlluminance = loadDirectIllum();
 		vec3 skyIlluminance = loadSkyIllum();
 
-		vec3 scattering = scatteringSun * oms(wetnessCustom * 0.8) * phase * directIlluminance;
-		scattering += scatteringSky * uniformPhase * mix(skyIlluminance, vec3(luminance(skyIlluminance) * 0.25), 0.7 * wetnessCustom);
-		scattering *= oms(stepTransmittance) / waterExtinction * 1e-2;
+		scatteringSun *= oms(wetnessCustom * 0.8) * phase * directIlluminance;
+		vec3 scatteringSky = uniformPhase * mix(skyIlluminance, vec3(luminance(skyIlluminance) * 0.25), 0.7 * wetnessCustom);
 
-		return mat2x3(scattering, transmittance);
+		vec3 scattering = scatteringSun * oms(stepTransmittance) + scatteringSky * oms(transmittance);
+
+		return mat2x3(scattering * 0.25, transmittance);
 	}
 #endif
