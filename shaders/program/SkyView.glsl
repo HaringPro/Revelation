@@ -61,32 +61,9 @@ flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D noisetex;
-
 uniform sampler3D COMBINED_TEXTURE_SAMPLER;
 
-uniform float nightVision;
-uniform float wetness;
-uniform float eyeAltitude;
-uniform float far;
-
-uniform int moonPhase;
-uniform int frameCounter;
-
-uniform vec3 worldSunVector;
-uniform vec3 worldLightVector;
-uniform vec3 cameraPosition;
-uniform vec3 lightningShading;
-
-uniform float worldTimeCounter;
-
-#ifdef CLOUD_SHADOWS
-uniform mat4 shadowModelView;
-uniform mat4 shadowModelViewInverse;
-#if defined DISTANT_HORIZONS
-uniform int dhRenderDistance;
-#endif
-#endif
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
@@ -100,10 +77,6 @@ uniform int dhRenderDistance;
 #endif
 
 #include "/lib/atmosphere/clouds/Render.glsl"
-
-#ifdef CLOUD_SHADOWS
-    #include "/lib/atmosphere/clouds/Shadows.glsl"
-#endif
 
 //======// Main //================================================================================//
 void main() {

@@ -459,3 +459,60 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
     return cloudData;
 }
+
+#include "/lib/atmosphere/clouds/Shadows.glsl"
+
+uniform vec3 fmExtinction;
+uniform vec3 fmScattering;
+uniform vec3 frExtinction;
+uniform vec3 frScattering;
+
+vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
+	const uint steps = 12u;
+
+	// if (RayIntersectsGround(viewerHeight, rayDir.y) && viewerHeight < cumulusBottomRadius) return vec4(vec3(0.0), 1.0);
+
+	// From planet to cumulus top
+	vec2 intersection = RaySphericalShellIntersection(viewerHeight, rayDir.y, planetRadius, cumulusTopRadius);
+
+	// Not intersecting the volume
+	if (intersection.y < 0.0) return vec4(vec3(0.0), 1.0);
+
+	float rayLength = clamp(intersection.y - intersection.x, 0.0, 8192.0);
+	float stepLength = rayLength * rcp(float(steps));
+
+	// In shadow view space
+	float projectionScale = rcp(min(CLOUD_SHADOW_DISTANCE, CSD_INF));
+
+	vec3 rayStep = mat3(shadowModelView) * rayDir;
+	vec3 rayPos = shadowModelView[3].xyz + rayStep * intersection.x;
+	rayPos *= projectionScale;
+
+	rayStep *= stepLength * projectionScale;
+	rayPos += rayStep * dither;
+
+	// Mie + Rayleigh
+	float LdotV = dot(worldLightVector, rayDir);
+	float phase = CornetteShanksPhase(LdotV, 0.6) + RayleighPhase(LdotV);
+
+	vec3 extinctionCoeff = (frExtinction + fmExtinction * (2.0 - timeNoon + wetness * 8.0)) * 3e-7;
+	vec3 scatteringCoeff = (frScattering + fmScattering * (2.0 - timeNoon + wetness * 8.0)) * 3e-7;
+
+	vec3 stepTransmittance = exp2(-rLOG2 * extinctionCoeff * stepLength);
+
+	vec3 scattering = vec3(0.0);
+	vec3 transmittance = vec3(1.0);
+
+	for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
+		vec2 cloudShadowCoord = DistortCloudShadowPos(rayPos);
+		float visibility = texture(colortex10, cloudShadowCoord).x;
+		scattering += sqr(visibility) * transmittance;
+
+		transmittance *= stepTransmittance;
+	}
+
+	// Direct only
+	scattering *= scatteringCoeff / extinctionCoeff * oms(stepTransmittance) * phase * directIlluminance;
+
+	return vec4(scattering, mean(transmittance));
+}

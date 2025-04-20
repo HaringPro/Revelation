@@ -111,6 +111,11 @@ void main() {
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		cloudOut = RenderClouds(worldDir, dither);
+
+		// Crepuscular rays
+		vec4 crepuscularRays = RaymarchCrepuscular(worldDir, dither);
+		cloudOut *= crepuscularRays.a;
+		cloudOut.rgb += crepuscularRays.rgb;
 	} else {
 		cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	}
