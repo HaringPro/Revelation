@@ -61,13 +61,6 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 #include "/lib/lighting/ShadowDistortion.glsl"
 
-vec3 WorldPosToShadowPos(in vec3 worldPos) {
-	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
-	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
-
-	return shadowClipPos;
-}
-
 #if VOLUMETRIC_FOG_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
@@ -138,9 +131,11 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	vec3 rayStep = worldDir * stepLength;
 	vec3 rayPos = rayStart + rayStep * dither + cameraPosition;
 
-	vec3 shadowStart = WorldPosToShadowPos(rayStart);
-	vec3 shadowStep = mat3(shadowModelView) * rayStep;
-	     shadowStep = diagonal3(shadowProjection) * shadowStep;
+	vec3 shadowViewStart = transMAD(shadowModelView, rayStart);
+	vec3 shadowStart = projMAD(shadowProjection, shadowViewStart);
+
+	vec3 shadowViewStep = mat3(shadowModelView) * rayStep;
+	vec3 shadowStep = diagonal3(shadowProjection) * shadowViewStep;
 	vec3 shadowPos = shadowStart + shadowStep * dither;
 
 	float LdotV = dot(worldLightVector, worldDir);
@@ -181,7 +176,9 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 
 		#ifdef VF_CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(rayPos);
-			vec2 cloudShadowCoord = ConvertCloudShadowPos(projMAD(shadowProjectionInverse, shadowPos));
+			vec3 cloudShadowPos = shadowViewStart + shadowViewStep * (float(i) + dither);
+
+			vec2 cloudShadowCoord = ConvertCloudShadowPos(cloudShadowPos);
 			float cloudShadow = texture(colortex10, cloudShadowCoord).x;
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif

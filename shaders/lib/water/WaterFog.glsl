@@ -58,13 +58,16 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 
 		float stepLength = rayLength * rSteps * UW_VOLUMETRIC_FOG_DENSITY;
 
-		vec3 rayStart = gbufferModelViewInverse[3].xyz + cameraPosition,
+		vec3 rayStart = gbufferModelViewInverse[3].xyz,
 			 rayStep  = worldDir * stepLength;
-		vec3 rayPos = rayStart + rayStep * dither;
+		vec3 rayPos = rayStart + rayStep * dither + cameraPosition;
 
 		vec3 shadowStep = mat3(shadowModelView) * worldDir * stepLength;
 			 shadowStep = diagonal3(shadowProjection) * shadowStep;
-		vec3 shadowPos = WorldPosToShadowPos(gbufferModelViewInverse[3].xyz) + shadowStep * dither;
+
+		vec3 shadowStart = transMAD(shadowModelView, rayStart);
+			 shadowStart = projMAD(shadowProjection, shadowStart);
+		vec3 shadowPos = shadowStart + shadowStep * dither;
 
 		vec3 stepTransmittance = exp2(-rLOG2 * waterExtinction * stepLength);
 		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
