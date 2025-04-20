@@ -96,51 +96,52 @@ vec3 WorldPosToShadowPos(in vec3 worldPos) {
 mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
-		const uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
+		uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
 	#else
-		const uint steps = VOLUMETRIC_FOG_SAMPLES;
+		uint steps = VOLUMETRIC_FOG_SAMPLES;
 	#endif
-	const float rSteps = 1.0 / float(steps);
-
-	const float toExp6 = 2.58497;
 
 	vec3 rayStart = gbufferModelViewInverse[3].xyz;
 
 	float rayLength = sdot(worldPos);
 	float norm = inversesqrt(rayLength);
 	rayLength *= norm;
+
 	vec3 worldDir = worldPos * norm;
 
-	float skyUniformFog = 0.0;
-	if (skyMask) {
 	#ifdef VF_CLOUD_SHADOWS
-		if (eyeAltitude > CLOUD_CU_ALTITUDE || (worldDir.y < 0.0 && eyeAltitude < 0.0)) {
-			return mat2x3(vec3(0.0), vec3(1.0));
+		if (skyMask) {
+			if (eyeAltitude > CLOUD_CU_ALTITUDE || (worldDir.y < 0.0 && eyeAltitude < 0.0)) {
+				return mat2x3(vec3(0.0), vec3(1.0));
+			}
+
+			vec2 intersection = RaySphericalShellIntersection(viewerHeight, worldDir.y, planetRadius, cumulusTopRadius);
+			// float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
+
+			if (intersection.y < 0.0) return mat2x3(vec3(0.0), vec3(1.0));
+
+			rayLength = clamp(intersection.y - intersection.x, EPS, 5e3);
+			rayStart += worldDir * intersection.x;
 		}
 
-		vec2 intersection = RaySphericalShellIntersection(viewerHeight, worldDir.y, planetRadius, cumulusTopRadius);
-		// float rayLengthMax = (cumulusTopRadius - viewerHeight) / max(0.125, worldDir.y);
-
-		if (intersection.y < 0.0) return mat2x3(vec3(0.0), vec3(1.0));
-
-		rayLength = clamp(intersection.y - intersection.x, EPS, 4096.0);
-		rayStart += worldDir * intersection.x;
-
-		skyUniformFog = 48.0 / 4096.0;
+		float uniformFog = 48.0 / 5e3;
 	#else
-		rayLength = far;
-		skyUniformFog = 48.0 / far;
+		rayLength = min(rayLength, far);
+		float uniformFog = 48.0 / far;
 	#endif
-	}
 
-	vec3 rayStep = worldDir * rayLength;
+	// Adaptive step count
+	steps = min(steps, uint(float(steps) * 0.4 + rayLength * 0.1));
 
-	vec3 shadowStart = WorldPosToShadowPos(rayStart),
-		 shadowStep  = mat3(shadowModelView) * rayStep;
-	     shadowStep  = diagonal3(shadowProjection) * shadowStep;
+	float stepLength = rayLength * rcp(float(steps));
 
-	rayLength *= toExp6 * 0.2 * rSteps;
-	rayStart += cameraPosition;
+	vec3 rayStep = worldDir * stepLength;
+	vec3 rayPos = rayStart + rayStep * dither + cameraPosition;
+
+	vec3 shadowStart = WorldPosToShadowPos(rayStart);
+	vec3 shadowStep = mat3(shadowModelView) * rayStep;
+	     shadowStep = diagonal3(shadowProjection) * shadowStep;
+	vec3 shadowPos = shadowStart + shadowStep * dither;
 
 	float LdotV = dot(worldLightVector, worldDir);
 	vec2 phase = vec2(HG_DrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
@@ -150,19 +151,13 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	vec3 scatteringSky = vec3(0.0);
 	vec3 transmittance = vec3(1.0);
 
-	for (uint i = 0u; i < steps; ++i) {
-		float stepExp = exp2(toExp6 * (float(i) + dither) * rSteps);
-		float stepLength = (stepExp - 1.0) * 0.2; // Normalize to [0, 1]
-
-		vec3 rayPos = rayStart + stepLength * rayStep;
-		vec3 shadowPos = shadowStart + stepLength * shadowStep;
-
+	for (uint i = 0u; i < steps; ++i, rayPos += rayStep, shadowPos += shadowStep) {
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 
-		vec2 stepFogmass = CalculateFogDensity(rayPos) + skyUniformFog;
-		stepFogmass *= stepExp * rayLength;
+		vec2 stepFogmass = CalculateFogDensity(rayPos) + uniformFog;
+		stepFogmass *= stepLength;
 
-		if (dot(stepFogmass, vec2(1.0)) < 1e-4) continue; // Faster than maxOf()
+		if (dot(stepFogmass, vec2(1.0)) < 1e-5) continue; // Faster than maxOf()
 
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -192,10 +187,9 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither, in bool skyMask) {
 		#endif
 
 		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
-		vec3 stepTransmittance = exp2(-opticalDepth);
+		vec3 stepTransmittance = fastExp(-opticalDepth);
 
 		vec3 stepScattering = transmittance * oms(stepTransmittance) / maxEps(opticalDepth);
-		// stepScattering *= 2.0 * oms(fastExp(-opticalDepth * 4.0)); // Powder Effect
 
 		scatteringSun += fogScatteringCoeff * (stepFogmass * phase) * sampleShadow * stepScattering;
 		scatteringSky += fogScatteringCoeff * stepFogmass * stepScattering;
