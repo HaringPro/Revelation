@@ -493,10 +493,10 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 
 	// Mie + Rayleigh
 	float LdotV = dot(worldLightVector, rayDir);
-	float phase = CornetteShanksPhase(LdotV, 0.6) + RayleighPhase(LdotV);
+	vec2 phase = vec2(CornetteShanksPhase(LdotV, 0.65), RayleighPhase(LdotV));
 
-	vec3 extinctionCoeff = (frExtinction + fmExtinction * (2.0 - timeNoon + wetness * 8.0)) * 3e-7;
-	vec3 scatteringCoeff = (frScattering + fmScattering * (2.0 - timeNoon + wetness * 8.0)) * 3e-7;
+	vec3 extinctionCoeff = (fmExtinction * (2.0 - timeNoon + wetness * 8.0) + frExtinction) * 3e-7;
+	mat2x3 scatteringCoeff = mat2x3(fmScattering * (2.0 - timeNoon + wetness * 8.0), frScattering) * 3e-7;
 
 	vec3 stepTransmittance = exp2(-rLOG2 * extinctionCoeff * stepLength);
 
@@ -512,7 +512,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	}
 
 	// Direct only
-	scattering *= scatteringCoeff / extinctionCoeff * oms(stepTransmittance) * phase * directIlluminance;
+	scattering *= scatteringCoeff * phase * oms(stepTransmittance) / extinctionCoeff * directIlluminance;
 
 	return vec4(scattering, mean(transmittance));
 }
