@@ -149,6 +149,28 @@ float CloudHighDensity(in vec2 rayPos) {
 	return density;
 }
 
+#if 0
+uniform sampler2D cirroClouds;
+
+float CloudHighDensity(in vec2 rayPos) {
+	vec2 shift = cloudWindCc * CLOUD_WIND_SPEED;
+
+	float cloudType = saturate(texture(noisetex, (rayPos - cloudWindCc * 1e2) * 1e-7).x * 2.0 - 0.5);
+
+	vec2 position = rayPos * 5e-6 - shift * 5e-2;
+	float coverage = texture(noisetex, position).z * 0.85 + 0.15;
+	coverage *= saturate(1.25 - texture(noisetex, position * 0.05).y * 1.75);
+
+	vec3 cirroCloud = texture(cirroClouds, rayPos * 4e-5 - shift * 0.25).xyz;
+
+	float density = remap(cloudType, 0.5, 1.0, remap(cloudType, 0.0, 0.5, cirroCloud.r, cirroCloud.g), cirroCloud.b); 
+	density = pow(density, 2.0 - coverage * 1.75);
+	density *= saturate(2.0 * cube(coverage));
+
+	return sqr(saturate(4.0 * density));
+}
+#endif
+
 //================================================================================================//
 
 #if !defined PASS_VOLUMETRIC_FOG
