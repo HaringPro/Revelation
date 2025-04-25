@@ -97,52 +97,47 @@ float CloudHighDensity(in vec2 rayPos) {
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.4) {
-		vec2 position = rayPos * 6e-5 - (shift + curl) * 0.5;
+		vec2 position = rayPos * 7e-5 - (shift + curl) * 0.5;
 
-		float baseCoverage = texture(noisetex, position * 0.08).z * 0.75 + 0.25;
-		baseCoverage *= saturate(1.0 - texture(noisetex, position * 0.003).y * 1.25);
+		float baseCoverage = texture(noisetex, position * 0.1).z * 0.8 + 0.2;
+		baseCoverage *= saturate(1.0 - texture(noisetex, position * 0.005).y * 1.25);
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.4, 0.16)).z;
 		cirrocumulus += texture(noisetex, position - shift).z - 0.5;
+		cirrocumulus = sqr(saturate(2.0 * cirrocumulus));
 
-		cirrocumulus = remap(1.0 - saturate((baseCoverage + localCoverage) * 1.5 * (1.0 + CLOUD_CC_COVERAGE) - 1.65), 1.0, saturate(cirrocumulus));
-		// if (cirrocumulus > EPS) {
-			// position.x += (cirrocumulus - shift.x) * 0.125;
+		float coverage = saturate((baseCoverage + localCoverage) * 2.0 * (1.0 + CLOUD_CC_COVERAGE) - 2.75);
 
-			// #if !defined PASS_SKY_VIEW
-			// 	// Detail shape of the cirrocumulus clouds
-			// 	cirrocumulus += 0.1 * texture(noisetex, position * 2.0).z - 0.08;
-			// 	cirrocumulus += 0.06 * texture(noisetex, position * 4.0 + curl).z;
-			// #endif
+		cirrocumulus = mix(cirrocumulus * cirrocumulus, cirrocumulus, coverage);
+		cirrocumulus *= saturate(2.0 * cube(coverage));
 
-			density += pow4(saturate(cirrocumulus * 2.0));
-		// }
+		density += sqr(saturate(cirrocumulus));
 	}
 	#endif
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (localCoverage < 0.6) {
 		shift = cloudWindCi * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 3e-3 + 0.6;
+		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 3e-3;
 		const vec2 angle = cossin(goldenAngle);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
-		vec2 scale = vec2(3.0);
+		vec2 scale = vec2(2.75);
 
 		float weight = 0.55;
-		float cirrus = texture(noisetex, position).x;
+		float cirrus = 1.0 - texture(noisetex, position).x;
 
 		// Cirrus FBM
 		for (uint i = 0u; i < 5u; ++i, scale *= vec2(0.6, 1.1)) {
-			position += (cirrus - shift + curl) * 2e-3;
+			position += (cirrus - shift + curl) * 3e-3;
 
 			position = rot * position * scale;
-			cirrus += texture(noisetex, position).x * weight;
-			weight *= 0.45;
+			cirrus += oms(texture(noisetex, position).x) * weight;
+			weight *= 0.55;
 		}
-		cirrus -= saturate(localCoverage * 2.0 - 0.8);
-		cirrus = saturate(cirrus * (1.0 + CLOUD_CI_COVERAGE) - 1.6 - density);
+		cirrus -= saturate(localCoverage * 2.0 - 0.75);
+		cirrus = saturate(cirrus * (1.0 + CLOUD_CI_COVERAGE) - 1.65);
 
-		density += pow4(exp2(-curl.x * 8.0) * cirrus);
+		density += exp2(-curl.x * 16.0) * pow4(cirrus);
 	}
 	#endif
 
