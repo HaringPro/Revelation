@@ -169,9 +169,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 //================================================================================================//
 
-#if !defined PASS_VOLUMETRIC_FOG
-	uniform sampler2D colortex11; // Vertical profile LUT
-#endif
+uniform sampler2D colortex11; // Vertical profile LUT
 
 float GetVerticalProfile(in float heightFraction, in float cloudType) {
 	return sqr(texture(colortex11, vec2(cloudType, heightFraction)).x * 1.65);

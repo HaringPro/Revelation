@@ -20,7 +20,7 @@
 --------------------------------------------------------------------------------
 */
 
-#include "/lib/atmosphere/clouds/Shape.glsl"
+#include "/lib/atmosphere/clouds/Common.glsl"
 
 //================================================================================================//
 
@@ -57,7 +57,9 @@ vec2 DistortCloudShadowPos(in vec3 shadowPos) {
 
 //================================================================================================//
 
-#ifdef PASS_SKY_VIEW
+#if defined PASS_SKY_VIEW
+#include "/lib/atmosphere/clouds/Shape.glsl"
+
 float CalculateCloudShadows(in vec3 rayPos) {
 	const uint steps = CLOUD_SHADOW_SAMPLES;
 
