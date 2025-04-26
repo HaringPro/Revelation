@@ -59,6 +59,12 @@
 const uint  cloudMsCount 			= CLOUD_MS_COUNT;
 const float cloudMsFalloff 			= CLOUD_MS_FALLOFF;
 
+const float cloudForwardG 		    = 0.7;
+const float cloudBackwardG 		    = -0.4;
+const float cloudLobeMixer          = 0.4;
+const float cloudSilverG 		    = 0.9;
+const float cloudSilverI 	        = 0.5;
+
 const float cumulusTopAltitude 		= CLOUD_CU_ALTITUDE + CLOUD_CU_THICKNESS;
 const float cumulusTopOffset        = 500.0;
 
@@ -102,6 +108,30 @@ float smin(float a, float b, float k) {
 
 float remap(float value, float orignalMin, float orignalMax, float newMin, float newMax) {
     return newMin + saturate((value - orignalMin) / (orignalMax - orignalMin)) * (newMax - newMin);
+}
+
+// CS phase function for clouds
+float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
+	vec3 gg = g * g;
+  	vec3 pa = oms(gg) * (1.5 / (2.0 + gg));
+	vec3 pb = (1.0 + sqr(mu)) / pow1d5(1.0 + gg - 2.0 * g * mu);
+
+	return uniformPhase * dot(pa * pb, w);
+}
+
+// Dual-Lobe HG phase function
+// g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
+// m: mixing parameter
+float DualLobePhase(in float mu, in float g0, in float g1, in float m){
+    return mix(HenyeyGreensteinPhase(mu, g0), HenyeyGreensteinPhase(mu, g1), m);
+}
+
+// Triple-Lobe HG phase function
+// g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
+// m: mixing parameter, g2: peak anisotropy parameter, i: peak intensity
+float TripleLobePhase(in float mu, in float g0, in float g1, in float m, in float g2, in float i){
+    float p = mix(HenyeyGreensteinPhase(mu, g0), HenyeyGreensteinPhase(mu, g1), m);
+    return max(p, HenyeyGreensteinPhase(mu, g2) * i);
 }
 
 #endif

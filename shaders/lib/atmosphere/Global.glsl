@@ -172,15 +172,6 @@ float KleinNishinaPhase(in float mu, in float e) {
 	return e / (TAU * (e * oms(mu) + 1.0) * log(2.0 * e + 1.0));
 }
 
-// CS phase function for clouds
-float MiePhaseClouds(in float mu, in vec3 g, in vec3 w) {
-	vec3 gg = g * g;
-  	vec3 pa = oms(gg) * (1.5 / (2.0 + gg));
-	vec3 pb = (1.0 + sqr(mu)) / pow1d5(1.0 + gg - 2.0 * g * mu);
-
-	return uniformPhase * dot(pa * pb, w);
-}
-
 //================================================================================================//
 
 vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {

@@ -97,8 +97,9 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-			scatteringSun += exp2(opticalDepthSun * falloff) * phases[ms];
-			falloff *= falloff * approxSqrt(falloff);
+			opticalDepthSun *= falloff;
+			scatteringSun += exp2(opticalDepthSun) * phases[ms];
+			falloff *= falloff;
 		}
 
 		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
@@ -165,8 +166,9 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-			scatteringSun += exp2(opticalDepthSun * falloff) * phases[ms];
-			falloff *= falloff * approxSqrt(falloff);
+			opticalDepthSun *= falloff;
+			scatteringSun += exp2(opticalDepthSun) * phases[ms];
+			falloff *= falloff;
 		}
 
 		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
@@ -212,10 +214,10 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 	// Compute phases for clouds' sunlight multi-scattering
 	float phases[cloudMsCount]; {
 		float falloff = cloudMsFalloff;
-		phases[0] = MiePhaseClouds(LdotV, vec3(0.7, -0.4, 0.9), vec3(0.6, 0.3, 0.1));
+		phases[0] = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
 
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-			phases[ms] = mix(uniformPhase, phases[0], falloff) * falloff;
+			phases[ms] = DualLobePhase(LdotV, cloudForwardG * falloff, cloudBackwardG * falloff, cloudLobeMixer) * falloff;
 			falloff *= cloudMsFalloff;
 		}
 	}
@@ -317,8 +319,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					float falloff = cloudMsFalloff;
 					for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-						scatteringSun += exp2(opticalDepthSun * falloff) * phases[ms];
-						falloff *= falloff * approxSqrt(falloff);
+						opticalDepthSun *= falloff;
+						scatteringSun += exp2(opticalDepthSun) * phases[ms];
+						falloff *= falloff;
 					}
 
 					// Compute the optical depth of skylight through clouds
@@ -489,7 +492,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	// Not intersecting the volume
 	if (intersection.y < 0.0) return vec4(vec3(0.0), 1.0);
 
-	float rayLength = clamp(intersection.y - intersection.x, 0.0, 8192.0);
+	float rayLength = clamp(intersection.y - intersection.x, 0.0, 8e3);
 	float stepLength = rayLength * rcp(float(steps));
 
 	// In shadow view space
