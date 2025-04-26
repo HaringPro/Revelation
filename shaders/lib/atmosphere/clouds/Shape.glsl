@@ -97,7 +97,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.4) {
-		vec2 position = rayPos * 7e-5 - (shift + curl) * 0.5;
+		vec2 position = rayPos * 8e-5 - (shift + curl) * 0.5;
 
 		float baseCoverage = texture(noisetex, position * 0.1).z * 0.8 + 0.2;
 		baseCoverage *= saturate(1.0 - texture(noisetex, position * 0.005).y * 1.25);
@@ -118,7 +118,7 @@ float CloudHighDensity(in vec2 rayPos) {
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (localCoverage < 0.6) {
 		shift = cloudWindCi * CLOUD_WIND_SPEED;
-		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 3e-3;
+		vec2 position = rayPos * 6e-7 - shift * 2e-3 + curl * 3e-3;
 		const vec2 angle = cossin(goldenAngle);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
 		vec2 scale = vec2(2.75);
@@ -128,7 +128,7 @@ float CloudHighDensity(in vec2 rayPos) {
 
 		// Cirrus FBM
 		for (uint i = 0u; i < 5u; ++i, scale *= vec2(0.6, 1.1)) {
-			position += (cirrus - shift + curl) * 3e-3;
+			position += (cirrus - shift * 2.0 + curl) * 3e-3;
 
 			position = rot * position * scale;
 			cirrus += oms(texture(noisetex, position).x) * weight;
@@ -147,6 +147,7 @@ float CloudHighDensity(in vec2 rayPos) {
 #if 0
 uniform sampler2D cirroClouds;
 
+// Adapted from [Schneider, 2022]
 float CloudHighDensity(in vec2 rayPos) {
 	vec2 shift = cloudWindCc * CLOUD_WIND_SPEED;
 
@@ -193,7 +194,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	// See [Schneider, 2022]
 	// Dimensional profile
-	float dimensionalProfile = verticalProfile * coverage;
+	float dimensionalProfile = saturate(verticalProfile * coverage);
 	if (dimensionalProfile < 1e-3) return 0.0;
 
 	vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
@@ -232,7 +233,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	return saturate(cloudDensity * densityProfile);
 }
 
-float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
+float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dimensionalProfile) {
 	vec3 cloudMap = texture(noisetex, (rayPos.xz - cloudWindCu.xz) * 1.25e-6).yzw;
 
 	// Coveage profile
@@ -249,7 +250,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction) {
 
 	// See [Schneider, 2022]
 	// Dimensional profile
-	float dimensionalProfile = verticalProfile * coverage;
+	dimensionalProfile = saturate(verticalProfile * coverage);
 	if (dimensionalProfile < 1e-3) return 0.0;
 
 	vec3 shift = CLOUD_WIND_SPEED * cloudWindCu;
