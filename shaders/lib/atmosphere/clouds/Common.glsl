@@ -52,7 +52,7 @@
 		#define CSD_INF far
 	#endif
     #define CLOUD_SHADOW_DISTANCE 		512.0   // Render distance of cloud shadows. [CSD_INF 32.0 64.0 128.0 256.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0]
-    #define CLOUD_SHADOW_SAMPLES 	    16      // Sample count for cloud shadows. [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 25 30 35 40 45 50]
+    #define CLOUD_SHADOW_SAMPLES 	    20      // Sample count for cloud shadows. [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 25 30 35 40 45 50]
 
 //================================================================================================//
 

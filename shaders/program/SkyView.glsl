@@ -68,6 +68,7 @@ uniform sampler3D COMBINED_TEXTURE_SAMPLER;
 //======// Function //============================================================================//
 
 #include "/lib/universal/Random.glsl"
+#include "/lib/universal/Offset.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
@@ -98,10 +99,17 @@ void main() {
 		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
 	}
 
-    // Render cloud shadow map
     #ifdef CLOUD_SHADOWS
+
+    // Checkerboard render cloud shadow map
+	ivec2 offset = checkerboardOffset2x2[frameCounter % 4];
+	if (screenTexel % 2 == offset) {
         vec3 rayPos = CloudShadowToWorldPos(screenCoord);
         cloudShadowOut = CalculateCloudShadows(rayPos);
+	} else {
+		cloudShadowOut = texelFetch(colortex10, screenTexel, 0).x;
+	}
+
     #endif
 }
 
