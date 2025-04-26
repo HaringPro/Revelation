@@ -169,11 +169,28 @@ float CloudHighDensity(in vec2 rayPos) {
 
 //================================================================================================//
 
+#if 1
 uniform sampler2D colortex11; // Vertical profile LUT
 
 float GetVerticalProfile(in float heightFraction, in float cloudType) {
-	return sqr(texture(colortex11, vec2(cloudType, heightFraction)).x * 1.65);
+	return sqr(texture(colortex11, vec2(cloudType, heightFraction)).x) * 2.75;
 }
+#else
+
+// Adapted from https://github.com/iamlivehaha/Project-VolumetricCloudRendering
+// Get the blended density gradient for 3 different cloud types
+// relativeHeight is normalized distance from inner to outer atmosphere shell
+// cloudType is read from cloud placement blue channel
+float GetVerticalProfile(float relativeHeight, float cloudType) {
+    float altocumulus = remap(0.01, 0.3, relativeHeight) * remap(relativeHeight, 0.6, 0.95, 1.0, 0.0);
+    float cumulus = saturate(relativeHeight * 4.0) * remap(relativeHeight, 0.3, 0.65, 1.0, 0.0);
+    float stratus = saturate(relativeHeight * 10.0) * remap(relativeHeight, 0.2, 0.3, 1.0, 0.0);
+
+    float stratocumulus = mix(stratus, cumulus, saturate(cloudType * 2.0));
+    float cumulonimbus = mix(cumulus, altocumulus, saturate(cloudType * 2.0 - 1.0));
+    return mix(stratocumulus, cumulonimbus, cloudType) * 2.5;
+}
+#endif
 
 float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	vec3 cloudMap = texture(noisetex, (rayPos.xz - cloudWindCu.xz) * 1.25e-6).yzw;
