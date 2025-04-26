@@ -211,7 +211,7 @@ void main() {
 			#endif
 
 			// Checkerboard upscaling
-			ivec2 offset = checkerboardOffset[frameCounter % cloudRenderArea];
+			ivec2 offset = cloudCbrOffset[frameCounter % cloudRenderArea];
 			if (screenTexel % CLOUD_CBR_SCALE == offset) {
 				// Accumulate enough frame for checkerboard pattern
 				float blendWeight = 1.0 - rcp(max(float(min(frameOut, CLOUD_MAX_ACCUM_FRAMES)) - cloudRenderArea, 1.0));

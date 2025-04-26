@@ -80,7 +80,7 @@ void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	#ifdef CLOUD_CBR_ENABLED
-		ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + checkerboardOffset[frameCounter % cloudRenderArea];
+		ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + cloudCbrOffset[frameCounter % cloudRenderArea];
 	#else
 		#define cloudTexel screenTexel
 	#endif
