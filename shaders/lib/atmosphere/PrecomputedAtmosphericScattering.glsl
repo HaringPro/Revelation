@@ -344,7 +344,7 @@ vec3 GetSkyRadiance(
 
         rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie + ground) * oms(wetness * 0.6);
+        return rayleigh + mie + ground;
 }
 
 vec3 GetSkyRadiance(
@@ -414,7 +414,7 @@ vec3 GetSkyRadiance(
 
         rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie + ground) * oms(wetness * 0.6);
+        return rayleigh + mie + ground;
 }
 
 vec3 GetSkyRadianceToPoint(
@@ -486,7 +486,7 @@ vec3 GetSkyRadianceToPoint(
 
         rayleigh = mix(rayleigh, vec3(luminance(rayleigh)), wetness * 0.6);
 
-        return (rayleigh + mie) * oms(wetness * 0.6);
+        return rayleigh + mie;
 }
 
 vec3 GetSunAndSkyIrradiance(

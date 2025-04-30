@@ -130,7 +130,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 
 		vec3 scattering = scatteringSun * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
-		scattering *= oms(0.6 * wetness) * absorption;
+		scattering *= absorption;
 
 		return vec4(scattering, absorption);
 	}
@@ -199,7 +199,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		vec3 scattering = scatteringSun * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
-		scattering *= oms(0.6 * wetness) * absorption;
+		scattering *= absorption;
 
 		return vec4(scattering, absorption);
 	}
@@ -379,7 +379,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
-					stepScattering *= oms(0.6 * wetness);
 					vec3 scattering = stepScattering.x * PI * directIlluminance;
 					scattering += stepScattering.y * uniformPhase * skyIlluminance;
 
