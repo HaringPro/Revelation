@@ -98,8 +98,8 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 			opticalDepthSun *= falloff;
-			scatteringSun += exp2(opticalDepthSun) * phases[ms];
-			falloff *= falloff;
+			scatteringSun += exp2(opticalDepthSun) * phases[ms] * falloff;
+			falloff *= cloudMsFalloff;
 		}
 
 		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
@@ -113,7 +113,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		// Formula from [Schneider, 2015]
 		// float powder = PI * oms(exp2(-(density * 32.0 + 0.1)));
 
-		float inScatterProbability = 0.1 + density * 24.0;
+		float inScatterProbability = saturate(0.05 + density * 16.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -128,7 +128,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * inScatterProbability * directIlluminance;
+		vec3 scattering = scatteringSun * PI * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
 		scattering *= absorption;
 
@@ -167,8 +167,8 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 			opticalDepthSun *= falloff;
-			scatteringSun += exp2(opticalDepthSun) * phases[ms];
-			falloff *= falloff;
+			scatteringSun += exp2(opticalDepthSun) * phases[ms] * falloff;
+			falloff *= cloudMsFalloff;
 		}
 
 		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
@@ -182,7 +182,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		// Formula from [Schneider, 2015]
 		// float powder = PI * oms(exp2(-(density * 32.0 + 0.1)));
 
-		float inScatterProbability = 0.1 + density * 24.0;
+		float inScatterProbability = saturate(0.05 + density * 8.0);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -197,7 +197,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * inScatterProbability * directIlluminance;
+		vec3 scattering = scatteringSun * PI * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
 		scattering *= absorption;
 
@@ -217,7 +217,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 		phases[0] = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
 
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-			phases[ms] = DualLobePhase(LdotV, cloudForwardG * falloff, cloudBackwardG * falloff, cloudLobeMixer) * falloff;
+			phases[ms] = DualLobePhase(LdotV, cloudForwardG * falloff, cloudBackwardG * falloff, cloudLobeMixer);
 			falloff *= cloudMsFalloff;
 		}
 	}
@@ -316,12 +316,18 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Approximate sunlight multi-scattering
 					float scatteringSun = exp2(opticalDepthSun) * phases[0];
-
 					float falloff = cloudMsFalloff;
+
+					// Nubis Multiscatter Approximation
+					float msVolume = remap(0.25, 0.85, dimensionalProfile);
+					float scatteredEnergy = msVolume;
+
 					for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 						opticalDepthSun *= falloff;
-						scatteringSun += exp2(opticalDepthSun) * phases[ms];
-						falloff *= falloff;
+						scatteringSun += exp2(opticalDepthSun) * phases[ms] * scatteredEnergy;
+	
+						scatteredEnergy *= msVolume;
+						falloff *= cloudMsFalloff;
 					}
 
 					// Compute the optical depth of skylight through clouds
@@ -337,12 +343,12 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Compute In-Scatter Probability
 					// See slide 92 of [Schneider, 2017]
-					float depthProbability = 0.05 + pow(stepDensity * 6.0, remap(heightFraction, 0.3, 0.85, 0.5, 1.5));
-					float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.8);
-					float inScatterProbability = depthProbability * verticalProbability;
-					scatteringSun *= inScatterProbability;
+					// float depthProbability = 0.05 + pow(stepDensity * 6.0, remap(heightFraction, 0.3, 0.85, 0.5, 1.5));
+					// float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.8);
+					// float inScatterProbability = depthProbability * verticalProbability;
+					// scatteringSun *= inScatterProbability;
 
-					// See slide 59 of [Schneider, 2022]
+					// Nubis Ambient Scattering Approximation
 					float ambientProbability = approxSqrt(1.0 - dimensionalProfile);
 					scatteringSky *= ambientProbability;
 					scatteringGround *= ambientProbability;
