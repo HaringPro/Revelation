@@ -59,6 +59,7 @@
 const uint  cloudMsCount 			= CLOUD_MS_COUNT;
 const float cloudMsFalloff 			= CLOUD_MS_FALLOFF;
 
+// TODO: Provide adjustable options for these parameters
 const float cloudForwardG 		    = 0.7;
 const float cloudBackwardG 		    = -0.4;
 const float cloudLobeMixer          = 0.4;
@@ -76,8 +77,13 @@ const float cumulusExtinction 		= 0.11;
 const float stratusExtinction 		= 0.09;
 const float cirrusExtinction 		= 0.07;
 
-uniform sampler3D depthtex2;        // 3D perlin-worley & fBm worley noise texture
-uniform sampler3D colortex15;       // 3D fBm worley noise texture
+//================================================================================================//
+
+#define baseNoiseTex    depthtex2  // 3D perlin-worley & fBm worley noise texture
+#define detailNoiseTex  colortex15 // 3D fBm worley noise texture
+
+uniform sampler3D baseNoiseTex;
+uniform sampler3D detailNoiseTex;
 
 uniform vec3 cloudWindCu;
 uniform vec2 cloudWindAs;

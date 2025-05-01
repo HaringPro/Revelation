@@ -216,7 +216,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 	// Perlin-worley + fBm worley noise for base shape
-	vec2 lowFreqNoises = texture(depthtex2, position * 0.5).xy;
+	vec2 lowFreqNoises = texture(baseNoiseTex, position * 0.5).xy;
 	float baseNoise = remap(lowFreqNoises.y - 1.0, 1.0, lowFreqNoises.x);
 
 	// coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
@@ -231,7 +231,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 		position.xy += curlNoise * 0.25 * oms(heightFraction);
 
 		// fBm worley noise for detail shape
-		detailNoise = texture(colortex15, position * 5.0 - shift).x;
+		detailNoise = texture(detailNoiseTex, position * 5.0 - shift).x;
 
 		// Transition from wispy shapes to billowy shapes over height
 		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 10.0));
@@ -272,7 +272,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	vec3 position = (rayPos + cumulusTopOffset * heightFraction) * 5e-4 - shift;
 
 	// Perlin-worley + fBm worley noise for base shape
-	vec2 lowFreqNoises = texture(depthtex2, position * 0.5).xy;
+	vec2 lowFreqNoises = texture(baseNoiseTex, position * 0.5).xy;
 	float baseNoise = remap(lowFreqNoises.y - 1.0, 1.0, lowFreqNoises.x);
 
 	// coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
@@ -286,7 +286,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 		position.xy += curlNoise * 0.25 * oms(heightFraction);
 
 		// fBm worley noise for detail shape
-		detailNoise = texture(colortex15, position * 5.0 - shift).x;
+		detailNoise = texture(detailNoiseTex, position * 5.0 - shift).x;
 
 		// Transition from wispy shapes to billowy shapes over height
 		detailNoise = mix(detailNoise, 1.0 - detailNoise, saturate(heightFraction * 10.0));
