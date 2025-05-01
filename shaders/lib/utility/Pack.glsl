@@ -88,11 +88,31 @@ vec3 decodeUnitVector(in vec2 encoded) {
 	return normalize(vector);
 }
 
-vec2 ToSphereMap(in vec3 dir) {
-    return vec2(atan(-dir.x, -dir.z) * rTAU + 0.5, fastAcos(dir.y) * rPI);
+// Spherical coordinate encoding
+vec2 sphericalToCartesian(in vec3 dir) {
+	vec2 coord = vec2(atan(-dir.x, -dir.z), fastAcos(dir.y));
+    return vec2(coord.x * rTAU + 0.5, coord.y * rPI);
 }
 
-vec3 FromSphereMap(in vec2 coord) {
-    coord.y *= PI;
-    return vec3(sincos(coord.x * TAU) * sin(coord.y), cos(coord.y)).xzy;
+vec3 cartesianToSpherical(in vec2 coord) {
+    coord *= vec2(TAU, PI);
+    return vec3(sincos(coord.x) * sin(coord.y), cos(coord.y)).xzy;
+}
+
+// Mercator projection
+vec2 ProjectMercator(in vec3 dir) {
+    float phi = atan(dir.z, dir.x); // Longitude
+    float theta = fastAsin(dir.y); // Latitude
+
+    vec2 uv = vec2(phi, log(tan(PI * 0.25 + theta * 0.5)));
+    return uv * rTAU + 0.5; // Scale to [0, 1]
+}
+
+vec3 UnprojectMercator(in vec2 uv) {
+    uv = uv * TAU - PI; // Scale to [-π, π]
+    float phi = uv.x; // Longitude
+    float theta = atan(fastExp(uv.y)) * 2.0 - hPI; // Latitude
+
+    vec3 dir = vec3(cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi));
+    return normalize(dir);
 }

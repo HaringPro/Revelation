@@ -76,7 +76,7 @@ vec3 RenderGalaxy(in vec3 worldDir) {
     #endif
 
     // Convert to spherical coordinates
-    vec2 galacticCoord = ToSphereMap(worldDir);
+    vec2 galacticCoord = sphericalToCartesian(worldDir);
     // Bilinear interpolation is enough
     vec3 galaxy = texture(colortex12, galacticCoord).rgb;
     return sRGBtoLinear(galaxy) * GALAXY_INTENSITY;
