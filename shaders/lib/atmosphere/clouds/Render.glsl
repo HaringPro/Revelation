@@ -25,7 +25,7 @@
 //================================================================================================//
 
 float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = CLOUD_CU_THICKNESS * (0.1 / float(CLOUD_CU_SUNLIGHT_SAMPLES));
+    const float stepSize = 2e2 / float(CLOUD_CU_SUNLIGHT_SAMPLES);
 	vec4 rayStep = vec4(cloudLightVector, 1.0) * stepSize;
 
     float opticalDepth = 0.0;
@@ -34,17 +34,14 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
         rayStep *= 1.5;
 
 		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, opticalDepth < 0.25 * rayStep.w);
-		// if (density < 1e-5) continue;
-
         opticalDepth += density * rayStep.w;
-        // opticalDepth += density;
     }
 
     return opticalDepth * cumulusExtinction;
 }
 
 float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = CLOUD_CU_THICKNESS * (0.1 / float(CLOUD_CU_SKYLIGHT_SAMPLES));
+    const float stepSize = 2e2 / float(CLOUD_CU_SKYLIGHT_SAMPLES);
 	vec4 rayStep = vec4(vec3(0.0, 1.0, 0.0), 1.0) * stepSize;
 
     float opticalDepth = 0.0;
@@ -53,10 +50,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
         rayStep *= 1.5;
 
 		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, false);
-		// if (density < 1e-5) continue;
-
         opticalDepth += density * rayStep.w;
-        // opticalDepth += density;
     }
 
     return opticalDepth * (cumulusExtinction * 0.25);
@@ -129,7 +123,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * PI * inScatterProbability * directIlluminance;
+		vec3 scattering = scatteringSun * 2.0 * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
 		scattering *= absorption;
 
@@ -199,7 +193,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 			#endif
 		#endif
 
-		vec3 scattering = scatteringSun * PI * inScatterProbability * directIlluminance;
+		vec3 scattering = scatteringSun * 2.0 * inScatterProbability * directIlluminance;
 		scattering += scatteringSky * uniformPhase * skyIlluminance;
 		scattering *= absorption;
 
@@ -387,7 +381,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 						#endif
 					#endif
 
-					vec3 scattering = stepScattering.x * PI * directIlluminance;
+					vec3 scattering = stepScattering.x * 2.0 * directIlluminance;
 					scattering += stepScattering.y * uniformPhase * skyIlluminance;
 
 					// Compute aerial perspective
