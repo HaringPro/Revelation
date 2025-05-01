@@ -15,8 +15,6 @@
 
 #include "/lib/Utility.glsl"
 
-#define SH_SLICES 5 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15]
-
 //======// Output //==============================================================================//
 
 flat out vec3 directIlluminance;
@@ -54,13 +52,14 @@ void main() {
 
 	#ifndef SSPT_ENABLED
 		skySH = mat4x3(0.0);
-		const float rSlices = 1.0 / float(SH_SLICES);
+		const uint slices = 5u;
+		const float rSlices = 1.0 / float(slices);
 
-		for (uint h = 0u; h < SH_SLICES; ++h) {
-			float latitude = float(h) * PI * rSlices;
+		for (uint y = 0u; y < slices; ++y) {
+			float latitude = float(y) * (PI * rSlices);
 			vec2 latitudeSincos = sincos(latitude);
-			for (uint v = 0u; v < SH_SLICES; ++v) {
-				float longitude = float(v) * TAU * rSlices;
+			for (uint x = 0u; x < slices; ++x) {
+				float longitude = float(x) * (TAU * rSlices);
 				vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
 
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
