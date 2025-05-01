@@ -321,7 +321,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					float falloff = cloudMsFalloff;
 
 					// Nubis Multiscatter Approximation
-					float msVolume = remap(0.25, 0.85, dimensionalProfile);
+					float msVolume = remap(0.15, 0.85, dimensionalProfile);
 					float scatteredEnergy = msVolume;
 
 					for (uint ms = 1u; ms < cloudMsCount; ++ms) {
