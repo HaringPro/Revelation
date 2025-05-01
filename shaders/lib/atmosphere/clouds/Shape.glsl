@@ -173,7 +173,7 @@ float CloudHighDensity(in vec2 rayPos) {
 uniform sampler2D colortex11; // Vertical profile LUT
 
 float GetVerticalProfile(in float heightFraction, in float cloudType) {
-	return texture(colortex11, vec2(cloudType, heightFraction)).x * 2.0;
+	return texture(colortex11, vec2(cloudType, heightFraction)).x;
 }
 #else
 
@@ -188,16 +188,16 @@ float GetVerticalProfile(float relativeHeight, float cloudType) {
 
     float stratocumulus = mix(stratus, cumulus, saturate(cloudType * 2.0));
     float cumulonimbus = mix(cumulus, altocumulus, saturate(cloudType * 2.0 - 1.0));
-    return mix(stratocumulus, cumulonimbus, cloudType) * 2.0;
+    return mix(stratocumulus, cumulonimbus, cloudType);
 }
 #endif
 
 float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
-	vec3 cloudMap = texture(noisetex, (rayPos.xz - cloudWindCu.xz) * 2e-6).yzw;
+	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * 2e-6).xy;
 
 	// Coveage profile
-	float coverage = remap(1.0 - cloudMap.x, 1.0, cloudMap.y);
-	coverage = saturate(mix(coverage * 1.8 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.25));
+	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
+	coverage = saturate(mix(coverage, 1.0, wetness * 0.25));
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
@@ -205,7 +205,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
 	// Vertical profile
-	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.z);
+	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.y);
 
 	// See [Schneider, 2022]
 	// Dimensional profile
@@ -244,16 +244,16 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
-	float densityProfile = heightFraction * 4.0 + 0.25;
+	float densityProfile = saturate(heightFraction * 4.0) + 0.25;
 	return saturate(cloudDensity * densityProfile);
 }
 
 float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dimensionalProfile) {
-	vec3 cloudMap = texture(noisetex, (rayPos.xz - cloudWindCu.xz) * 2e-6).yzw;
+	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * 2e-6).xy;
 
 	// Coveage profile
-	float coverage = remap(1.0 - cloudMap.x, 1.0, cloudMap.y);
-	coverage = saturate(mix(coverage * 1.8 * CLOUD_CU_COVERAGE, 1.0, wetness * 0.25));
+	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
+	coverage = saturate(mix(coverage, 1.0, wetness * 0.25));
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
@@ -261,7 +261,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
 
 	// Vertical profile
-	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.z);
+	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.y);
 
 	// See [Schneider, 2022]
 	// Dimensional profile
@@ -298,7 +298,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
-	float densityProfile = heightFraction * 4.0 + 0.25;
+	float densityProfile = saturate(heightFraction * 4.0) + 0.25;
 	return saturate(cloudDensity * densityProfile);
 }
 
