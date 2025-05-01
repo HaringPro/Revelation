@@ -105,10 +105,10 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
-		// float powder = PI * oms(exp2(-(density * 32.0 + 0.1)));
+		// float powder = 2.0 * oms(exp2(-(density * 32.0 + 0.1)));
 
 		// TODO: Better implementation
-		float inScatterProbability = saturate(0.05 + density * 16.0);
+		float inScatterProbability = oms(exp2(-(density * 24.0 + 0.1)));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -175,10 +175,10 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
-		// float powder = PI * oms(exp2(-(density * 32.0 + 0.1)));
+		// float powder = 2.0 * oms(exp2(-(density * 32.0 + 0.1)));
 
 		// TODO: Better implementation
-		float inScatterProbability = saturate(0.05 + density * 8.0);
+		float inScatterProbability = oms(exp2(-(density * 24.0 + 0.1)));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
