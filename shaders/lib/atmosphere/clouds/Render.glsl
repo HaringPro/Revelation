@@ -495,7 +495,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	float stepLength = rayLength * rcp(float(steps));
 
 	// In shadow view space
-	float projectionScale = rcp(min(CLOUD_SHADOW_DISTANCE, CSD_INF));
+	const float projectionScale = rcp(CLOUD_SHADOW_DISTANCE);
 
 	vec3 rayStep = mat3(shadowModelView) * rayDir;
 	vec3 rayPos = shadowModelView[3].xyz + rayStep * intersection.x;

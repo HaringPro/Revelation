@@ -118,7 +118,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	vec3 shadowPos = shadowStart + shadowStep * dither;
 
 	#ifdef VF_CLOUD_SHADOWS
-		float projectionScale = rcp(min(CLOUD_SHADOW_DISTANCE, CSD_INF));
+		const float projectionScale = rcp(CLOUD_SHADOW_DISTANCE);
 
 		shadowViewStart *= projectionScale;
 		shadowViewStep *= projectionScale;

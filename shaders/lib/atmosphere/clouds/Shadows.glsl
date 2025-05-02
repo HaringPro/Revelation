@@ -29,7 +29,7 @@ vec2 WorldToCloudShadowPos(in vec3 rayPos) {
 	rayPos = mat3(shadowModelView) * rayPos;
 
 	// Scale
-	rayPos.xy *= rcp(min(CLOUD_SHADOW_DISTANCE, CSD_INF));
+	rayPos.xy *= rcp(CLOUD_SHADOW_DISTANCE);
 
 	// Distortion
 	rayPos.xy *= rcp(1.0 + length(rayPos.xy));
@@ -44,7 +44,7 @@ vec3 CloudShadowToWorldPos(in vec2 rayPos) {
 	rayPos *= rcp(1.0 - length(rayPos));
 
 	// Scale
-	rayPos *= min(CLOUD_SHADOW_DISTANCE, CSD_INF);
+	rayPos *= CLOUD_SHADOW_DISTANCE;
 
 	// Shadow view space to world space
 	return mat3(shadowModelViewInverse) * vec3(rayPos, 0.0);
