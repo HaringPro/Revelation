@@ -70,7 +70,7 @@
 	|	colortex7	|   rgba16ui        |	Full res  	|	Gbuffer data 0
 	|	colortex8	|   rgb16           |	Full res  	|	Gbuffer data 1 -> Bloomy fog transmittance -> LDR output
 	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history
-	|	colortex10	|   r16             |	256, 384   	|	Cloud shadow map
+	|	colortex10	|   r16             |	512, 512   	|	Cloud shadow map
 	|	colortex11	|   rgba32ui        |	Half res  	|	Volumetric fog, linear depth
 	|	colortex12	|               	|	  			|	Unused
 	|	colortex13	|   r8i	        	|	Full res  	|	Cloud frame index

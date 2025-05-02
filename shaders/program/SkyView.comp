@@ -1,0 +1,69 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: Compute Sky-View LUT
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 8, local_size_y = 8) in;
+const ivec2 workGroups = ivec2(32, 24);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Image //===============================================================================//
+
+writeonly uniform image2D colorimg5;
+
+//======// Uniform //=============================================================================//
+
+uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
+
+#include "/lib/universal/Uniform.glsl"
+
+vec3 directIlluminance = loadDirectIllum();
+vec3 skyIlluminance = loadSkyIllum();
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Random.glsl"
+
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
+
+#ifdef AURORA
+	#include "/lib/atmosphere/Aurora.glsl"
+#endif
+
+#include "/lib/atmosphere/clouds/Render.glsl"
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 viewTexel = ivec2(gl_GlobalInvocationID.xy);
+
+	if (all(lessThan(viewTexel, skyViewRes))) {
+		vec2 viewCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * rcp(skyViewRes);
+		vec3 worldDir = ToSkyViewLutParams(viewCoord);
+
+		vec3 skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
+
+		// Raw sky view LUT
+		imageStore(colorimg5, viewTexel, vec4(skyViewOut, 1.0));
+
+		#ifdef CLOUDS
+			vec4 cloudData = RenderClouds(worldDir, 0.5);
+			skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
+		#endif
+
+		// Sky view LUT with clouds
+		viewTexel.y += skyViewRes.y;
+		imageStore(colorimg5, viewTexel, vec4(skyViewOut, 1.0));
+	}
+}

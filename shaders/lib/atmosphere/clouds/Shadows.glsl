@@ -57,7 +57,7 @@ vec2 DistortCloudShadowPos(in vec3 shadowPos) {
 
 //================================================================================================//
 
-#if defined PASS_SKY_VIEW
+#if defined PASS_CLOUD_SHADOW_MAP
 #include "/lib/atmosphere/clouds/Shape.glsl"
 
 float CalculateCloudShadows(in vec3 rayPos) {

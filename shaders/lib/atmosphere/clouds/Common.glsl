@@ -78,6 +78,9 @@ const float cumulusExtinction 		= 0.09;
 const float stratusExtinction 		= 0.07;
 const float cirrusExtinction 		= 0.05;
 
+const uint cloudShadowRes 		    = 512;
+const float cloudShadowSize 		= 512.0;
+
 //================================================================================================//
 
 #define baseNoiseTex    depthtex2  // 3D perlin-worley & fBm worley noise texture
