@@ -59,6 +59,8 @@
 const uint  cloudMsCount 			= CLOUD_MS_COUNT;
 const float cloudMsFalloff 			= CLOUD_MS_FALLOFF;
 
+const float cloudMapCovDist 		= 256e3; // m
+
 // TODO: Provide adjustable options for these parameters
 const float cloudForwardG 		    = 0.7;
 const float cloudBackwardG 		    = -0.4;

@@ -193,7 +193,7 @@ float GetVerticalProfile(float relativeHeight, float cloudType) {
 #endif
 
 float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
-	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * 2e-6).xy;
+	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * rcp(cloudMapCovDist)).xy;
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
@@ -249,7 +249,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 }
 
 float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dimensionalProfile) {
-	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * 2e-6).xy;
+	vec2 cloudMap = texture(depthtex1, (rayPos.xz - cloudWindCu.xz) * rcp(cloudMapCovDist)).xy;
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
