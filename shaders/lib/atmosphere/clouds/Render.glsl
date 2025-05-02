@@ -233,17 +233,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
 
 			if (intersection.y > 0.0) { // Intersect the volume
-				// Special treatment for the eye inside the volume
-				float withinVolumeSmooth = oms(saturate((eyeAltitude - cumulusTopAltitude + 5e2) * 2e-3)) * oms(saturate((CLOUD_CU_ALTITUDE - eyeAltitude + 50.0) * 3e-2));
-				float rayLength = max0(mix(intersection.y, min(intersection.y, 2e4), withinVolumeSmooth) - intersection.x);
+				float rayLength = clamp(intersection.y - intersection.x, 0.0, 1e5);
 
 				#if defined PASS_SKY_VIEW
-					uint raySteps = uint(CLOUD_CU_SAMPLES * 0.6);
+					uint raySteps = CLOUD_CU_SAMPLES >> 1u;
 					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CU_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(rayLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * (withinVolumeSmooth + oms(abs(rayDir.y) * 0.5))); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
 				#endif
 
 				// From [Schneider, 2022]
@@ -296,9 +294,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					// 	zeroDensityCounter = 0u;
 					// 	continue;
 					// }
-
-					rayLengthWeighted += stepSize * float(i) * transmittance;
-					raySumWeight += transmittance;
 
 					#if defined PASS_SKY_VIEW
 						vec2 lightNoise = vec2(0.5);
@@ -362,6 +357,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Break if the cloud has reached the minimum transmittance
 					if (transmittance < minCloudTransmittance) break;
+
+					rayLengthWeighted += stepSize * float(i) * transmittance;
+					raySumWeight += transmittance;
 				}
 
 				float absorption = 1.0 - transmittance;
