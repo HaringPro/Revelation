@@ -140,7 +140,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		float absorption = oms(exp2(-rLOG2 * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
-			const float stepSize = 32.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
+			const float stepSize = 64.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
 			vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
 
 			// Compute the optical depth of sunlight through clouds
