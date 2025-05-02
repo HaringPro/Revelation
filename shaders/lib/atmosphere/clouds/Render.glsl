@@ -108,7 +108,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		// float powder = 2.0 * oms(exp2(-(density * 32.0 + 0.1)));
 
 		// TODO: Better implementation
-		float inScatterProbability = oms(exp2(-(density * 24.0 + 0.1)));
+		float inScatterProbability = oms(exp2(-(density * 32.0 + 0.2)));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
@@ -178,7 +178,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		// float powder = 2.0 * oms(exp2(-(density * 32.0 + 0.1)));
 
 		// TODO: Better implementation
-		float inScatterProbability = oms(exp2(-(density * 24.0 + 0.1)));
+		float inScatterProbability = oms(exp2(-(density * 32.0 + 0.2)));
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
