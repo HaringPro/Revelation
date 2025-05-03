@@ -188,7 +188,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	vec3 skyIlluminance = loadSkyIllum();
 
 	vec3 scattering = scatteringSun * directIlluminance;
-	scattering += scatteringSky * uniformPhase * mix(skyIlluminance, directIlluminance * rPI, wetness * 0.4 + 0.2);
+	scattering += scatteringSky * uniformPhase * skyIlluminance;
 	scattering *= eyeSkylightSmooth;
 
 	return mat2x3(scattering, transmittance);

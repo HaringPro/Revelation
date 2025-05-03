@@ -1,0 +1,88 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+	Pass: Generate Sky SH Coefficients
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 128, local_size_y = 1) in;
+const ivec3 workGroups = ivec3(1, 1, 1);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Image //===============================================================================//
+
+writeonly uniform image2D colorimg4;
+
+shared vec3 sharedSkySH[128][4];
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Random.glsl"
+#include "/lib/atmosphere/Global.glsl"
+
+vec3 sampleHemisphereVector(in vec3 vector, in vec2 xy) {
+    float phi = TAU * xy.x;
+    float cosTheta = xy.y * 2.0 - 1.0;
+    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
+    vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
+
+	return hemisphere * fastSign(dot(hemisphere, vector));
+}
+
+void ParallelReduceSum(in uint index, in uint samples) {
+	for (uint stride = samples >> 1u; stride > 0u; stride >>= 1u) {
+		if (index < stride) {
+			for (uint band = 0u; band < 4u; ++band) {
+				sharedSkySH[index][band] += sharedSkySH[index + stride][band];
+			}
+		}
+
+    	memoryBarrierShared();
+		barrier();
+	}
+}
+
+//======// Main //================================================================================//
+void main() {
+    uint index = gl_LocalInvocationID.x;
+	const uint samples = gl_WorkGroupSize.x;
+
+	// Sample and compute SH coefficients
+	vec3 direction = sampleHemisphereVector(vec3(0.0, 1.0, 0.0), Hammersley(index, samples));
+	vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
+
+	vec3[4] shCoeff = ToSphericalHarmonics(skyRadiance, direction);
+	for (uint band = 0u; band < 4u; ++band) {
+		sharedSkySH[index][band] = shCoeff[band];
+	}
+
+    memoryBarrierShared();
+	barrier();
+
+	ParallelReduceSum(index, samples);
+
+	// Store SH coefficients in thread 0
+	if (index == 0u) {
+		for (uint band = 0u; band < 4u; ++band) {
+			shCoeff[band] = sharedSkySH[0][band] * (TAU / float(samples));
+			imageStore(colorimg4, ivec2(int(viewWidth) - 1, band + 2), vec4(shCoeff[band], 0.0));
+		}
+
+		// Evaluate sky illuminance from SH coefficients (facing up)
+		vec3 skyIlluminance = FromSphericalHarmonics(shCoeff, vec3(0.0, 1.0, 0.0));
+		imageStore(colorimg4, ivec2(int(viewWidth) - 1, 1), vec4(skyIlluminance, 0.0));
+	}
+}

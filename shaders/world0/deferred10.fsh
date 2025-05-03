@@ -32,15 +32,6 @@ layout (location = 1) out vec4 reflectionOut;
 layout (location = 2) out vec2 specularOut;
 #endif
 
-//======// Input //===============================================================================//
-
-flat in vec3 directIlluminance;
-flat in vec3 skyIlluminance;
-
-#ifndef SSPT_ENABLED
-	flat in vec3[4] skySH;
-#endif
-
 //======// Uniform //=============================================================================//
 
 uniform sampler3D COMBINED_TEXTURE_SAMPLER;
@@ -244,7 +235,7 @@ void main() {
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = cloudShadow * directIlluminance;
+		vec3 sunlightMult = cloudShadow * loadDirectIllum();
 		vec3 specularHighlight = vec3(0.0);
 
 		float worldDistSquared = sdot(worldPos);
@@ -339,9 +330,15 @@ void main() {
 					skylight += 0.2 * auroraShading;
 				#endif
 				skylight *= 1e-3 * (worldNormal.y * 0.5 + 0.5);
+
+				// Spherical harmonics skylight
+				vec3[4] skySH;
+				for (uint band = 0u; band < 4u; ++band) {
+					skySH[band] = texelFetch(colortex4, ivec2(int(viewWidth) - 1, band + 2), 0).rgb;
+				}
 				skylight += max(FromSphericalHarmonics(skySH, worldNormal), skySH[0] * 0.2820947918);
 
-				sceneOut += skylight * PI * cube(lightmap.y) * ao;
+				sceneOut += skylight * cube(lightmap.y) * ao;
 
 			#ifndef RSM_ENABLED
 				// Bounced sunlight
