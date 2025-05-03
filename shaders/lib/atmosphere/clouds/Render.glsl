@@ -269,9 +269,13 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 				// float cloudTest = 0.0;
 				// uint zeroDensityCounter = 0u;
 
-				for (uint i = 0u; i < raySteps; ++i) {
+				for (uint i = 1u; i <= raySteps; ++i) {
 					// Advance to the next sample position
 					rayPos += rayStep;
+
+					// Accumulate the weighted ray length
+					rayLengthWeighted += stepSize * float(i) * transmittance;
+					raySumWeight += transmittance;
 
 					// if (cloudTest < 1e-5) {
 					// 	cloudTest = CloudVolumeDensity(rayPos, false);
@@ -284,6 +288,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 					// Compute sample cloud density
 					float heightFraction, dimensionalProfile;
 					float stepDensity = CloudVolumeDensity(rayPos, heightFraction, dimensionalProfile);
+
+					if (stepDensity < 1e-5) continue;
 
 					// if (stepDensity < 1e-5) {
 					// 	++zeroDensityCounter;
@@ -357,9 +363,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					// Break if the cloud has reached the minimum transmittance
 					if (transmittance < minCloudTransmittance) break;
-
-					rayLengthWeighted += stepSize * float(i) * transmittance;
-					raySumWeight += transmittance;
 				}
 
 				float absorption = 1.0 - transmittance;
