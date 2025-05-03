@@ -171,18 +171,18 @@ float quarticLength(in vec2 v) {
 
 //================================================================================================//
 
-mat4x3 ToSphericalHarmonics(in vec3 value, in vec3 dir) {
-	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
-    vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
+vec3[4] ToSphericalHarmonics(in vec3 value, in vec3 dir) {
+	const vec2 k = vec2(sqrt(0.25 * rPI), sqrt(0.75 * rPI));
+    float[4] basis = float[4](k.x, k.y * dir.y, k.y * dir.z, k.y * dir.x);
 
-	return mat4x3(value * harmonics.x, value * harmonics.y, value * harmonics.z, value * harmonics.w);
+	return vec3[4](value * basis[0], value * basis[1], value * basis[2], value * basis[3]);
 }
 
-vec3 FromSphericalHarmonics(in mat4x3 coeff, in vec3 dir) {
-	const vec2 foo = vec2(0.28209479177387815, 0.4886025119029199);
-    vec4 harmonics = vec4(foo.x, foo.y * dir.yzx);
+vec3 FromSphericalHarmonics(in vec3[4] coeff, in vec3 dir) {
+	const vec2 k = vec2(sqrt(0.25 * rPI), sqrt(0.75 * rPI));
+    float[4] basis = float[4](k.x, k.y * dir.y, k.y * dir.z, k.y * dir.x);
 
-	return coeff * harmonics;
+	return coeff[0] * basis[0] + coeff[1] * basis[1] + coeff[2] * basis[2] + coeff[3] * basis[3];
 }
 
 //================================================================================================//

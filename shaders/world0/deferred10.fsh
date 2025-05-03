@@ -38,7 +38,7 @@ flat in vec3 directIlluminance;
 flat in vec3 skyIlluminance;
 
 #ifndef SSPT_ENABLED
-	flat in mat4x3 skySH;
+	flat in vec3[4] skySH;
 #endif
 
 //======// Uniform //=============================================================================//
@@ -237,7 +237,7 @@ void main() {
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(worldPos);
-			vec2 cloudShadowCoord = WorldToCloudShadowPos(worldPos) + rcp(256.0) * (dither * 2.0 - 1.0);
+			vec2 cloudShadowCoord = WorldToCloudShadowPos(worldPos) + (dither * 2.0 - 1.0) / textureSize(colortex10, 0);
 			float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).x;
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;
@@ -339,7 +339,7 @@ void main() {
 					skylight += 0.2 * auroraShading;
 				#endif
 				skylight *= 1e-3 * (worldNormal.y * 0.5 + 0.5);
-				skylight += FromSphericalHarmonics(skySH, worldNormal);
+				skylight += max(FromSphericalHarmonics(skySH, worldNormal), skySH[0] * 0.2820947918);
 
 				sceneOut += skylight * PI * cube(lightmap.y) * ao;
 

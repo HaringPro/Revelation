@@ -21,7 +21,7 @@ flat out vec3 directIlluminance;
 flat out vec3 skyIlluminance;
 
 #ifndef SSPT_ENABLED
-	flat out mat4x3 skySH;
+	flat out vec3[4] skySH;
 #endif
 
 //======// Attribute //===========================================================================//
@@ -51,22 +51,28 @@ void main() {
 	skyIlluminance = loadSkyIllum();
 
 	#ifndef SSPT_ENABLED
-		skySH = mat4x3(0.0);
-		const uint slices = 5u;
-		const float rSlices = 1.0 / float(slices);
+		skySH = vec3[4](0.0);
+		const uvec2 samples = uvec2(8u, 4u);
+		const vec2 rSamples = 1.0 / vec2(samples);
 
-		for (uint y = 0u; y < slices; ++y) {
-			float latitude = float(y) * (PI * rSlices);
+		for (uint y = 0u; y < samples.y; ++y) {
+			float latitude = float(y) * (PI * rSamples.y);
 			vec2 latitudeSincos = sincos(latitude);
-			for (uint x = 0u; x < slices; ++x) {
-				float longitude = float(x) * (TAU * rSlices);
-				vec3 direction = vec3(latitudeSincos.x, latitudeSincos.y * sincos(longitude)).zxy;
+			for (uint x = 0u; x < samples.x; ++x) {
+				float longitude = float(x) * (TAU * rSamples.x);
+				vec3 direction = vec3(abs(latitudeSincos.x), latitudeSincos.y * sincos(longitude)).zxy;
 
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
-				skySH += ToSphericalHarmonics(skyRadiance, direction);
+				vec3[4] shCoeff = ToSphericalHarmonics(skyRadiance, direction);
+				for (uint band = 0u; band < 4u; ++band) {
+					skySH[band] += shCoeff[band];
+				}
 			}
 		}
 
-		skySH *= rSlices * rSlices;
+		const float norm = rSamples.x * rSamples.y;
+		for (uint band = 0u; band < 4u; ++band) {
+			skySH[band] *= norm;
+		}
 	#endif
 }
