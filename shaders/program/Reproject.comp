@@ -4,7 +4,7 @@
 	Revoxelation Shaders
 
 	Copyright (C) 2024 HaringPro
-	All Rights Reserved
+	Apache License 2.0
 
     Pass: Reproject scene history and lighting data history (half-res)
 
