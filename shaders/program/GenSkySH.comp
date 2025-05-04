@@ -14,6 +14,8 @@
 layout (local_size_x = 128, local_size_y = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
+const uint samples = gl_WorkGroupSize.x;
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -22,7 +24,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 writeonly uniform image2D colorimg4;
 
-shared vec3 sharedSkySH[128][4];
+shared vec3[4] sharedSkySH[samples];
 
 //======// Uniform //=============================================================================//
 
@@ -58,10 +60,10 @@ void ParallelReduceSum(in uint index, in uint samples) {
 //======// Main //================================================================================//
 void main() {
     uint index = gl_LocalInvocationID.x;
-	const uint samples = gl_WorkGroupSize.x;
+	const vec3 upDir = vec3(0.0, 1.0, 0.0);
 
 	// Sample and compute SH coefficients
-	vec3 direction = sampleHemisphereVector(vec3(0.0, 1.0, 0.0), Hammersley(index, samples));
+	vec3 direction = sampleHemisphereVector(upDir, Hammersley(index, samples));
 	vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
 
 	vec3[4] shCoeff = ToSphericalHarmonics(skyRadiance, direction);
@@ -77,12 +79,12 @@ void main() {
 	// Store SH coefficients in thread 0
 	if (index == 0u) {
 		for (uint band = 0u; band < 4u; ++band) {
-			shCoeff[band] = sharedSkySH[0][band] * (TAU / float(samples));
+			shCoeff[band] = sharedSkySH[0][band] * (TAU / float(samples)); // Normalization
 			imageStore(colorimg4, ivec2(int(viewWidth) - 1, band + 2), vec4(shCoeff[band], 0.0));
 		}
 
 		// Evaluate sky illuminance from SH coefficients (facing up)
-		vec3 skyIlluminance = FromSphericalHarmonics(shCoeff, vec3(0.0, 1.0, 0.0));
+		vec3 skyIlluminance = FromSphericalHarmonics(shCoeff, upDir);
 		imageStore(colorimg4, ivec2(int(viewWidth) - 1, 1), vec4(skyIlluminance, 0.0));
 	}
 }
