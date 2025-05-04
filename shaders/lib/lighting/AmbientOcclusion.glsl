@@ -2,10 +2,10 @@
 #define SSAO_SAMPLES 6 // [1 2 3 4 5 6 7 8 9 10 12 16 18 20 22 24 26 28 30 32 48 64]
 #define SSAO_STRENGTH 1.0 // [0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 
-#define GTAO_SLICES	3 // [1 2 3 4 5 6 8 10 12 15 17 20]
-#define GTAO_DIRECTION_SAMPLES 3 // [1 2 3 4 5 6 8 10 12 15 17 20]
+#define GTAO_SLICES	2 // [1 2 3 4 5 6 8 10 12 15 17 20]
+#define GTAO_DIRECTION_SAMPLES 4 // [1 2 3 4 5 6 8 10 12 15 17 20]
 
-#define GTAO_RADIUS 0.25 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.4 3.6 3.8 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0]
+#define GTAO_RADIUS 1.0 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.4 3.6 3.8 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0]
 
 //================================================================================================//
 
@@ -13,9 +13,10 @@
 float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
 	const float rSteps = 1.0 / float(SSAO_SAMPLES);
 	float maxSqLen = sqr(viewPos.z) * 0.25;
+	float rMaxSqLen = 1.0 / maxSqLen;
 
 	vec2 radius = vec2(0.0);
-	vec2 rayStep = vec2(0.4, 0.4 * aspectRatio) / max((far - near) * -viewPos.z / far + near, 5.0) * gbufferProjection[1][1];
+	vec2 rayStep = inversesqrt(sdot(viewPos)) * gbufferProjection[1][1] * vec2(0.5, 0.5 * aspectRatio);
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
@@ -31,29 +32,28 @@ float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 		float diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
-			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
+			sum += NdotL * saturate(1.0 - diffSqLen * rMaxSqLen);
 		}
 
 		difference = ScreenToViewSpace(coord - rot * radius) - viewPos;
 		diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
-			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
+			sum += NdotL * saturate(1.0 - diffSqLen * rMaxSqLen);
 		}
 	}
 
-	sum = max0(1.0 - sum * rSteps * SSAO_STRENGTH);
-	return sum;
+	return saturate(1.0 - sum * rSteps * SSAO_STRENGTH);
 }
 
 /* Ground-Truth Ambient Occlusion */
 // Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
-	float viewDistance = sdot(viewPos);
-	vec3 viewDir = viewPos * -inversesqrt(max(0.5, viewDistance));
-
+	float viewDistance = max(1.0, sdot(viewPos)); // Trick to avoid artifacts
 	float norm = inversesqrt(viewDistance);
 	viewDistance *= norm;
+
+	vec3 viewDir = viewPos * -norm;
 
 	const int sliceCount = GTAO_SLICES;
 	const float rSliceCount = 1.0 / float(sliceCount);
@@ -61,8 +61,8 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 	const int sampleCount = GTAO_DIRECTION_SAMPLES;
 	const float rSampleCount = 1.0 / float(sampleCount);
 
-	float radius = GTAO_RADIUS + viewDistance * 0.005;
-	vec2 sRadius = radius * gbufferProjection[1][1] * norm * vec2(1.0, aspectRatio);
+	float radius = GTAO_RADIUS * saturate(0.25 + viewDistance * rcp(128.0));
+	vec2 sRadius = rSampleCount * radius * gbufferProjection[1][1] * norm * vec2(1.0, aspectRatio);
 	float falloff = 4.0 * norm;
 
 	float visibility = 0.0;
@@ -86,8 +86,9 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 		vec2 cHorizonCos = vec2(-1.0);
 
 		for (int samp = 0; samp < sampleCount; ++samp) {
-			vec2 stepDir = rSampleCount * directionV.xy * sRadius;
-			vec2 offset = (samp + R1(slice + samp * frameCounter, dither)) * stepDir;
+			vec2 stepDir = directionV.xy * sRadius;
+			float stepDither = R1(slice + samp * sliceCount, dither);
+			vec2 offset = (float(samp) + stepDither) * stepDir;
 
 			vec2 sTexCoord = coord + offset;
 			vec3 sHorizonV = ScreenToViewSpace(sTexCoord) - viewPos;
@@ -129,9 +130,10 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dit
 float CalculateSSAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
 	const float rSteps = 1.0 / float(SSAO_SAMPLES);
 	float maxSqLen = sqr(viewPos.z) * 0.25;
+	float rMaxSqLen = 1.0 / maxSqLen;
 
 	vec2 radius = vec2(0.0);
-	vec2 rayStep = vec2(0.4, 0.4 * aspectRatio) / max((dhFarPlane - dhNearPlane) * -viewPos.z / dhFarPlane + dhNearPlane, 5.0) * dhProjection[1][1];
+	vec2 rayStep = inversesqrt(sdot(viewPos)) * dhProjection[1][1] * vec2(0.5, 0.5 * aspectRatio);
 
 	const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
@@ -147,29 +149,28 @@ float CalculateSSAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 		float diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
-			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
+			sum += NdotL * saturate(1.0 - diffSqLen * rMaxSqLen);
 		}
 
 		difference = ScreenToViewSpaceDH(coord - rot * radius) - viewPos;
 		diffSqLen = sdot(difference);
 		if (diffSqLen > 1e-5 && diffSqLen < maxSqLen) {
 			float NdotL = saturate(dot(normal, difference * inversesqrt(diffSqLen)));
-			sum += NdotL * saturate(1.0 - diffSqLen / maxSqLen);
+			sum += NdotL * saturate(1.0 - diffSqLen * rMaxSqLen);
 		}
 	}
 
-	sum = max0(1.0 - sum * rSteps * SSAO_STRENGTH);
-	return sum;
+	return saturate(1.0 - sum * rSteps * SSAO_STRENGTH);
 }
 
 /* Ground-Truth Ambient Occlusion */
 // Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float dither) {
-	float viewDistance = sdot(viewPos);
-	vec3 viewDir = viewPos * -inversesqrt(max(0.5, viewDistance));
-
+	float viewDistance = max(1.0, sdot(viewPos)); // Trick to avoid artifacts
 	float norm = inversesqrt(viewDistance);
 	viewDistance *= norm;
+
+	vec3 viewDir = viewPos * -norm;
 
 	const int sliceCount = GTAO_SLICES;
 	const float rSliceCount = 1.0 / float(sliceCount);
@@ -177,8 +178,8 @@ float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 	const int sampleCount = GTAO_DIRECTION_SAMPLES;
 	const float rSampleCount = 1.0 / float(sampleCount);
 
-	float radius = GTAO_RADIUS + viewDistance * 0.005;
-	vec2 sRadius = radius * dhProjection[1][1] * norm * vec2(1.0, aspectRatio);
+	float radius = GTAO_RADIUS * saturate(0.25 + viewDistance * rcp(128.0));
+	vec2 sRadius = rSampleCount * radius * dhProjection[1][1] * norm * vec2(1.0, aspectRatio);
 	float falloff = 4.0 * norm;
 
 	float visibility = 0.0;
@@ -202,8 +203,9 @@ float CalculateGTAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 		vec2 cHorizonCos = vec2(-1.0);
 
 		for (int samp = 0; samp < sampleCount; ++samp) {
-			vec2 stepDir = rSampleCount * directionV.xy * sRadius;
-			vec2 offset = (samp + R1(slice + samp * frameCounter, dither)) * stepDir;
+			vec2 stepDir = directionV.xy * sRadius;
+			float stepDither = R1(slice + samp * sliceCount, dither);
+			vec2 offset = (float(samp) + stepDither) * stepDir;
 
 			vec2 sTexCoord = coord + offset;
 			vec3 sHorizonV = ScreenToViewSpaceDH(sTexCoord) - viewPos;
