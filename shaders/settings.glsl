@@ -250,7 +250,7 @@ const float sunIntensity 		  = 32.0;
 	#define AUTO_HISTOGRAM 2
 
 	#define EXPOSURE_MODE AUTO_HISTOGRAM // [MANUAL AUTO_BASIC AUTO_HISTOGRAM]
-	#define AUTO_EXPOSURE_LOD 6 // LOD level for auto exposure. [1 2 3 4 5 6 7 8 9 10 11 12 14 16]
+	#define AUTO_EXPOSURE_LOD 5 // LOD level for auto exposure. [1 2 3 4 5 6 7 8 9 10 11 12 14 16]
 
 	#define ISO 100.0 // Sensitivity of the camera. [100.0 200.0 320.0 400.0 500.0 640.0 800.0 1000.0 1250.0 1600.0 2000.0 2500.0 3200.0 4000.0 5000.0 6400.0 8000.0 10000.0 12800.0 16000.0 20000.0 25600.0 32000.0 40000.0 51200.0 64000.0 80000.0 10. [100.0 200.0 320.0 400.0 500.0 640.0 800.0 1000.0 1250.0 1600.0 2000.0 2500.0 3200.0 4000.0 5000.0 6400.0 8000.0 10000.0 12800.0 16000.0 20000.0 25600.0 32000.0 40000.0 51200.0 64000.0 80000.0]
 	#define AUTO_EV_MIN -8.0 // Minimum EV value for auto exposure. [-32.0 -31.0 -30.0 -29.0 -28.0 -27.0 -26.0 -25.0 -24.0 -23.0 -22.0 -21.0 -20.0 -19.0 -18.0 -17.0 -16.0 -15.0 -14.0 -13.0 -12.0 -11.0 -10.0 -9.0 -8.0 -7.0 -6.0 -5.0 -4.0 -3.0 -2.0 -1.0 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0]
@@ -262,8 +262,8 @@ const float sunIntensity 		  = 32.0;
 	#define EXPOSURE_SPEED_DOWN 1.2 // Bright to dim speed. [0.5 0.6 0.7 0.8 0.9 1.0 1.2 1.6 2.0 2.5 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 25.0 30.0 40.0 50.0]
 
 	#define HISTOGRAM_BIN_COUNT 64 // Number of bins for the histogram. [8 16 32 64 128 256 512 1024]
-	#define HISTOGRAM_LOWER_BOUND 0.2 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-	#define HISTOGRAM_UPPER_BOUND 0.8 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+	#define HISTOGRAM_LOWER_BOUND 0.3 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+	#define HISTOGRAM_UPPER_BOUND 0.6 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 /* FidelityFX */
 	// #define FSR_ENABLED // Enables AMD FidelityFX Super Resolution

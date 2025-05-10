@@ -42,7 +42,7 @@ float histogramLumToBin(in float lum) {
 }
 
 float histogramBinToLum(in float bin) {
-    return exp2(bin * (autoEvRange / HISTOGRAM_BIN_COUNT) + AUTO_EV_MIN);
+    return exp2(bin * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN);
 }
 
 float CalculateAutoExposure() {
@@ -123,10 +123,10 @@ void main() {
 	#else
 		float lumimance = CalculateAutoExposure();
 
-        const float K = 22.5; // Calibration constant
+        const float K = 18.0; // Calibration constant
         const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
 
-        float targetExposure = calibration * rcp(lumimance);
+        float targetExposure = calibration / lumimance;
         float prevExposure = loadExposure();
 
         float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
