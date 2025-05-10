@@ -30,7 +30,7 @@ layout (location = 2) out vec2 motionVectorOut;
 
 //======// Input //===============================================================================//
 
-flat in float exposure;
+// flat in float exposure;
 
 //======// Uniform //=============================================================================//
 
@@ -198,5 +198,5 @@ void main() {
     #endif
 
     // Store the global exposure in the bottom-left corner of the history buffer
-    temporalOut.a = screenTexel == ivec2(0) ? exposure : temporalOut.a;
+    temporalOut.a = screenTexel == ivec2(0) ? loadExposure() : temporalOut.a;
 }
