@@ -107,8 +107,12 @@ const AtmosphereParameters atmosphereModel = AtmosphereParameters(
 const float atmosphere_bottom_radius_sq = atmosphereModel.bottom_radius * atmosphereModel.bottom_radius;
 const float atmosphere_top_radius_sq    = atmosphereModel.top_radius * atmosphereModel.top_radius;
 
-const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(683.0, 683.0, 683.0);
-const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(84093.4, 69380.7, 63173.1);
+// const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(683.0, 683.0, 683.0);
+// const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(84093.4, 69380.7, 63173.1);
+
+// Values from https://github.com/sebh/UnrealEngineSkyAtmosphere
+const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(114974.916437f, 71305.954816f, 65310.548555f);
+const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(98242.786222f, 69954.398112f, 66475.012354f);
 
 //================================================================================================//
 
