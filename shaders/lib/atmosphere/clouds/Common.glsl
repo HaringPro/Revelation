@@ -80,6 +80,8 @@ const float cumulusExtinction 		= 0.11;
 const float stratusExtinction 		= 0.07;
 const float cirrusExtinction 		= 0.05;
 
+const float minCloudTransmittance   = 0.05;
+
 //================================================================================================//
 
 #define baseNoiseTex    depthtex2  // 3D perlin-worley & fBm worley noise texture
