@@ -120,19 +120,6 @@ vec3 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		// TODO: Better implementation
 		float inScatterProbability = oms(exp2(-(density * 32.0 + 0.2)));
 
-		#ifdef CLOUD_LOCAL_LIGHTING
-			// Compute local lighting
-			vec3 sunIrradiance, moonIrradiance;
-			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_MID_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
-			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
-
-			skyIlluminance += lightningShading * 4e-3;
-			#ifdef AURORA
-				skyIlluminance += auroraShading;
-			#endif
-		#endif
-
 		scatteringSun *= absorption * inScatterProbability;
 		scatteringSky *= absorption;
 		return vec3(scatteringSun, scatteringSky, absorption);
@@ -180,19 +167,6 @@ vec3 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 		// TODO: Better implementation
 		float inScatterProbability = oms(exp2(-(density * 32.0 + 0.2)));
-
-		#ifdef CLOUD_LOCAL_LIGHTING
-			// Compute local lighting
-			vec3 sunIrradiance, moonIrradiance;
-			vec3 hitPos = vec3(rayPos.x, planetRadius + eyeAltitude + CLOUD_HIGH_ALTITUDE, rayPos.y);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(hitPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
-			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
-
-			skyIlluminance += lightningShading * 4e-3;
-			#ifdef AURORA
-				skyIlluminance += auroraShading;
-			#endif
-		#endif
 
 		scatteringSun *= absorption * inScatterProbability;
 		scatteringSky *= absorption;
