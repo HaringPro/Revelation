@@ -92,7 +92,7 @@ vec4 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 			opticalDepthSun *= falloff;
-			scatteringSun += exp2(opticalDepthSun) * phases[ms];
+			scatteringSun += exp2(opticalDepthSun) * phases[ms] * falloff;
 			falloff *= cloudMsFalloff;
 		}
 
@@ -162,7 +162,7 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 		float falloff = cloudMsFalloff;
 		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 			opticalDepthSun *= falloff;
-			scatteringSun += exp2(opticalDepthSun) * phases[ms];
+			scatteringSun += exp2(opticalDepthSun) * phases[ms] * falloff;
 			falloff *= cloudMsFalloff;
 		}
 
@@ -203,20 +203,27 @@ vec4 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float li
 
 //================================================================================================//
 
+// Referring to Unreal Engine
+float[cloudMsCount] SetupParticipatingMediaPhases(in float primaryPhase, in float falloff) {
+	float phases[cloudMsCount];
+	phases[0] = primaryPhase;
+
+	for (uint ms = 1u; ms < cloudMsCount; ++ms) {
+		phases[ms] = mix(uniformPhase, primaryPhase, falloff);
+		falloff *= falloff;
+	}
+
+	return phases;
+}
+
 vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
     vec4 cloudData = vec4(0.0, 0.0, 0.0, 1.0);
 	float LdotV = dot(cloudLightVector, rayDir);
 
 	// Compute phases for clouds' sunlight multi-scattering
-	float phases[cloudMsCount]; {
-		float falloff = cloudMsFalloff;
-		phases[0] = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
-
-		for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-			phases[ms] = DualLobePhase(LdotV, cloudForwardG * falloff, cloudBackwardG * falloff, cloudLobeMixer) * falloff;
-			falloff *= cloudMsFalloff;
-		}
-	}
+	float phase = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
+	// float phase = HgDrainePhase(LdotV, 35.0);
+	float phases[cloudMsCount] = SetupParticipatingMediaPhases(phase, 0.75);
 
 	float r = viewerHeight; // length(camera)
 	float mu = rayDir.y;	// dot(camera, rayDir) / r
@@ -321,7 +328,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 					for (uint ms = 1u; ms < cloudMsCount; ++ms) {
 						opticalDepthSun *= falloff;
-						scatteringSun += exp2(opticalDepthSun) * phases[ms]/*  * scatteredEnergy */;
+						scatteringSun += exp2(opticalDepthSun) * phases[ms] * falloff/*  * scatteredEnergy */;
 	
 						// scatteredEnergy *= msVolume;
 						falloff *= cloudMsFalloff;
