@@ -11,6 +11,8 @@
 --------------------------------------------------------------------------------
 */
 
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
 layout (local_size_x = 128, local_size_y = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
@@ -59,7 +61,7 @@ void ParallelReduceSum(in uint index, in uint samples) {
 
 //======// Main //================================================================================//
 void main() {
-    uint index = gl_LocalInvocationID.x;
+    uint index = gl_LocalInvocationIndex;
 	const vec3 upDir = vec3(0.0, 1.0, 0.0);
 
 	// Sample and compute SH coefficients
@@ -68,13 +70,14 @@ void main() {
 
 	vec3[4] shCoeff = ToSphericalHarmonics(skyRadiance, direction);
 	for (uint band = 0u; band < 4u; ++band) {
-		sharedSkySH[index][band] = shCoeff[band];
+		sharedSkySH[index][band] = subgroupAdd(shCoeff[band]); // Sum SH coefficients in subgroup
 	}
 
     memoryBarrierShared();
 	barrier();
 
-	ParallelReduceSum(index, samples);
+	// Reduce SH coefficients
+	ParallelReduceSum(gl_SubgroupID, gl_NumSubgroups);
 
 	// Store SH coefficients in thread 0
 	if (index == 0u) {
