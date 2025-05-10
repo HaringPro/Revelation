@@ -202,7 +202,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	vec2 integralScattering = vec2(0.0);
 	float cloudTransmittance = 1.0;
-	float cloudDepth = 1e23;
+	float cloudDepth = 128e3;
 
 	//================================================================================================//
 
