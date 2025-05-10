@@ -126,7 +126,7 @@ mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
 	#endif
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(HgDrainePhase(LdotV, 25.0), RayleighPhase(LdotV));
+	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.75 + HenyeyGreensteinPhase(LdotV, -0.25) * 0.25, RayleighPhase(LdotV));
 	phase.x = mix(uniformPhase, phase.x, 0.75); // Trick to fit the multi-scattering
 
 	float uniformFog = 16.0 / far;
