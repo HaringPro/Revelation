@@ -185,7 +185,12 @@ vec3 Lottes(in vec3 x) {
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
-	float exposure = loadExposure();
+
+ 	#if EXPOSURE_MODE == MANUAL
+		float exposure = exp2(-MANUAL_EV);
+	#else
+		float exposure = loadExposure();
+	#endif
 
 	#ifdef MOTION_BLUR
 		vec3 HDRImage = texelFetch(colortex0, screenTexel, 0).rgb;

@@ -109,6 +109,17 @@ vec3 textureCatmullRomFast(in sampler2D tex, in vec2 position, in const float sh
 
 #include "/lib/universal/TextRenderer.glsl"
 
+void HistogramDisplay(inout vec3 color, in ivec2 texel) {
+    const int binWidth = 2;
+
+    if (all(lessThan(texel, ivec2(HISTOGRAM_BIN_COUNT * binWidth, 256)))) {
+		int binIndex = texel.x / binWidth;
+		float binValue = texelFetch(colortex3, ivec2(binIndex, 0), 0).x;
+
+		color = vec3(step(texel.y + 1, binValue));
+	}
+}
+
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_FragCoord.xy);
@@ -165,6 +176,10 @@ void main() {
 
 	#ifdef DEBUG_SKY_COLOR
 		if (all(lessThan(gl_FragCoord.xy * viewPixelSize, vec2(0.4)))) finalOut = skyColor;
+	#endif
+
+	#if 0
+		HistogramDisplay(finalOut, screenTexel);
 	#endif
 
 	// Apply bayer dithering to reduce banding artifacts

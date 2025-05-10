@@ -1,0 +1,67 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+	Pass: Build luminance histogram for auto exposure
+	Reference: https://bruop.github.io/exposure/
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0, 1.0);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Image //===============================================================================//
+
+writeonly uniform image2D colorimg3;
+layout (rgba16f) readonly uniform image2D colorimg1;
+
+shared uint sharedHistogram[HISTOGRAM_BIN_COUNT];
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Function //============================================================================//
+
+const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
+const float autoEvRangeInv = 1.0 / autoEvRange;
+
+uint histogramLumToBin(in float lum) {
+    float bin = saturate(log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv));
+	return uint(bin * float(HISTOGRAM_BIN_COUNT - 1u));
+}
+
+//======// Main //================================================================================//
+void main() {
+	uint index = gl_LocalInvocationIndex;
+
+	// Initialize histogram
+	sharedHistogram[index] = 0u;
+	barrier();
+
+	if (all(lessThan(gl_GlobalInvocationID.xy, imageSize(colorimg1)))) {
+		// Compute luminance
+		ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+		float luminance = luminance(imageLoad(colorimg1, texel).rgb);
+
+		// Update histogram
+		uint binIndex = histogramLumToBin(luminance);
+		atomicAdd(sharedHistogram[binIndex], 1u);
+	}
+	barrier();
+
+	// Store histogram
+	index = gl_GlobalInvocationID.x;
+	if (index < HISTOGRAM_BIN_COUNT) {
+		imageStore(colorimg3, ivec2(index, 0), vec4(float(sharedHistogram[index]), 0.0, 0.0, 0.0));
+	}
+}

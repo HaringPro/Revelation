@@ -1,0 +1,79 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+	Pass: Compute auto exposure
+	Reference: https://bruop.github.io/exposure/
+
+--------------------------------------------------------------------------------
+*/
+
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+layout (local_size_x = 128, local_size_y = 1) in;
+const ivec3 workGroups = ivec3(1, 1, 1);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Image //===============================================================================//
+
+writeonly uniform image2D colorimg1;
+layout (rgba16f) readonly uniform image2D colorimg3;
+
+shared uvec2 sharedBinIndex[HISTOGRAM_BIN_COUNT];
+
+//======// Uniform //=============================================================================//
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Function //============================================================================//
+
+const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
+const float autoEvRangeInv = 1.0 / autoEvRange;
+
+float histogramBinToLum(in float bin) {
+    return exp2(bin * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN);
+}
+
+//======// Main //================================================================================//
+void main() {
+	uint index = gl_LocalInvocationIndex;
+
+	// Sum histogram bin index
+    uint count = uint(imageLoad(colorimg3, ivec2(index, 0)).x);
+    uvec2 subgroupSum = subgroupAdd(uvec2(count * index, count));
+
+	if (subgroupElect()) {
+        sharedBinIndex[gl_SubgroupID] = subgroupSum;
+	}
+    barrier();
+
+    if (index < gl_NumSubgroups) {
+        subgroupSum = subgroupAdd(sharedBinIndex[index]);
+        if (subgroupElect()) {
+            sharedBinIndex[0] = subgroupSum;
+        }
+    }
+
+    if (index == 0u) {
+        float weightedLogAverage = float(sharedBinIndex[0].x) / float(max(1u, sharedBinIndex[0].y));
+		float luminance = histogramBinToLum(weightedLogAverage);
+
+        const float K = 12.5; // Calibration constant
+        const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
+
+        float targetExposure = calibration / luminance;
+        float prevExposure = loadExposure();
+
+        float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+        float exposure = mix(targetExposure, prevExposure, fastExp(-exposureRate * frameTime));
+
+		imageStore(colorimg1, ivec2(0), vec4(texelFetch(colortex1, ivec2(0), 0).rgb, exposure));
+	}
+}
