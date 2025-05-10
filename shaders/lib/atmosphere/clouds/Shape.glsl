@@ -217,7 +217,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	// Perlin-worley + fBm worley noise for base shape
 	vec2 lowFreqNoises = texture(baseNoiseTex, position * 0.5).xy;
-	float baseNoise = remap(lowFreqNoises.y - 1.0, 1.0, lowFreqNoises.x);
+	float baseNoise = remap(-lowFreqNoises.y, 1.0, lowFreqNoises.x);
 
 	// coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
 	// float cloudDensity = 2.0 * saturate(baseNoise + coverage - 1.0);
@@ -273,7 +273,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 
 	// Perlin-worley + fBm worley noise for base shape
 	vec2 lowFreqNoises = texture(baseNoiseTex, position * 0.5).xy;
-	float baseNoise = remap(lowFreqNoises.y - 1.0, 1.0, lowFreqNoises.x);
+	float baseNoise = remap(-lowFreqNoises.y, 1.0, lowFreqNoises.x);
 
 	// coverage += 0.3 - remap(0.25, 1.0, heightFraction / cloudType) * 0.25;
 	// float cloudDensity = 2.0 * saturate(baseNoise + coverage - 1.0);
