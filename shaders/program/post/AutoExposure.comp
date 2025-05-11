@@ -32,7 +32,7 @@ layout (rgba16f) readonly uniform image2D colorimg3;
 
 //======// Shared Memory //=======================================================================//
 
-shared uvec2 sharedBinIndex[HISTOGRAM_BIN_COUNT];
+shared uvec2 sharedBinIndex[gl_NumSubgroups];
 
 //======// Function //============================================================================//
 
@@ -58,13 +58,10 @@ void main() {
 
     if (index < gl_NumSubgroups) {
         subgroupSum = subgroupAdd(sharedBinIndex[index]);
-        if (subgroupElect()) {
-            sharedBinIndex[0] = subgroupSum;
-        }
     }
 
     if (index == 0u) {
-        float weightedLogAverage = float(sharedBinIndex[0].x) / float(max(1u, sharedBinIndex[0].y));
+        float weightedLogAverage = float(subgroupSum.x) / float(max(1u, subgroupSum.y));
 		float luminance = histogramBinToLum(weightedLogAverage);
 
         const float K = 12.5; // Calibration constant
