@@ -13,6 +13,8 @@
 
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
+//======// Input //===============================================================================//
+
 layout (local_size_x = 128, local_size_y = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
@@ -20,15 +22,15 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #include "/lib/Utility.glsl"
 
-//======// Image //===============================================================================//
+//======// Uniform //=============================================================================//
 
 writeonly uniform image2D colorimg4;
 
-shared vec3[4] sharedSkySH[gl_NumSubgroups];
-
-//======// Uniform //=============================================================================//
-
 #include "/lib/universal/Uniform.glsl"
+
+//======// Shared Memory //=======================================================================//
+
+shared vec3[4] sharedSkySH[gl_NumSubgroups];
 
 //======// Function //============================================================================//
 

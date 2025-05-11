@@ -11,6 +11,8 @@
 --------------------------------------------------------------------------------
 */
 
+//======// Input //===============================================================================//
+
 layout (local_size_x = 1, local_size_y = 2) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
@@ -18,13 +20,9 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #include "/lib/Utility.glsl"
 
-//======// Image //===============================================================================//
+//======// Uniform //=============================================================================//
 
 writeonly uniform image2D colorimg4;
-
-shared vec3 illuminance[2];
-
-//======// Uniform //=============================================================================//
 
 uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
 
@@ -37,6 +35,10 @@ uniform float viewWidth;
 
 uniform vec3 worldSunVector;
 uniform vec3 lightningShading;
+
+//======// Shared Memory //=======================================================================//
+
+shared vec3 illuminance[2];
 
 //======// Function //============================================================================//
 
