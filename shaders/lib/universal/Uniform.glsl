@@ -34,6 +34,7 @@ uniform float far;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float aspectRatio;
+uniform float rainStrength;
 uniform float wetness;
 uniform float wetnessCustom;
 uniform float sunAngle;
