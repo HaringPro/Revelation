@@ -14,6 +14,8 @@
 
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
+//======// Input //===============================================================================//
+
 layout (local_size_x = 128, local_size_y = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
@@ -21,16 +23,16 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #include "/lib/Utility.glsl"
 
-//======// Image //===============================================================================//
+//======// Uniform //=============================================================================//
 
 writeonly uniform image2D colorimg1;
 layout (rgba16f) readonly uniform image2D colorimg3;
 
-shared uvec2 sharedBinIndex[HISTOGRAM_BIN_COUNT];
-
-//======// Uniform //=============================================================================//
-
 #include "/lib/universal/Uniform.glsl"
+
+//======// Shared Memory //=======================================================================//
+
+shared uvec2 sharedBinIndex[HISTOGRAM_BIN_COUNT];
 
 //======// Function //============================================================================//
 

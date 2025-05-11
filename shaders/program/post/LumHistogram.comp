@@ -12,6 +12,8 @@
 --------------------------------------------------------------------------------
 */
 
+//======// Input //===============================================================================//
+
 layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
@@ -19,16 +21,16 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 #include "/lib/Utility.glsl"
 
-//======// Image //===============================================================================//
+//======// Uniform //=============================================================================//
 
 writeonly uniform image2D colorimg3;
 layout (rgba16f) readonly uniform image2D colorimg1;
 
-shared uint sharedHistogram[HISTOGRAM_BIN_COUNT];
-
-//======// Uniform //=============================================================================//
-
 #include "/lib/universal/Uniform.glsl"
+
+//======// Shared Memory //=======================================================================//
+
+shared uint sharedHistogram[HISTOGRAM_BIN_COUNT];
 
 //======// Function //============================================================================//
 
