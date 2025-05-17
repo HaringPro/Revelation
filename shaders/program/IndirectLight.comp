@@ -37,7 +37,11 @@ writeonly restrict uniform image2D colorimg3;
 
 #include "/lib/surface/BRDF.glsl"
 
-#include "/lib/lighting/GlobalIllumination.glsl"
+#ifdef RSM_ENABLED
+	#include "/lib/lighting/RSM.glsl"
+#else
+	#include "/lib/lighting/SSPT.glsl"
+#endif
 
 float GetClosestDepth(in ivec2 texel) {
     float depth = loadDepth0(texel);

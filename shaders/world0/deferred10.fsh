@@ -65,7 +65,8 @@ uniform sampler3D COMBINED_TEXTURE_SAMPLER;
 #include "/lib/lighting/DiffuseLighting.glsl"
 
 #if AO_ENABLED > 0 && !defined SSPT_ENABLED
-	#include "/lib/lighting/AmbientOcclusion.glsl"
+	#include "/lib/lighting/SSAO.glsl"
+	#include "/lib/lighting/GTAO.glsl"
 #endif
 
 #include "/lib/SpatialUpscale.glsl"
