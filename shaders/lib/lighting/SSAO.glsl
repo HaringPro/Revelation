@@ -74,4 +74,7 @@ float CalculateSSAODH(in vec2 coord, in vec3 viewPos, in vec3 normal, in float d
 			sum += NdotL * saturate(1.0 - diffSqLen * rMaxSqLen);
 		}
 	}
+
+	return saturate(1.0 - sum * rSteps * SSAO_STRENGTH);
+}
 #endif
