@@ -97,7 +97,7 @@ void main() {
 	bool waterMask = materialID == 3u;
 
 	if (materialID == 2u || waterMask) {
-		vec3 viewNormal = mat3(gbufferModelView) * decodeUnitVector(Unpack2x8U(gbufferData0.z));
+		vec3 viewNormal = mat3(gbufferModelView) * OctDecodeUnorm(Unpack2x8U(gbufferData0.z));
 		#ifdef RAYTRACED_REFRACTION
 			refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos);
 		#else	

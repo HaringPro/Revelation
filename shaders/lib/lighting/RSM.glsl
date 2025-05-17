@@ -58,7 +58,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 
 		vec3 sampleColor 			= texelFetch(shadowcolor1, sampleTexel, 0).rgb;
 
-		vec3 sampleNormal 			= decodeUnitVector(sampleColor.xy);
+		vec3 sampleNormal 			= OctDecodeUnorm(sampleColor.xy);
 
 		float bounce 				= dot(sampleNormal, -sampleDir);				
 		if (bounce < 1e-6) 			continue;

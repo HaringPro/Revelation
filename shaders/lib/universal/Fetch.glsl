@@ -10,14 +10,14 @@ float FetchDepthSoildFix(in ivec2 texel) {
 }
 
 vec3 FetchFlatNormal(in uvec4 data) {
-	return decodeUnitVector(Unpack2x8U(data.z));
+	return OctDecodeUnorm(Unpack2x8U(data.z));
 }
 
 vec3 FetchWorldNormal(in uvec4 data) {
 	#if defined NORMAL_MAPPING
-		return decodeUnitVector(Unpack2x8U(data.w));
+		return OctDecodeUnorm(Unpack2x8U(data.w));
 	#else
-		return decodeUnitVector(Unpack2x8U(data.z));
+		return OctDecodeUnorm(Unpack2x8U(data.z));
 	#endif
 }
 

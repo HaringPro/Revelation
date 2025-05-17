@@ -151,7 +151,7 @@ void main() {
 		#else
 			worldNormal = tbnMatrix[2];
 		#endif
-		gbufferOut0.z = Packup2x8U(encodeUnitVector(worldNormal));
+		gbufferOut0.z = Packup2x8U(OctEncodeUnorm(worldNormal));
 
 		gbufferOut1.x = Packup2x8(albedo.rg);
 		gbufferOut1.y = Packup2x8(albedo.ba);

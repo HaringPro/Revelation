@@ -54,5 +54,5 @@ void main() {
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = materialID;
 
-	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
 }

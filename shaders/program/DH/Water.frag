@@ -137,7 +137,7 @@ void main() {
 		vec4 albedo = vertColor;
 
 		worldNormal = flatNormal;
-		gbufferOut0.z = Packup2x8U(encodeUnitVector(worldNormal));
+		gbufferOut0.z = Packup2x8U(OctEncodeUnorm(worldNormal));
 
 		gbufferOut1.x = Packup2x8(albedo.rg);
 		gbufferOut1.y = Packup2x8(albedo.ba);

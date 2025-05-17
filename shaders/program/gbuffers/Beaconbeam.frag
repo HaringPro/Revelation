@@ -50,7 +50,7 @@ void main() {
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = 20u;
 
-	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
 

@@ -48,11 +48,11 @@ void main() {
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = 2u;
 
-	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
 	#if defined NORMAL_MAPPING
         vec3 normalTex = texture(normals, texCoord).rgb;
         DecodeNormalTex(normalTex);
-		gbufferOut0.w = Packup2x8U(encodeUnitVector(tbnMatrix * normalTex));
+		gbufferOut0.w = Packup2x8U(OctEncodeUnorm(tbnMatrix * normalTex));
 	#endif
 
     gbufferOut1.x = Packup2x8(albedo.rg);

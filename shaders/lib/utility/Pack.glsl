@@ -63,29 +63,27 @@ vec3 UnpackR11G11B10(in uint data) {
 	return vec3(float(data >> 21) * rcp(2047.0), float((data >> 10) & 0x7FF) * rcp(2047.0), float(data & 0x3FF) * rcp(1023.0));
 }
 
-// Modified from https://github.com/Jessie-LC/open-source-utility-code/blob/main/advanced/packing.glsl
-
-// Octahedral Unit Vector encoding
-// Intuitive, fast, and has very little error.
-vec2 encodeUnitVector(in vec3 vector) {
-	// Scale down to octahedron, project onto XY plane
-    vector.xy /= dot(vec3(1.0), abs(vector));
-	// Reflect -Z hemisphere folds over the diagonals
-	vec2 encoded = vector.z <= 0.0 ? (1.0 - abs(vector.yx)) * vec2(vector.x >= 0.0 ? 1.0 : -1.0, vector.y >= 0.0 ? 1.0 : -1.0) : vector.xy;
-	// Scale to [0, 1]
-	return encoded * 0.5 + 0.5;
+// Octahedral encoding
+// https://jcgt.org/published/0003/02/01/paper.pdf
+vec2 OctEncodeSnorm(in vec3 dir) {
+    dir.xy *= 1.0 / dot(vec3(1.0), abs(dir));
+    vec2 oct = mix((1.0 - abs(dir.yx)) * fastSign(dir.xy), dir.xy, step(0.0, dir.z));
+    return oct;
 }
 
-vec3 decodeUnitVector(in vec2 encoded) {
-	// Scale to [-1, 1]
-	encoded = encoded * 2.0 - 1.0;
-	// Exctract Z component
-	vec3 vector = vec3(encoded, 1.0 - abs(encoded.x) - abs(encoded.y));
-	// Reflect -Z hemisphere folds over the diagonals
-	float t = max(-vector.z, 0.0);
-	vector.xy += vec2(vector.x >= 0.0 ? -t : t, vector.y >= 0.0 ? -t : t);
-	// Normalize and return
-	return normalize(vector);
+vec3 OctDecodeSnorm(in vec2 oct) {
+    vec3 dir = vec3(oct.x, oct.y, 1.0 - abs(oct.x) - abs(oct.y));
+    float t = saturate(-dir.z);
+    dir.xy += mix(vec2(t), vec2(-t), step(0.0, dir.xy));
+    return normalize(dir);
+}
+
+vec2 OctEncodeUnorm(in vec3 dir) {
+    return OctEncodeSnorm(dir) * 0.5 + 0.5;
+}
+
+vec3 OctDecodeUnorm(in vec2 oct) {
+	return OctDecodeSnorm(oct * 2.0 - 1.0);
 }
 
 // Spherical coordinate encoding

@@ -166,7 +166,7 @@ void main() {
 			DecodeNormalTex(normalTex.xyz);
 		}
 
-		gbufferOut0.w = Packup2x8U(encodeUnitVector(tbnMatrix * normalTex.xyz));
+		gbufferOut0.w = Packup2x8U(OctEncodeUnorm(tbnMatrix * normalTex.xyz));
 	#else
 		#define ReadTexture(tex) texture(tex, texCoord)
 
@@ -177,7 +177,7 @@ void main() {
 				vec3 normalTex = ReadTexture(normals).xyz;
 				DecodeNormalTex(normalTex);
 			#endif
-			gbufferOut0.w = Packup2x8U(encodeUnitVector(tbnMatrix * normalTex));
+			gbufferOut0.w = Packup2x8U(OctEncodeUnorm(tbnMatrix * normalTex));
 		#endif
 	#endif
 
@@ -194,7 +194,7 @@ void main() {
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = materialID;
 
-	gbufferOut0.z = Packup2x8U(encodeUnitVector(flatNormal));
+	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
 	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 		vec4 specularTex = ReadTexture(specular);
 

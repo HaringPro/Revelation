@@ -88,13 +88,13 @@ void main() {
 
 			// shadowcolor0Out = vec3(caustics);
 			// #ifdef RSM_ENABLED
-			// 	shadowcolor1Out.xy = encodeUnitVector(normal);
+			// 	shadowcolor1Out.xy = OctEncodeUnorm(normal);
 			// #endif
 			shadowcolor1Out.w = vectorData.y * rcp(512.0) + 0.25;
 		// #else
 		// 	shadowcolor0Out = vec3(0.8);
 			// #ifdef RSM_ENABLED
-			// 	shadowcolor1Out.xy = encodeUnitVector(tbnMatrix[2]);
+			// 	shadowcolor1Out.xy = OctEncodeUnorm(tbnMatrix[2]);
 			// #endif
 		// #endif
 	} else {
@@ -109,7 +109,7 @@ void main() {
 		}
 
 		#ifdef RSM_ENABLED
-			shadowcolor1Out.xy = encodeUnitVector(flatNormal);
+			shadowcolor1Out.xy = OctEncodeUnorm(flatNormal);
 		#endif
 	}
 
