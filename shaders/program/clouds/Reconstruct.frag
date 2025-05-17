@@ -19,9 +19,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 13,9 */
-layout (location = 0) out uint frameOut;
-layout (location = 1) out vec4 cloudOut;
+/* RENDERTARGETS: 9,13 */
+layout (location = 0) out vec4 cloudOut;
+layout (location = 1) out uint frameOut;
 
 //======// Uniform //=============================================================================//
 
@@ -145,15 +145,24 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
 #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
 
+vec3 ReprojectClouds(in vec2 coord, in float depth) {
+	vec3 cloudPos = ScreenToViewVectorRaw(coord) * depth;
+	cloudPos = transMAD(gbufferModelViewInverse, cloudPos); // To world space
+	cloudPos += cameraPosition - previousCameraPosition; // To previous frame's world space
+    cloudPos = transMAD(gbufferPreviousModelView, cloudPos); // To previous frame's view space
+	cloudPos = projMAD(gbufferPreviousProjection, cloudPos) * rcp(-cloudPos.z); // To previous frame's NDC space
+
+    return cloudPos * 0.5 + 0.5;
+}
+
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-
-	float depth = loadDepth0(screenTexel);
+	cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	frameOut = 0u;
 
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+	float depth = loadDepth0(screenTexel);
 	#if defined DISTANT_HORIZONS
-		#define Reproject ReprojectDH
 		if (depth > 0.999999) depth = loadDepth0DH(screenTexel);
 	#endif
 
@@ -161,7 +170,9 @@ void main() {
 		frameOut = 1u;
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
-		vec2 prevCoord = Reproject(vec3(screenCoord, 1.0)).xy;
+		float cloudDepth = minOf(textureGather(colortex3, screenCoord * 0.5, 0));
+
+		vec2 prevCoord = ReprojectClouds(screenCoord, cloudDepth).xy;
 		uint frameIndex = texture(colortex13, prevCoord).x;
 
 		bool disocclusion = worldTimeChanged;
@@ -175,14 +186,15 @@ void main() {
 		if (disocclusion) {
 			const float currScale = rcp(float(CLOUD_CBR_SCALE));
 			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
-			cloudOut = textureBicubic(colortex2, currCoord);
+			cloudOut = texture(colortex2, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
+			// vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
 			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 
 			ivec2 currTexel = clamp(screenTexel / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
-			vec4 sample0 = texelFetch(colortex2, currTexel, 0);
+			vec4 currData = texelFetch(colortex2, currTexel, 0);
 
 			// Variance clip
 			#ifdef CLOUD_VARIANCE_CLIP
@@ -199,8 +211,8 @@ void main() {
 				vec4 sample7 = currentLoad(ivec2( 0, -1));
 				vec4 sample8 = currentLoad(ivec2( 1, -1));
 
-				vec4 clipAvg = mean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
-				vec4 clipAvg2 = sqrMean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+				vec4 clipAvg = mean(currData, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
+				vec4 clipAvg2 = sqrMean(currData, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
 
 				vec4 variance = sqrt(abs(clipAvg2 - clipAvg * clipAvg)) * 2.0;
 				vec4 clipMin = clipAvg - variance;
@@ -226,10 +238,8 @@ void main() {
 				#endif
 
 				// Blend with current frame
-				cloudOut = mix(sample0, prevData, saturate(blendWeight));
+				cloudOut = mix(currData, prevData, saturate(blendWeight));
 			} else cloudOut = prevData;
 		}
-	} else {
-		cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 }

@@ -19,8 +19,9 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 2 */
-out vec4 cloudOut;
+/* RENDERTARGETS: 2,3 */
+layout (location = 0) out vec4 cloudOut;
+layout (location = 1) out float cloudDepth;
 
 //======// Input //===============================================================================//
 
@@ -86,6 +87,9 @@ void main() {
 	#endif
 	vec2 cloudUv = texelToUv(cloudTexel);
 
+	cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
+	cloudDepth = 128e3;
+
 	if (
 	#ifdef CLOUD_CBR_ENABLED
 		#if defined DISTANT_HORIZONS
@@ -110,7 +114,7 @@ void main() {
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
-		cloudOut = RenderClouds(worldDir, dither);
+		cloudOut = RenderClouds(worldDir, dither, cloudDepth);
 
 		// Crepuscular rays
 		#ifdef CLOUD_SHADOWS
@@ -121,7 +125,5 @@ void main() {
 						   cloudOut.rgb + crepuscularRays.rgb * cloudOut.a;  // Above clouds
 			cloudOut.a *= crepuscularRays.a;
 		#endif
-	} else {
-		cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	}
 }

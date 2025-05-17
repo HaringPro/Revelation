@@ -90,7 +90,8 @@ void main() {
 		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
 
 		#ifdef CLOUDS
-            vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5);
+			float cloudDepth;
+            vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5, cloudDepth);
             skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
         #endif
 	} else {

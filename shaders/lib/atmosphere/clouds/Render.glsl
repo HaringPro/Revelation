@@ -189,7 +189,7 @@ float[cloudMsCount] SetupParticipatingMediaPhases(in float primaryPhase, in floa
 	return phases;
 }
 
-vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
+vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, out float cloudDepth) {
 	float LdotV = dot(cloudLightVector, rayDir);
 
 	// Compute phases for clouds' sunlight multi-scattering
@@ -202,7 +202,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither) {
 
 	vec2 integralScattering = vec2(0.0);
 	float cloudTransmittance = 1.0;
-	float cloudDepth = 128e3;
+	cloudDepth = 128e3;
 
 	//================================================================================================//
 
