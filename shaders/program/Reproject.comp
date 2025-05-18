@@ -40,8 +40,7 @@ void main() {
     vec2 previousCoord = Reproject(vec3(screenCoord * 2.0, depth)).xy;
 
     if (saturate(previousCoord) == previousCoord && depth > 0.56) {
-        vec4 reprojectedHistory = texture(colortex1, previousCoord);
-        reprojectedHistory.rgb = reprojectedHistory.a > 1.5 ? reprojectedHistory.rgb : vec3(0.0);
-        imageStore(colorimg4, screenTexel, vec4(reprojectedHistory.rgb, 1.0));
+        vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
+        imageStore(colorimg4, screenTexel, vec4(reprojectedHistory, 1.0));
     }
 }
