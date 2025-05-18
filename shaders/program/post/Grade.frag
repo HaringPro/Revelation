@@ -65,9 +65,11 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	float weight = 1.0;
 	float sumWeight = 0.0;
 
+	vec2 upscalingCoord = screenCoord;
 	for (int i = 0; i < 7; ++i) {
-		screenCoord *= 0.5;
-    	vec2 sampleCoord = screenCoord + bloomTileOffset[i] + viewPixelSize * float(i * 12);
+		upscalingCoord *= 0.5;
+    	vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
+		sampleCoord += viewPixelSize * float(i * 12);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
@@ -88,8 +90,9 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	#endif
 
 	if (rainStrength > 1e-2) {
-		float rain = texelFetch(colortex6, texel, 0).a * RAIN_VISIBILITY;
-		scene = scene * oms(rain) + bloomData * rain * 1.2;
+		float rain = textureBicubic(colortex6, screenCoord).a;
+		rain = approxSqrt(rain) * RAIN_VISIBILITY;
+		scene = scene * oms(rain) + bloomData * rain * 1.25;
 	}
 }
 
