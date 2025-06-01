@@ -409,12 +409,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
     vec3 cloudScattering = vec3(0.0);
 
 	if (cloudTransmittance + EPS < 1.0) {
-		vec3 cloudPos = rayDir * cloudDepth;
+		// Trick to strengthen the aerial perspective
+		const float depthScale = 4.0;
+
+		vec3 cloudPos = rayDir * min(cloudDepth * depthScale, 1e5);
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
 			vec3 sunIrradiance, moonIrradiance;
-			vec3 camera = vec3(0.0, planetRadius + eyeAltitude, 0.0);
+			vec3 camera = vec3(0.0, viewerHeight, 0.0);
 			vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
 			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
