@@ -199,5 +199,5 @@ vec3 rotate(in vec3 v, in vec3 a, in vec3 b) {
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 	vec3 k = normalize(cross(a, b)); // Axis of rotation
 
-	return v * cosTheta + cross(k, v) * sinTheta + k * dot(k, v);
+	return v * cosTheta + cross(k, v) * sinTheta + k * dot(k, v) * oms(cosTheta);
 }
