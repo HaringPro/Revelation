@@ -410,9 +410,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	if (cloudTransmittance + EPS < 1.0) {
 		// Trick to strengthen the aerial perspective
-		const float depthScale = 4.0;
+		// const float depthScale = 4.0;
 
-		vec3 cloudPos = rayDir * min(cloudDepth * depthScale, 1e5);
+		vec3 cloudPos = rayDir * cloudDepth;
 
 		#ifdef CLOUD_LOCAL_LIGHTING
 			// Compute local lighting
