@@ -1,2 +1,9 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+*.glsl text linguist-language=glsl
+*.vsh text linguist-language=glsl
+*.fsh text linguist-language=glsl
+*.gsh text linguist-language=glsl
+*.csh text linguist-language=glsl
+*.vert text linguist-language=glsl
+*.frag text linguist-language=glsl
+*.geom text linguist-language=glsl
+*.comp text linguist-language=glsl
