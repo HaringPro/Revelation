@@ -22,12 +22,14 @@ out vec3 easuOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex8; // LDR scene image
+uniform sampler2D colortex0; // LDR scene image
 uniform sampler2D colortex15; // FSR EASU output
 
 uniform vec2 viewSize;
 
 //======// Function //============================================================================//
+
+#define FsrEasuCF(coord) textureLod(colortex0, coord, 0.0).rgb
 
 #include "/lib/post/FSR.glsl"
 

@@ -25,6 +25,7 @@ out vec3 finalOut;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D colortex0; // LDR input
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
@@ -34,7 +35,7 @@ out vec3 finalOut;
 #define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
 #define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
 
-#define casLoad(offset) texelFetchOffset(colortex8, texel, 0, offset).rgb
+#define casLoad(offset) texelFetchOffset(colortex0, texel, 0, offset).rgb
 
 // Contrast Adaptive Sharpening (CAS)
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
@@ -122,9 +123,12 @@ void main() {
 					finalOut = FsrRcasF(screenTexel);
 			#endif
 		} else {
-			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
+			finalOut = textureCatmullRomFast(colortex0, gl_FragCoord.xy * MC_RENDER_QUALITY, 0.6);
 		}
 	#endif
+
+	// Apply gamma correction
+	finalOut = linearToSRGBApprox(finalOut);
 
 	// Text display
 	#if 0

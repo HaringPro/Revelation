@@ -6,10 +6,15 @@
 	Copyright (C) 2024 HaringPro
 	Apache License 2.0
 
-	Pass: Combine bloom and fog, apply exposure, color-grading, vignetting, etc.
+	Pass: Post-processing compositing
 
 --------------------------------------------------------------------------------
 */
+
+//======// Input //===============================================================================//
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 //======// Utility //=============================================================================//
 
@@ -27,12 +32,9 @@
 #define VIGNETTE_STRENGTH 1.0 // Strength of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 #define VIGNETTE_ROUNDNESS 0.5 // Roundness of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
-//======// Output //==============================================================================//
-
-/* RENDERTARGETS: 8 */
-out vec3 LDRImageOut;
-
 //======// Uniform //=============================================================================//
+
+writeonly uniform image2D colorimg0; // LDR output
 
 uniform sampler2D colortex0; // Motion blur output
 uniform sampler2D colortex1; // TAA output
@@ -60,7 +62,7 @@ const vec2 bloomTileOffset[7] = vec2[7](
 
 void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	vec3 bloomData = vec3(0.0);
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+	vec2 screenCoord = texelToUv(texel);
 
 	float weight = 1.0;
 	float sumWeight = 0.0;
@@ -182,7 +184,7 @@ vec3 Lottes(in vec3 x) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 	float exposure = loadExposure();
 
 	#ifdef MOTION_BLUR
@@ -206,9 +208,9 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-		vec2 clipCoord = gl_FragCoord.xy * viewPixelSize * 2.0 - 1.0;
+		vec2 clipCoord = texelToUv(screenTexel) * 2.0 - 1.0;
 		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
-		HDRImage *= fastExp(-0.4 * sdot(clipCoord) * VIGNETTE_STRENGTH);
+		HDRImage *= exp2(-0.5 * sdot(clipCoord) * VIGNETTE_STRENGTH);
 	#endif
 
 	// Debug sky-view
@@ -219,9 +221,10 @@ void main() {
 	#endif
 
 	// Tone mapping
-	LDRImageOut = TONE_MAPPER(HDRImage);
-	// LDRImageOut = gl_FragCoord.x * viewPixelSize.x > 0.5 ? TONE_MAPPER(HDRImage) : None(HDRImage);
+	vec3 LDRImage = TONE_MAPPER(HDRImage);
 
 	// LDR range clamp
-	LDRImageOut = saturate(LDRImageOut);
+	LDRImage = saturate(LDRImage);
+
+	imageStore(colorimg0, screenTexel, vec4(sRGBtoLinearApprox(LDRImage), 1.0));
 }

@@ -1,7 +1,5 @@
 // AMD FidelityFX Super Resolution from https://www.shadertoy.com/view/stXSWB
 
-#define FsrEasuCF(coord) textureLod(colortex8, coord, 0.0).rgb
-
 /**** EASU ****/
 void FsrEasuCon(
     out vec4 con0,
