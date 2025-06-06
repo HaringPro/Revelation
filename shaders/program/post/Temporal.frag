@@ -111,8 +111,8 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord, in const float sharp
 
 #define currentLoad(offset) sRGBToYCoCg(texelFetchOffset(colortex0, texel, 0, offset).rgb)
 
-#define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
-#define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
+#define minOf(a, b, c, d, e, f, g, h, i) min(min(min(a, b), min(c, d)), min(min(e, f), min(min(g, h), i)))
+#define maxOf(a, b, c, d, e, f, g, h, i) max(max(max(a, b), max(c, d)), max(max(e, f), max(max(g, h), i)))
 
 #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
 #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)

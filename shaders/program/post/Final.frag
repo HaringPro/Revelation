@@ -32,8 +32,8 @@ uniform sampler2D colortex0; // LDR input
 
 #include "/lib/universal/Random.glsl"
 
-#define minOf(a, b, c, d, e, f, g, h, i) min(a, min(b, min(c, min(d, min(e, min(f, min(g, min(h, i))))))))
-#define maxOf(a, b, c, d, e, f, g, h, i) max(a, max(b, max(c, max(d, max(e, max(f, max(g, max(h, i))))))))
+#define minOf(a, b, c, d, e, f, g, h, i) min(min(min(a, b), min(c, d)), min(min(e, f), min(min(g, h), i)))
+#define maxOf(a, b, c, d, e, f, g, h, i) max(max(max(a, b), max(c, d)), max(max(e, f), max(max(g, h), i)))
 
 #define casLoad(offset) texelFetchOffset(colortex0, texel, 0, offset).rgb
 
