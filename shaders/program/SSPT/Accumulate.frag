@@ -146,7 +146,7 @@ void main() {
 
         if (currentCoord.x < 1.0) {
             ivec2 currentTexel = screenTexel << 1;
-            float depth = GetClosestDepth(currentTexel);
+            float depth = loadDepth0(currentTexel);
             #if defined DISTANT_HORIZONS
                 bool dhTerrainMask = depth > 0.999999;
                 if (dhTerrainMask) depth = loadDepth0DH(currentTexel);
