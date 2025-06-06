@@ -114,13 +114,13 @@ const mat3 XYZtoSRGB = mat3(
 
 // See section 3.4 of http://www.diva-portal.org/smash/get/diva2:24136/FULLTEXT01.pdf
 vec3 PurkinjeShift(in vec3 image) {
-	const vec3 rodResponse = vec3(0.05, 0.55, 0.40);
+	const vec3 rodResponse = vec3(0.05, 0.55, 0.60);
 
 	vec3 xyz = image * sRGBtoXYZ;
 	vec3 scotopic = xyz * max0(1.33 * (1.0 + (xyz.y + xyz.z) / xyz.x) - 1.68);
 
-	float purkinjeLuma = dot(scotopic * XYZtoSRGB, rodResponse);
-	return mix(image, purkinjeLuma * vec3(0.56, 0.72, 1.0), exp2(-(256.0 / PURKINJE_SHIFT_STRENGTH) * purkinjeLuma));
+	float rodLuminance = dot(scotopic * XYZtoSRGB, rodResponse);
+	return mix(image, rodLuminance * vec3(0.56, 0.72, 1.0), exp2(-(256.0 / PURKINJE_SHIFT_STRENGTH) * rodLuminance));
 }
 
 vec3 None(in vec3 x) {
