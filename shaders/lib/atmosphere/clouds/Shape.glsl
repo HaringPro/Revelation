@@ -182,9 +182,9 @@ float GetVerticalProfile(in float heightFraction, in float cloudType) {
 // relativeHeight is normalized distance from inner to outer atmosphere shell
 // cloudType is read from cloud placement blue channel
 float GetVerticalProfile(float relativeHeight, float cloudType) {
-    float altocumulus = remap(0.01, 0.3, relativeHeight) * remap(relativeHeight, 0.6, 0.95, 1.0, 0.0);
-    float cumulus = saturate(relativeHeight * 4.0) * remap(relativeHeight, 0.3, 0.65, 1.0, 0.0);
-    float stratus = saturate(relativeHeight * 10.0) * remap(relativeHeight, 0.2, 0.3, 1.0, 0.0);
+    float altocumulus = remap(0.01, 0.3, relativeHeight) * remap(0.95, 0.6, relativeHeight);
+    float cumulus = saturate(relativeHeight * 4.0) * remap(0.65, 0.3, relativeHeight);
+    float stratus = saturate(relativeHeight * 10.0) * remap(0.3, 0.2, relativeHeight);
 
     float stratocumulus = mix(stratus, cumulus, saturate(cloudType * 2.0));
     float cumulonimbus = mix(cumulus, altocumulus, saturate(cloudType * 2.0 - 1.0));
@@ -243,7 +243,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 		// detailNoise = abs(detailNoise * 2.0 - 1.0);
 	}
 	#endif
-	float noiseComposite = remap(detailNoise * 0.4, 1.0, baseNoise);
+	float noiseComposite = remap(detailNoise * 0.35, 1.0, baseNoise);
 
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
@@ -300,7 +300,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 		// See [Schneider, 2023]
 		// detailNoise = abs(detailNoise * 2.0 - 1.0);
 	#endif
-	float noiseComposite = remap(detailNoise * 0.4, 1.0, baseNoise);
+	float noiseComposite = remap(detailNoise * 0.35, 1.0, baseNoise);
 
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
