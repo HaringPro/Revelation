@@ -8,6 +8,14 @@
 #define RAYTRACE_ADAPTIVE_STEP
 
 
+#if defined PASS_DEFERRED_LIGHTING
+#define loadDepthMacro loadDepth0
+#define loadDepthMacroDH loadDepth0DH
+#else
+#define loadDepthMacro loadDepth1
+#define loadDepthMacroDH loadDepth1DH
+#endif
+
 #if !defined PASS_DH_WATER
 bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in uint steps, inout vec3 rayPos) {
 	if (viewDir.z > max0(-viewPos.z)) return false;
@@ -46,9 +54,9 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
             if (rayPos.z >= screenDepthMax) break;
         #endif
 
-        float sampleDepth = loadDepth1(ivec2(rayPos.xy));
+        float sampleDepth = loadDepthMacro(ivec2(rayPos.xy));
         #if defined DISTANT_HORIZONS
-            if (sampleDepth > 0.999999) sampleDepth = ViewToScreenDepth(ScreenToViewDepthDH(loadDepth1DH(ivec2(rayPos.xy))));
+            if (sampleDepth > 0.999999) sampleDepth = ViewToScreenDepth(ScreenToViewDepthDH(loadDepthMacroDH(ivec2(rayPos.xy))));
         #endif
 
 		float difference = rayPos.z - sampleDepth;
@@ -69,9 +77,9 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         for (uint i = 0u; i < RAYTRACE_REFINEMENT_STEPS; ++i) {
             rayStep *= 0.5;
 
-            float sampleDepth = loadDepth1(ivec2(rayPos.xy));
+            float sampleDepth = loadDepthMacro(ivec2(rayPos.xy));
             #if defined DISTANT_HORIZONS
-                if (sampleDepth > 0.999999) sampleDepth = ViewToScreenDepth(ScreenToViewDepthDH(loadDepth1DH(ivec2(rayPos.xy))));
+                if (sampleDepth > 0.999999) sampleDepth = ViewToScreenDepth(ScreenToViewDepthDH(loadDepthMacroDH(ivec2(rayPos.xy))));
             #endif
 
             rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
@@ -112,7 +120,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
             if (rayPos.z > 0.999999) break;
         #endif
 
-        float sampleDepth = loadDepth1DH(ivec2(rayPos.xy));
+        float sampleDepth = loadDepthMacroDH(ivec2(rayPos.xy));
 		float difference = rayPos.z - sampleDepth;
 
         if (clamp(difference, 0.0, diffTolerance) == difference) {
@@ -131,7 +139,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         for (uint i = 0u; i < RAYTRACE_REFINEMENT_STEPS; ++i) {
             rayStep *= 0.5;
 
-            float sampleDepth = loadDepth1DH(ivec2(rayPos.xy));
+            float sampleDepth = loadDepthMacroDH(ivec2(rayPos.xy));
 
             rayPos += rayStep * (step(rayPos.z, sampleDepth) * 2.0 - 1.0);
         }
