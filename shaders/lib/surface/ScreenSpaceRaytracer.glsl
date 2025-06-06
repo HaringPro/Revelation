@@ -7,6 +7,7 @@
 
 #define RAYTRACE_ADAPTIVE_STEP
 
+//================================================================================================//
 
 #if defined PASS_DEFERRED_LIGHTING
 #define loadDepthMacro loadDepth0
