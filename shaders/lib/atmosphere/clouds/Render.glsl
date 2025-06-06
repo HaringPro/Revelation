@@ -459,7 +459,7 @@ uniform vec3 frExtinction;
 uniform vec3 frScattering;
 
 vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
-	const uint steps = 12u;
+	uint steps = uint(16.0 * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
 
 	// if (RayIntersectsGround(viewerHeight, rayDir.y) && viewerHeight < cumulusBottomRadius) return vec4(vec3(0.0), 1.0);
 
