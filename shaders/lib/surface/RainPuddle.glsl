@@ -11,13 +11,13 @@ void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specT
 	noise += textureBicubic(noisetex, puddlePos * 0.15).y * 2.6;
 	noise = saturate(noise * 0.2) * wetnessCustom;
 
-    // Normal falloff
-    noise *= saturate(flatNormal.y * 0.3 + 0.7);
-    // Skylight falloff
-    noise *= saturate(skylight * 4.0 - 3.0);
+    float puddles = smoothstep(0.25, 0.55, noise);
+    if (puddles < EPS) return;
 
-    float puddles = sqr(remap(0.22, 0.51, noise));
-    if (puddles < 1e-5) return;
+    // Normal falloff
+    puddles *= saturate(flatNormal.y * 0.25 + 0.75);
+    // Skylight falloff
+    puddles *= saturate(skylight * 4.0 - 3.0);
 
     // Apply wetness to albedo
     vec3 wetAlbedo = colorSaturation(albedo, 0.7) * 0.75;
@@ -32,10 +32,9 @@ void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specT
 
     // Apply wetness to normal
     // TODO: Add ripple normal
-    vec3 rippleNormal = vec3(0.0, 1.0, 0.0);
-    normal = normalize(mix(normal, rippleNormal, puddles));
+    // normal = normalize(mix(normal, rippleNormal, puddles));
 
     // Apply wetness to specular
     specTex.r = mix(specTex.r, RAIN_PUDDLE_SMOOTHNESS, puddles);
-    specTex.g = max(specTex.g, 0.04 * puddles);
+    specTex.g = max(specTex.g, DEFAULT_DIELECTRIC_F0 * puddles);
 }
