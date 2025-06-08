@@ -45,7 +45,8 @@ vec3 nmzHash33(in vec3 q) {
 }
 
 vec3 RenderStars(in vec3 worldDir) {
-	vec3 p = rotate(worldDir, worldSunVector, vec3(0.0, 0.0, 1.0));
+	// vec3 p = rotate(worldDir, worldSunVector, vec3(0.0, 0.0, 1.0));
+    vec3 p = worldDir * mat3(shadowModelViewInverse);
 
     vec3 c = vec3(0.0);
     const float res = 768.0;
@@ -72,7 +73,8 @@ uniform sampler2D colortex12;
 
 vec3 RenderGalaxy(in vec3 worldDir) {
     #ifdef GALAXY_ROTATION
-        worldDir = rotate(worldDir, normalize(worldSunVector - vec3(1.0, 0.0, 0.0)), vec3(0.0, 0.0, 1.0));
+        worldDir *= mat3(shadowModelViewInverse);
+        worldDir.y = -worldDir.y;
     #endif
 
     // Convert to spherical coordinates
