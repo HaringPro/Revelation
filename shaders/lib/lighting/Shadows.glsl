@@ -8,12 +8,12 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 #include "ShadowDistortion.glsl"
 
-vec3 WorldToShadowScreenSpace(in vec3 worldPos, out float distortFactor) {
+vec3 WorldToShadowScreenSpace(in vec3 worldPos, out float distortionFactor) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
-	distortFactor = DistortionFactor(shadowClipPos.xy);
-	return DistortShadowSpace(shadowClipPos, distortFactor) * 0.5 + 0.5;
+	distortionFactor = CalcDistortionFactor(shadowClipPos.xy);
+	return DistortShadowSpace(shadowClipPos, distortionFactor) * 0.5 + 0.5;
 }
 
 //================================================================================================//
@@ -46,7 +46,7 @@ float BlockerSearch(in vec3 shadowScreenPos, in float dither, in float searchSca
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = clamp(1.6 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.02, 0.1);
+	searchDepth = clamp(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.025, 0.25);
 
 	return searchDepth;
 }
@@ -76,7 +76,7 @@ vec2 BlockerSearchSSS(in vec3 shadowScreenPos, in float dither, in float searchS
 	}
 
 	searchDepth *= 1.0 / sumWeight;
-	searchDepth = clamp(1.6 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.02, 0.1);
+	searchDepth = clamp(2.0 * (shadowScreenPos.z - searchDepth) / searchDepth, 0.025, 0.25);
 
 	return vec2(searchDepth, sssDepth * shadowProjectionInverse[2].z);
 }

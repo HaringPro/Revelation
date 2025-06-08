@@ -163,19 +163,19 @@ void main() {
 
 	// Direct specular lighting
 	if (NdotL > 1e-3) {
-		float distortFactor;
+		float distortionFactor;
 		float worldDistSquared = sdot(worldPos);
 
 		vec3 normalOffset = flatNormal * (worldDistSquared * 1e-4 + 3e-2) * (2.0 - saturate(NdotL));
-		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortFactor);	
+		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortionFactor);	
 
 		if (saturate(shadowScreenPos) == shadowScreenPos) {
 			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
 
-			float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 / distortFactor);
-			shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) * distortFactor * shadowDistance;
+			float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 * distortionFactor);
+			shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) / distortionFactor * shadowDistance;
 
-			vec3 shadow = PercentageCloserFilter(shadowScreenPos, worldPos, dither, blockerSearch.x / distortFactor) * saturate(lightmap.y * 1e8);
+			vec3 shadow = PercentageCloserFilter(shadowScreenPos, worldPos, dither, blockerSearch.x * distortionFactor) * saturate(lightmap.y * 1e8);
 
 			if (dot(shadow, vec3(1.0)) > 1e-6) {
 				float LdotV = dot(worldLightVector, -worldDir);

@@ -40,7 +40,7 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in float dither, in floa
 		float sampleRad 			= float(i) * rSteps + dither;
 
 		vec2 sampleClipCoord 		= shadowClipPos.xy + dir * sampleRad;
-		vec2 sampleScreenCoord		= sampleClipCoord * rcp(DistortionFactor(sampleClipCoord)) * 0.5 + 0.5;
+		vec2 sampleScreenCoord		= sampleClipCoord * CalcDistortionFactor(sampleClipCoord) * 0.5 + 0.5;
 		ivec2 sampleTexel 			= ivec2(sampleScreenCoord * realShadowMapRes);
 
 		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 10.0 - 5.0;
