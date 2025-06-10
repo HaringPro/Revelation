@@ -459,7 +459,7 @@ uniform vec3 frExtinction;
 uniform vec3 frScattering;
 
 vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
-	uint steps = uint(16.0 * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
+	uint steps = uint(float(CREPUSCULAR_RAYS_SAMPLES) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
 
 	// if (RayIntersectsGround(viewerHeight, rayDir.y) && viewerHeight < cumulusBottomRadius) return vec4(vec3(0.0), 1.0);
 
@@ -486,8 +486,8 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	float LdotV = dot(worldLightVector, rayDir);
 	vec2 phase = vec2(CornetteShanksPhase(LdotV, 0.65), RayleighPhase(LdotV));
 
-	vec3 extinctionCoeff = (fmExtinction * (1.0 + wetness * 2.0) + frExtinction) * 5e-7;
-	mat2x3 scatteringCoeff = mat2x3(fmScattering * (1.0 + wetness * 2.0), frScattering) * 5e-7;
+	vec3 extinctionCoeff = (fmExtinction * (1.0 + wetness * 2.0) + frExtinction) * (5e-7 * CREPUSCULAR_RAYS_INTENSITY);
+	mat2x3 scatteringCoeff = mat2x3(fmScattering * (1.0 + wetness * 2.0), frScattering) * (5e-7 * CREPUSCULAR_RAYS_INTENSITY);
 
 	vec3 stepTransmittance = exp2(-rLOG2 * extinctionCoeff * stepLength);
 

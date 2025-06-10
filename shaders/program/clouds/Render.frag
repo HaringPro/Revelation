@@ -117,6 +117,7 @@ void main() {
 		cloudOut = RenderClouds(worldDir, dither, cloudDepth);
 
 		// Crepuscular rays
+		#ifdef CREPUSCULAR_RAYS
 		#ifdef CLOUD_SHADOWS
 			vec4 crepuscularRays = RaymarchCrepuscular(worldDir, dither);
 
@@ -124,6 +125,7 @@ void main() {
 						   cloudOut.rgb * crepuscularRays.a + crepuscularRays.rgb : // Below clouds
 						   cloudOut.rgb + crepuscularRays.rgb * cloudOut.a;  // Above clouds
 			cloudOut.a *= crepuscularRays.a;
+		#endif
 		#endif
 	}
 }
