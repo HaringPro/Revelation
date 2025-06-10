@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/Illuminance.comp"
+#include "/program/prepare/Illuminance.comp"

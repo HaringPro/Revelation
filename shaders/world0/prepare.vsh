@@ -2,4 +2,4 @@
 
 #define VERTEX_SHADER
 
-#include "/program/SkyView.glsl"
+#include "/program/prepare/SkyView.glsl"
