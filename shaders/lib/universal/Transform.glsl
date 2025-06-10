@@ -1,9 +1,10 @@
+vec3 ProjectDivide(in vec3 v, in mat4 m) {
+	return projMAD(m, v) * rcp(m[2].w * v.z + m[3].w);
+}
+
 vec3 ScreenToViewSpaceRaw(in vec3 screenPos) {	
 	vec3 NDCPos = screenPos * 2.0 - 1.0;
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
-
-	return viewPos;
+	return ProjectDivide(NDCPos, gbufferProjectionInverse);
 }
 
 vec3 ScreenToViewSpace(in vec3 screenPos) {
@@ -11,10 +12,7 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 	#ifdef TAA_ENABLED
 		NDCPos.xy -= taaOffset;
 	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
-
-	return viewPos;
+	return ProjectDivide(NDCPos, gbufferProjectionInverse);
 }
 
 vec3 ScreenToViewSpaceRaw(in vec2 screenCoord, in float linearDepth) {
@@ -35,10 +33,7 @@ vec3 ScreenToViewSpace(in vec2 screenCoord) {
 	#ifdef TAA_ENABLED
 		NDCPos.xy -= taaOffset;
 	#endif
-	vec3 viewPos = projMAD(gbufferProjectionInverse, NDCPos);
-	viewPos *= rcp(gbufferProjectionInverse[2].w * NDCPos.z + gbufferProjectionInverse[3].w);
-
-	return viewPos;
+	return ProjectDivide(NDCPos, gbufferProjectionInverse);
 }
 
 vec3 ViewToScreenSpaceRaw(in vec3 viewPos) {
@@ -92,10 +87,7 @@ float ViewToScreenDepth(in float depth) {
 #if defined DISTANT_HORIZONS
 	vec3 ScreenToViewSpaceRawDH(in vec3 screenPos) {	
 		vec3 NDCPos = screenPos * 2.0 - 1.0;
-		vec3 viewPos = projMAD(dhProjectionInverse, NDCPos);
-		viewPos *= rcp(dhProjectionInverse[2].w * NDCPos.z + dhProjectionInverse[3].w);
-
-		return viewPos;
+		return ProjectDivide(NDCPos, dhProjectionInverse);
 	}
 
 	vec3 ScreenToViewSpaceDH(in vec3 screenPos) {
@@ -103,10 +95,7 @@ float ViewToScreenDepth(in float depth) {
 		#ifdef TAA_ENABLED
 			NDCPos.xy -= taaOffset;
 		#endif
-		vec3 viewPos = projMAD(dhProjectionInverse, NDCPos);
-		viewPos *= rcp(dhProjectionInverse[2].w * NDCPos.z + dhProjectionInverse[3].w);
-
-		return viewPos;
+		return ProjectDivide(NDCPos, dhProjectionInverse);
 	}
 
 	vec3 ScreenToViewSpaceDH(in vec2 screenCoord) {
@@ -114,10 +103,7 @@ float ViewToScreenDepth(in float depth) {
 		#ifdef TAA_ENABLED
 			NDCPos.xy -= taaOffset;
 		#endif
-		vec3 viewPos = projMAD(dhProjectionInverse, NDCPos);
-		viewPos *= rcp(dhProjectionInverse[2].w * NDCPos.z + dhProjectionInverse[3].w);
-
-		return viewPos;
+		return ProjectDivide(NDCPos, dhProjectionInverse);
 	}
 
 	vec3 ViewToScreenSpaceRawDH(in vec3 viewPos) {
@@ -138,7 +124,7 @@ float ViewToScreenDepth(in float depth) {
 		vec3 position = ScreenToViewSpaceRawDH(screenPos); // To view space
 		position = transMAD(gbufferModelViewInverse, position); // To world space
 
-		position += (cameraPosition - previousCameraPosition) * step(0.56, screenPos.z); // To previous frame's world space
+		position += (cameraPosition - previousCameraPosition)/*  * step(0.56, screenPos.z) */; // To previous frame's world space
 		position = transMAD(gbufferPreviousModelView, position); // To previous frame's view space
 		position = projMAD(dhPreviousProjection, position) * rcp(-position.z); // To previous frame's NDC space
 
