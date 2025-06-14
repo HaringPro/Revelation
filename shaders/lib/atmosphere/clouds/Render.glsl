@@ -314,10 +314,12 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 					// Compute In-Scatter Probability
 					// See slide 92 of [Schneider, 2017]
-					float depthProbability = 0.05 + pow(saturate(stepDensity * 8.0), remap(heightFraction, 0.3, 0.85, 0.5, 1.5));
+					// float depthProbability = 0.05 + pow(saturate(stepDensity * 8.0), remap(heightFraction, 0.3, 0.85, 0.5, 2.0));
 					// float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.75);
-					float inScatterProbability = depthProbability/*  * verticalProbability */;
-					scatteringSun *= inScatterProbability;
+					// float inScatterProbability = depthProbability * verticalProbability;
+					// scatteringSun *= inScatterProbability;
+					float inScatterProbability = pow(stepDensity * 2.0 + dimensionalProfile, 1.0 + heightFraction);
+					scatteringSun *= inScatterProbability * 2.0;
 
 					// Nubis Ambient Scattering Approximation
 					float ambientProbability = approxSqrt(1.0 - dimensionalProfile);
