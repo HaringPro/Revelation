@@ -318,12 +318,12 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					// float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.75);
 					// float inScatterProbability = depthProbability * verticalProbability;
 					// scatteringSun *= inScatterProbability;
-					float inScatterProbability = pow(stepDensity * 2.0 + dimensionalProfile, 1.0 + heightFraction);
+					float inScatterProbability = pow(stepDensity * 2.0 + dimensionalProfile, 2.0 + heightFraction);
 					scatteringSun *= inScatterProbability * 2.0;
 
 					// Nubis Ambient Scattering Approximation
-					float ambientProbability = approxSqrt(1.0 - dimensionalProfile);
-					scatteringSky *= ambientProbability;
+					// float ambientProbability = approxSqrt(1.0 - dimensionalProfile);
+					// scatteringSky *= ambientProbability;
 					// scatteringGround *= ambientProbability;
 
 					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
