@@ -81,6 +81,9 @@ const float cumulusTopOffset        = 500.0;
 const float cumulusBottomRadius     = planetRadius + CLOUD_CU_ALTITUDE;
 const float cumulusTopRadius        = planetRadius + cumulusTopAltitude;
 
+const float cloudMidRadius          = planetRadius + CLOUD_MID_ALTITUDE;
+const float cloudHighRadius         = planetRadius + CLOUD_HIGH_ALTITUDE;
+
 const float cumulusExtinction 		= 0.09;
 const float stratusExtinction 		= 0.07;
 const float cirrusExtinction 		= 0.05;

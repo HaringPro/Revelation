@@ -80,10 +80,10 @@ float CloudMultiScatteringApproximation(in float opticalDepth, in float phases[c
 
 //================================================================================================//
 
-vec3 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
+vec3 RenderCloudMid(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudMidDensity(rayPos);
 	if (density > EPS) {
-		float opticalDepth = density * stepT;
+		float opticalDepth = density * rayLength * stratusExtinction;
 		float absorption = oms(exp2(-rLOG2 * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
@@ -128,10 +128,10 @@ vec3 RenderCloudMid(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lig
 
 //================================================================================================//
 
-vec3 RenderCloudHigh(in float stepT, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
+vec3 RenderCloudHigh(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudHighDensity(rayPos);
 	if (density > EPS) {
-		float opticalDepth = density * stepT;
+		float opticalDepth = density * rayLength * cirrusExtinction;
 		float absorption = oms(exp2(-rLOG2 * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
@@ -208,9 +208,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// Low-level clouds
 	#ifdef CLOUD_CUMULUS
-		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_CU_ALTITUDE) // Below clouds
-		 || (clamp(eyeAltitude, CLOUD_CU_ALTITUDE, cumulusTopAltitude) == eyeAltitude) // In clouds
-		 || (rayDir.y < 0.0 && eyeAltitude > cumulusTopAltitude)) { // Above clouds
+		if ((mu > 0.0 && r < cumulusBottomRadius) // Below clouds
+		 || (clamp(r, cumulusBottomRadius, cumulusTopRadius) == r) // In clouds
+		 || (mu < 0.0 && r > cumulusTopRadius)) { // Above clouds
 
 			// Compute cloud spherical shell intersection
 			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
@@ -220,11 +220,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 				#if defined PASS_SKY_VIEW
 					uint raySteps = CLOUD_CU_SAMPLES >> 1u;
-					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5)); // Reduce ray steps for vertical rays
 				#else
 					uint raySteps = CLOUD_CU_SAMPLES;
 					// raySteps = uint(raySteps * min1(0.5 + max0(rayLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5)); // Reduce ray steps for vertical rays
 				#endif
 
 				// From [Schneider, 2022]
@@ -260,9 +260,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
 
-					// if (cloudTest < 1e-5) {
+					// if (cloudTest < EPS) {
 					// 	cloudTest = CloudVolumeDensity(rayPos, false);
-					// 	if (cloudTest < 1e-5) {
+					// 	if (cloudTest < EPS) {
 					// 		rayPos += rayStep;
 					// 	}
 					// 	continue;
@@ -272,9 +272,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					float heightFraction, dimensionalProfile;
 					float stepDensity = CloudVolumeDensity(rayPos, heightFraction, dimensionalProfile);
 
-					if (stepDensity < 1e-5) continue;
+					if (stepDensity < EPS) continue;
 
-					// if (stepDensity < 1e-5) {
+					// if (stepDensity < EPS) {
 					// 	++zeroDensityCounter;
 					// }
 
@@ -322,7 +322,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					// Nubis Ambient Scattering Approximation
 					float ambientProbability = approxSqrt(1.0 - dimensionalProfile);
 					scatteringSky *= ambientProbability;
-					scatteringGround *= ambientProbability;
+					// scatteringGround *= ambientProbability;
 
 					vec2 scattering = vec2(scatteringSun + scatteringGround * (uniformPhase * cloudLightVector.y), 
 										   scatteringSky + scatteringGround);
@@ -354,24 +354,23 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// Mid-level clouds
 	#ifdef CLOUD_ALTOSTRATUS
-		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_MID_ALTITUDE) // Below clouds
-		 || (planetIntersection && eyeAltitude > CLOUD_MID_ALTITUDE)) { // Above clouds
-			float rayLength = (planetRadius + CLOUD_MID_ALTITUDE - r) / mu;
+		if ((mu > 0.0 && r < cloudMidRadius) // Below clouds
+		 || (planetIntersection && r > cloudMidRadius)) { // Above clouds
+			float rayLength = (cloudMidRadius - r) / mu;
 			vec3 cloudPos = rayDir * rayLength + cameraPosition;
 
-			vec3 cloudTemp = RenderCloudMid(rayLength * stratusExtinction, cloudPos.xz, rayDir.xz, dither, phases);
+			vec3 cloudTemp = RenderCloudMid(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
 
 			if (cloudTemp.z > EPS) {
-				// Absorption to transmittance
-				cloudTemp.z = 1.0 - cloudTemp.z;
+				float transmittanceTemp = 1.0 - cloudTemp.z;
 
 				// Blend layers
-				integralScattering = eyeAltitude < CLOUD_MID_ALTITUDE ?
+				integralScattering = r < cloudMidRadius ?
 									 integralScattering + cloudTemp.xy * cloudTransmittance : // Below clouds
-									 integralScattering * cloudTemp.z + cloudTemp.xy;  // Above clouds
+									 integralScattering * transmittanceTemp + cloudTemp.xy;  // Above clouds
 
 				// Update transmittance
-				cloudTransmittance *= cloudTemp.z;
+				cloudTransmittance *= transmittanceTemp;
 
 				// Update cloud depth
 				cloudDepth = min(rayLength, cloudDepth);
@@ -381,24 +380,23 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// High-level clouds
 	#if defined CLOUD_CIRROCUMULUS || defined CLOUD_CIRRUS
-		if ((rayDir.y > 0.0 && eyeAltitude < CLOUD_HIGH_ALTITUDE) // Below clouds
-		 || (planetIntersection && eyeAltitude > CLOUD_HIGH_ALTITUDE)) { // Above clouds
-			float rayLength = (planetRadius + CLOUD_HIGH_ALTITUDE - r) / mu;
+		if ((mu > 0.0 && r < cloudHighRadius) // Below clouds
+		 || (planetIntersection && r > cloudHighRadius)) { // Above clouds
+			float rayLength = (cloudHighRadius - r) / mu;
 			vec3 cloudPos = rayDir * rayLength + cameraPosition;
 
-			vec3 cloudTemp = RenderCloudHigh(rayLength * cirrusExtinction, cloudPos.xz, rayDir.xz, dither, phases);
+			vec3 cloudTemp = RenderCloudHigh(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
 
 			if (cloudTemp.z > EPS) {
-				// Absorption to transmittance
-				cloudTemp.z = 1.0 - cloudTemp.z;
+				float transmittanceTemp = 1.0 - cloudTemp.z;
 
 				// Blend layers
-				integralScattering = eyeAltitude < CLOUD_HIGH_ALTITUDE ?
+				integralScattering = r < cloudHighRadius ?
 									 integralScattering + cloudTemp.xy * cloudTransmittance : // Below clouds
-									 integralScattering * cloudTemp.z + cloudTemp.xy;  // Above clouds
+									 integralScattering * transmittanceTemp + cloudTemp.xy;  // Above clouds
 
 				// Update transmittance
-				cloudTransmittance *= cloudTemp.z;
+				cloudTransmittance *= transmittanceTemp;
 
 				// Update cloud depth
 				cloudDepth = min(rayLength, cloudDepth);
@@ -408,7 +406,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
     vec3 cloudScattering = vec3(0.0);
 
-	if (cloudTransmittance + EPS < 1.0) {
+	if (cloudTransmittance < 1.0 - EPS) {
 		// Trick to strengthen the aerial perspective
 		// const float depthScale = 4.0;
 
