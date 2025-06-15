@@ -51,6 +51,7 @@ uniform usampler2D colortex11; // Volumetric Fog, linear depth
 #include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/Rainbow.glsl"
 #include "/lib/atmosphere/CommonFog.glsl"
 
 #include "/lib/SpatialUpscale.glsl"
@@ -96,6 +97,7 @@ void main() {
 	ivec2 refractedTexel = screenTexel;
 	bool waterMask = materialID == 3u;
 
+	// Process refraction
 	if (materialID == 2u || waterMask) {
 		vec3 viewNormal = mat3(gbufferModelView) * OctDecodeUnorm(Unpack2x8U(gbufferData0.z));
 		#ifdef RAYTRACED_REFRACTION
@@ -223,6 +225,15 @@ void main() {
 		bloomyFogTrans = mean(waterFog[1]);
 	}
 
+	// Rainbows
+	#ifdef RAINBOWS
+		float rainbowVis = wetness * oms(rainStrength);
+		if (rainbowVis > EPS) {
+			sceneOut += RenderRainbows(LdotV, viewDistance) * loadDirectIllum() * rainbowVis;
+		}
+	#endif
+
+	// Vanilla fog
 	RenderVanillaFog(sceneOut, bloomyFogTrans, viewDistance);
 
 	#if DEBUG_NORMALS == 1

@@ -5,13 +5,13 @@
 ![Screenshot](https://github.com/user-attachments/assets/af647400-bd69-4349-ab14-79c865ef118d)
 
 ## Features
-* High quality atmospheric system: precomputed atmospheric scattering, galaxy skybox, multi-layer clouds, immersive volumetric fog and so on
-* Advanced lighting stuff: PCSS, screen-space shadows, sub-surface scattering, SH skylight, SSPT, RSM, GTAO, etc.
+* High quality atmospheric system: precomputed atmospheric scattering, galaxy, multi-layer clouds, immersive volumetric fog, crepuscular rays, rainbows and so on
+* Advanced lighting rendering: PCSS, screen-space shadows, sub-surface scattering, SH skylight, SSPT, RSM, GTAO, etc.
 * Various camera effects: motion blur, bloom, histogram auto-exposure, vignette and more
 * Improved post-processing: TAA, CAS, FSR 1.0 and color-grading
 * Complete PBR resource pack support, auto generated normal maps
 * Screen-space reflections and refractions
-* Realistic water and foliage rendering
+* Realistic translucency and foliage rendering
 
 ## Compatibility
 * GPUs that support OpenGL 4.0 (NVIDIA, AMD and Intel GPUs have been tested and confirmed to work)
