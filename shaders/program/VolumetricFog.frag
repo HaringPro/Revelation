@@ -86,7 +86,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#undef VF_CLOUD_SHADOWS
 #endif
 
-mat2x3 AirVolumetricFog(in vec3 worldPos, in float dither) {
+mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
 		uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
@@ -226,12 +226,12 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			volFogData = AirVolumetricFog(worldPos, dither);
+			volFogData = RaymarchAtmosphericFog(worldPos, dither);
 		}
 	#endif
 	#ifdef UW_VOLUMETRIC_FOG
 		if (isEyeInWater == 1) {
-			volFogData = UnderwaterVolumetricFog(worldPos, dither);
+			volFogData = RaymarchWaterFog(worldPos, dither);
 		}
 	#endif
 

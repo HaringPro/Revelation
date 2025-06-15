@@ -5,7 +5,7 @@ const vec3 waterExtinction = waterAbsorption + waterScattering;
 
 //================================================================================================//
 
-mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV) {
+mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) {
 	float fogDensity = WATER_FOG_DENSITY * max(waterDepth, 1.0);
 
 	vec3 transmittance = exp2(-rLOG2 * waterExtinction * fogDensity);
@@ -44,7 +44,7 @@ mat2x3 CalculateWaterFog(in float skylight, in float waterDepth, in float LdotV)
 		return exp2(-256.0 * sdot(projectPos));
 	}
 
-	mat2x3 UnderwaterVolumetricFog(in vec3 worldPos, in float dither) {
+	mat2x3 RaymarchWaterFog(in vec3 worldPos, in float dither) {
 		float rayLength = sdot(worldPos);
 		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, far);
