@@ -1,4 +1,8 @@
 
+//======// Fix for https://github.com/HaringPro/Revelation/issues/18 //===========================//
+
+in ivec2 vaUV2;
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -32,7 +36,6 @@ flat out uint materialID;
 in vec3 vaPosition;
 in vec4 vaColor;
 in vec2 vaUV0;
-in ivec2 vaUV2;
 in vec3 vaNormal;
 
 #ifndef MC_GL_VENDOR_INTEL

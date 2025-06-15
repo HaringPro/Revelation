@@ -1,4 +1,8 @@
 
+//======// Fix for https://github.com/HaringPro/Revelation/issues/18 //===========================//
+
+in ivec2 vaUV2;
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -18,7 +22,6 @@ out vec2 lightmap;
 
 in vec3 vaPosition;
 in vec4 vaColor;
-in ivec2 vaUV2;
 in vec3 vaNormal;
 
 //======// Uniform //=============================================================================//
