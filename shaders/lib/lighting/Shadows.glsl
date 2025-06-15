@@ -94,41 +94,41 @@ vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 #ifdef WATER_CAUSTICS_DISPERSION
 vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in float dither) {
 	vec3 caustics = vec3(0.0);
-	vec2[3] lightOffset;
-	lightOffset[0] = lightVector[0].xz / lightVector[0].y;
-	lightOffset[1] = lightVector[1].xz / lightVector[1].y;
-	lightOffset[2] = lightVector[2].xz / lightVector[2].y;
+	worldPos.xz -= worldPos.y;
+
+	vec2[3] waveCoord;
+	waveCoord[0] = worldPos.xz - lightVector[0].xz / lightVector[0].y;
+	waveCoord[1] = worldPos.xz - lightVector[1].xz / lightVector[1].y;
+	waveCoord[2] = worldPos.xz - lightVector[2].xz / lightVector[2].y;
 
 	for (uint i = 0u; i < 9u; ++i) {
-		vec2 offset = (offset3x3[i] + dither) * 0.0625;
-		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
+		vec2 offset = (offset3x3[i] + dither) * 0.1;
 
-		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
 		for (uint j = 0u; j < 3u; ++j) {
-			vec2 waveNormal = CalculateWaterNormal(waveCoord - lightOffset[j]).xy;
+			vec2 waveCoord = waveCoord[j] + offset;
+			vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
-			caustics[j] += exp2(-sdot(offset - waveNormal) * 1e3);
+			caustics[j] += exp2(-sdot(offset - waveNormal) * 512.0);
 		}
 	}
 
-	return sqr(max(caustics, 0.4) * 0.75);
+	return sqr(caustics);
 }
 #else
 float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
 	float caustics = 0.0;
-	vec2 lightOffset = lightVector.xz / lightVector.y;
+	worldPos.xz -= worldPos.y + lightVector.xz / lightVector.y;
 
 	for (uint i = 0u; i < 9u; ++i) {
-		vec2 offset = (offset3x3[i] + dither) * 0.0625;
-		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
+		vec2 offset = (offset3x3[i] + dither) * 0.1;
 
-		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
-		vec2 waveNormal = CalculateWaterNormal(waveCoord - lightOffset).xy;
+		vec2 waveCoord = worldPos.xz + offset;
+		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
-		caustics += exp2(-sdot(offset - waveNormal) * 1e3);
+		caustics += exp2(-sdot(offset - waveNormal) * 512.0);
 	}
 
-	return sqr(max(caustics, 0.4) * 0.75);
+	return sqr(caustics);
 }
 #endif
 
@@ -175,10 +175,10 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 				lightVector[0] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / (WATER_REFRACT_IOR - 0.025));
 				lightVector[1] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 				lightVector[2] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / (WATER_REFRACT_IOR + 0.025));
-				vec3 caustics = CalculateWaterCaustics(worldPos, lightVector, dither);
+				vec3 caustics = CalculateWaterCaustics(worldPos, lightVector, dither - 0.5);
 			#else
 				vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
-				float caustics = CalculateWaterCaustics(worldPos, lightVector, dither);
+				float caustics = CalculateWaterCaustics(worldPos, lightVector, dither - 0.5);
 			#endif
 			result += causticWeight * (caustics - result);
 		}
