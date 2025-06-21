@@ -63,9 +63,10 @@ vec2 DistortCloudShadowPos(in vec3 shadowPos) {
 float CalculateCloudShadows(in vec3 rayPos) {
 	const uint steps = CLOUD_SHADOW_SAMPLES;
 
-	rayPos += cameraPosition;
+	vec3 cloudViewerPos = vec3(cameraPosition.xz, viewerHeight).xzy;
+	rayPos += cloudViewerPos;
 
-	vec2 intersection = RaySphericalShellIntersection(rayPos + vec3(0.0, planetRadius, 0.0), cloudLightVector, cumulusBottomRadius, cumulusTopRadius);
+	vec2 intersection = RaySphericalShellIntersection(rayPos, cloudLightVector, cumulusBottomRadius, cumulusTopRadius);
 	float stepLength = (intersection.y - intersection.x) * rcp(float(steps));
 
 	rayPos += cloudLightVector * intersection.x;

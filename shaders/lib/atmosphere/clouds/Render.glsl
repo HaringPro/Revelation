@@ -58,7 +58,7 @@ float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
 
 float CloudVolumeGroundLightOD(in float density, in float height) {
 	// Estimate the light optical depth of the ground from the cloud volume
-    return density * (height - CLOUD_CU_ALTITUDE) * cumulusExtinction;
+    return density * height * (CLOUD_CU_ALTITUDE * cumulusExtinction);
 }
 
 float CloudMultiScatteringApproximation(in float opticalDepth, in float phases[cloudMsCount]) {
@@ -95,7 +95,6 @@ vec3 RenderCloudMid(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float
 				rayStep *= 2.0;
 
 				float density = CloudMidDensity(rayPos + rayStep.xy * lightNoise);
-				if (density < EPS) continue;
 
 				opticalDepthSun += density * rayStep.z;
 			}
@@ -143,7 +142,6 @@ vec3 RenderCloudHigh(in float rayLength, in vec2 rayPos, in vec2 rayDir, in floa
 				rayStep *= 2.0;
 
 				float density = CloudHighDensity(rayPos + rayStep.xy * lightNoise);
-				if (density < EPS) continue;
 
 				opticalDepthSun += density * rayStep.z;
 			}
@@ -200,6 +198,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 	float r = viewerHeight; // length(camera)
 	float mu = rayDir.y;	// dot(camera, rayDir) / r
 
+	vec3 cloudViewerPos = vec3(cameraPosition.xz, r).xzy;
+
+	// Initialize
 	vec2 integralScattering = vec2(0.0);
 	float cloudTransmittance = 1.0;
 	cloudDepth = 128e3;
@@ -215,7 +216,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 			// Compute cloud spherical shell intersection
 			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
 
-			if (intersection.y > 0.0) { // Intersect the volume
+			// Intersect the volume
+			if (intersection.y > 0.0) {
 				float rayLength = clamp(intersection.y - intersection.x, 0.0, 1e5);
 
 				#if defined PASS_SKY_VIEW
@@ -236,12 +238,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 				float stepSize = rayLength * rcp(float(raySteps));
 
-				vec3 rayStep = stepSize * rayDir;
-				ToPlanetCurvePos(rayStep);
-
 				float startLength = intersection.x + stepSize * dither;
-				vec3 rayPos = startLength * rayDir + cameraPosition;
-				ToPlanetCurvePos(rayPos);
+				vec3 rayPos = startLength * rayDir + cloudViewerPos;
+				vec3 rayStep = stepSize * rayDir;
 
 				float rayLengthWeighted = 0.0;
 				float raySumWeight = 0.0;
@@ -252,6 +251,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 				// float cloudTest = 0.0;
 				// uint zeroDensityCounter = 0u;
 
+				// Raymarch through the cloud volume
 				for (uint i = 1u; i <= raySteps; ++i) {
 					// Advance to the next sample position
 					rayPos += rayStep;
@@ -309,7 +309,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
 
 					// Compute the optical depth of ground light through clouds
-					float opticalDepthGround = CloudVolumeGroundLightOD(stepDensity, rayPos.y);
+					float opticalDepthGround = CloudVolumeGroundLightOD(stepDensity, heightFraction);
 					float scatteringGround = fastExp(-opticalDepthGround) * rPI;
 
 					// Compute In-Scatter Probability
@@ -341,7 +341,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					if (transmittance < minCloudTransmittance) break;
 				}
 
-				if (transmittance + EPS < 1.0) {
+				// Update integral data
+				if (transmittance < 1.0 - EPS) {
 					integralScattering = stepScattering;
 					cloudTransmittance = transmittance;
 					cloudDepth = startLength + rayLengthWeighted / raySumWeight;
@@ -359,10 +360,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		if ((mu > 0.0 && r < cloudMidRadius) // Below clouds
 		 || (planetIntersection && r > cloudMidRadius)) { // Above clouds
 			float rayLength = (cloudMidRadius - r) / mu;
-			vec3 cloudPos = rayDir * rayLength + cameraPosition;
+			vec3 cloudPos = rayDir * rayLength + cloudViewerPos;
 
 			vec3 cloudTemp = RenderCloudMid(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
 
+			// Update integral data
 			if (cloudTemp.z > EPS) {
 				float transmittanceTemp = 1.0 - cloudTemp.z;
 
@@ -385,10 +387,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		if ((mu > 0.0 && r < cloudHighRadius) // Below clouds
 		 || (planetIntersection && r > cloudHighRadius)) { // Above clouds
 			float rayLength = (cloudHighRadius - r) / mu;
-			vec3 cloudPos = rayDir * rayLength + cameraPosition;
+			vec3 cloudPos = rayDir * rayLength + cloudViewerPos;
 
 			vec3 cloudTemp = RenderCloudHigh(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
 
+			// Update integral data
 			if (cloudTemp.z > EPS) {
 				float transmittanceTemp = 1.0 - cloudTemp.z;
 
@@ -406,8 +409,11 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		}
 	#endif
 
+	//================================================================================================//
+
     vec3 cloudScattering = vec3(0.0);
 
+	// Composite
 	if (cloudTransmittance < 1.0 - EPS) {
 		// Trick to strengthen the aerial perspective
 		// const float depthScale = 4.0;
@@ -450,6 +456,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
     return vec4(cloudScattering, cloudTransmittance);
 }
+
+//================================================================================================//
 
 #include "/lib/atmosphere/clouds/Shadows.glsl"
 
@@ -494,6 +502,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	vec3 scattering = vec3(0.0);
 	vec3 transmittance = vec3(1.0);
 
+	// Raymarch through the volume
 	for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
 		vec2 cloudShadowCoord = DistortCloudShadowPos(rayPos);
 		float visibility = texture(colortex10, cloudShadowCoord).x;

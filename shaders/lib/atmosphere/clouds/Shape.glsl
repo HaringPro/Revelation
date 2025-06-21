@@ -202,7 +202,8 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	if (coverage < 1e-2) return 0.0;
 
 	// Remap the height of the clouds to the range of [0, 1]
-	float heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
+	float rayRadius = sdot(rayPos); rayRadius *= inversesqrt(rayRadius);
+	float heightFraction = saturate((rayRadius - cumulusBottomRadius) * rcp(CLOUD_CU_THICKNESS));
 
 	// Vertical profile
 	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.y);
@@ -260,7 +261,8 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	if (coverage < 1e-2) return 0.0;
 
 	// Remap the height of the clouds to the range of [0, 1]
-	heightFraction = saturate((rayPos.y - CLOUD_CU_ALTITUDE) * rcp(CLOUD_CU_THICKNESS));
+	float rayRadius = sdot(rayPos); rayRadius *= inversesqrt(rayRadius);
+	heightFraction = saturate((rayRadius - cumulusBottomRadius) * rcp(CLOUD_CU_THICKNESS));
 
 	// Vertical profile
 	float verticalProfile = GetVerticalProfile(heightFraction, cloudMap.y);
