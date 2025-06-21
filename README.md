@@ -17,7 +17,7 @@
 * GPUs that support OpenGL 4.0 (NVIDIA, AMD and Intel GPUs have been tested and confirmed to work)
 * [Minecraft](https://www.minecraft.net/en-us/download): Java Edition 1.17.1 or newer
 * [OptiFine](https://optifine.net/home): HD U H1 or newer
-* [Iris](https://irisshaders.dev/download): 1.8.0 or newer
+* [Iris](https://irisshaders.dev/download): 1.7.0 or newer
 * [Physics Mod](https://www.patreon.com/Haubna?utm_source=campaign-search-results): Revelation is able to work with Physics Mod Pro
 * [Distant Horizons](https://www.curseforge.com/minecraft/mc-mods/distant-horizons): Revelation is also compatible with Distant Horizons 2.1.0+
 
