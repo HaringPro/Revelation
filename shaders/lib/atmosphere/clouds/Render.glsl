@@ -514,5 +514,5 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	// Direct only
 	scattering *= scatteringCoeff * phase * oms(stepTransmittance) / extinctionCoeff * directIlluminance;
 
-	return vec4(scattering, mean(transmittance));
+	return vec4(scattering, approxSqrt(mean(transmittance)));
 }
