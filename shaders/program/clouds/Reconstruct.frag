@@ -166,7 +166,7 @@ void main() {
 		if (depth > 0.999999) depth = loadDepth0DH(screenTexel);
 	#endif
 
-	if (depth > 0.999999) {
+	if (depth > 0.999999 || depth < 0.56) {
 		frameOut = 1u;
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;

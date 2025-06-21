@@ -53,28 +53,15 @@ vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
-#if defined DISTANT_HORIZONS
-	float sampleDepthMax4x4DH(in vec2 coord) {
-		// 4x4 pixel neighborhood using textureGather
-		vec4 sampleDepth0 = textureGather(dhDepthTex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
-		vec4 sampleDepth1 = textureGather(dhDepthTex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
-		vec4 sampleDepth2 = textureGather(dhDepthTex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
-		vec4 sampleDepth3 = textureGather(dhDepthTex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
+float sampleDepthMax4x4(in sampler2D depthTex, in vec2 coord) {
+	// 4x4 pixel neighborhood using textureGather
+	vec4 sampleDepth0 = textureGather(depthTex, coord + vec2( 2.0,  2.0) * viewPixelSize);
+	vec4 sampleDepth1 = textureGather(depthTex, coord + vec2(-2.0,  2.0) * viewPixelSize);
+	vec4 sampleDepth2 = textureGather(depthTex, coord + vec2( 2.0, -2.0) * viewPixelSize);
+	vec4 sampleDepth3 = textureGather(depthTex, coord + vec2(-2.0, -2.0) * viewPixelSize);
 
-		return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
-	}
-#else
-	float sampleDepthMax4x4(in vec2 coord) {
-		// 4x4 pixel neighborhood using textureGather
-		vec4 sampleDepth0 = textureGather(depthtex0, coord + vec2( 2.0,  2.0) * viewPixelSize);
-		vec4 sampleDepth1 = textureGather(depthtex0, coord + vec2(-2.0,  2.0) * viewPixelSize);
-		vec4 sampleDepth2 = textureGather(depthtex0, coord + vec2( 2.0, -2.0) * viewPixelSize);
-		vec4 sampleDepth3 = textureGather(depthtex0, coord + vec2(-2.0, -2.0) * viewPixelSize);
-
-		return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
-	}
-#endif
-
+	return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
+}
 
 //======// Main //================================================================================//
 void main() {
@@ -90,21 +77,19 @@ void main() {
 	cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	cloudDepth = 128e3;
 
-	if (
 	#ifdef CLOUD_CBR_ENABLED
+		float depthMax = sampleDepthMax4x4(depthtex0, cloudUv);
 		#if defined DISTANT_HORIZONS
-			min(sampleDepthMax4x4DH(cloudUv), loadDepth0(cloudTexel))
-		#else
-			sampleDepthMax4x4(cloudUv)
+			if (depthMax > 0.999999) depthMax = sampleDepthMax4x4(dhDepthTex0, cloudUv);
 		#endif
 	#else
+		float depthMax = loadDepth0(cloudTexel);
 		#if defined DISTANT_HORIZONS
-			min(loadDepth0DH(cloudTexel), loadDepth0(cloudTexel))
-		#else
-			loadDepth0(cloudTexel)
+			if (depthMax > 0.999999) depthMax = loadDepth0DH(cloudTexel);
 		#endif
 	#endif
-	> 0.999999) {
+
+	if (depthMax > 0.999999 || depthMax < 0.56) {
 		#ifdef CLOUD_CBR_ENABLED
 			float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
 		#else
@@ -122,8 +107,8 @@ void main() {
 			if (viewerHeight < cumulusBottomRadius) {
 				vec4 crepuscularRays = RaymarchCrepuscular(worldDir, dither);
 
-				cloudOut.rgb = cloudOut.rgb * crepuscularRays.a + crepuscularRays.rgb;
-				cloudOut.a *= crepuscularRays.a;
+				cloudOut *= crepuscularRays.a;
+				cloudOut.rgb += crepuscularRays.rgb;
 			}
 			#endif
 		#endif
