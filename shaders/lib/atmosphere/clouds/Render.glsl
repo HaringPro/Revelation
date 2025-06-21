@@ -80,11 +80,11 @@ float CloudMultiScatteringApproximation(in float opticalDepth, in float phases[c
 
 //================================================================================================//
 
-vec3 RenderCloudMid(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
+vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudMidDensity(rayPos);
 	if (density > EPS) {
-		float opticalDepth = density * rayLength * stratusExtinction;
-		float absorption = oms(exp2(-rLOG2 * opticalDepth));
+		float opticalDepth = density * CLOUD_MID_THICKNESS / abs(rayDir.y);
+		float absorption = oms(exp2(-rLOG2 * stratusExtinction * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
 			const float stepSize = 64.0 / float(CLOUD_MID_SUNLIGHT_SAMPLES);
@@ -99,13 +99,13 @@ vec3 RenderCloudMid(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float
 				opticalDepthSun += density * rayStep.z;
 			}
 
-			opticalDepthSun *= cirrusExtinction * -rLOG2;
+			opticalDepthSun *= stratusExtinction * -rLOG2;
 		}
 
 		// Approximate sunlight multi-scattering
 		float scatteringSun = CloudMultiScatteringApproximation(opticalDepthSun, phases);
 
-		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
+		float opticalDepthSky = density * (CLOUD_MID_THICKNESS * stratusExtinction * -rLOG2);
 
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
@@ -127,11 +127,11 @@ vec3 RenderCloudMid(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float
 
 //================================================================================================//
 
-vec3 RenderCloudHigh(in float rayLength, in vec2 rayPos, in vec2 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
+vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudHighDensity(rayPos);
 	if (density > EPS) {
-		float opticalDepth = density * rayLength * cirrusExtinction;
-		float absorption = oms(exp2(-rLOG2 * opticalDepth));
+		float opticalDepth = density * CLOUD_HIGH_THICKNESS / abs(rayDir.y);
+		float absorption = oms(exp2(-rLOG2 * cirrusExtinction * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
 			const float stepSize = 64.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
@@ -152,7 +152,7 @@ vec3 RenderCloudHigh(in float rayLength, in vec2 rayPos, in vec2 rayDir, in floa
 		// Approximate sunlight multi-scattering
 		float scatteringSun = CloudMultiScatteringApproximation(opticalDepthSun, phases);
 
-		float opticalDepthSky = density * (128.0 * cirrusExtinction * -rLOG2);
+		float opticalDepthSky = density * (CLOUD_HIGH_THICKNESS * cirrusExtinction * -rLOG2);
 
 		// Compute skylight multi-scattering
 		// See slide 85 of [Schneider, 2017]
@@ -360,9 +360,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		if ((mu > 0.0 && r < cloudMidRadius) // Below clouds
 		 || (planetIntersection && r > cloudMidRadius)) { // Above clouds
 			float rayLength = (cloudMidRadius - r) / mu;
-			vec3 cloudPos = rayDir * rayLength + cloudViewerPos;
+			vec3 rayPos = rayDir * rayLength + cloudViewerPos;
 
-			vec3 cloudTemp = RenderCloudMid(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
+			vec3 cloudTemp = RenderCloudMid(rayPos.xz, rayDir, dither, phases);
 
 			// Update integral data
 			if (cloudTemp.z > EPS) {
@@ -387,9 +387,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		if ((mu > 0.0 && r < cloudHighRadius) // Below clouds
 		 || (planetIntersection && r > cloudHighRadius)) { // Above clouds
 			float rayLength = (cloudHighRadius - r) / mu;
-			vec3 cloudPos = rayDir * rayLength + cloudViewerPos;
+			vec3 rayPos = rayDir * rayLength + cloudViewerPos;
 
-			vec3 cloudTemp = RenderCloudHigh(rayLength, cloudPos.xz, rayDir.xz, dither, phases);
+			vec3 cloudTemp = RenderCloudHigh(rayPos.xz, rayDir, dither, phases);
 
 			// Update integral data
 			if (cloudTemp.z > EPS) {

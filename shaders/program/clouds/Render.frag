@@ -118,14 +118,14 @@ void main() {
 
 		// Crepuscular rays
 		#ifdef CREPUSCULAR_RAYS
-		#ifdef CLOUD_SHADOWS
-			vec4 crepuscularRays = RaymarchCrepuscular(worldDir, dither);
+			#ifdef CLOUD_SHADOWS
+			if (viewerHeight < cumulusBottomRadius) {
+				vec4 crepuscularRays = RaymarchCrepuscular(worldDir, dither);
 
-			cloudOut.rgb = viewerHeight < cumulusBottomRadius ?
-						   cloudOut.rgb * crepuscularRays.a + crepuscularRays.rgb : // Below clouds
-						   cloudOut.rgb + crepuscularRays.rgb * cloudOut.a;  // Above clouds
-			cloudOut.a *= crepuscularRays.a;
-		#endif
+				cloudOut.rgb = cloudOut.rgb * crepuscularRays.a + crepuscularRays.rgb;
+				cloudOut.a *= crepuscularRays.a;
+			}
+			#endif
 		#endif
 	}
 }
