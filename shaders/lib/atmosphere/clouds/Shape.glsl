@@ -181,7 +181,7 @@ float GetVerticalProfile(in float heightFraction, in float cloudType) {
 // Get the blended density gradient for 3 different cloud types
 // relativeHeight is normalized distance from inner to outer atmosphere shell
 // cloudType is read from cloud placement blue channel
-float GetVerticalProfile(float relativeHeight, float cloudType) {
+float GetVerticalProfile(in float relativeHeight, in float cloudType) {
     float altocumulus = remap(0.01, 0.3, relativeHeight) * remap(0.95, 0.6, relativeHeight);
     float cumulus = saturate(relativeHeight * 4.0) * remap(0.65, 0.3, relativeHeight);
     float stratus = saturate(relativeHeight * 10.0) * remap(0.3, 0.2, relativeHeight);
@@ -230,7 +230,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	float detailNoise = 0.5;
 	#if !defined PASS_SKY_VIEW
 	if (detail) {
-		vec2 curlNoise = texture(noisetex, position.xz * 0.125).xy;
+		vec2 curlNoise = texture(noisetex, position.xz * 0.25).xy;
 		position.xz += curlNoise * 0.25 * oms(heightFraction);
 
 		// fBm worley noise for detail shape
@@ -248,7 +248,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
 	float densityProfile = saturate(heightFraction * 2.0 + 0.125);
-	return pow(cloudDensity, 1.0 - heightFraction * 0.5) * densityProfile;
+	return pow(cloudDensity, 0.75 - heightFraction * 0.25) * densityProfile;
 }
 
 float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dimensionalProfile) {
@@ -288,7 +288,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	// Detail shape
 	float detailNoise = 0.5;
 	#if !defined PASS_SKY_VIEW
-		vec2 curlNoise = texture(noisetex, position.xz * 0.125).xy;
+		vec2 curlNoise = texture(noisetex, position.xz * 0.25).xy;
 		position.xz += curlNoise * 0.25 * oms(heightFraction);
 
 		// fBm worley noise for detail shape
@@ -305,7 +305,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	float cloudDensity = saturate(noiseComposite + dimensionalProfile - 1.0);
 
 	float densityProfile = saturate(heightFraction * 2.0 + 0.125);
-	return pow(cloudDensity, 1.0 - heightFraction * 0.5) * densityProfile;
+	return pow(cloudDensity, 0.75 - heightFraction * 0.25) * densityProfile;
 }
 
 #endif
