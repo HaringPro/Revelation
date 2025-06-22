@@ -209,24 +209,25 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// Low-level clouds
 	#ifdef CLOUD_CUMULUS
-		if ((mu > 0.0 && r < cumulusBottomRadius) // Below clouds
-		 || (clamp(r, cumulusBottomRadius, cumulusTopRadius) == r) // In clouds
-		 || (mu < 0.0 && r > cumulusTopRadius)) { // Above clouds
+		if (!((mu < 0.0 && r < cumulusBottomRadius) || (mu > 0.0 && r > cumulusTopRadius))) {
 
 			// Compute cloud spherical shell intersection
 			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
 
 			// Intersect the volume
 			if (intersection.y > 0.0) {
-				float rayLength = clamp(intersection.y - intersection.x, 0.0, 1e5);
+				float withinVolumeSmooth = remap(CLOUD_CU_THICKNESS + 32.0, CLOUD_CU_THICKNESS - 64.0, abs(r * 2.0 - (cumulusBottomRadius + cumulusTopRadius)));
+
+				float rayLength = clamp(intersection.y - intersection.x, 0.0, 1e5 - withinVolumeSmooth * 6e4);
 
 				#if defined PASS_SKY_VIEW
 					uint raySteps = CLOUD_CU_SAMPLES >> 1u;
-					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5)); // Reduce ray steps for vertical rays
+					// Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5));
 				#else
 					uint raySteps = CLOUD_CU_SAMPLES;
-					// raySteps = uint(raySteps * min1(0.5 + max0(rayLength - 1e2) * 5e-5)); // Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5)); // Reduce ray steps for vertical rays
+					// Reduce ray steps for vertical rays
+					raySteps = uint(float(raySteps) * mix(oms(abs(mu) * 0.5), 4.0, withinVolumeSmooth));
 				#endif
 
 				// From [Schneider, 2022]
@@ -341,6 +342,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					if (transmittance < minCloudTransmittance) break;
 				}
 
+				// Remap to [0, 1]
+				transmittance = remap(minCloudTransmittance, 1.0, transmittance);
+
 				// Update integral data
 				if (transmittance < 1.0 - EPS) {
 					integralScattering = stepScattering;
@@ -444,9 +448,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 			cloudScattering += aerialPerspective * oms(cloudTransmittance);
 		#endif
 	}
-
-	// Remap cloud transmittance
-    cloudTransmittance = remap(minCloudTransmittance, 1.0, cloudTransmittance);
 
 	#ifdef AURORA
 		if (auroraAmount > 1e-2) cloudScattering += NightAurora(rayDir) * cloudTransmittance;
