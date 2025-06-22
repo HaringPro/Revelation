@@ -420,17 +420,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 		vec3 cloudPos = rayDir * cloudDepth;
 
-		#ifdef CLOUD_LOCAL_LIGHTING
-			// Compute local lighting
-			vec3 sunIrradiance, moonIrradiance;
-			vec3 camera = vec3(0.0, viewerHeight, 0.0);
-			vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
-			vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
+		// Compute irradiance
+		vec3 sunIrradiance, moonIrradiance;
+		vec3 camera = vec3(0.0, viewerHeight, 0.0);
+		vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
+		vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
 
-			skyIlluminance += lightningShading * 4e-3;
-			#ifdef AURORA
-				skyIlluminance += auroraShading;
-			#endif
+		skyIlluminance += lightningShading * 4e-3;
+		#ifdef AURORA
+			skyIlluminance += auroraShading;
 		#endif
 
 		// Direct + Indirect
@@ -512,7 +510,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	}
 
 	// Direct only
-	scattering *= scatteringCoeff * phase * oms(stepTransmittance) / extinctionCoeff * directIlluminance;
+	scattering *= scatteringCoeff * phase * oms(stepTransmittance) / extinctionCoeff * loadDirectIllum();
 
 	return vec4(scattering, approxSqrt(mean(transmittance)));
 }

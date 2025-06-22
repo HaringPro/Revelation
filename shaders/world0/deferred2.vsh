@@ -15,18 +15,9 @@
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
-
-flat out vec3 directIlluminance;
-flat out vec3 skyIlluminance;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
-
-//======// Uniform //=============================================================================//
-
-uniform sampler2D colortex4; // Global illuminances
 
 //======// Main //================================================================================//
 void main() {
@@ -35,7 +26,4 @@ void main() {
 	#else
     	gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	#endif
-
-	directIlluminance = loadDirectIllum();
-	skyIlluminance = loadSkyIllum();
 }

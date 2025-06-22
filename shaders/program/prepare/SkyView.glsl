@@ -21,25 +21,15 @@
 
 noperspective out vec2 screenCoord;
 
-flat out vec3 directIlluminance;
-flat out vec3 skyIlluminance;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
 in vec2 vaUV0;
 
-//======// Uniform //=============================================================================//
-
-uniform sampler2D colortex4; // Global illuminances
-
 //======// Main //================================================================================//
 void main() {
     gl_Position = vec4(vaPosition * 2.0 - 1.0, 1.0);
 	screenCoord = vaUV0;
-
-	directIlluminance = loadDirectIllum();
-	skyIlluminance = loadSkyIllum();
 }
 
 #else
@@ -55,9 +45,6 @@ layout (location = 1) out float cloudShadowOut;
 //======// Input //===============================================================================//
 
 noperspective in vec2 screenCoord;
-
-flat in vec3 directIlluminance;
-flat in vec3 skyIlluminance;
 
 //======// Uniform //=============================================================================//
 

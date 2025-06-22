@@ -23,11 +23,6 @@
 layout (location = 0) out vec4 cloudOut;
 layout (location = 1) out float cloudDepth;
 
-//======// Input //===============================================================================//
-
-flat in vec3 directIlluminance;
-flat in vec3 skyIlluminance;
-
 //======// Uniform //=============================================================================//
 
 uniform sampler3D COMBINED_TEXTURE_SAMPLER;
