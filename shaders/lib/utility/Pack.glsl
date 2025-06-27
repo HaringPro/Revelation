@@ -114,3 +114,72 @@ vec3 UnprojectMercator(in vec2 uv) {
     vec3 dir = vec3(cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi));
     return normalize(dir);
 }
+
+// RGBE32 encoding
+// Exponent range: [-128, 127]
+uint EncodeRGBE32U(in vec3 data) {
+	float e = floor(log2(maxOf(data)));
+
+	float scale = exp2(-e) * 255.0;
+	uvec4 rgbe = uvec4(min(uvec3(round(data * scale)), uvec3(255u)), e + 128.0);
+	rgbe <<= uvec4(0u, 8u, 16u, 24u);
+
+    return rgbe.x | rgbe.y | rgbe.z | rgbe.w;
+}
+
+vec3 DecodeRGBE32U(in uint data) {
+    uvec4 rgbe = data >> uvec4(0u, 8u, 16u, 24u) & 0xFFu;
+
+    float e = floor(rgbe.a) - 128.0;
+    float scale = exp2(e) * r255;
+
+    return rgbe.rgb * scale;
+}
+
+// Ericson, Christer. "Converting RGB to LogLuv in a fragment shader". 2007.
+// https://realtimecollisiondetection.net/blog/?p=15
+
+// M matrix, for encoding
+const mat3 M = mat3(
+    0.2209, 0.3390, 0.4184,
+    0.1138, 0.6780, 0.7319,
+    0.0102, 0.1130, 0.2969
+);
+
+// Inverse M matrix, for decoding
+const mat3 InverseM = mat3(
+    6.0014, -2.7008, -1.7996,
+   -1.3320,  3.1029, -5.7721,
+    0.3008, -1.0882,  5.6268
+);
+
+vec4 LogLuvEncode(in vec3 rgb) {
+    vec4 result;
+    vec3 Xp_Y_XYZp = max(M * rgb, EPS);
+    result.xy = Xp_Y_XYZp.xy / Xp_Y_XYZp.z;
+
+    float Le = 2.0 * log2(Xp_Y_XYZp.y) + 127.0;
+
+    result.w = fract(Le);
+    result.z = (Le - (floor(result.w * 255.0)) * r255) * r255;
+    return result;
+}
+
+vec3 LogLuvDecode(in vec4 logLuv) {
+    float Le = logLuv.z * 255.0 + logLuv.w;
+
+    vec3 Xp_Y_XYZp;
+    Xp_Y_XYZp.y = exp2((Le - 127.0) * 0.5);
+    Xp_Y_XYZp.z = Xp_Y_XYZp.y / logLuv.y;
+    Xp_Y_XYZp.x = logLuv.x * Xp_Y_XYZp.z;
+
+    return max0(InverseM * Xp_Y_XYZp);
+}
+
+uint LogLuvEncodeU(in vec3 data) {
+    return packUnorm4x8(LogLuvEncode(data));
+}
+
+vec3 LogLuvDecodeU(in uint data) {
+    return LogLuvDecode(unpackUnorm4x8(data));
+}
