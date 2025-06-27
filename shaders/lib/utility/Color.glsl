@@ -48,7 +48,7 @@ vec3 blackbody(in float t) {
 }
 
 float karisAverage(in vec3 color) {
-    return rcp(1.0 + 0.125 * luminance(color));
+    return rcp(1.0 + 1e-3 * luminance(color));
 }
 
 vec3 reinhard(in vec3 hdr) {
