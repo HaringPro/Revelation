@@ -218,8 +218,8 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in 
 
 		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
 
-		float difference = ScreenToViewDepth(rayPos.z);
-		difference -= ScreenToViewDepth(sampleDepth);
+		float difference = ScreenToViewDepth(sampleDepth);
+		difference -= ScreenToViewDepth(rayPos.z);
 
 		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
  
@@ -259,8 +259,8 @@ float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, i
 
 		float sampleDepth = loadDepth0DH(ivec2(rayPos.xy));
 
-		float difference = ScreenToViewDepthDH(rayPos.z);
-		difference -= ScreenToViewDepthDH(sampleDepth);
+		float difference = ScreenToViewDepthDH(sampleDepth);
+		difference -= ScreenToViewDepthDH(rayPos.z);
 
 		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
 

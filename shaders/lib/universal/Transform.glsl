@@ -15,17 +15,17 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 	return ProjectDivide(NDCPos, gbufferProjectionInverse);
 }
 
-vec3 ScreenToViewSpaceRaw(in vec2 screenCoord, in float linearDepth) {
+vec3 ScreenToViewSpaceRaw(in vec2 screenCoord, in float viewDepth) {
 	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
-	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z) * linearDepth;
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * viewDepth, viewDepth);
 }
 
-vec3 ScreenToViewSpace(in vec2 screenCoord, in float linearDepth) {
+vec3 ScreenToViewSpace(in vec2 screenCoord, in float viewDepth) {
 	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
 	#ifdef TAA_ENABLED
 		NDCCoord -= taaOffset;
 	#endif
-	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z) * linearDepth;
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * viewDepth, viewDepth);
 }
 
 vec3 ScreenToViewSpace(in vec2 screenCoord) {
@@ -75,11 +75,11 @@ vec3 Reproject(in vec3 screenPos) {
 }
 
 float ScreenToViewDepth(in float depth) {
-	return gbufferProjection[3].z / (gbufferProjection[2].z + (depth * 2.0 - 1.0));
+	return -gbufferProjection[3].z / (gbufferProjection[2].z + (depth * 2.0 - 1.0));
 }
 
 float ViewToScreenDepth(in float depth) {
-	return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
+	return 0.5 - (gbufferProjection[3].z / depth + gbufferProjection[2].z) * 0.5;
 }
 
 //======// Distant Horizons Transform Function //=================================================//
@@ -132,10 +132,10 @@ float ViewToScreenDepth(in float depth) {
 	}
 
 	float ScreenToViewDepthDH(in float depth) {
-		return dhProjection[3].z / (dhProjection[2].z + (depth * 2.0 - 1.0));
+		return -dhProjection[3].z / (dhProjection[2].z + (depth * 2.0 - 1.0));
 	}
 
 	float ViewToScreenDepthDH(in float depth) {
-		return (dhProjection[3].z - dhProjection[2].z * depth) / depth * 0.5 + 0.5;
+		return 0.5 - (dhProjection[3].z / depth + dhProjection[2].z) * 0.5;
 	}
 #endif

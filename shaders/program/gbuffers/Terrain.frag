@@ -70,11 +70,11 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 	}
 
 	float ScreenToViewDepth(in float depth) {
-		return gbufferProjection[3].z / (gbufferProjection[2].z + (depth * 2.0 - 1.0));
+		return -gbufferProjection[3].z / (gbufferProjection[2].z + (depth * 2.0 - 1.0));
 	}
 
 	float ViewToScreenDepth(in float depth) {
-		return (gbufferProjection[3].z - gbufferProjection[2].z * depth) / depth * 0.5 + 0.5;
+		return 0.5 - (gbufferProjection[3].z / depth + gbufferProjection[2].z) * 0.5;
 	}
 
 	#include "/lib/surface/Parallax.glsl"
@@ -140,7 +140,7 @@ void main() {
 
 			if (offsetCoord.z < 0.999 && parallaxFade > 1e-5) {
 				#ifdef PARALLAX_DEPTH_WRITE
-					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) + oms(offsetCoord.z) * PARALLAX_DEPTH);
+					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(offsetCoord.z) * PARALLAX_DEPTH);
 				#elif defined PARALLAX_SHADOW
 					if (dot(tbnMatrix[2], worldLightVector) > 1e-3) {
 						gbufferOut1.z = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, texSize, dither) * parallaxFade;

@@ -34,7 +34,7 @@ vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 				if (sampleDepth > 0.999999) sampleDepthLinear = ScreenToViewDepthDH(loadDepth0DH(ivec2(rayPos.xy)));
 			#endif
 
-			if (traceDepthLinear - sampleDepthLinear < 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
+			if (traceDepthLinear - sampleDepthLinear > 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
 		}
 	}
 
@@ -100,7 +100,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 				target.contribution *= loadAlbedo(targetTexel);
 				target.rayPos.xy *= viewPixelSize;
-			} else if (dot(lightmap, vec2(1.0)) > 1e-3) {
+			} else if (dot(lightmap, vec2(1.0)) > 1e-5) {
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
 				sum += (skyRadiance * lightmap.y + lightmap.x) * target.contribution;
 				break;
@@ -130,7 +130,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				vec3 sampleRadiance = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;
 
 				sum += sampleRadiance;
-			} else if (dot(lightmap, vec2(1.0)) > 1e-3) {
+			} else if (dot(lightmap, vec2(1.0)) > 1e-5) {
 				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
 				sum += skyRadiance * lightmap.y + lightmap.x;
 			}
