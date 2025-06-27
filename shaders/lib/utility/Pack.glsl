@@ -140,14 +140,14 @@ vec3 DecodeRGBE32U(in uint data) {
 // https://realtimecollisiondetection.net/blog/?p=15
 
 // M matrix, for encoding
-const mat3 M = mat3(
+const mat3 logLuvM = mat3(
     0.2209, 0.3390, 0.4184,
     0.1138, 0.6780, 0.7319,
     0.0102, 0.1130, 0.2969
 );
 
 // Inverse M matrix, for decoding
-const mat3 InverseM = mat3(
+const mat3 logLuvInverseM = mat3(
     6.0014, -2.7008, -1.7996,
    -1.3320,  3.1029, -5.7721,
     0.3008, -1.0882,  5.6268
@@ -155,7 +155,7 @@ const mat3 InverseM = mat3(
 
 vec4 LogLuvEncode(in vec3 rgb) {
     vec4 result;
-    vec3 Xp_Y_XYZp = max(M * rgb, EPS);
+    vec3 Xp_Y_XYZp = max(logLuvM * rgb, EPS);
     result.xy = Xp_Y_XYZp.xy / Xp_Y_XYZp.z;
 
     float Le = 2.0 * log2(Xp_Y_XYZp.y) + 127.0;
@@ -173,7 +173,7 @@ vec3 LogLuvDecode(in vec4 logLuv) {
     Xp_Y_XYZp.z = Xp_Y_XYZp.y / logLuv.y;
     Xp_Y_XYZp.x = logLuv.x * Xp_Y_XYZp.z;
 
-    return max0(InverseM * Xp_Y_XYZp);
+    return max0(logLuvInverseM * Xp_Y_XYZp);
 }
 
 uint LogLuvEncodeU(in vec3 data) {
