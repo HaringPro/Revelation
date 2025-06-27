@@ -31,7 +31,7 @@ layout (location = 2) out vec2 specularOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler3D COMBINED_TEXTURE_SAMPLER;
+uniform sampler3D atmosCombinedLut;
 
 #include "/lib/universal/Uniform.glsl"
 

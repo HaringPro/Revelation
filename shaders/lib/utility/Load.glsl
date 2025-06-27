@@ -1,5 +1,7 @@
 
-#define COMBINED_TEXTURE_SAMPLER 	colortex0
+#define atmosCombinedLut 			colortex0
+
+#define starmapNASA 				colortex12
 
 #define loadDepth0(texel) 			texelFetch(depthtex0, texel, 0).x
 #define loadDepth1(texel) 			texelFetch(depthtex1, texel, 0).x

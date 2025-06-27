@@ -23,6 +23,8 @@ uniform int heldBlockLightValue;
 uniform int heldItemId2;
 uniform int heldBlockLightValue2;
 uniform int moonPhase;
+uniform int worldTime;
+uniform int worldDay;
 
 uniform bool worldTimeChanged;
 

@@ -24,7 +24,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 writeonly uniform image2D colorimg4;
 
-uniform sampler3D COMBINED_TEXTURE_SAMPLER; // Combined atmospheric LUT
+uniform sampler3D atmosCombinedLut; // Combined atmospheric LUT
 
 uniform int moonPhase;
 

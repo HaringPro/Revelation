@@ -25,6 +25,7 @@
 * [Yong-Xin Mo](https://github.com/moyongxin) - Some code and guidance
 * [GeForceLegend](https://github.com/GeForceLegend) - Some code and debugging
 * [FactoriZation](https://github.com/FactoriZation000) - Assistance and AMD GPU testing
+* [NASA SVS](https://svs.gsfc.nasa.gov/4856) - Starmap image
 
 ## License
 This shaderpack is licensed under the *Apache License 2.0*.

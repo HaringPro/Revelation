@@ -5,7 +5,7 @@
 #define STARS_COVERAGE  0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
 
 #define GALAXY // Enables the rendering of the galaxy
-#define GALAXY_ROTATION // Enables the rotation of the galaxy
+#define GALAXY_SOLAR_POS 0.0 // 0.0 = spring equinox, 0.25 = summer solstice, 0.5 = autumn equinox, 0.75 = winter solstice. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 #define GALAXY_INTENSITY 0.02 // [0.0 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.015 0.02 0.025 0.03 0.035 0.04 0.045 0.05 0.055 0.06 0.065 0.07 0.075 0.08 0.085 0.09 0.095 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 //================================================================================================//
@@ -69,18 +69,39 @@ vec3 RenderStars(in vec3 worldDir) {
 
 //================================================================================================//
 
-uniform sampler2D colortex12;
+uniform sampler2D starmapNASA;
+
+// Credit: https://github.com/Luna5ama
+
+// Converts equatorial coordinates to ecliptic coordinates
+// equatorial: input vector in equatorial coordinates
+// solarLon: longitude of the Sun in radians, 0.0 PI = Spring Equinox, 0.5 PI = Summer Solstice, 1.0 PI = Autumn Equinox, 1.5 PI = Winter Solstice
+// hourAngle: hour angle of the observer in radians, 0.0 = 0h, 0.5 PI = 6h, 1.0 PI = 12h, 1.5 PI = 18h
+// observerLat: latitude of the observer in radians
+vec3 EquatorialObserverRotation(in vec3 equatorial, in float solarLon, in float hourAngle, in float observerLat) {
+    mat3 latRotation = rotateMatY(observerLat);
+    mat3 solarRotation = rotateMatZ(PI - solarLon - hourAngle);
+    return solarRotation * latRotation * equatorial;
+}
+
+vec2 EquatorialRectangularToSpherical(in vec3 equatorial) {
+    float dec = fastAsin(equatorial.z); // Declination
+    float ra = atan(equatorial.y, equatorial.x); // Right Ascension
+    return vec2(ra, dec);
+}
 
 vec3 RenderGalaxy(in vec3 worldDir) {
-    #ifdef GALAXY_ROTATION
-        worldDir *= mat3(shadowModelViewInverse);
-        worldDir.y = -worldDir.y;
-    #endif
+    // Rotate the world direction to equatorial coordinates
+    vec3 starmapDir = vec3(worldDir.y, worldDir.x, -worldDir.z);
 
-    // Convert to spherical coordinates
-    vec2 galacticCoord = sphericalToCartesian(worldDir);
+    float hourAngle = float(worldTime - 18000) * (TAU / 24000.0);
+    starmapDir = EquatorialObserverRotation(starmapDir, GALAXY_SOLAR_POS * TAU, hourAngle, radians(43.0));
+
+    vec2 starmapSpherical = EquatorialRectangularToSpherical(normalize(starmapDir));
+    // Starmap is centered at 0h right ascension, and r.a. increases to the left.
+    vec2 starmapCoord = starmapSpherical * vec2(-rTAU, rPI) + 0.5;
 
     // Bilinear interpolation is enough
-    vec3 galaxy = texture(colortex12, galacticCoord).rgb;
-    return sRGBtoLinear(galaxy) * GALAXY_INTENSITY;
+    vec3 starmap = texture(starmapNASA, starmapCoord).rgb;
+    return sRGBtoLinear(starmap) * GALAXY_INTENSITY;
 }

@@ -25,7 +25,7 @@ layout (location = 1) out float cloudDepth;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler3D COMBINED_TEXTURE_SAMPLER;
+uniform sampler3D atmosCombinedLut;
 
 #include "/lib/universal/Uniform.glsl"
 
