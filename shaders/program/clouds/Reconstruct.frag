@@ -170,7 +170,11 @@ void main() {
 		frameOut = 1u;
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
-		float cloudDepth = minOf(textureGather(colortex3, screenCoord * 0.5, 0));
+
+		const float currScale = rcp(float(CLOUD_CBR_SCALE));
+		vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
+
+		float cloudDepth = minOf(textureGather(colortex3, currCoord, 0));
 
 		vec2 prevCoord = ReprojectClouds(screenCoord, cloudDepth).xy;
 		uint frameIndex = texture(colortex13, prevCoord).x;
@@ -184,8 +188,6 @@ void main() {
 		// disocclusion = disocclusion || (gbufferProjection[0].x - gbufferPreviousProjection[0].x) > 0.25;
 
 		if (disocclusion) {
-			const float currScale = rcp(float(CLOUD_CBR_SCALE));
-			vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
 			cloudOut = texture(colortex2, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
