@@ -17,7 +17,7 @@ vec3 ScreenToViewSpace(in vec3 screenPos) {
 
 vec3 ScreenToViewSpaceRaw(in vec2 screenCoord, in float viewDepth) {
 	vec2 NDCCoord = screenCoord * 2.0 - 1.0;
-	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * viewDepth, viewDepth);
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * -viewDepth, viewDepth);
 }
 
 vec3 ScreenToViewSpace(in vec2 screenCoord, in float viewDepth) {
@@ -25,7 +25,7 @@ vec3 ScreenToViewSpace(in vec2 screenCoord, in float viewDepth) {
 	#ifdef TAA_ENABLED
 		NDCCoord -= taaOffset;
 	#endif
-	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * viewDepth, viewDepth);
+	return vec3(diagonal2(gbufferProjectionInverse) * NDCCoord * -viewDepth, viewDepth);
 }
 
 vec3 ScreenToViewSpace(in vec2 screenCoord) {
