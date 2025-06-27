@@ -4,16 +4,12 @@
 //================================================================================================//
 
 vec3 CalculateSubsurfaceScattering(in vec3 albedo, in float sssAmount, in float sssDepth, in float LdotV) {
-    #if 1
-	    vec3 coeff = oms(0.75 * albedo) * (8.0 / sssAmount);
-    #else
-	    vec3 coeff = 2.5 / (albedo * sssAmount + 0.125);
-    #endif
+	vec3 coeff = oms(0.75 * albedo) * (8.0 / sssAmount);
 
 	float phase = HenyeyGreensteinPhase(-LdotV, 0.65) * 0.25 + uniformPhase * 0.75;
-	vec3 subsurfaceScattering = exp2(coeff * sssDepth) * phase;
+	vec3 subsurfaceScattering = exp2(coeff * sssDepth) * phase * sssAmount;
 
-	return subsurfaceScattering * sssAmount * SUBSURFACE_SCATTERING_BRIGHTNESS;
+	return subsurfaceScattering * (PI * SUBSURFACE_SCATTERING_BRIGHTNESS);
 }
 
 float CalculateApproxBouncedLight(in vec3 normal) {
