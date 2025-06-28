@@ -2,7 +2,7 @@
 <p  align = "center"> An explorative shaderpack for Minecraft: Java Edition, aiming to balance performance and image quality. </p>
 <p  align = "center"> Currently working in progress, more features will be added in the future. </p>
 
-![Screenshot](https://github.com/user-attachments/assets/af647400-bd69-4349-ab14-79c865ef118d)
+![Screenshot](https://github.com/user-attachments/assets/261a14fb-6740-409f-ba89-882e3b93833f)
 
 ## Features
 * High quality atmospheric system: precomputed atmospheric scattering, galaxy, multi-layer clouds, immersive volumetric fog, crepuscular rays, rainbows and so on
