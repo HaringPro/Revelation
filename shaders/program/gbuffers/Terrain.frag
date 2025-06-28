@@ -51,14 +51,7 @@ uniform sampler2D tex;
     uniform sampler2D specular;
 #endif
 
-uniform int frameCounter;
-
-#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	uniform mat4 gbufferModelView;
-	uniform mat4 gbufferProjection;
-
-	uniform vec3 worldLightVector;
-#endif
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
