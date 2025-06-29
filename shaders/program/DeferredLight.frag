@@ -101,6 +101,8 @@ void main() {
 
 	float dither = BlueNoiseTemporal(screenTexel);
 
+	sceneOut = vec3(0.0);
+
 	if (screenPos.z > 0.999999 + float(materialID)) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
 		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
@@ -130,11 +132,7 @@ void main() {
 			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
 	} else {
-		sceneOut = vec3(0.0);
 		worldPos += gbufferModelViewInverse[3].xyz;
-
-		vec2 lightmap = Unpack2x8U(gbufferData0.x);
-		lightmap.y = saturate(lightmap.y + float(isEyeInWater));
 
 		vec3 flatNormal = FetchFlatNormal(gbufferData0);
 		#ifdef NORMAL_MAPPING
@@ -144,18 +142,21 @@ void main() {
 		#endif
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
-		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			vec4 gbufferData1 = loadGbufferData1(screenTexel);
-			vec4 specularTex = vec4(Unpack2x8(gbufferData1.x), Unpack2x8(gbufferData1.y));
+		vec2 lightmap = Unpack2x8U(gbufferData0.x);
+		lightmap.y = saturate(lightmap.y + float(isEyeInWater));
 
-		// Compute rain puddles
-		#ifdef RAIN_PUDDLES
-			if (wetnessCustom > 1e-2) {
-				if (clamp(materialID, 9u, 12u) != materialID && materialID != 20u && materialID != 40u) {
-					CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+			vec2 specularData = loadGbufferData1(screenTexel).xy;
+			vec4 specularTex = vec4(Unpack2x8(specularData.x), Unpack2x8(specularData.y));
+
+			// Compute rain puddles
+			#ifdef RAIN_PUDDLES
+				if (wetnessCustom > 1e-2) {
+					if (clamp(materialID, 9u, 12u) != materialID && materialID != 20u && materialID != 40u) {
+						CalculateRainPuddles(albedo, worldNormal, specularTex.rgb, worldPos, flatNormal, lightmap.y);
+					}
 				}
-			}
-		#endif
+			#endif
 
 			Material material = GetMaterialData(specularTex);
 			specularOut = specularTex.rg;
@@ -190,9 +191,6 @@ void main() {
 
 		// Remap sss amount to [0, 1] range
 		sssAmount = remap(64.0 * r255, 1.0, sssAmount) * eyeSkylightSmooth * SUBSURFACE_SCATTERING_STRENGTH;
-
-		float LdotV = dot(worldLightVector, -worldDir);
-		float NdotL = dot(worldNormal, worldLightVector);
 
 		// Ambient occlusion
 		#if AO_ENABLED > 0 && !defined SSPT_ENABLED
@@ -242,9 +240,12 @@ void main() {
 			distanceFade = saturate(distanceFade + float(dhTerrainMask));
 		#endif
 
+		float LdotV = dot(worldLightVector, -worldDir);
+		float NdotL = dot(worldNormal, worldLightVector);
+
 		bool doShadows = NdotL > 1e-3;
 		bool doSss = sssAmount > 1e-3;
-		bool inShadowMapRange = distanceFade < 1e-6;
+		bool inShadowMapRange = distanceFade < EPS;
 
 		// Shadows and SSS
         if (doShadows || doSss) {
@@ -280,7 +281,7 @@ void main() {
 			}
 
 			// Process diffuse and specular highlights
-			if (doShadows && dot(shadow, vec3(1.0)) > 1e-6 || doSss && !inShadowMapRange) {
+			if (doShadows && dot(shadow, vec3(1.0)) > EPS || doSss && !inShadowMapRange) {
 				#ifdef SCREEN_SPACE_SHADOWS
 					#if defined NORMAL_MAPPING
 						vec3 viewFlatNormal = mat3(gbufferModelView) * flatNormal;
@@ -298,10 +299,7 @@ void main() {
 
 				// Apply parallax shadows
 				#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
-					#if !defined SPECULAR_MAPPING
-						vec4 gbufferData1 = loadGbufferData1(screenTexel);
-					#endif
-					shadow *= oms(gbufferData1.z);
+					shadow *= oms(loadGbufferData1(screenTexel).z);
 				#endif
 
 				float halfwayNorm = inversesqrt(2.0 * LdotV + 2.0);
@@ -379,8 +377,20 @@ void main() {
 			}
 		#endif
 
-		// Minimal ambient light
-		sceneOut += vec3(0.77, 0.82, 1.0) * ((worldNormal.y * 0.4 + 0.6) * MINIMUM_AMBIENT_BRIGHTNESS) * ao;
+		// Specular reflections
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+			if (material.hasReflections && materialID != 46u && materialID != 51u) {
+				lightmap.y = remap(0.3, 0.7, lightmap.y);
+
+				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
+
+				// Metallic diffuse elimination
+				material.metalness *= 0.2 * lightmap.y + 0.8;
+				albedo *= oms(material.metalness);
+			} else
+		#endif
+		// Clear buffer
+		reflectionOut = vec4(0.0);
 
 		// Global illumination
 		#ifdef SSPT_ENABLED
@@ -396,20 +406,8 @@ void main() {
 			sceneOut += rsm * ao * sunlightMult;
 		#endif
 
-		// Specular reflections
-		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			if (material.hasReflections && materialID != 46u && materialID != 51u) {
-				lightmap.y = remap(0.3, 0.7, lightmap.y);
-
-				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
-
-				// Metallic diffuse elimination
-				material.metalness *= 0.2 * lightmap.y + 0.8;
-				albedo *= oms(material.metalness);
-			} else
-		#endif
-		// Clear buffer
-		reflectionOut = vec4(0.0);
+		// Minimal ambient light
+		sceneOut += vec3(0.77, 0.82, 1.0) * ((worldNormal.y * 0.4 + 0.6) * MINIMUM_AMBIENT_BRIGHTNESS) * ao;
 
 		// Apply albedo
 		sceneOut *= albedo;
