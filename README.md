@@ -3,14 +3,6 @@
 
 ![Screenshot](https://github.com/user-attachments/assets/261a14fb-6740-409f-ba89-882e3b93833f)
 
-## Features
-* High quality atmospheric system: precomputed atmospheric scattering, galaxy, multi-layer clouds, immersive volumetric fog, crepuscular rays, rainbows and so on
-* Advanced lighting rendering: PCSS, screen-space shadows, sub-surface scattering, SH skylight, SSPT, RSM, GTAO, etc.
-* Complete PBR resource pack support, auto generated normal maps
-* Various camera effects: motion blur, bloom, histogram auto-exposure, vignette and more
-* Improved post-processing: TAA, CAS, FSR 1.0 and color-grading
-* Currently working in progress, more features will be added in the future
-
 ## Compatibility
 * GPUs that support OpenGL 4.0 (NVIDIA, AMD and Intel GPUs have been tested and confirmed to work)
 * [Minecraft](https://www.minecraft.net/en-us/download): Java Edition 1.17.1 or newer
