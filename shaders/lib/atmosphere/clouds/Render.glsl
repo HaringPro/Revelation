@@ -461,11 +461,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 #include "/lib/atmosphere/clouds/Shadows.glsl"
 
-uniform vec3 fmExtinction;
-uniform vec3 fmScattering;
-uniform vec3 frExtinction;
-uniform vec3 frScattering;
-
 vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	uint steps = uint(float(CREPUSCULAR_RAYS_SAMPLES) * oms(abs(rayDir.y) * 0.5)); // Reduce ray steps for vertical rays
 
@@ -494,8 +489,9 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	float LdotV = dot(worldLightVector, rayDir);
 	vec2 phase = vec2(CornetteShanksPhase(LdotV, 0.65), RayleighPhase(LdotV));
 
-	vec3 extinctionCoeff = (fmExtinction * (1.0 + wetness * 2.0) + frExtinction) * (5e-7 * CREPUSCULAR_RAYS_INTENSITY);
-	mat2x3 scatteringCoeff = mat2x3(fmScattering * (1.0 + wetness * 2.0), frScattering) * (5e-7 * CREPUSCULAR_RAYS_INTENSITY);
+	float mieDensity = 2.0 * oms(timeNoon - wetness);
+	vec3 extinctionCoeff = (atmosphereModel.mie_extinction * mieDensity + atmosphereModel.rayleigh_scattering) * (2e-3 * CREPUSCULAR_RAYS_INTENSITY);
+	mat2x3 scatteringCoeff = mat2x3(atmosphereModel.mie_scattering * mieDensity, atmosphereModel.rayleigh_scattering) * (2e-3 * CREPUSCULAR_RAYS_INTENSITY);
 
 	vec3 stepTransmittance = exp2(-rLOG2 * extinctionCoeff * stepLength);
 

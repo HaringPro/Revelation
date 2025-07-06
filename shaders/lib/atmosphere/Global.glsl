@@ -40,7 +40,7 @@ struct AtmosphereParameters {
     // is maximum (usually the bottom of the atmosphere), as a function of
     // wavelength. The extinction coefficient at altitude h is equal to
     // 'mie_extinction' times 'mie_density' at this altitude.
-//    vec3 mie_extinction;
+   vec3 mie_extinction;
     // The asymetry parameter for the Cornette-Shanks phase function for the
     // aerosols.
 //    float mie_phase_function_g;
@@ -96,7 +96,7 @@ const AtmosphereParameters atmosphereModel = AtmosphereParameters(
     vec3(0.005802, 0.013558, 0.033100),
 //    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(0.000000,0.000000,0.000000,0.000000,0.000000),DensityProfileLayer(0.000000,1.000000,-0.833333,0.000000,0.000000))),
     vec3(0.003996, 0.003996, 0.003996),
-//    vec3(0.004440, 0.004440, 0.004440),
+   vec3(0.004440, 0.004440, 0.004440),
 //    0.800000,
 //    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(25.000000,0.000000,0.000000,0.066667,-0.666667),DensityProfileLayer(0.000000,0.000000,0.000000,-0.066667,2.666667))),
 //    vec3(0.000650, 0.001881, 0.000085),
