@@ -13,9 +13,14 @@
 		[Schneider, 2023] Andrew Schneider. "Nubis Cubed: Methods (and madness) to model and render immersive real-time voxel-based clouds". SIGGRAPH 2023.
 			https://advances.realtimerendering.com/s2023/Nubis%20Cubed%20(Advances%202023).pdf
 		[Hillaire, 2016] Sebastien Hillaire. “Physically based Sky, Atmosphere and Cloud Rendering”. SIGGRAPH 2016.
+			https://blog.selfshadow.com/publications/s2016-shading-course/
 			https://www.ea.com/frostbite/news/physically-based-sky-atmosphere-and-cloud-rendering
+        [Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
+            https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
 		[Bauer, 2019] Fabian Bauer. "Creating the Atmospheric World of Red Dead Redemption 2: A Complete and Integrated Solution". SIGGRAPH 2019.
 			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
+        [Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
+            https://dl.acm.org/doi/10.1145/2504459.2504518
 
 --------------------------------------------------------------------------------
 */
@@ -61,6 +66,7 @@ float CloudVolumeGroundLightOD(in float density, in float height) {
     return density * height * (CLOUD_CU_ALTITUDE * cumulusExtinction);
 }
 
+// Approximate method from [Wrenninge et al., 2013]
 float CloudMultiScatteringApproximation(in float opticalDepth, in float phases[cloudMsCount]) {
 	float scatteringFalloff = cloudMsFalloffA;
 	float extinctionFalloff = cloudMsFalloffB;
@@ -257,6 +263,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					// Advance to the next sample position
 					rayPos += rayStep;
 
+					// Method from [Hillaire, 2016]
 					// Accumulate the weighted ray length
 					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
@@ -333,7 +340,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					float stepOpticalDepth = stepDensity * (cumulusExtinction * -rLOG2) * stepSize;
 					float stepTransmittance = exp2(stepOpticalDepth);
 
-					// Compute the integral of the scattering over the step
+					// Energy-conserving analytical integration from [Hillaire, 2016]
 					float stepIntegral = transmittance * oms(stepTransmittance);
 					stepScattering += scattering * stepIntegral;
 					transmittance *= stepTransmittance;	

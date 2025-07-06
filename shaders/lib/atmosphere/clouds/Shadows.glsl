@@ -13,9 +13,14 @@
 		[Schneider, 2023] Andrew Schneider. "Nubis Cubed: Methods (and madness) to model and render immersive real-time voxel-based clouds". SIGGRAPH 2023.
 			https://advances.realtimerendering.com/s2023/Nubis%20Cubed%20(Advances%202023).pdf
 		[Hillaire, 2016] Sebastien Hillaire. “Physically based Sky, Atmosphere and Cloud Rendering”. SIGGRAPH 2016.
+			https://blog.selfshadow.com/publications/s2016-shading-course/
 			https://www.ea.com/frostbite/news/physically-based-sky-atmosphere-and-cloud-rendering
+        [Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
+            https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
 		[Bauer, 2019] Fabian Bauer. "Creating the Atmospheric World of Red Dead Redemption 2: A Complete and Integrated Solution". SIGGRAPH 2019.
 			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
+        [Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
+            https://dl.acm.org/doi/10.1145/2504459.2504518
 
 --------------------------------------------------------------------------------
 */
