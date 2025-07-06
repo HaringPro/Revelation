@@ -1,17 +1,15 @@
 <h1 align = "center"> Revelation </h1>
-<p  align = "center"> An explorative shaderpack for Minecraft: Java Edition, aiming to balance performance and image quality. </p>
-<p  align = "center"> Currently working in progress, more features will be added in the future. </p>
+<p  align = "center"> Physically based, High Performance and Heuristic </p>
 
 ![Screenshot](https://github.com/user-attachments/assets/261a14fb-6740-409f-ba89-882e3b93833f)
 
 ## Features
 * High quality atmospheric system: precomputed atmospheric scattering, galaxy, multi-layer clouds, immersive volumetric fog, crepuscular rays, rainbows and so on
 * Advanced lighting rendering: PCSS, screen-space shadows, sub-surface scattering, SH skylight, SSPT, RSM, GTAO, etc.
+* Complete PBR resource pack support, auto generated normal maps
 * Various camera effects: motion blur, bloom, histogram auto-exposure, vignette and more
 * Improved post-processing: TAA, CAS, FSR 1.0 and color-grading
-* Complete PBR resource pack support, auto generated normal maps
-* Screen-space reflections and refractions
-* Realistic translucency and foliage rendering
+* Currently working in progress, more features will be added in the future
 
 ## Compatibility
 * GPUs that support OpenGL 4.0 (NVIDIA, AMD and Intel GPUs have been tested and confirmed to work)
