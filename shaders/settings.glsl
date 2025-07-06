@@ -23,7 +23,7 @@ const float	shadowDistance 	  = 192.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.
 const ivec2 skyViewRes 			  = ivec2(256, 192);
 
 // TODO: Physical parameters
-const float skyIntensity 		  = 16.0;
+const float skyIntensity 		  = 24.0;
 const float sunIntensity 		  = 32.0;
 
 /* Aurora */

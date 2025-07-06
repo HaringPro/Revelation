@@ -99,8 +99,8 @@ float CloudHighDensity(in vec2 rayPos) {
 	/* Cirrocumulus clouds */ if (localCoverage > 0.4) {
 		vec2 position = rayPos * 1e-4 - (shift + curl) * 0.75;
 
-		float baseCoverage = texture(noisetex, position * 0.125).z;
-		baseCoverage *= saturate(1.0 - texture(noisetex, position * 0.0075).y);
+		float baseCoverage = texture(noisetex, position * 0.1).z;
+		baseCoverage *= saturate(1.0 - texture(noisetex, position * 0.005).y);
 
 		// The base shape of the cirrocumulus clouds using perlin-worley noise
 		float cirrocumulus = 0.5 * texture(noisetex, position * vec2(0.5, 0.2)).z;
@@ -134,7 +134,7 @@ float CloudHighDensity(in vec2 rayPos) {
 			cirrus += oms(texture(noisetex, position).x) * weight;
 			weight *= 0.55;
 		}
-		cirrus -= saturate(localCoverage * 2.0 - 0.75);
+		cirrus -= saturate(localCoverage * 2.0 - 1.0);
 		cirrus = saturate(cirrus * (1.0 + CLOUD_CI_COVERAGE) - 1.75);
 
 		density += exp2(-curl.x * 8.0) * pow4(cirrus);
