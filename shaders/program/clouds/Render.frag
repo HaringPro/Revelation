@@ -85,11 +85,7 @@ void main() {
 	#endif
 
 	if (depthMax > 0.999999 || depthMax < 0.56) {
-		#ifdef CLOUD_CBR_ENABLED
-			float dither = R1(frameCounter / cloudRenderArea, texelFetch(noisetex, cloudTexel & 255, 0).a);
-		#else
-			float dither = BlueNoiseTemporal(cloudTexel);
-		#endif
+		float dither = BlueNoiseTemporal(cloudTexel);
 
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
