@@ -70,35 +70,44 @@ uniform sampler3D atmosCombinedLut;
 void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    // Render sky-view LUTs
-	if (screenTexel.y >= skyViewRes.y) {
-		// With clouds
-		vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
-
-		#ifdef CLOUDS
-			float cloudDepth;
-            vec4 cloudData = RenderClouds(worldDir/* , skyViewOut */, 0.5, cloudDepth);
-            skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
-        #endif
-	} else {
-		// Raw
-		vec3 worldDir = ToSkyViewLutParams(screenCoord);
-		skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
-	}
-
-    #ifdef CLOUD_SHADOWS
-
-    // Checkerboard render cloud shadow map
-	ivec2 offset = checkerboardOffset2x2[frameCounter % 4];
-	if (screenTexel % 2 == offset) {
-        vec3 rayPos = CloudShadowToWorldPos(screenCoord);
-        cloudShadowOut = CalculateCloudShadows(rayPos);
-	} else {
+	// Read previous frame data
+	skyViewOut = texelFetch(colortex5, screenTexel, 0).rgb;
+	#ifdef CLOUD_SHADOWS
 		cloudShadowOut = texelFetch(colortex10, screenTexel, 0).x;
-	}
+	#endif
+	bool frameUpdate = skyViewOut.x < EPS || worldTimeChanged;
 
-    #endif
+    // Checkerboard render
+	ivec2 offset = checkerboardOffset4x4[frameCounter % 16];
+	if (screenTexel % 4 == offset || frameUpdate) {
+		// Render sky-view LUTs
+		vec3 skyViewLuts = vec3(0.0);
+		if (screenTexel.y < skyViewRes.y) {
+			// Raw
+			vec3 worldDir = ToSkyViewLutParams(screenCoord);
+			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
+		} else {
+			// With clouds
+			vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
+			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
+
+			#ifdef CLOUDS
+				float cloudDepth;
+				vec4 cloudData = RenderClouds(worldDir, 0.5, cloudDepth);
+				skyViewLuts = skyViewLuts * cloudData.a + cloudData.rgb;
+			#endif
+		}
+
+		// Accumulate
+		float accumFactor = frameUpdate ? 1.0 : 0.125;
+		skyViewOut = mix(skyViewOut, skyViewLuts, accumFactor);
+
+		// Render cloud shadow map
+		#ifdef CLOUD_SHADOWS
+			vec3 rayPos = CloudShadowToWorldPos(screenCoord);
+			cloudShadowOut = mix(cloudShadowOut, CalculateCloudShadows(rayPos), accumFactor);
+		#endif
+	}
 }
 
 #endif
