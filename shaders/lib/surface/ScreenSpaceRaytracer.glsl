@@ -22,7 +22,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
     float rSteps = 1.0 / float(steps);
 
-    vec3 endPos = ViewToScreenSpace(viewDir * abs(viewPos.z) + viewPos);
+    vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
     vec3 rayDir = normalize(endPos - rayPos);
     float stepWeight = 1.0 / rayDir.z;
 
