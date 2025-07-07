@@ -216,19 +216,13 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					// Reduce ray steps for vertical rays
 					raySteps = uint(float(raySteps) * mix(oms(abs(mu) * 0.5), 4.0, withinVolumeSmooth));
 				#endif
+				float rayStepsInv = rcp(float(raySteps));
 
-				// From [Schneider, 2022]
-				// const float nearStepSize = 3.0;
-				// const float farStepSizeOffset = 60.0;
-				// const float stepAdjustmentDistance = 16384.0;
+				rayLength *= rayStepsInv;
 
-				// float stepSize = nearStepSize + (farStepSizeOffset / stepAdjustmentDistance) * rayLength;
+				vec3 rayOrigin = intersection.x * rayDir + cloudViewerPos;
 
-				float stepSize = rayLength * rcp(float(raySteps));
-
-				float startLength = intersection.x + stepSize * dither;
-				vec3 rayPos = startLength * rayDir + cloudViewerPos;
-				vec3 rayStep = stepSize * rayDir;
+				rayLength *= rayStepsInv;
 
 				float rayLengthWeighted = 0.0;
 				float raySumWeight = 0.0;
@@ -241,12 +235,15 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 				// Raymarch through the cloud volume
 				for (uint i = 1u; i <= raySteps; ++i) {
-					// Advance to the next sample position
-					rayPos += rayStep;
+					float fi = float(i) + dither;
+					float adaptedLength = rayLength * sqr(fi);
+					float stepLength = rayLength * (fi * 2.0 - 1.0);
+
+					vec3 rayPos = adaptedLength * rayDir + rayOrigin;
 
 					// Method from [Hillaire, 2016]
 					// Accumulate the weighted ray length
-					rayLengthWeighted += stepSize * float(i) * transmittance;
+					rayLengthWeighted += adaptedLength * transmittance;
 					raySumWeight += transmittance;
 
 					// if (cloudTest < EPS) {
@@ -318,7 +315,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					vec2 scattering = vec2(scatteringSun + scatteringGround * uniformPhase * cloudLightVector.y, 
 										   scatteringSky + scatteringGround);
 
-					float stepOpticalDepth = stepDensity * (cumulusExtinction * -rLOG2) * stepSize;
+					float stepOpticalDepth = stepDensity * (cumulusExtinction * -rLOG2) * stepLength;
 					float stepTransmittance = exp2(stepOpticalDepth);
 
 					// Energy-conserving analytical integration from [Hillaire, 2016]
@@ -337,7 +334,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 				if (transmittance < 1.0 - EPS) {
 					integralScattering = stepScattering * cumulusAlbedo;
 					cloudTransmittance = transmittance;
-					cloudDepth = startLength + rayLengthWeighted / raySumWeight;
+					cloudDepth = intersection.x + rayLengthWeighted / raySumWeight;
 				}
 			}
 		}
