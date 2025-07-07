@@ -105,9 +105,9 @@ const float cloudMapCovDist 		= 256e3; // m
 // TODO: Provide adjustable options for these parameters
 const float cloudForwardG 		    = 0.7;
 const float cloudBackwardG 		    = -0.3;
-const float cloudLobeMixer          = 0.4;
-const float cloudSilverG 		    = 0.9;
-const float cloudSilverI 	        = 0.3;
+const float cloudLobeMixer          = 0.35;
+const float cloudSilverG 		    = 0.95;
+const float cloudSilverI 	        = 0.25;
 
 const float cumulusTopAltitude 		= CLOUD_CU_ALTITUDE + CLOUD_CU_THICKNESS;
 const float cumulusTopOffset        = 500.0;
