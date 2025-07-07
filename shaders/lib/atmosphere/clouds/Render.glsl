@@ -29,13 +29,13 @@
 
 //================================================================================================//
 
-float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = 256.0 / float(CLOUD_CU_SUNLIGHT_SAMPLES);
-	vec4 rayStep = vec4(cloudLightVector, 1.0) * stepSize;
+float CloudVolumeOpticalDepth(in vec3 rayPos, in vec3 rayDir, in float lightNoise, in uint steps) {
+    const float stepSize = 256.0 / float(steps);
+	vec4 rayStep = vec4(rayDir, 1.0) * stepSize;
 
     float opticalDepth = 0.0;
 
-	for (uint i = 0u; i < CLOUD_CU_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
+	for (uint i = 0u; i < steps; ++i, rayPos += rayStep.xyz) {
         rayStep *= 1.5;
 
 		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, opticalDepth < 0.25 * rayStep.w);
@@ -43,27 +43,6 @@ float CloudVolumeSunlightOD(in vec3 rayPos, in float lightNoise) {
     }
 
     return opticalDepth * cumulusExtinction;
-}
-
-float CloudVolumeSkylightOD(in vec3 rayPos, in float lightNoise) {
-    const float stepSize = 256.0 / float(CLOUD_CU_SKYLIGHT_SAMPLES);
-	vec4 rayStep = vec4(vec3(0.0, 1.0, 0.0), 1.0) * stepSize;
-
-    float opticalDepth = 0.0;
-
-	for (uint i = 0u; i < CLOUD_CU_SKYLIGHT_SAMPLES; ++i, rayPos += rayStep.xyz) {
-        rayStep *= 1.5;
-
-		float density = CloudVolumeDensity(rayPos + rayStep.xyz * lightNoise, false);
-        opticalDepth += density * rayStep.w;
-    }
-
-    return opticalDepth * cumulusExtinction;
-}
-
-float CloudVolumeGroundLightOD(in float density, in float height) {
-	// Estimate the light optical depth of the ground from the cloud volume
-    return density * height * (CLOUD_CU_ALTITUDE * cumulusExtinction);
 }
 
 // Approximate method from [Wrenninge et al., 2013]
@@ -300,7 +279,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					#endif
 
 					// Compute the optical depth of sunlight through clouds
-					float opticalDepthSun = CloudVolumeSunlightOD(rayPos, lightNoise.x) * -rLOG2;
+					float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, cloudLightVector, lightNoise.x, CLOUD_CU_SUNLIGHT_SAMPLES) * -rLOG2;
 
 					// Nubis Multiscatter Approximation
 					// float msVolume = remap(0.15, 0.85, dimensionalProfile);
@@ -311,7 +290,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 					#if CLOUD_CU_SKYLIGHT_SAMPLES > 0
 						// Compute the optical depth of skylight through clouds
-						float opticalDepthSky = CloudVolumeSkylightOD(rayPos, lightNoise.y) * -rLOG2;
+						float opticalDepthSky = CloudVolumeOpticalDepth(rayPos, vec3(0.0, 1.0, 0.0), lightNoise.y, CLOUD_CU_SKYLIGHT_SAMPLES) * -rLOG2;
 
 						// See slide 85 of [Schneider, 2017]
 						// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
@@ -321,9 +300,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 						float scatteringSky = approxSqrt(1.0 - dimensionalProfile) * saturate(heightFraction * 2.0);
 					#endif
 
-					// Compute the optical depth of ground light through clouds
-					float opticalDepthGround = CloudVolumeGroundLightOD(stepDensity, heightFraction);
-					float scatteringGround = fastExp(-opticalDepthGround) * rPI;
+					// Estimate the light optical depth of the ground from the cloud volume
+					float opticalDepthGround = stepDensity * heightFraction * (CLOUD_CU_THICKNESS * cumulusExtinction * -rLOG2);
+					float scatteringGround = exp2(max(opticalDepthGround, opticalDepthGround * 0.25 - 0.5)) * rPI;
 
 					// Compute In-Scatter Probability
 					// See slide 92 of [Schneider, 2017]
