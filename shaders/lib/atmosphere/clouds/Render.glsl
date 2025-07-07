@@ -183,6 +183,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 	float r = viewerHeight; // length(camera)
 	float mu = rayDir.y;	// dot(camera, rayDir) / r
 
+	bool planetIntersection = RayIntersectsGround(r, mu);
+
 	vec3 cloudViewerPos = vec3(cameraPosition.xz, r).xzy;
 
 	// Initialize
@@ -194,7 +196,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// Low-level clouds
 	#ifdef CLOUD_CUMULUS
-		if (!((mu < 0.0 && r < cumulusBottomRadius) || (mu > 0.0 && r > cumulusTopRadius))) {
+		if (!((planetIntersection && r < cumulusBottomRadius) || (mu > 0.0 && r > cumulusTopRadius))) {
 
 			// Compute cloud spherical shell intersection
 			vec2 intersection = RaySphericalShellIntersection(r, mu, cumulusBottomRadius, cumulusTopRadius);
@@ -343,8 +345,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	//================================================================================================//
 
-	bool planetIntersection = RayIntersectsGround(r, mu);
-
 	// Mid-level clouds
 	#ifdef CLOUD_ALTOSTRATUS
 		if ((mu > 0.0 && r < cloudMidRadius) // Below clouds
@@ -405,9 +405,6 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 
 	// Composite
 	if (cloudTransmittance < 1.0 - EPS) {
-		// Trick to strengthen the aerial perspective
-		// const float depthScale = 4.0;
-
 		vec3 cloudPos = rayDir * cloudDepth;
 
 		// Compute irradiance
