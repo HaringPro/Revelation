@@ -30,7 +30,11 @@ writeonly uniform image2D colorimg4;
 
 //======// Shared Memory //=======================================================================//
 
-shared vec3[4] sharedSkySH[gl_NumSubgroups];
+#if defined MC_GL_VENDOR_NVIDIA
+	shared vec3[4] sharedSkySH[gl_NumSubgroups];
+#else
+	shared vec3[4] sharedSkySH[64];
+#endif
 
 //======// Function //============================================================================//
 
