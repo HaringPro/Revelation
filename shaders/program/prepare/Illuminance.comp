@@ -61,7 +61,7 @@ void main() {
 		// Irradiance to illuminance
 		illuminance[0] = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * (sunIrradiance + moonIrradiance);
 
-		illuminance[1] += lightningShading * 4e-3;
+		illuminance[1] += lightningShading * 0.05;
 		#ifdef AURORA
 			float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
 			vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;

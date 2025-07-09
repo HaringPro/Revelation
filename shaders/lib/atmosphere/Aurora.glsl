@@ -27,7 +27,7 @@
 */
 
 float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
-vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
+vec3 auroraShading = vec3(0.0, 0.1, 0.05) * auroraAmount;
 
 //================================================================================================//
 

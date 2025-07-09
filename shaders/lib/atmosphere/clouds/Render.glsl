@@ -413,7 +413,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 		vec3 directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * (sunIrradiance + moonIrradiance);
 
-		skyIlluminance += lightningShading * 4e-3;
+		skyIlluminance += lightningShading * 0.05;
 		#ifdef AURORA
 			skyIlluminance += auroraShading;
 		#endif

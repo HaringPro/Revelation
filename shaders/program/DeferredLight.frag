@@ -324,9 +324,9 @@ void main() {
 				// Skylight
 				vec3 skylight = lightningShading;
 				#ifdef AURORA
-					skylight += 0.2 * auroraShading;
+					skylight += auroraShading * 8.0;
 				#endif
-				skylight *= 1e-3 * (worldNormal.y * 0.5 + 0.5);
+				skylight *= 0.02 * (worldNormal.y * 0.5 + 0.5);
 
 				// Spherical harmonics skylight
 				vec3[4] skySH;
