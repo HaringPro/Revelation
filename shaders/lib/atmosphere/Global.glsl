@@ -100,7 +100,7 @@ const AtmosphereParameters atmosphereModel = AtmosphereParameters(
 //    0.800000,
 //    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(25.000000,0.000000,0.000000,0.066667,-0.666667),DensityProfileLayer(0.000000,0.000000,0.000000,-0.066667,2.666667))),
 //    vec3(0.000650, 0.001881, 0.000085),
-    vec3(0.1),
+    vec3(0.5),
    -0.2
 );
 

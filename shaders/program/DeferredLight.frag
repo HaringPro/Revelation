@@ -109,11 +109,12 @@ void main() {
 
 		if (!RayIntersectsGround(viewerHeight, worldDir.y)) {
 			vec3 celestial = RenderSun(worldDir, worldSunVector);
-			vec3 moonDisc = mix(albedo, luminance(albedo) * vec3(0.7, 1.1, 1.5), 0.5) * 0.1;
+			vec3 vanillaMoon = albedo;
+
 			#ifdef GALAXY
-				celestial += mix(RenderGalaxy(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+				celestial += mix(RenderGalaxy(worldDir), vanillaMoon, step(0.06, vanillaMoon.g));
 			#else
-				celestial += mix(RenderStars(worldDir), moonDisc, bvec3(albedo.g > 0.06)); // Use bvec3 to avoid errors with some drivers
+				celestial += mix(RenderStars(worldDir), vanillaMoon, step(0.06, vanillaMoon.g));
 			#endif
 
 			vec3 transmittance = GetTransmittanceToTopAtmosphereBoundary(viewerHeight, worldDir.y);
