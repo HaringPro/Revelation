@@ -410,8 +410,8 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		// Compute irradiance
 		vec3 sunIrradiance, moonIrradiance;
 		vec3 camera = vec3(0.0, viewerHeight, 0.0);
-		vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * skyIntensity;
-		vec3 directIlluminance = sunIntensity * (sunIrradiance + moonIrradiance);
+		vec3 skyIlluminance = GetSunAndSkyIrradiance(camera + cloudPos, worldSunVector, sunIrradiance, moonIrradiance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+		vec3 directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * (sunIrradiance + moonIrradiance);
 
 		skyIlluminance += lightningShading * 4e-3;
 		#ifdef AURORA
@@ -426,7 +426,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		// Compute aerial perspective
 		#ifdef CLOUD_AERIAL_PERSPECTIVE
 			vec3 airTransmittance;
-			vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos, worldSunVector, airTransmittance) * skyIntensity;
+			vec3 aerialPerspective = GetSkyRadianceToPoint(cloudPos, worldSunVector, airTransmittance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 
 			cloudScattering *= airTransmittance;
 			cloudScattering += aerialPerspective * oms(cloudTransmittance);

@@ -85,11 +85,11 @@ void main() {
 		if (screenTexel.y < skyViewRes.y) {
 			// Raw
 			vec3 worldDir = ToSkyViewLutParams(screenCoord);
-			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
+			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 		} else {
 			// With clouds
 			vec3 worldDir = ToSkyViewLutParams(screenCoord - vec2(0.0, 0.5));
-			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * skyIntensity;
+			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 
 			#ifdef CLOUDS
 				float cloudDepth;

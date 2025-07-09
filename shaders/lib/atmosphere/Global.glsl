@@ -83,12 +83,12 @@ const float kSolarIrradiance[48] = {
 };
 
 const AtmosphereParameters atmosphereModel = AtmosphereParameters(
-    // vec3(1.474000, 1.850400, 1.911980),
-    vec3(
-        kSolarIrradiance[(660 - kLambdaMin) / 10],
-        kSolarIrradiance[(550 - kLambdaMin) / 10],
-        kSolarIrradiance[(440 - kLambdaMin) / 10]
-    ),
+    vec3(1.474000, 1.850400, 1.911980),
+    // vec3(
+    //     kSolarIrradiance[(660 - kLambdaMin) / 10],
+    //     kSolarIrradiance[(550 - kLambdaMin) / 10],
+    //     kSolarIrradiance[(440 - kLambdaMin) / 10]
+    // ),
 	0.004675,
     planetRadius - ATMOSPHERE_BOTTOM_ALTITUDE,
     planetRadius + ATMOSPHERE_TOP_ALTITUDE,
@@ -111,8 +111,8 @@ const float atmosphere_top_radius_sq    = atmosphereModel.top_radius * atmospher
 // const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(84093.4, 69380.7, 63173.1);
 
 // Values from https://github.com/sebh/UnrealEngineSkyAtmosphere
-const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(114974.916437f, 71305.954816f, 65310.548555f);
-const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(98242.786222f, 69954.398112f, 66475.012354f);
+const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(114974.916437f, 71305.954816f, 65310.548555f) * 1e-3;
+const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(98242.786222f, 69954.398112f, 66475.012354f) * 1e-3;
 
 //================================================================================================//
 
