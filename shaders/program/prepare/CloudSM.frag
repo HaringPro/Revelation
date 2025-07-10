@@ -29,6 +29,7 @@ out float cloudShadowOut;
 //======// Function //============================================================================//
 
 #include "/lib/universal/Offset.glsl"
+#include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Global.glsl"
 #include "/lib/atmosphere/clouds/Shadows.glsl"

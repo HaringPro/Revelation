@@ -455,18 +455,18 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	// Not intersecting the volume
 	if (intersection.y < 0.0) return vec4(vec3(0.0), 1.0);
 
-	float rayLength = clamp(intersection.y - intersection.x, 0.0, 8e3);
+	float rayLength = clamp(intersection.y - intersection.x, 0.0, 2e4);
 	float stepLength = rayLength * rcp(float(steps));
 
 	// In shadow view space
-	const float projectionScale = rcp(CLOUD_SHADOW_DISTANCE);
+	const float projectionScale = rcp(CLOUD_SHADOW_DISTANCE) * 0.5;
 
-	vec3 rayStep = mat3(shadowModelView) * rayDir;
-	vec3 rayPos = shadowModelView[3].xyz + rayStep * intersection.x;
+	vec2 rayStep = (mat3(shadowModelView) * rayDir).xy;
+	vec2 rayPos = shadowModelView[3].xy + rayStep * intersection.x;
 	rayPos *= projectionScale;
 
 	rayStep *= stepLength * projectionScale;
-	rayPos += rayStep * dither;
+	rayPos += rayStep * dither + 0.5;
 
 	// Mie + Rayleigh
 	float LdotV = dot(worldLightVector, rayDir);
@@ -483,8 +483,8 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 
 	// Raymarch through the volume
 	for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
-		vec2 cloudShadowCoord = DistortCloudShadowPos(rayPos);
-		float visibility = texture(colortex10, cloudShadowCoord).x;
+		// vec2 cloudShadowCoord = DistortCloudShadowPos(rayPos);
+		float visibility = texture(colortex10, rayPos.xy).x;
 		scattering += visibility * transmittance;
 
 		transmittance *= stepTransmittance;
