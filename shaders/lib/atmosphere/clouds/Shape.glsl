@@ -91,17 +91,16 @@ float CloudMidDensity(in vec2 rayPos) {
 }
 
 float CloudHighDensity(in vec2 rayPos) {
-	vec2 shift = cloudWindCc * CLOUD_WIND_SPEED;
-
 	// Curl noise to simulate wind, makes the positioning of the clouds more natural
 	vec2 curl = texture(noisetex, rayPos * 5e-6).xy * 0.03;
 	curl += texture(noisetex, rayPos * 1e-5).xy * 0.015;
 
-	float localCoverage = GetSmoothNoise(rayPos * 2e-5 + curl - shift * 0.25);
+	float localCoverage = GetSmoothNoise(rayPos * 2e-5 + curl - worldTimeCounter * 0.005);
 	float density = 0.0;
 
 	#ifdef CLOUD_CIRROCUMULUS
 	/* Cirrocumulus clouds */ if (localCoverage > 0.4) {
+		vec2 shift = cloudWindCc * CLOUD_WIND_SPEED;
 		vec2 position = rayPos * 1e-4 - (shift + curl) * 0.75;
 
 		float baseCoverage = texture(noisetex, position * 0.1).z;
@@ -122,14 +121,14 @@ float CloudHighDensity(in vec2 rayPos) {
 	#endif
 	#ifdef CLOUD_CIRRUS
 	/* Cirrus clouds */ if (localCoverage < 0.6) {
-		shift = cloudWindCi * CLOUD_WIND_SPEED;
+		vec2 shift = cloudWindCi * CLOUD_WIND_SPEED;
 		vec2 position = rayPos * 5e-7 - shift * 2e-3 + curl * 5e-3;
 		const vec2 angle = cossin(goldenAngle);
 		const mat2 rot = mat2(angle, -angle.y, angle.x);
 		vec2 scale = vec2(2.5, 2.0);
 
 		float weight = 0.55;
-		float cirrus = 1.0 - texture(noisetex, position).x;
+		float cirrus = 1.0 - texture(noisetex, position * vec2(0.75, 1.25)).x;
 
 		// Cirrus FBM
 		for (uint i = 0u; i < 5u; ++i, scale *= vec2(0.75, 1.25)) {
