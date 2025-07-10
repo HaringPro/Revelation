@@ -97,12 +97,12 @@ const AtmosphereParameters atmosphereModel = AtmosphereParameters(
     vec3(0.005802, 0.013558, 0.033100),
 //    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(0.000000,0.000000,0.000000,0.000000,0.000000),DensityProfileLayer(0.000000,1.000000,-0.833333,0.000000,0.000000))),
     vec3(0.003996, 0.003996, 0.003996),
-   vec3(0.004440, 0.004440, 0.004440),
+    vec3(0.004440, 0.004440, 0.004440),
 //    0.800000,
 //    DensityProfile(DensityProfileLayer[2](DensityProfileLayer(25.000000,0.000000,0.000000,0.066667,-0.666667),DensityProfileLayer(0.000000,0.000000,0.000000,-0.066667,2.666667))),
 //    vec3(0.000650, 0.001881, 0.000085),
-    vec3(0.5),
-   -0.2
+    vec3(0.07, 0.12, 0.2),
+    cos(radians(102.0))
 );
 
 const float atmosphere_bottom_radius_sq = atmosphereModel.bottom_radius * atmosphereModel.bottom_radius;
