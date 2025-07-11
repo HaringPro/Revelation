@@ -472,9 +472,9 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	float LdotV = dot(worldLightVector, rayDir);
 	vec2 phase = vec2(CornetteShanksPhase(LdotV, 0.65), RayleighPhase(LdotV));
 
-	float mieDensity = 2.0 * oms(timeNoon - wetness);
-	vec3 extinctionCoeff = (atmosphereModel.mie_extinction * mieDensity + atmosphereModel.rayleigh_scattering) * (2e-3 * CREPUSCULAR_RAYS_INTENSITY);
-	mat2x3 scatteringCoeff = mat2x3(atmosphereModel.mie_scattering * mieDensity, atmosphereModel.rayleigh_scattering) * (2e-3 * CREPUSCULAR_RAYS_INTENSITY);
+	float mieDensity = 4.0 * oms(timeNoon - wetness);
+	vec3 extinctionCoeff = (atmosphereModel.mie_extinction * mieDensity + atmosphereModel.rayleigh_scattering) * (1e-3 * CREPUSCULAR_RAYS_INTENSITY);
+	mat2x3 scatteringCoeff = mat2x3(atmosphereModel.mie_scattering * mieDensity, atmosphereModel.rayleigh_scattering) * (1e-3 * CREPUSCULAR_RAYS_INTENSITY);
 
 	vec3 stepTransmittance = exp2(-rLOG2 * extinctionCoeff * stepLength);
 
@@ -490,8 +490,9 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 		transmittance *= stepTransmittance;
 	}
 
-	// Direct only
-	scattering *= scatteringCoeff * phase * oms(stepTransmittance) / extinctionCoeff * loadDirectIllum();
+	// Process scattering
+	scattering *= scatteringCoeff * phase * oms(stepTransmittance) * loadDirectIllum();
+	scattering += (scatteringCoeff[0] + scatteringCoeff[1]) * uniformPhase * oms(transmittance) * loadSkyIllum();
 
-	return vec4(scattering, approxSqrt(mean(transmittance)));
+	return vec4(scattering / extinctionCoeff, mean(transmittance));
 }
