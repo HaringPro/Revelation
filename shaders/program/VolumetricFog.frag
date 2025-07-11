@@ -36,8 +36,6 @@ uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-uniform vec3 fogWind;
-
 uniform float biomeSandstorm;
 uniform float biomeSnowstorm;
 
@@ -71,10 +69,12 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	vec2 CalculateFogDensity(in vec3 rayPos) {
 		vec2 density = exp2(min((SEA_LEVEL - rayPos.y) * falloffScale, 0.0) - vec2(1.0 - (biomeSandstorm + biomeSnowstorm), 1.0));
 
-		rayPos *= 0.07;
-		rayPos += fogWind;
+		vec3 windOffset = vec3(0.07, 0.04, 0.05) * worldTimeCounter;
+
+		rayPos *= 0.05;
+		rayPos -= windOffset;
 		float noise = Calculate3DNoise(rayPos) * 3.0;
-		noise -= Calculate3DNoise(rayPos * 4.0 + fogWind);
+		noise -= Calculate3DNoise(rayPos * 4.0 - windOffset);
 
 		density.x *= saturate(noise * 8.0 - 6.0) * (1.5 + biomeSandstorm + biomeSnowstorm);
 
@@ -129,7 +129,7 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 	vec2 phase = vec2(HenyeyGreensteinPhase(LdotV, 0.65) * 0.75 + HenyeyGreensteinPhase(LdotV, -0.25) * 0.25, RayleighPhase(LdotV));
 	phase.x = mix(uniformPhase, phase.x, 0.75); // Trick to fit the multi-scattering
 
-	float uniformFog = 16.0 / far;
+	float uniformFog = 0.0 / far;
 
 	vec3 scatteringSun = vec3(0.0);
 	vec3 scatteringSky = vec3(0.0);

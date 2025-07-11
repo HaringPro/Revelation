@@ -73,7 +73,7 @@ vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in floa
 
 		float opticalDepthSun = 0.0; {
 			const float stepSize = 128.0 / float(CLOUD_MID_SUNLIGHT_SAMPLES);
-			vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
+			vec3 rayStep = vec3(worldLightVector.xz, 1.0) * stepSize;
 
 			// Compute the optical depth of sunlight through clouds
 			for (uint i = 0u; i < CLOUD_MID_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xy) {
@@ -120,7 +120,7 @@ vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in flo
 
 		float opticalDepthSun = 0.0; {
 			const float stepSize = 128.0 / float(CLOUD_HIGH_SUNLIGHT_SAMPLES);
-			vec3 rayStep = vec3(cloudLightVector.xz, 1.0) * stepSize;
+			vec3 rayStep = vec3(worldLightVector.xz, 1.0) * stepSize;
 
 			// Compute the optical depth of sunlight through clouds
 			for (uint i = 0u; i < CLOUD_HIGH_SUNLIGHT_SAMPLES; ++i, rayPos += rayStep.xy) {
@@ -173,7 +173,7 @@ float[cloudMsCount] SetupParticipatingMediaPhases(in float primaryPhase, in floa
 }
 
 vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, out float cloudDepth) {
-	float LdotV = dot(cloudLightVector, rayDir);
+	float LdotV = dot(worldLightVector, rayDir);
 
 	// Compute phases for clouds' sunlight multi-scattering
 	float phase = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
@@ -281,7 +281,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					#endif
 
 					// Compute the optical depth of sunlight through clouds
-					float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, cloudLightVector, lightNoise.x, CLOUD_CU_SUNLIGHT_SAMPLES) * -rLOG2;
+					float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, worldLightVector, lightNoise.x, CLOUD_CU_SUNLIGHT_SAMPLES) * -rLOG2;
 
 					// Nubis Multiscatter Approximation
 					// float msVolume = remap(0.15, 0.85, dimensionalProfile);
@@ -315,7 +315,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					float inScatterProbability = sqr(stepDensity * 2.0 + dimensionalProfile);
 					scatteringSun *= inScatterProbability * 2.0;
 
-					vec2 scattering = vec2(scatteringSun + scatteringGround * uniformPhase * cloudLightVector.y, 
+					vec2 scattering = vec2(scatteringSun + scatteringGround * uniformPhase * worldLightVector.y, 
 										   scatteringSky + scatteringGround);
 
 					float stepOpticalDepth = stepDensity * (cumulusExtinction * -rLOG2) * stepSize;

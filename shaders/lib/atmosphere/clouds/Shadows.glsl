@@ -60,11 +60,11 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	vec3 cloudViewerPos = vec3(cameraPosition.xz, viewerHeight).xzy;
 	rayPos += cloudViewerPos;
 
-	vec2 intersection = RaySphericalShellIntersection(rayPos, cloudLightVector, cumulusBottomRadius, cumulusTopRadius);
+	vec2 intersection = RaySphericalShellIntersection(rayPos, worldLightVector, cumulusBottomRadius, cumulusTopRadius);
 	float stepLength = (intersection.y - intersection.x) * rcp(float(steps));
-	vec3 rayStep = cloudLightVector * stepLength;
+	vec3 rayStep = worldLightVector * stepLength;
 
-	rayPos += cloudLightVector * intersection.x;
+	rayPos += worldLightVector * intersection.x;
 	rayPos += rayStep * InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 
 	float opticalDepth = 0.0;
@@ -77,7 +77,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 
 	float cloudShadow = exp2(-(cumulusExtinction * rLOG2) * opticalDepth * stepLength);
 
-	float timeFade = remap(0.05, 0.1, cloudLightVector.y);
+	float timeFade = remap(0.05, 0.1, worldLightVector.y);
 	return oms(timeFade) + cloudShadow * timeFade;
 }
 #endif
