@@ -128,7 +128,7 @@ uint EncodeRGBE32U(in vec3 data) {
 }
 
 vec3 DecodeRGBE32U(in uint data) {
-    uvec4 rgbe = data >> uvec4(0u, 8u, 16u, 24u) & 0xFFu;
+    uvec4 rgbe = uvec4(data) >> uvec4(0u, 8u, 16u, 24u) & 0xFFu;
 
     float e = floor(rgbe.a) - 128.0;
     float scale = exp2(e) * r255;
