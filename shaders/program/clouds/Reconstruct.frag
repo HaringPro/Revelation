@@ -34,6 +34,9 @@ layout (location = 1) out uint frameOut;
 #include "/lib/universal/Random.glsl"
 #include "/lib/universal/Offset.glsl"
 
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/clouds/Common.glsl"
+
 vec4 textureCatmullRom(in sampler2D tex, in vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
 	vec2 pixelSize = 1.0 / res;
@@ -145,10 +148,31 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
 #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
 #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
 
-vec3 ReprojectClouds(in vec2 coord, in float depth) {
-	vec3 cloudPos = ScreenToViewVectorRaw(coord) * depth;
+vec3 ReprojectClouds(in vec2 coord, in float radius) {
+	vec3 cloudPos = ScreenToViewVectorRaw(coord) * radius;
 	cloudPos = transMAD(gbufferModelViewInverse, cloudPos); // To world space
-	cloudPos += cameraPosition - previousCameraPosition; // To previous frame's world space
+
+	// Apply wind
+	vec3 motionVector = cameraPosition - previousCameraPosition;
+	if (radius < cloudMidRadius) {
+		// Low clouds
+		const float windAngle = radians(45.0);
+		const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
+		const vec3 windVelocity = windDir * CLOUD_CU_WIND_SPEED;
+		motionVector -= windVelocity * frameTime;
+	} else if (radius < cloudHighRadius) {
+		// Mid clouds
+		const float windAngle = radians(10.0);
+		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_AS_WIND_SPEED;
+		motionVector.xz -= windVelocity * frameTime;
+	} else {
+		// High clouds
+		const float windAngle = radians(30.0);
+		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_CI_WIND_SPEED;
+		motionVector.xz -= windVelocity * frameTime;
+	}
+
+	cloudPos += motionVector; // To previous frame's world space
     cloudPos = transMAD(gbufferPreviousModelView, cloudPos); // To previous frame's view space
 	cloudPos = projMAD(gbufferPreviousProjection, cloudPos) * rcp(-cloudPos.z); // To previous frame's NDC space
 
@@ -190,7 +214,7 @@ void main() {
 		if (disocclusion) {
 			cloudOut = texture(colortex2, currCoord);
 		} else {
-			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.65);
+			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
 			// vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
 			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
