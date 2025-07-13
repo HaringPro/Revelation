@@ -153,24 +153,26 @@ vec3 ReprojectClouds(in vec2 coord, in float radius) {
 	cloudPos = transMAD(gbufferModelViewInverse, cloudPos); // To world space
 
 	// Apply wind
-	vec3 motionVector = cameraPosition - previousCameraPosition;
+	vec3 motionVector = vec3(0.0);
 	if (radius < cloudMidRadius) {
 		// Low clouds
 		const float windAngle = radians(45.0);
 		const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
 		const vec3 windVelocity = windDir * CLOUD_CU_WIND_SPEED;
-		motionVector -= windVelocity * frameTime;
+		motionVector -= windVelocity;
 	} else if (radius < cloudHighRadius) {
 		// Mid clouds
 		const float windAngle = radians(10.0);
 		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_AS_WIND_SPEED;
-		motionVector.xz -= windVelocity * frameTime;
+		motionVector.xz -= windVelocity;
 	} else {
 		// High clouds
 		const float windAngle = radians(30.0);
 		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_CI_WIND_SPEED;
-		motionVector.xz -= windVelocity * frameTime;
+		motionVector.xz -= windVelocity;
 	}
+	motionVector *= frameTime * float(doDaylightCycle);
+	motionVector += cameraPosition - previousCameraPosition;
 
 	cloudPos += motionVector; // To previous frame's world space
     cloudPos = transMAD(gbufferPreviousModelView, cloudPos); // To previous frame's view space

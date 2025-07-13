@@ -27,6 +27,7 @@ uniform int worldTime;
 uniform int worldDay;
 
 uniform bool worldTimeChanged;
+uniform bool doDaylightCycle;
 
 uniform float frameTime;
 uniform float frameTimeCounter;
