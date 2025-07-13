@@ -71,10 +71,10 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     float skewFactor = mix(0.5 + 0.5 * roughness, 1.0, NdotV);
     bitangent *= 1.0 / skewFactor;
 
-    const float sharpenWeight = 0.5;
+    float sharpenWeight = 0.125 + 0.375 * saturate(reflectionData.a * 4.0);
     ivec2 texelEnd = ivec2(viewSize) - 1;
 
-    reflectionData.rgb = pow(sdot(reflectionData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(reflectionData.rgb));
+    reflectionData.rgb *= pow(sdot(reflectionData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
     float sumWeight = 1.0;
 
     for (uint i = 0u; i < 8u; ++i) {
@@ -93,14 +93,19 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
                                + abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV));
         weight = saturate(weight);
 
-        reflectionData += vec4(pow(sdot(sampleData.rgb), 0.5 * sharpenWeight) * normalize(maxEps(sampleData.rgb)), sampleData.a) * weight;
+        // Sharpen
+        sampleData.rgb *= pow(sdot(sampleData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
+
+        reflectionData += sampleData * weight;
         sumWeight += weight;
     }
 
     reflectionData *= 1.0 / sumWeight;
-    reflectionData.rgb = pow(sdot(reflectionData.rgb), 0.5 / sharpenWeight) * normalize(maxEps(reflectionData.rgb));
 
-    return satU16f(reflectionData);
+    // Sharpen
+    reflectionData.rgb *= pow(sdot(reflectionData.rgb) + EPS, 0.5 / sharpenWeight - 0.5);
+
+    return reflectionData;
 }
 
 //======// Main //================================================================================//
