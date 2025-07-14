@@ -179,10 +179,13 @@ void main() {
 			else if (material.hasReflections) {
 				// Specular reflections of other materials
 				vec4 reflectionData = texelFetch(colortex1, refractedTexel, 0);
-
 				vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
-				reflectionData.rgb *= oms(material.metalness * oms(albedo));
-				sceneOut += reflectionData.rgb;
+
+				// float NdotV = saturate(-dot(worldNormal, worldDir));
+				// vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
+				// reflectionData.rgb *= mix(vec3(material.f0), albedo, material.metalness) * brdf.x + brdf.y;
+
+				sceneOut += reflectionData.rgb * oms(material.metalness * oms(albedo));
 			}
 		#endif
 

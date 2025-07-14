@@ -7,7 +7,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
     // Unroll the reflect function manually
 	vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
-	if (dot(normal, lightDir) < 1e-6) return vec4(0.0);
+	if (dot(normal, lightDir) < EPS) return vec4(0.0);
 
 	vec3 reflection;
 	if (skylight > 1e-3) {
@@ -43,7 +43,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			vec3 lightDir = reflect(worldDir, halfway);
 
 			float NdotL = dot(normal, lightDir);
-			if (NdotL < 1e-6) return vec4(0.0);
+			if (NdotL < EPS) return vec4(0.0);
 
 			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, uint(RAYTRACE_SAMPLES * oms(material.roughness)), screenPos);
 
@@ -56,18 +56,14 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 				reflection = skyRadiance * skylight;
 			}
-
             float LdotH = dot(lightDir, halfway);
 			float NdotV = abs(dot(normal, -worldDir));
-			vec3 brdf = SpecularBRDFwithPDF(LdotH, NdotV, NdotL, material);
-			// brdf *= saturate(0.4 - material.roughness);
-
-			sceneOut *= 1.0 - brdf;
+			vec3 brdfDivPdf = SpecularBRDFwithPDF(LdotH, NdotV, NdotL, material);
 
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
 			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
 
-			return vec4(satU16f(reflection * brdf), targetDepth);
+			return vec4(satU16f(reflection * brdfDivPdf), targetDepth);
 		} else
 	#endif
 		{
@@ -75,7 +71,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			// Unroll the reflect function manually
 			vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
-			if (dot(normal, lightDir) < 1e-6) return vec4(0.0);
+			if (dot(normal, lightDir) < EPS) return vec4(0.0);
 
 			vec3 reflection;
 			if (skylight > 1e-3) {

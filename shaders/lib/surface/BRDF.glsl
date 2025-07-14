@@ -5,6 +5,70 @@
 // https://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#\
 // https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
 
+//================================================================================================//
+
+// From https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
+vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
+    // Importance sampling bias
+    xy.x = mix(xy.x, 1.0, SPECULAR_IMPORTANCE_SAMPLING_BIAS);
+
+    // Transform viewer direction to the hemisphere configuration
+    viewDir = normalize(vec3(roughness * viewDir.xy, viewDir.z));
+
+    // Sample a reflection direction off the hemisphere
+    float phi = TAU * xy.x;
+    float cosTheta = oms(xy.y) * (1.0 + viewDir.z) - viewDir.z;
+    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
+    vec3 reflected = vec3(cossin(phi) * sinTheta, cosTheta);
+
+    // Evaluate halfway direction
+    // This gives the normal on the hemisphere
+    vec3 halfway = reflected + viewDir;
+
+    // Transform the halfway direction back to hemiellispoid configuation
+    // This gives the final sampled normal
+    return normalize(vec3(roughness * halfway.xy, halfway.z));
+}
+
+vec3 sampleCosineVector(in vec3 vector, in vec2 xy) {
+    float phi = TAU * xy.x;
+    float cosTheta = xy.y * 2.0 - 1.0;
+    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
+    vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
+
+	vec3 cosineVector = normalize(vector + hemisphere);
+	return cosineVector * fastSign(dot(cosineVector, vector));
+}
+
+vec3 importanceSampleCosine(in vec3 normal, in vec2 xy) {
+    float phi = TAU * xy.y;
+
+    float cosTheta = sqrt(xy.x);
+    float sinTheta = sqrt(1.0 - xy.x);
+    vec3 sampleHemisphere = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+
+    // Orient sample into world space
+    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, normal));
+    vec3 bitangent = cross(normal, tangent);
+
+    vec3 sampleWorld = vec3(0.0);
+    sampleWorld += sampleHemisphere.x * tangent;
+    sampleWorld += sampleHemisphere.y * bitangent;
+    sampleWorld += sampleHemisphere.z * normal;
+
+    return sampleWorld;
+}
+
+// From https://github.com/Jessie-LC/open-source-utility-code/blob/main/simple/misc.glsl
+vec3 generateConeVector(vec3 vector, vec2 xy, float angle) {
+    xy.x *= TAU;
+    float cosAngle = cos(angle);
+    xy.y = xy.y * (1.0 - cosAngle) + cosAngle;
+    vec3 sphereCap = vec3(vec2(cos(xy.x), sin(xy.x)) * sqrt(1.0 - xy.y * xy.y), xy.y);
+    return rotate(sphereCap, vec3(0.0, 0.0, 1.0), vector);
+}
+
 //======// Fresnel //=============================================================================//
 
 // Schlick approximation
@@ -173,25 +237,31 @@ float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float Ndot
 }
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_LIGHTING
+float SpecularInvPDF(in float NdotV, in float NdotL, in float NdotH, in float alpha2) {
+    float invG1 = G1SmithGGXInverse(NdotL, alpha2);
+	float D = NDFTrowbridgeReitz(NdotH, alpha2);
+    return invG1 / D * 4.0 * NdotV;
+}
+
 vec3 SpecularBRDFwithPDF(in float LdotH, in float NdotV, in float NdotL, in Material material) {
-    vec3 brdf = vec3(1.0);
+    vec3 phase = vec3(1.0);
 
     // Fresnel term
     if (material.isHardcodedMetal) {
-        brdf *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
+        phase *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
     } else if (material.metalness > 0.5) {
-        brdf *= FresnelSchlick(LdotH, material.f0);
+        phase *= FresnelSchlick(LdotH, material.f0);
     } else {
-        brdf *= FresnelSchlickGaussian(LdotH, material.f0);
+        phase *= FresnelSchlickGaussian(LdotH, material.f0);
     }
 
     // Geometric term
     if (material.isRough) {
-		brdf *= G2withG1SmithGGX(NdotL, NdotV, material.roughness);
+		phase *= G2withG1SmithGGX(NdotL, NdotV, material.roughness);
     }
 
     // Distribution term has already been offset by the PDF
-    return brdf;
+    return phase;
 }
 #endif
 
@@ -239,68 +309,4 @@ vec3 TurquinBRDF(in float NdotV, in float NdotL, in float NdotH, in float VdotH,
     vec3 specular = numerator / maxEps(denominator);  
 
     return (diffuse + specular) * NdotL;
-}
-
-//================================================================================================//
-
-// From https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
-vec3 sampleGGXVNDF(in vec3 viewDir, in float roughness, in vec2 xy) {
-    // Importance sampling bias
-    xy.x = mix(xy.x, 1.0, SPECULAR_IMPORTANCE_SAMPLING_BIAS);
-
-    // Transform viewer direction to the hemisphere configuration
-    viewDir = normalize(vec3(roughness * viewDir.xy, viewDir.z));
-
-    // Sample a reflection direction off the hemisphere
-    float phi = TAU * xy.x;
-    float cosTheta = oms(xy.y) * (1.0 + viewDir.z) - viewDir.z;
-    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
-    vec3 reflected = vec3(cossin(phi) * sinTheta, cosTheta);
-
-    // Evaluate halfway direction
-    // This gives the normal on the hemisphere
-    vec3 halfway = reflected + viewDir;
-
-    // Transform the halfway direction back to hemiellispoid configuation
-    // This gives the final sampled normal
-    return normalize(vec3(roughness * halfway.xy, halfway.z));
-}
-
-vec3 sampleCosineVector(in vec3 vector, in vec2 xy) {
-    float phi = TAU * xy.x;
-    float cosTheta = xy.y * 2.0 - 1.0;
-    float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
-    vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
-
-	vec3 cosineVector = normalize(vector + hemisphere);
-	return dot(cosineVector, vector) < 0.0 ? -cosineVector : cosineVector;
-}
-
-vec3 importanceSampleCosine(in vec3 normal, in vec2 xy) {
-    float phi = TAU * xy.y;
-
-    float cosTheta = sqrt(xy.x);
-    float sinTheta = sqrt(1.0 - xy.x);
-    vec3 sampleHemisphere = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
-
-    // Orient sample into world space
-    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent = normalize(cross(up, normal));
-    vec3 bitangent = cross(normal, tangent);
-
-    vec3 sampleWorld = vec3(0.0);
-    sampleWorld += sampleHemisphere.x * tangent;
-    sampleWorld += sampleHemisphere.y * bitangent;
-    sampleWorld += sampleHemisphere.z * normal;
-
-    return sampleWorld;
-}
-
-// From https://github.com/Jessie-LC/open-source-utility-code/blob/main/simple/misc.glsl
-vec3 generateConeVector(vec3 vector, vec2 xy, float angle) {
-    xy.x *= TAU;
-    float cosAngle = cos(angle);
-    xy.y = xy.y * (1.0 - cosAngle) + cosAngle;
-    vec3 sphereCap = vec3(vec2(cos(xy.x), sin(xy.x)) * sqrt(1.0 - xy.y * xy.y), xy.y);
-    return rotate(sphereCap, vec3(0.0, 0.0, 1.0), vector);
 }
