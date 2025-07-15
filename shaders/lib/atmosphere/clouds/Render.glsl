@@ -419,7 +419,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 		#endif
 
 		// Direct + Indirect
-		cloudScattering  = integralScattering.x * directIlluminance;
+		cloudScattering  = integralScattering.x * oms(wetness * 0.5) * directIlluminance;
 		cloudScattering += integralScattering.y * uniformPhase * skyIlluminance;
 		cloudScattering *= PI;
 
