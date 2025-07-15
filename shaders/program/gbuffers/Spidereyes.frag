@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7 */
-layout (location = 0) out vec3 albedoOut;
+layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec2 gbufferOut0;
 
 //======// Uniform //=============================================================================//
@@ -30,7 +30,8 @@ void main() {
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	albedoOut = mix(albedo.rgb, entityColor.rgb, entityColor.a);
+	albedo.rgb = mix(albedo.rgb, entityColor.rgb, entityColor.a);
+	albedoOut = vec4(albedo.rgb, 1.0);
 
 	gbufferOut0.y = 20u;
 }

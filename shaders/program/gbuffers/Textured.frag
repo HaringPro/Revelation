@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7 */
-layout (location = 0) out vec3 albedoOut;
+layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec4 gbufferOut0;
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
@@ -42,7 +42,7 @@ void main() {
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	albedoOut = albedo.rgb;
+	albedoOut = vec4(albedo.rgb, 1.0);
 
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	gbufferOut0.y = materialID;

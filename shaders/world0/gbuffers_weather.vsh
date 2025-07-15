@@ -17,13 +17,11 @@
 
 //======// Output //==============================================================================//
 
-out float vertColor;
 out vec2 texCoord;
 
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
-in vec4 vaColor;
 in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
@@ -41,13 +39,12 @@ uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
 void main() {
-    vertColor = vaColor.a;
  	texCoord = vaUV0 * vec2(RAIN_SCALE_X, RAIN_SCALE_Y);
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(modelViewMatrix, vaPosition));
 
-    float windAngle = (dot(worldPos + cameraPosition, vec3(2.0)) + frameTimeCounter * 0.2) * PI;
+    float windAngle = dot(worldPos + cameraPosition, vec3(2.0)) + frameTimeCounter * 0.05;
 
-    worldPos.xz += worldPos.y * (0.15 + 0.1 * vec2(cos(windAngle), sin(windAngle)));
+    worldPos.xz -= worldPos.y * 0.25 * (0.5 + vec2(cos(windAngle), sin(windAngle)));
 	gl_Position = diagonal4(projectionMatrix) * transMAD(gbufferModelView, worldPos).xyzz + projectionMatrix[3];
 }

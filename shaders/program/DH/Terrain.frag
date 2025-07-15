@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7 */
-layout (location = 0) out vec3 albedoOut;
+layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec3 gbufferOut0;
 
 //======// Input //===============================================================================//
@@ -34,7 +34,7 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 void main() {
     if (length(worldPos) < 0.75 * far) { discard; return; }
 
-	albedoOut = vertColor;
+	albedoOut = vec4(vertColor, 1.0);
 	/* Terrain noises */ {
 		const float res = 8.0;
 		const float strength = 0.25;
@@ -44,11 +44,11 @@ void main() {
 		vec2 coord = ((worldPos + cameraPosition) * tbnMatrix).xy * (res / 256.0);
 		float noise = texture(noisetex, coord).x * 2.0;
 
-		albedoOut = saturate(albedoOut * mix(1.0, noise, strength));
+		albedoOut.rgb = saturate(albedoOut.rgb * mix(1.0, noise, strength));
 	}
 
 	#ifdef WHITE_WORLD
-		albedoOut = vec3(1.0);
+		albedoOut = vec4(1.0);
 	#endif
 
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));

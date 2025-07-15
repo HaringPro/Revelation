@@ -14,7 +14,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6 */
-out vec3 albedoOut;
+out vec4 albedoOut;
 
 //======// Input //===============================================================================//
 
@@ -31,5 +31,5 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	albedoOut = albedo.rgb * vertColor;
+	albedoOut = vec4(albedo.rgb * vertColor, 1.0);
 }

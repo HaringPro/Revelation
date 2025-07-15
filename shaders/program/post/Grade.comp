@@ -92,9 +92,9 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	#endif
 
 	if (rainStrength > 1e-2) {
-		float rain = textureBicubic(colortex6, screenCoord).a;
-		rain = approxSqrt(rain) * RAIN_VISIBILITY;
-		scene = scene * oms(rain) + bloomData * rain * 1.25;
+		float rainAlpha = textureBicubic(colortex6, screenCoord).a;
+		rainAlpha = oms(rainAlpha) * RAIN_VISIBILITY;
+		scene = scene * oms(rainAlpha) + bloomData * rainAlpha * 1.25;
 	}
 }
 

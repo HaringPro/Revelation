@@ -6,7 +6,7 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7 */
-layout (location = 0) out vec3 albedoOut;
+layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec4 gbufferOut0;
 
 #if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
@@ -176,10 +176,10 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	albedoOut = albedo.rgb * vertColor;
+	albedoOut = vec4(albedo.rgb * vertColor, 1.0);
 
 	#ifdef WHITE_WORLD
-		albedoOut = vec3(1.0);
+		albedoOut = vec4(1.0);
 	#endif
 
 	gbufferOut0.x = PackupDithered2x8U(lightmap, dither);
