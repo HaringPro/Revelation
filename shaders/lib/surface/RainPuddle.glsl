@@ -6,21 +6,20 @@ void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specT
 	puddlePos *= RAIN_PUDDLE_SCALE;
 
     // Puddle noise
-	float noise = texture(noisetex, puddlePos * 0.75).z * 0.8;
-	noise += textureBicubic(noisetex, puddlePos * 0.45).x * 1.6;
-	noise += textureBicubic(noisetex, puddlePos * 0.15).y * 2.6;
-	noise = saturate(noise * 0.2) * wetnessCustom;
+	float noise = texture(noisetex, puddlePos).z;
+	noise += texture(noisetex, puddlePos * 0.5).z;
+	noise = saturate(noise * 0.5) * wetnessCustom;
 
-    float puddles = smoothstep(0.25, 0.55, noise);
+    float puddles = smoothstep(0.4, 0.6, noise);
     if (puddles < EPS) return;
 
     // Normal falloff
-    puddles *= saturate(flatNormal.y * 0.25 + 0.75);
+    puddles *= saturate(flatNormal.y * 0.5 + 0.5);
     // Skylight falloff
-    puddles *= saturate(skylight * 4.0 - 3.0);
+    puddles *= saturate(skylight * 5.0 - 4.0);
 
     // Apply wetness to albedo
-    vec3 wetAlbedo = colorSaturation(albedo, 0.7) * 0.75;
+    vec3 wetAlbedo = colorSaturation(albedo, 0.75) * 0.5;
     #if TEXTURE_FORMAT == 0
         // https://shaderlabs.org/wiki/LabPBR_Material_Standard
         float porosity = saturate(specTex.b * (255.0 / 64.0) - step(64.5, specTex.b * 255.0));
