@@ -209,7 +209,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
-	coverage = saturate(mix(coverage, 1.0, wetness * 0.5));
+	coverage = saturate(coverage + wetness * 0.5);
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
@@ -274,7 +274,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
-	coverage = saturate(mix(coverage, 1.0, wetness * 0.5));
+	coverage = saturate(coverage + wetness * 0.5);
 	// coverage = pow(coverage, remap(heightFraction, 0.7, 0.8, 1.0, 1.0 - 0.5 * anvilBias));
 	if (coverage < 1e-2) return 0.0;
 
