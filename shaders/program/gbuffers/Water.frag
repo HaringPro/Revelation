@@ -117,23 +117,32 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 void main() {
 	vec3 worldNormal;
 	vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
+	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 
 	if (materialID == 3u) { // water
 		#ifdef PHYSICS_OCEAN
 			WavePixelData wave = physics_wavePixel(physics_localPosition.xz, physics_localWaviness, physics_iterationsNormal, physics_gameTime);
 
 			worldNormal = wave.normal;
-			gbufferOut1 = worldNormal.xy * 0.5 + 0.5;
+			#ifndef RAYTRACED_REFRACTION
+				gbufferOut1 = worldNormal.xy * 0.5 + 0.5;
+			#endif
 		#else
 			vec3 minecraftPos = worldPos + cameraPosition;
 			#ifdef WATER_PARALLAX
-				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, worldDir * tbnMatrix);
+				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, worldDir * tbnMatrix, dither);
 			#else
 				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
 			#endif
 
-			gbufferOut1 = worldNormal.xy * 0.5 + 0.5;
+			#ifndef RAYTRACED_REFRACTION
+				gbufferOut1 = worldNormal.xy * 0.5 + 0.5;
+			#endif
 			worldNormal = tbnMatrix * worldNormal;
+		#endif
+
+		#ifdef RAYTRACED_REFRACTION
+			gbufferOut0.z = Packup2x8U(OctEncodeUnorm(worldNormal));
 		#endif
 
 		// Water normal clamp
@@ -184,8 +193,6 @@ void main() {
 		vec3 shadowScreenPos = WorldToShadowScreenSpace(worldPos + normalOffset, distortionFactor);	
 
 		if (saturate(shadowScreenPos) == shadowScreenPos) {
-			float dither = BlueNoiseTemporal(ivec2(gl_FragCoord.xy));
-
 			float blockerSearch = BlockerSearch(shadowScreenPos, dither, 0.25 * distortionFactor);
 			shadowScreenPos.z -= (worldDistSquared * 1e-9 + 3e-6) * (1.0 + dither) / distortionFactor * shadowDistance;
 

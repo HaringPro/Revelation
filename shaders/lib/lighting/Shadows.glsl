@@ -92,7 +92,7 @@ vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
 #include "/lib/water/WaterWave.glsl"
 
 #ifdef WATER_CAUSTICS_DISPERSION
-vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in float dither) {
+vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in vec2 dither) {
 	vec3 caustics = vec3(0.0);
 	worldPos.xz -= worldPos.y;
 
@@ -108,14 +108,14 @@ vec3 CalculateWaterCaustics(in vec3 worldPos, in vec3[3] lightVector, in float d
 			vec2 waveCoord = waveCoord[j] + offset;
 			vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
-			caustics[j] += exp2(-sdot(offset - waveNormal) * 512.0);
+			caustics[j] += exp2(-sdot(offset - waveNormal) * 768.0);
 		}
 	}
 
-	return sqr(caustics);
+	return sqr(caustics) * 2.0;
 }
 #else
-float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
+float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in vec2 dither) {
 	float caustics = 0.0;
 	worldPos.xz -= worldPos.y + lightVector.xz / lightVector.y;
 
@@ -125,10 +125,10 @@ float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dit
 		vec2 waveCoord = worldPos.xz + offset;
 		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
 
-		caustics += exp2(-sdot(offset - waveNormal) * 512.0);
+		caustics += exp2(-sdot(offset - waveNormal) * 768.0);
 	}
 
-	return sqr(caustics);
+	return sqr(caustics) * 2.0;
 }
 #endif
 
@@ -165,7 +165,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 	result *= rSteps;
 
 	#ifdef WATER_CAUSTICS
-		if (causticWeight > 1e-6) {
+		if (causticWeight > EPS) {
 			causticWeight *= rSteps;
 			// float causticAltitude = abs(causticWeight.y * 512.0 - 128.0 - worldPos.y - eyeAltitude);
 			worldPos += cameraPosition;
@@ -175,10 +175,10 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 				lightVector[0] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / (WATER_REFRACT_IOR - 0.025));
 				lightVector[1] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 				lightVector[2] = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / (WATER_REFRACT_IOR + 0.025));
-				vec3 caustics = CalculateWaterCaustics(worldPos, lightVector, dither - 0.5);
+				vec3 caustics = CalculateWaterCaustics(worldPos, lightVector, R2(dither) - 0.5);
 			#else
 				vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, 1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
-				float caustics = CalculateWaterCaustics(worldPos, lightVector, dither - 0.5);
+				float caustics = CalculateWaterCaustics(worldPos, lightVector, R2(dither) - 0.5);
 			#endif
 			result += causticWeight * (caustics - result);
 		}
