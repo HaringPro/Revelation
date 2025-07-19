@@ -10,7 +10,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 
 	vec3 transmittance = exp2(-rLOG2 * waterExtinction * fogDensity);
 
-	float phase = HenyeyGreensteinPhase(LdotV, 0.85) * 0.75 + uniformPhase * 0.25;
+	float phase = HenyeyGreensteinPhase(LdotV, 0.8) * 0.75 + uniformPhase * 0.25;
 	const vec3 sunTransmittance = exp2(-rLOG2 * waterExtinction * 8.0);
 
 	vec3 directIlluminance = loadDirectIllum();
@@ -69,7 +69,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 		vec3 shadowPos = shadowStart + shadowStep * dither;
 
 		vec3 stepTransmittance = exp2(-rLOG2 * waterExtinction * stepLength);
-		vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
+		// vec3 lightVector = fastRefract(worldLightVector, vec3(0.0, -1.0, 0.0), 1.0 / WATER_REFRACT_IOR);
 		vec3 transmittance = vec3(1.0);
 
 		vec3 scatteringSun = vec3(0.0);
@@ -93,7 +93,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 				if (sampleSunlight.x != sampleDepth0) {
 					float waterDepth = abs(texelFetch(shadowcolor1, shadowTexel, 0).w * 512.0 - 128.0 - shadowPos.y - eyeAltitude);
 					if (waterDepth > 0.1) {
-						sampleSunlight = vec3(CalculateWaterCaustics(rayPos, lightVector));
+						sampleSunlight = vec3(CalculateWaterCaustics(rayPos, worldLightVector));
 				#ifdef COLORED_VOLUMETRIC_FOG
 					} else {
 						vec3 shadowColorSample = cube(texelFetch(shadowcolor0, shadowTexel, 0).rgb);
@@ -109,8 +109,8 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 			transmittance *= stepTransmittance;
 		}
 
-		float LdotV = dot(lightVector, worldDir);
-		float phase = HenyeyGreensteinPhase(LdotV, 0.85) * 0.75 + uniformPhase * 0.25;
+		float LdotV = dot(worldLightVector, worldDir);
+		float phase = HenyeyGreensteinPhase(LdotV, 0.8) * 0.75 + uniformPhase * 0.25;
 
 		vec3 directIlluminance = loadDirectIllum();
 		vec3 skyIlluminance = loadSkyIllum();

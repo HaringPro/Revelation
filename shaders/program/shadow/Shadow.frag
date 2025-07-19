@@ -40,44 +40,6 @@ flat in uint isWater;
 
 uniform sampler2D tex;
 
-uniform sampler2D noisetex;
-
-uniform vec3 worldLightVector;
-
-uniform int frameCounter;
-uniform float frameTimeCounter;
-
-//======// Function //============================================================================//
-
-#include "/lib/universal/Offset.glsl"
-#include "/lib/universal/Random.glsl"
-
-vec3 fastRefract(in vec3 dir, in vec3 normal, in float eta) {
-	float NdotD = dot(normal, dir);
-	float k = 1.0 - eta * eta * oms(NdotD * NdotD);
-	if (k < 0.0) return vec3(0.0);
-
-	return dir * eta - normal * (sqrt(k) + NdotD * eta);
-}
-
-#include "/lib/water/WaterWave.glsl"
-float CalculateWaterCaustics(in vec3 worldPos, in vec3 lightVector, in float dither) {
-	float caustics = 0.0;
-
-	for (uint i = 0u; i < 9u; ++i) {
-		vec2 offset = (offset3x3[i] + dither) * 0.125;
-		offset = vec2(offset.x - offset.y * 0.5, offset.y * 0.866);
-
-		vec2 waveCoord = worldPos.xz - worldPos.y + offset;
-		waveCoord += lightVector.xz / lightVector.y;
-		vec2 waveNormal = CalculateWaterNormal(waveCoord).xy;
-
-		caustics += exp2(-sdot(offset - waveNormal) * 3e2);
-	}
-
-	return saturate(caustics * 0.75);
-}
-
 //======// Main //================================================================================//
 void main() {
 	if (isWater == 1u) {

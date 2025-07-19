@@ -129,10 +129,11 @@ void main() {
 			#endif
 		#else
 			vec3 minecraftPos = worldPos + cameraPosition;
+			vec2 tangentPos = ((minecraftPos * vec3(1.0, 0.15, 1.0)) * tbnMatrix).xy;
 			#ifdef WATER_PARALLAX
-				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y, worldDir * tbnMatrix, dither);
+				worldNormal = CalculateWaterNormal(tangentPos, worldDir * tbnMatrix, dither);
 			#else
-				worldNormal = CalculateWaterNormal(minecraftPos.xz - minecraftPos.y);
+				worldNormal = CalculateWaterNormal(tangentPos);
 			#endif
 
 			#ifndef RAYTRACED_REFRACTION
