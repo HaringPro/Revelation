@@ -9,6 +9,11 @@
 layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec3 gbufferOut0;
 
+#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+/* RENDERTARGETS: 6,7,8 */
+layout (location = 2) out vec2 gbufferOut1;
+#endif
+
 //======// Input //===============================================================================//
 
 flat in vec3 flatNormal;
@@ -55,4 +60,7 @@ void main() {
 	gbufferOut0.y = materialID;
 
 	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
+	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+		gbufferOut1 = vec2(0.0);
+	#endif
 }
