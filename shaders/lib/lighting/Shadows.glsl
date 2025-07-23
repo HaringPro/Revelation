@@ -189,84 +189,43 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
-	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
-
+float ScreenSpaceShadow(in vec3 viewPos, in vec3 viewNormal, in float dither, in float sssAmount) {
 	float viewDist = length(viewPos);
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += viewDist * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
+	viewPos += viewDist * maxOf(viewPixelSize) / max(sqr(NdotL), 0.05) * viewNormal;
 
-    float absorption = approxExp(-approxSqrt(viewDist)) * sssAmount;
+    float absorption = exp2(-0.25 * approxSqrt(viewDist) / sssAmount);
 
-	float shadow = 1.0;
+	vec3 rayDir = viewLightVector * -viewPos.z * (0.1 / float(SCREEN_SPACE_SHADOWS_SAMPLES)) * oms(sssAmount * 0.75);
+	rayDir = vec3(diagonal2(gbufferProjection) * rayDir.xy * 0.5, -rayDir.z);
 
-	vec3 endPos = ViewToScreenSpace(viewLightVector * -viewPos.z + viewPos);
-	vec3 rayStep = normalize(endPos - rayPos);
-	rayStep *= minOf((step(0.0, rayStep) - rayPos) / rayStep);
+	vec3 rayPos = vec3((diagonal2(gbufferProjection) * viewPos.xy + gbufferProjection[3].xy) * 0.5, -viewPos.z);
+	rayPos += dither * rayDir;
 
-	rayPos.xy *= viewSize;
-	rayStep.xy *= viewSize;
-	rayStep *= stepSize / maxOf(abs(rayStep.xy));
+	float diffTolerance = 2e-2 + 1e-2 * viewDist;
+	float result = 1.0;
 
-	rayPos += rayStep * (dither + 1.0 - sssAmount);
+	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayDir) {
+		vec2 sampleCoord = rayPos.xy / rayPos.z + taaOffset * 0.5;
+		if (any(greaterThan(abs(sampleCoord), vec2(0.5))) || result < 1e-2) break;
 
-	float diffTolerance = 0.03 * (sssAmount - viewPos.z);
+		ivec2 sampleTexel = uvToTexel(sampleCoord + 0.5);
+		float sampleDepth = loadDepth0(sampleTexel);
 
-	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
-		if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
-		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
+		#if defined DISTANT_HORIZONS
+			float difference;
+			if (sampleDepth > 1.0 - EPS) {
+				sampleDepth = loadDepth0DH(sampleTexel);
+				difference = ScreenToViewDepthDH(sampleDepth) + rayPos.z;
+			} else {
+				difference = ScreenToViewDepth(sampleDepth) + rayPos.z;
+			}
+		#else
+			float difference = ScreenToViewDepth(sampleDepth) + rayPos.z;
+		#endif
 
-		float sampleDepth = loadDepth0(ivec2(rayPos.xy));
-
-		float difference = ScreenToViewDepth(sampleDepth);
-		difference -= ScreenToViewDepth(rayPos.z);
-
-		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
- 
-		if (shadow < 1e-3) break;
+		if (clamp(difference, 0.0, diffTolerance) == difference) result *= absorption;
 	}
 
-	return shadow;
+	return result;
 }
-
-#if defined DISTANT_HORIZONS
-float ScreenSpaceShadowDH(in vec3 viewPos, in vec3 rayPos, in vec3 viewNormal, in float dither, in float sssAmount) {
-	const float stepSize = 48.0 / float(SCREEN_SPACE_SHADOWS_SAMPLES);
-
-	float viewDist = length(viewPos);
-	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += viewDist * 3e-4 / maxEps(sqr(NdotL)) * viewNormal;
-
-    float absorption = approxExp(-approxSqrt(viewDist)) * sssAmount;
-
-	float shadow = 1.0;
-
-	vec3 endPos = ViewToScreenSpaceDH(viewLightVector * -viewPos.z + viewPos);
-	vec3 rayStep = normalize(endPos - rayPos);
-	rayStep *= minOf((step(0.0, rayStep) - rayPos) / rayStep);
-
-	rayPos.xy *= viewSize;
-	rayStep.xy *= viewSize;
-	rayStep *= stepSize / maxOf(abs(rayStep.xy));
-
-	rayPos += rayStep * (dither + 1.0 - sssAmount);
-
-	float diffTolerance = 0.03 * (sssAmount - viewPos.z);
-
-	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
-		if (rayPos.z < 0.0 || rayPos.z >= 1.0) break;
-		if (clamp(rayPos.xy, vec2(0.0), viewSize) != rayPos.xy) break;
-
-		float sampleDepth = loadDepth0DH(ivec2(rayPos.xy));
-
-		float difference = ScreenToViewDepthDH(sampleDepth);
-		difference -= ScreenToViewDepthDH(rayPos.z);
-
-		if (clamp(difference, 0.0, diffTolerance) == difference) shadow *= absorption;
-
-		if (shadow < 1e-3) break;
-	}
-
-	return shadow;
-}
-#endif
