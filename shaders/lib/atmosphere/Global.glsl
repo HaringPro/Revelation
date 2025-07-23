@@ -238,15 +238,15 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 
 //================================================================================================//
 
-const float scale = oms(4.0 / skyViewRes.x);
-const float offset = 2.0 / float(skyViewRes.x);
+#define UnitToSubUv(uv, res) (uv + 0.5 / res) * (res / (res + 1.0))
+#define SubToUnitUv(uv, res) (uv - 0.5 / res) * (res / (res - 1.0))
 
 // Reference: https://sebh.github.io/publications/egsr2020.pdf
 vec3 ToSkyViewLutParams(in vec2 coord) {
 	coord.y *= 2.0;
 
-	// From unit range
-	coord.x = fract((coord.x - offset) * rcp(scale));
+	// To unit UV
+	coord = SubToUnitUv(coord, vec2(skyViewRes));
 
 	// Non-linear mapping of the altitude angle
 	coord.y = coord.y < 0.5 ? -sqr(1.0 - 2.0 * coord.y) : sqr(2.0 * coord.y - 1.0);
@@ -274,10 +274,10 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	coord.x = (azimuthAngle + PI) * rTAU;
 
 	// Non-linear mapping of the altitude angle
-	coord.y = 0.5 + 0.5 * fastSign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle));
+	coord.y = fastSign(altitudeAngle) * sqrt(2.0 * rPI * abs(altitudeAngle)) * 0.5 + 0.5;
 
-	// To unit range
-	coord.x = coord.x * scale + offset;
+	// To sub UV
+	coord = UnitToSubUv(coord, vec2(skyViewRes));
 
 	return saturate(coord * vec2(1.0, 0.5));
 }

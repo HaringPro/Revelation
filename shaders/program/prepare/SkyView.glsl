@@ -78,7 +78,7 @@ void main() {
 	if (viewTexel % 4 == offset || frameUpdate) {
 		// Render sky-view LUTs
 		vec3 skyViewLuts = vec3(0.0);
-		if (viewTexel.y < skyViewRes.y) {
+		if (viewTexel.y <= skyViewRes.y) {
 			// Raw
 			vec3 worldDir = ToSkyViewLutParams(screenCoord);
 			skyViewLuts = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
