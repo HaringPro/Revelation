@@ -176,7 +176,7 @@ float HgDrainePhase(in float mu, in float d) {
 		gD 	= 0.500411 - 0.081287 / (-2.0 * ld + tan(ld) + 1.27551);
 		a 	= 7.30354 * ld + 6.31675;
 		wD 	= 0.026914 * (ld - cos(5.68947 * (log(ld) - 0.0292149))) + 0.376475;
-	} else if (d < 50.0) { //  Large particles, Diameter 5 µm ≤ 𝑑 ≤ 50 µm
+	} else if (d <= 50.0) { //  Large particles, Diameter 5 µm ≤ 𝑑 ≤ 50 µm
 		gHG = exp(-0.0990567 / (d - 1.67154));
 		gD 	= exp(-2.20679 / (d + 3.91029) - 0.428934);
 		a 	= exp(3.62489 - 8.29288 / (d + 5.52825));
