@@ -99,7 +99,7 @@ void main() {
 	vec3 albedoRaw = loadAlbedo(screenTexel);
 	vec3 albedo = sRGBtoLinear(albedoRaw);
 
-	float dither = BlueNoiseTemporal(screenTexel);
+	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 
 	sceneOut = vec3(0.0);
 

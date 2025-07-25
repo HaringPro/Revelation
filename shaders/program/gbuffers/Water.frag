@@ -68,7 +68,7 @@ flat in vec3 directIlluminance;
 
 #include "/lib/surface/ScreenSpaceRaytracer.glsl"
 
-vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 worldDir) {
+vec4 CalculateSpecularReflections(in vec3 normal, in vec3 worldDir, in float dither, in float skylight) {
 	skylight = remap(0.3, 0.7, cube(skylight));
 
 	float NdotV = abs(dot(normal, worldDir));
@@ -88,7 +88,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 wor
 		reflection = skyRadiance * skylight;
 	}
 
-	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 	vec3 screenPos = vec3(gl_FragCoord.xy * viewPixelSize, gl_FragCoord.z);
 
 	float brdf;
@@ -170,7 +169,7 @@ void main() {
 	//==// Translucent lighting //================================================================//
 
 	// Indirect specular lighting
-	lightingOut = CalculateSpecularReflections(worldNormal, lightmap.y, worldDir);
+	lightingOut = CalculateSpecularReflections(worldNormal, worldDir, dither, lightmap.y);
 
 	// Cloud shadows
 	#ifdef CLOUD_SHADOWS
