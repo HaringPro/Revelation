@@ -131,7 +131,7 @@ const ivec2 skyViewRes 			  = ivec2(256, 192);
 	#define OFF 0
 	#define SSAO 1
 	#define GTAO 2
-	#define AO_ENABLED SSAO // Enables ambient occlusion. [OFF SSAO GTAO]
+	#define AO_ENABLED GTAO // Enables ambient occlusion. [OFF SSAO GTAO]
 	#define AO_MULTI_BOUNCE // Enables ambient occlusion multi-bounce
 
 /* Shadows */

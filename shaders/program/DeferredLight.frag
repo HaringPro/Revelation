@@ -197,25 +197,16 @@ void main() {
 		#if AO_ENABLED > 0 && !defined SSPT_ENABLED
 			vec3 ao = vec3(1.0);
 			if (screenPos.z > 0.56) {
-			#if defined DISTANT_HORIZONS
-				if (dhTerrainMask) {
-				#if AO_ENABLED == 1
-					ao.x = CalculateSSAODH(screenCoord, viewPos, viewNormal, dither);
-				#else
-					ao.x = CalculateGTAODH(screenCoord, viewPos, viewNormal, dither);
-				#endif
-				} else
-			#endif
-				{
 				#if AO_ENABLED == 1
 					ao.x = CalculateSSAO(screenCoord, viewPos, viewNormal, dither);
 				#else
 					ao.x = CalculateGTAO(screenCoord, viewPos, viewNormal, dither);
 				#endif
-				}
 
 				#ifdef AO_MULTI_BOUNCE
 					ao = ApproxMultiBounce(ao.x, albedo);
+				#else
+					ao = vec3(ao.x);
 				#endif
 			}
 		#else
