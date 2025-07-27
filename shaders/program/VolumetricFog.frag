@@ -184,6 +184,10 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 		if (dot(transmittance, vec3(1.0)) < 1e-3) break; // Faster than maxOf()
 	}
 
+	#ifndef VF_CLOUD_SHADOWS
+		scatteringSun *= 1.0 - wetness * 0.75;
+	#endif
+
 	vec3 directIlluminance = loadDirectIllum();
 	vec3 skyIlluminance = loadSkyIllum();
 
