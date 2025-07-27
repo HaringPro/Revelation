@@ -51,7 +51,7 @@ uniform float biomeSnowstorm;
 #include "/lib/atmosphere/clouds/Shadows.glsl"
 
 // x: Mie y: Rayleigh
-const vec2 falloffScale = 1.0 / vec2(12.0, 36.0);
+const vec2 falloffScale = -1.0 / vec2(12.0, 36.0);
 
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
@@ -59,15 +59,15 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 #include "/lib/lighting/ShadowDistortion.glsl"
 
-#if VOLUMETRIC_FOG_QUALITY == 0
+#if VF_NOISE_QUALITY == 0
 	/* Low */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		return exp2(min((SEA_LEVEL - rayPos.y) * falloffScale, 0.0) - vec2(1.0 - (biomeSandstorm + biomeSnowstorm) * 2.0, 1.0));
+		return exp2(abs(VF_HEIGHT - rayPos.y) * falloffScale + vec2((biomeSandstorm + biomeSnowstorm) * 2.0, 0.0));
 	}
-#elif VOLUMETRIC_FOG_QUALITY == 1
+#elif VF_NOISE_QUALITY == 1
 	/* Medium */
 	vec2 CalculateFogDensity(in vec3 rayPos) {
-		vec2 density = exp2(min((SEA_LEVEL - rayPos.y) * falloffScale, 0.0) - vec2(1.0 - (biomeSandstorm + biomeSnowstorm), 1.0));
+		vec2 density = exp2(abs(VF_HEIGHT - rayPos.y) * falloffScale + vec2((biomeSandstorm + biomeSnowstorm) * 2.0, 0.0));
 
 		vec3 windOffset = vec3(0.07, 0.04, 0.05) * worldTimeCounter;
 
@@ -89,9 +89,9 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 	#if defined DISTANT_HORIZONS
 		#define far float(dhRenderDistance)
-		uint steps = VOLUMETRIC_FOG_SAMPLES << 1u;
+		uint steps = VF_MAX_SAMPLES << 1u;
 	#else
-		uint steps = VOLUMETRIC_FOG_SAMPLES;
+		uint steps = VF_MAX_SAMPLES;
 	#endif
 
 	vec3 rayStart = gbufferModelViewInverse[3].xyz;

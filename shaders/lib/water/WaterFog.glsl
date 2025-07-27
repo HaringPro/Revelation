@@ -51,11 +51,11 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 
 		vec3 worldDir = worldPos * norm;
 
-		uint steps = uint(float(UW_VOLUMETRIC_FOG_SAMPLES) * saturate(0.5 + 0.5 * rayLength));
+		uint steps = uint(float(UW_VF_MAX_SAMPLES) * saturate(0.5 + 0.5 * rayLength));
 
 		float rSteps = 1.0 / float(steps);
 
-		float stepLength = min(rayLength, 48.0) * rSteps * UW_VOLUMETRIC_FOG_DENSITY;
+		float stepLength = min(rayLength, 48.0) * rSteps * UW_VF_DENSITY;
 
 		vec3 rayStart = gbufferModelViewInverse[3].xyz,
 			 rayStep  = worldDir * stepLength;
@@ -101,7 +101,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 				#endif
 					}
 
-					sampleSunlight *= exp2(-rLOG2 * waterExtinction * UW_VOLUMETRIC_FOG_DENSITY * max(waterDepth, 8.0));
+					sampleSunlight *= exp2(-rLOG2 * waterExtinction * UW_VF_DENSITY * max(waterDepth, 8.0));
 				}
 			}
 
@@ -118,7 +118,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 		scatteringSun *= oms(wetnessCustom * 0.8) * phase * directIlluminance;
 		vec3 scatteringSky = uniformPhase * skyIlluminance;
 
-		transmittance = exp2(-rLOG2 * waterExtinction * UW_VOLUMETRIC_FOG_DENSITY * rayLength);
+		transmittance = exp2(-rLOG2 * waterExtinction * UW_VF_DENSITY * rayLength);
 		vec3 scattering = scatteringSun * oms(stepTransmittance) + scatteringSky * oms(transmittance);
 
 		return mat2x3(scattering * (waterScattering / waterExtinction), transmittance);

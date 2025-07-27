@@ -34,10 +34,10 @@ uniform float biomeGreenVapor;
 uniform float timeNoon;
 uniform float timeMidnight;
 
-uniform vec3 fmExtinction;
-uniform vec3 fmScattering;
-uniform vec3 frExtinction;
-uniform vec3 frScattering;
+uniform vec3 fogMieExtinction;
+uniform vec3 fogMieScattering;
+uniform vec3 fogRayleighExtinction;
+uniform vec3 fogRayleighScattering;
 
 //======// Main //================================================================================//
 void main() {
@@ -46,12 +46,12 @@ void main() {
 	float mieDensityMult = VF_MIE_DENSITY * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
 
 	fogExtinctionCoeff = mat2x3(
-		fmExtinction * mieDensityMult,
-		frExtinction * VF_RAYLEIGH_DENSITY
+		fogMieExtinction * mieDensityMult,
+		fogRayleighExtinction * VF_RAYLEIGH_DENSITY
 	);
 
 	fogScatteringCoeff = mat2x3(
-		fmScattering * mieDensityMult,
-		frScattering * VF_RAYLEIGH_DENSITY
+		fogMieScattering * mieDensityMult,
+		fogRayleighScattering * VF_RAYLEIGH_DENSITY
 	);
 }
