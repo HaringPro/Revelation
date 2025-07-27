@@ -141,7 +141,7 @@ void main() {
 		#endif
 
 		// Water normal clamp
-		worldNormal = normalize(worldNormal + flatNormal * inversesqrt(maxEps(dot(flatNormal, -worldDir))));
+		worldNormal = normalize(worldNormal + flatNormal * inversesqrt(4.0 * abs(dot(flatNormal, worldDir)) + 1e-2));
 	} else {
 		vec4 albedo = vertColor;
 

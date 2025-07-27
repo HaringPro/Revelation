@@ -35,7 +35,7 @@ float CalculateWaterHeight(in vec2 position, in bool detail) {
 
 	#if !(defined PASS_DEFERRED_LIGHTING || defined PASS_VOLUMETRIC_FOG)
 		float localHeight = texture(noisetex, position * 2e-3 + waveTime * 0.125).z;
-		waves *= max(localHeight * 5.0 - 1.75, 0.5);
+		waves *= max(localHeight * 5.0 - 1.8, 0.6);
 	#endif
 
 	return waves;

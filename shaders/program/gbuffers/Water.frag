@@ -146,7 +146,7 @@ void main() {
 		#endif
 
 		// Water normal clamp
-		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(maxEps(dot(tbnMatrix[2], -worldDir))));
+		worldNormal = normalize(worldNormal + tbnMatrix[2] * inversesqrt(4.0 * abs(dot(tbnMatrix[2], worldDir)) + 1e-2));
 	} else {
 		vec4 albedo = texture(tex, texCoord) * vertColor;
 
