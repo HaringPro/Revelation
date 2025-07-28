@@ -32,6 +32,7 @@ layout (location = 2) out vec2 specularOut;
 //======// Uniform //=============================================================================//
 
 uniform sampler3D atmosCombinedLut;
+uniform sampler2D cloudOriginTex;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -128,7 +129,7 @@ void main() {
 			#ifdef CLOUD_CBR_ENABLED
 				vec4 cloudData = textureBicubic(colortex9, screenCoord);
 			#else
-				vec4 cloudData = textureBicubic(colortex2, screenCoord);
+				vec4 cloudData = textureBicubic(cloudOriginTex, screenCoord);
 			#endif
 			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
