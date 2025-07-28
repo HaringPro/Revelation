@@ -219,7 +219,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	// See [Schneider, 2022]
 	// Dimensional profile
 	float dimensionalProfile = saturate(verticalProfile * coverage);
-	if (dimensionalProfile < 1e-3) return 0.0;
+	if (dimensionalProfile < cloudEpsilon) return 0.0;
 
 	vec3 position = (rayPos - windOffset * 0.5) * 2.5e-4;
 
@@ -284,7 +284,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	// See [Schneider, 2022]
 	// Dimensional profile
 	dimensionalProfile = saturate(verticalProfile * coverage);
-	if (dimensionalProfile < 1e-3) return 0.0;
+	if (dimensionalProfile < cloudEpsilon) return 0.0;
 
 	vec3 position = (rayPos - windOffset * 0.5) * 2.5e-4;
 

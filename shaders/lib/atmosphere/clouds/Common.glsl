@@ -132,7 +132,8 @@ const float cumulusAlbedo 		    = cumulusScattering / cumulusExtinction;
 const float stratusAlbedo 		    = stratusScattering / stratusExtinction;
 const float cirrusAlbedo 		    = cirrusScattering / cirrusExtinction;
 
-const float minCloudTransmittance   = 0.05;
+const float cloudEpsilon            = 0.0001;
+const float cloudMinTransmittance   = 0.05;
 
 //================================================================================================//
 
