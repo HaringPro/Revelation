@@ -67,7 +67,7 @@ float CloudMultiScatteringApproximation(in float opticalDepth, in float phases[c
 
 vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudMidDensity(rayPos);
-	if (density > EPS) {
+	if (density > cloudEpsilon) {
 		float opticalDepth = density * CLOUD_MID_THICKNESS / abs(rayDir.y);
 		float integral = oms(exp2(-rLOG2 * stratusExtinction * opticalDepth));
 
@@ -107,6 +107,8 @@ vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in floa
 		scatteringSun *= integral * inScatterProbability * stratusAlbedo;
 		scatteringSky *= integral * stratusAlbedo;
 		return vec3(scatteringSun, scatteringSky, integral);
+	} else {
+		return vec3(0.0);
 	}
 }
 
@@ -114,7 +116,7 @@ vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in floa
 
 vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in float phases[cloudMsCount]) {
 	float density = CloudHighDensity(rayPos);
-	if (density > EPS) {
+	if (density > cloudEpsilon) {
 		float opticalDepth = density * CLOUD_HIGH_THICKNESS / abs(rayDir.y);
 		float integral = oms(exp2(-rLOG2 * cirrusExtinction * opticalDepth));
 
@@ -154,6 +156,8 @@ vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float lightNoise, in flo
 		scatteringSun *= integral * inScatterProbability * cirrusAlbedo;
 		scatteringSky *= integral * cirrusAlbedo;
 		return vec3(scatteringSun, scatteringSky, integral);
+	} else {
+		return vec3(0.0);
 	}
 }
 
@@ -249,9 +253,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					rayLengthWeighted += stepSize * float(i) * transmittance;
 					raySumWeight += transmittance;
 
-					// if (cloudTest < EPS) {
+					// if (cloudTest < cloudEpsilon) {
 					// 	cloudTest = CloudVolumeDensity(rayPos, false);
-					// 	if (cloudTest < EPS) {
+					// 	if (cloudTest < cloudEpsilon) {
 					// 		rayPos += rayStep;
 					// 	}
 					// 	continue;
@@ -261,9 +265,9 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					float heightFraction, dimensionalProfile;
 					float stepDensity = CloudVolumeDensity(rayPos, heightFraction, dimensionalProfile);
 
-					if (stepDensity < EPS) continue;
+					if (stepDensity < cloudEpsilon) continue;
 
-					// if (stepDensity < EPS) {
+					// if (stepDensity < cloudEpsilon) {
 					// 	++zeroDensityCounter;
 					// }
 
@@ -327,14 +331,14 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 					transmittance *= stepTransmittance;	
 
 					// Break if the cloud has reached the minimum transmittance
-					if (transmittance < minCloudTransmittance) break;
+					if (transmittance < cloudMinTransmittance) break;
 				}
 
 				// Remap to [0, 1]
-				transmittance = remap(minCloudTransmittance, 1.0, transmittance);
+				transmittance = remap(cloudMinTransmittance, 1.0, transmittance);
 
 				// Update integral data
-				if (transmittance < 1.0 - EPS) {
+				if (transmittance < 1.0 - cloudEpsilon) {
 					integralScattering = stepScattering * cumulusAlbedo;
 					cloudTransmittance = transmittance;
 					cloudDepth = startLength + rayLengthWeighted / raySumWeight;
@@ -355,7 +359,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 			vec3 cloudTemp = RenderCloudMid(rayPos.xz, rayDir, dither, phases);
 
 			// Update integral data
-			if (cloudTemp.z > EPS) {
+			if (cloudTemp.z > cloudEpsilon) {
 				float transmittanceTemp = 1.0 - cloudTemp.z;
 
 				// Blend layers
@@ -382,7 +386,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
 			vec3 cloudTemp = RenderCloudHigh(rayPos.xz, rayDir, dither, phases);
 
 			// Update integral data
-			if (cloudTemp.z > EPS) {
+			if (cloudTemp.z > cloudEpsilon) {
 				float transmittanceTemp = 1.0 - cloudTemp.z;
 
 				// Blend layers
@@ -404,7 +408,7 @@ vec4 RenderClouds(in vec3 rayDir/* , in vec3 skyRadiance */, in float dither, ou
     vec3 cloudScattering = vec3(0.0);
 
 	// Composite
-	if (cloudTransmittance < 1.0 - EPS) {
+	if (cloudTransmittance < 1.0 - cloudEpsilon) {
 		vec3 cloudPos = rayDir * cloudDepth;
 
 		// Compute irradiance
