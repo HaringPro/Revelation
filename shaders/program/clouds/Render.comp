@@ -13,6 +13,8 @@
 --------------------------------------------------------------------------------
 */
 
+#extension GL_KHR_shader_subgroup_clustered : enable
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
@@ -59,16 +61,6 @@ vec3 ScreenToViewVectorRaw(in vec2 screenCoord) {
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * NDCCoord, gbufferProjectionInverse[3].z));
 }
 
-float sampleDepthMax4x4(in sampler2D depthTex, in vec2 coord) {
-	// 4x4 pixel neighborhood using textureGather
-	vec4 sampleDepth0 = textureGather(depthTex, coord + vec2( 2.0,  2.0) * viewPixelSize);
-	vec4 sampleDepth1 = textureGather(depthTex, coord + vec2(-2.0,  2.0) * viewPixelSize);
-	vec4 sampleDepth2 = textureGather(depthTex, coord + vec2( 2.0, -2.0) * viewPixelSize);
-	vec4 sampleDepth3 = textureGather(depthTex, coord + vec2(-2.0, -2.0) * viewPixelSize);
-
-	return max(max(maxOf(sampleDepth0), maxOf(sampleDepth1)), max(maxOf(sampleDepth2), maxOf(sampleDepth3)));
-}
-
 //======// Main //================================================================================//
 void main() {
     ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
@@ -83,23 +75,13 @@ void main() {
 	vec4 cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	float cloudDepth = 128e3;
 
-    // if (any(greaterThanEqual(cloudTexel, ivec2(viewSize)))) {
-	// 	imageStore(cloudOriginImg, screenTexel, cloudOut);
-	// 	imageStore(cloudDepthOriginImg, screenTexel, vec4(cloudDepth));
-
-    //     return;
-    // }
+	float depthMax = loadDepth0(cloudTexel);
+	#if defined DISTANT_HORIZONS
+		if (depthMax > 0.999999) depthMax = loadDepth0DH(cloudTexel);
+	#endif
 
 	#ifdef CLOUD_CBR_ENABLED
-		float depthMax = sampleDepthMax4x4(depthtex0, cloudUv);
-		#if defined DISTANT_HORIZONS
-			if (depthMax > 0.999999) depthMax = sampleDepthMax4x4(dhDepthTex0, cloudUv);
-		#endif
-	#else
-		float depthMax = loadDepth0(cloudTexel);
-		#if defined DISTANT_HORIZONS
-			if (depthMax > 0.999999) depthMax = loadDepth0DH(cloudTexel);
-		#endif
+		depthMax = subgroupClusteredMax(depthMax, cloudRenderArea);
 	#endif
 
 	if (depthMax > 1.0 - EPS || depthMax < 0.56) {
