@@ -17,13 +17,24 @@
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
+//======// Input //===============================================================================//
 
-/* RENDERTARGETS: 2,3 */
-layout (location = 0) out vec4 cloudOut;
-layout (location = 1) out float cloudDepth;
+layout (local_size_x = 16, local_size_y = 16) in;
+
+#ifndef CLOUD_CBR_ENABLED
+	const vec2 workGroupsRender = vec2(1.0, 1.0);
+#elif CLOUD_CBR_SCALE == 2
+	const vec2 workGroupsRender = vec2(0.5, 0.5);
+#elif CLOUD_CBR_SCALE == 3
+	const vec2 workGroupsRender = vec2(0.333333, 0.333333);
+#elif CLOUD_CBR_SCALE == 4
+	const vec2 workGroupsRender = vec2(0.25, 0.25);
+#endif
 
 //======// Uniform //=============================================================================//
+
+writeonly uniform image2D cloudOriginImg;
+writeonly uniform image2D cloudDepthOriginImg;
 
 uniform sampler3D atmosCombinedLut;
 
@@ -60,7 +71,7 @@ float sampleDepthMax4x4(in sampler2D depthTex, in vec2 coord) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    ivec2 screenTexel = ivec2(gl_GlobalInvocationID.xy);
 
 	#ifdef CLOUD_CBR_ENABLED
 		ivec2 cloudTexel = screenTexel * CLOUD_CBR_SCALE + cloudCbrOffset[frameCounter % cloudRenderArea];
@@ -69,8 +80,15 @@ void main() {
 	#endif
 	vec2 cloudUv = texelToUv(cloudTexel);
 
-	cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
-	cloudDepth = 128e3;
+	vec4 cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
+	float cloudDepth = 128e3;
+
+    // if (any(greaterThanEqual(cloudTexel, ivec2(viewSize)))) {
+	// 	imageStore(cloudOriginImg, screenTexel, cloudOut);
+	// 	imageStore(cloudDepthOriginImg, screenTexel, vec4(cloudDepth));
+
+    //     return;
+    // }
 
 	#ifdef CLOUD_CBR_ENABLED
 		float depthMax = sampleDepthMax4x4(depthtex0, cloudUv);
@@ -84,7 +102,7 @@ void main() {
 		#endif
 	#endif
 
-	if (depthMax > 0.999999 || depthMax < 0.56) {
+	if (depthMax > 1.0 - EPS || depthMax < 0.56) {
 		float dither = BlueNoiseTemporal(cloudTexel);
 
 		vec3 viewDir  = ScreenToViewVectorRaw(cloudUv);
@@ -104,4 +122,7 @@ void main() {
 			#endif
 		#endif
 	}
+
+	imageStore(cloudOriginImg, screenTexel, cloudOut);
+	imageStore(cloudDepthOriginImg, screenTexel, vec4(cloudDepth));
 }

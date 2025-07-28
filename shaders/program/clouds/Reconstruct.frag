@@ -25,6 +25,9 @@ layout (location = 1) out uint frameOut;
 
 //======// Uniform //=============================================================================//
 
+uniform sampler2D cloudOriginTex;
+uniform sampler2D cloudDepthOriginTex;
+
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
@@ -143,7 +146,7 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
     return sum / weightSum;
 }
 
-#define currentLoad(offset) texelFetchOffset(colortex2, currTexel, 0, offset)
+#define currentLoad(offset) texelFetchOffset(cloudOriginTex, currTexel, 0, offset)
 
 #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
 #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
@@ -192,7 +195,7 @@ void main() {
 		if (depth > 0.999999) depth = loadDepth0DH(screenTexel);
 	#endif
 
-	if (depth > 0.999999 || depth < 0.56) {
+	if (depth > 1.0 - EPS || depth < 0.56) {
 		frameOut = 1u;
 
 		vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
@@ -200,7 +203,7 @@ void main() {
 		const float currScale = rcp(float(CLOUD_CBR_SCALE));
 		vec2 currCoord = min(screenCoord * currScale, currScale - viewPixelSize);
 
-		float cloudDepth = minOf(textureGather(colortex3, currCoord, 0));
+		float cloudDepth = minOf(textureGather(cloudDepthOriginTex, currCoord, 0));
 
 		vec2 prevCoord = ReprojectClouds(screenCoord, cloudDepth).xy;
 		uint frameIndex = texture(colortex13, prevCoord).x;
@@ -214,7 +217,7 @@ void main() {
 		// disocclusion = disocclusion || (gbufferProjection[0].x - gbufferPreviousProjection[0].x) > 0.25;
 
 		if (disocclusion) {
-			cloudOut = texture(colortex2, currCoord);
+			cloudOut = texture(cloudOriginTex, currCoord);
 		} else {
 			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
 			// vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
@@ -222,7 +225,7 @@ void main() {
 			frameOut += frameIndex;
 
 			ivec2 currTexel = clamp(screenTexel / CLOUD_CBR_SCALE, ivec2(0), ivec2(viewSize) / CLOUD_CBR_SCALE - 1);
-			vec4 currData = texelFetch(colortex2, currTexel, 0);
+			vec4 currData = texelFetch(cloudOriginTex, currTexel, 0);
 
 			// Variance clip
 			#ifdef CLOUD_VARIANCE_CLIP
