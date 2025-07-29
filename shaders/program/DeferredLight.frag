@@ -36,6 +36,10 @@ uniform sampler2D cloudOriginTex;
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Struct //==============================================================================//
 
 #include "/lib/universal/Material.glsl"
@@ -224,7 +228,7 @@ void main() {
 		#endif
 
 		// Sunlight
-		vec3 sunlightMult = cloudShadow * loadDirectIllum();
+		vec3 sunlightMult = cloudShadow * global.light.directIlluminance;
 		vec3 specularHighlight = vec3(0.0);
 
 		float worldDistSquared = sdot(worldPos);
@@ -316,11 +320,7 @@ void main() {
 				skylight *= 0.02 * (worldNormal.y * 0.5 + 0.5);
 
 				// Spherical harmonics skylight
-				vec3[4] skySH;
-				for (uint band = 0u; band < 4u; ++band) {
-					skySH[band] = texelFetch(colortex4, ivec2(int(viewWidth) - 1, band + 2), 0).rgb;
-				}
-				skylight += max(FromSphericalHarmonics(skySH, worldNormal), skySH[0] * 0.2820947918);
+				skylight += max(FromSphericalHarmonics(global.light.skySH, worldNormal), global.light.skySH[0] * 0.2820947918);
 
 				sceneOut += skylight * cube(lightmap.y) * ao;
 

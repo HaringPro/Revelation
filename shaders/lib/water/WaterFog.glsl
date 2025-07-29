@@ -13,8 +13,8 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 	float phase = HenyeyGreensteinPhase(LdotV, 0.8) * 0.75 + uniformPhase * 0.25;
 	const vec3 sunTransmittance = exp2(-rLOG2 * waterExtinction * 8.0);
 
-	vec3 directIlluminance = loadDirectIllum();
-	vec3 skyIlluminance = loadSkyIllum();
+	vec3 directIlluminance = global.light.directIlluminance;
+	vec3 skyIlluminance = global.light.skyIlluminance;
 
 	vec3 scattering = oms(wetnessCustom * 0.8) * phase * directIlluminance * sunTransmittance;
 	scattering += uniformPhase * skyIlluminance;
@@ -112,8 +112,8 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 		float LdotV = dot(worldLightVector, worldDir);
 		float phase = HenyeyGreensteinPhase(LdotV, 0.8) * 0.75 + uniformPhase * 0.25;
 
-		vec3 directIlluminance = loadDirectIllum();
-		vec3 skyIlluminance = loadSkyIllum();
+		vec3 directIlluminance = global.light.directIlluminance;
+		vec3 skyIlluminance = global.light.skyIlluminance;
 
 		scatteringSun *= oms(wetnessCustom * 0.8) * phase * directIlluminance;
 		vec3 scatteringSky = uniformPhase * skyIlluminance;

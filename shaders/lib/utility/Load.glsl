@@ -12,9 +12,6 @@
 #define loadGbufferData0(texel) 	texelFetch(colortex7, texel, 0)
 #define loadGbufferData1(texel) 	texelFetch(colortex8, texel, 0)
 
-#define loadDirectIllum()			texelFetch(colortex4, ivec2(textureSize(colortex4, 0).x - 1, 0), 0).rgb
-#define loadSkyIllum()				texelFetch(colortex4, ivec2(textureSize(colortex4, 0).x - 1, 1), 0).rgb
-
 #if defined DISTANT_HORIZONS
 	#define loadDepth0DH(texel) 	texelFetch(dhDepthTex0, texel, 0).x
 	#define loadDepth1DH(texel)		texelFetch(dhDepthTex1, texel, 0).x

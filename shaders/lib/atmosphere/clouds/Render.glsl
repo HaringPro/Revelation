@@ -495,8 +495,8 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	}
 
 	// Process scattering
-	scattering *= scatteringCoeff * phase * oms(stepTransmittance) * loadDirectIllum();
-	scattering += (scatteringCoeff[0] + scatteringCoeff[1]) * uniformPhase * oms(transmittance) * loadSkyIllum();
+	scattering *= scatteringCoeff * phase * oms(stepTransmittance) * global.light.directIlluminance;
+	scattering += (scatteringCoeff[0] + scatteringCoeff[1]) * uniformPhase * oms(transmittance) * global.light.skyIlluminance;
 
 	return vec4(scattering / extinctionCoeff, mean(transmittance));
 }

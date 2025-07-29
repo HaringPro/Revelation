@@ -16,7 +16,7 @@ void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float v
 		if (isEyeInWater == 3) {
 			fogTransmittance = fastExp(-viewDistance);
 
-			vec3 skyIlluminance = loadSkyIllum() * PI;
+			vec3 skyIlluminance = global.light.skyIlluminance * PI;
 			scene = mix(skyIlluminance * eyeSkylightSmooth, scene, fogTransmittance);
 		}
 	#endif

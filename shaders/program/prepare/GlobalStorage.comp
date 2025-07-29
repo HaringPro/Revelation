@@ -1,0 +1,65 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+	Pass: Compute and store global data
+
+--------------------------------------------------------------------------------
+*/
+
+//======// Input //===============================================================================//
+
+layout (local_size_x = 1, local_size_y = 1) in;
+const ivec3 workGroups = ivec3(1, 1, 1);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Uniform //=============================================================================//
+
+uniform sampler3D atmosCombinedLut;
+
+uniform int moonPhase;
+
+uniform float eyeAltitude;
+uniform float nightVision;
+uniform float wetness;
+uniform float viewWidth;
+
+uniform vec3 worldSunVector;
+uniform vec3 lightningShading;
+
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
+
+//======// Main //================================================================================//
+void main() {
+	// Compute illuminance
+	vec3 camera = vec3(0.0, viewerHeight, 0.0);
+	vec3 sunIrradiance, moonIrradiance;
+	global.light.skyIlluminance = GetSunAndSkyIrradiance(camera, vec3(0.0, 1.0, 0.0), worldSunVector, sunIrradiance, moonIrradiance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+
+	// Fix the sunlight misalignment at sunrise and sunset
+	sunIrradiance *= 1.0 - curve(saturate(1.0 - worldSunVector.y * 32.0));
+
+	// Irradiance to illuminance
+	global.light.directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * (sunIrradiance + moonIrradiance);
+
+	global.light.skyIlluminance += lightningShading * 0.05;
+	#ifdef AURORA
+		float auroraAmount = smoothstep(0.0, 0.2, -worldSunVector.y) * AURORA_STRENGTH;
+		vec3 auroraShading = vec3(0.0, 0.005, 0.0025) * auroraAmount;
+		global.light.skyIlluminance += auroraShading;
+	#endif
+}

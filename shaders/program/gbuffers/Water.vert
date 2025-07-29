@@ -19,8 +19,6 @@ flat out uint materialID;
 out vec3 worldPos;
 out vec3 viewPos;
 
-flat out vec3 directIlluminance;
-
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
@@ -91,6 +89,4 @@ void main() {
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
-
-	directIlluminance = loadDirectIllum();
 }

@@ -51,6 +51,10 @@ uniform sampler3D atmosCombinedLut;
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Function //============================================================================//
 
 #include "/lib/universal/Random.glsl"

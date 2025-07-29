@@ -40,6 +40,10 @@ uniform usampler2D colortex11; // Volumetric Fog, linear depth
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Struct //==============================================================================//
 
 #include "/lib/universal/Material.glsl"
@@ -232,7 +236,7 @@ void main() {
 	#ifdef RAINBOWS
 		float rainbowVis = wetness * oms(rainStrength);
 		if (rainbowVis > EPS) {
-			sceneOut += RenderRainbows(LdotV, viewDistance) * loadDirectIllum() * rainbowVis;
+			sceneOut += RenderRainbows(LdotV, viewDistance) * global.light.directIlluminance * rainbowVis;
 		}
 	#endif
 

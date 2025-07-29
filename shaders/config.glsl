@@ -66,7 +66,7 @@
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history, global exposure | Specular lighting of translucent
 	|	colortex2	|   rgba16f         |	Full res	|	Indirect diffuse lighting history, frame index
 	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse lighting -> Motion vector
-	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history, global illuminances -> Bloom tiles
+	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   r11f_g11f_b10f  |	256, 384   	|	Sky-View LUT
 	|	colortex6	|   rgba8           |	Full res  	|	Solid albedo, rain alpha
 	|	colortex7	|   rgba16ui        |	Full res  	|	Gbuffer data 0

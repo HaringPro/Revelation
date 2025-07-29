@@ -24,9 +24,11 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 //======// Uniform //=============================================================================//
 
-writeonly uniform image2D colorimg4;
-
 #include "/lib/universal/Uniform.glsl"
+
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
 
 //======// Shared Memory //=======================================================================//
 
@@ -95,11 +97,10 @@ void main() {
 	if (index == 0u) {
 		for (uint band = 0u; band < 4u; ++band) {
 			shCoeff[band] *= TAU / float(samples); // Normalization
-			imageStore(colorimg4, ivec2(int(viewWidth) - 1, band + 2), vec4(shCoeff[band], 0.0));
+			global.light.skySH[band] = shCoeff[band];
 		}
 
 		// Evaluate sky illuminance from SH coefficients (facing up)
-		vec3 skyIlluminance = FromSphericalHarmonics(shCoeff, upDir);
-		imageStore(colorimg4, ivec2(int(viewWidth) - 1, 1), vec4(skyIlluminance, 0.0));
+		global.light.skyIlluminance = FromSphericalHarmonics(shCoeff, upDir);
 	}
 }

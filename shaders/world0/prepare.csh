@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/prepare/Illuminance.comp"
+#include "/program/prepare/GlobalStorage.comp"

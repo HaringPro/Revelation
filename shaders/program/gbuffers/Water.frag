@@ -24,6 +24,10 @@ uniform sampler2D tex;
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Input //===============================================================================//
 
 flat in mat3 tbnMatrix;
@@ -35,8 +39,6 @@ flat in uint materialID;
 
 in vec3 worldPos;
 in vec3 viewPos;
-
-flat in vec3 directIlluminance;
 
 //======// Struct //==============================================================================//
 
@@ -181,7 +183,7 @@ void main() {
 	#endif
 
 	// Sunlight
-	vec3 sunlightMult = cloudShadow * directIlluminance;
+	vec3 sunlightMult = cloudShadow * global.light.directIlluminance;
 	float NdotL = dot(worldNormal, worldLightVector);
 
 	// Direct specular lighting

@@ -41,6 +41,10 @@ uniform float biomeSnowstorm;
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -188,8 +192,8 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 		scatteringSun *= 1.0 - wetness * 0.75;
 	#endif
 
-	vec3 directIlluminance = loadDirectIllum();
-	vec3 skyIlluminance = loadSkyIllum();
+	vec3 directIlluminance = global.light.directIlluminance;
+	vec3 skyIlluminance = global.light.skyIlluminance;
 
 	vec3 scattering = scatteringSun * directIlluminance;
 	scattering += scatteringSky * uniformPhase * skyIlluminance;
