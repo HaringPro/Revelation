@@ -30,8 +30,6 @@ layout (location = 1) out float bloomyFogTrans;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex0;
-
 uniform usampler2D colortex11; // Volumetric Fog, linear depth
 
 #if defined DEPTH_OF_FIELD && CAMERA_FOCUS_MODE == 0

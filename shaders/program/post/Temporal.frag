@@ -34,7 +34,6 @@ layout (location = 2) out vec2 motionVectorOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D colortex0;
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
