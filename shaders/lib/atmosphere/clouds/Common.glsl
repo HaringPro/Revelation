@@ -137,11 +137,11 @@ const float cloudMinTransmittance   = 0.05;
 
 //================================================================================================//
 
-#define baseNoiseTex    depthtex2  // 3D perlin-worley & fBm worley noise texture
-#define detailNoiseTex  colortex15 // 3D fBm worley noise texture
+uniform sampler3D baseNoiseTex; // 3D perlin-worley & fBm worley noise texture
+uniform sampler3D detailNoiseTex; // 3D fBm worley noise texture
 
-uniform sampler3D baseNoiseTex;
-uniform sampler3D detailNoiseTex;
+uniform sampler2D cloudMapTex;
+uniform sampler2D verticalLut;
 
 //================================================================================================//
 

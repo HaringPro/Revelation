@@ -168,10 +168,8 @@ float CloudHighDensity(in vec2 rayPos) {
 //================================================================================================//
 
 #if 1
-uniform sampler2D colortex11; // Vertical profile LUT
-
 float GetVerticalProfile(in float heightFraction, in float cloudType) {
-	return texture(colortex11, vec2(cloudType, heightFraction)).x;
+	return texture(verticalLut, vec2(cloudType, heightFraction)).x;
 }
 #else
 
@@ -205,7 +203,7 @@ float CloudVolumeDensity(in vec3 rayPos, in bool detail) {
 	rayPos -= windDir * cumulusTopOffset * heightFraction;
 
 	// Sample cloud map
-	vec2 cloudMap = texture(depthtex1, rayPos.xz * rcp(cloudMapCovDist)).xy;
+	vec2 cloudMap = texture(cloudMapTex, rayPos.xz * rcp(cloudMapCovDist)).xy;
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
@@ -270,7 +268,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	rayPos -= windDir * cumulusTopOffset * heightFraction;
 
 	// Sample cloud map
-	vec2 cloudMap = texture(depthtex1, rayPos.xz * rcp(cloudMapCovDist)).xy;
+	vec2 cloudMap = texture(cloudMapTex, rayPos.xz * rcp(cloudMapCovDist)).xy;
 
 	// Coveage profile
 	float coverage = cloudMap.x * (2.0 * CLOUD_CU_COVERAGE);
