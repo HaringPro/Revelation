@@ -33,7 +33,11 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 //======// Shared Memory //=======================================================================//
 
-shared uint sharedBinIndex[gl_NumSubgroups];
+#if defined MC_GL_VENDOR_NVIDIA
+    shared uint sharedBinIndex[gl_NumSubgroups];
+#else
+    shared uint sharedBinIndex[64];
+#endif
 
 //======// Function //============================================================================//
 
