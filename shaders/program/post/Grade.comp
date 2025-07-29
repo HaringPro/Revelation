@@ -48,6 +48,10 @@ uniform float rainStrength;
 
 uniform vec2 viewPixelSize;
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Function //============================================================================//
 
 const vec2 bloomTileOffset[7] = vec2[7](
@@ -189,7 +193,7 @@ void main() {
  	#if EXPOSURE_MODE == MANUAL
 		float exposure = exp2(-MANUAL_EV);
 	#else
-		float exposure = loadExposure();
+		float exposure = global.exposure.value;
 	#endif
 
 	#ifdef MOTION_BLUR

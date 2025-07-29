@@ -12,21 +12,24 @@
 --------------------------------------------------------------------------------
 */
 
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
 //======// Input //===============================================================================//
 
 layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
-//======// Utility //=============================================================================//
-
-#include "/lib/Utility.glsl"
-
 //======// Uniform //=============================================================================//
 
-writeonly uniform image2D colorimg3;
-layout (rgba16f) readonly uniform image2D colorimg1;
+layout (r11f_g11f_b10f) readonly uniform image2D colorimg0;
 
 #include "/lib/universal/Uniform.glsl"
+
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
 
 //======// Shared Memory //=======================================================================//
 
@@ -46,14 +49,14 @@ uint histogramLumToBin(in float lum) {
 void main() {
 	uint index = gl_LocalInvocationIndex;
 
-	// Initialize histogram
+	// Initialize
 	sharedHistogram[index] = 0u;
 	barrier();
 
-	if (all(lessThan(gl_GlobalInvocationID.xy, imageSize(colorimg1)))) {
+	if (all(lessThan(gl_GlobalInvocationID.xy, imageSize(colorimg0)))) {
 		// Compute luminance
 		ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-		float luminance = luminance(imageLoad(colorimg1, texel).rgb);
+		float luminance = luminance(imageLoad(colorimg0, texel).rgb);
 
 		// Update histogram
 		uint binIndex = histogramLumToBin(luminance);
@@ -62,8 +65,7 @@ void main() {
 	barrier();
 
 	// Store histogram
-	index = gl_GlobalInvocationID.x;
 	if (index < HISTOGRAM_BIN_COUNT) {
-		imageStore(colorimg3, ivec2(index, 0), vec4(float(sharedHistogram[index]), 0.0, 0.0, 0.0));
+    	atomicAdd(global.exposure.histogram[index], sharedHistogram[index]);
 	}
 }

@@ -14,25 +14,26 @@
 
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-//======// Input //===============================================================================//
-
-layout (local_size_x = 128, local_size_y = 1) in;
-const ivec3 workGroups = ivec3(1, 1, 1);
-
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
 
-//======// Uniform //=============================================================================//
+//======// Input //===============================================================================//
 
-writeonly uniform image2D colorimg1;
-layout (rgba16f) readonly uniform image2D colorimg3;
+layout (local_size_x = HISTOGRAM_BIN_COUNT, local_size_y = 1) in;
+const ivec3 workGroups = ivec3(1, 1, 1);
+
+//======// Uniform //=============================================================================//
 
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Shared Memory //=======================================================================//
 
-shared uvec2 sharedBinIndex[gl_NumSubgroups];
+shared uint sharedBinIndex[gl_NumSubgroups];
 
 //======// Function //============================================================================//
 
@@ -48,8 +49,8 @@ void main() {
 	uint index = gl_LocalInvocationIndex;
 
 	// Sum histogram bin index
-    uint count = uint(imageLoad(colorimg3, ivec2(index, 0)).x);
-    uvec2 subgroupSum = subgroupAdd(uvec2(count * index, count));
+    uint count = global.exposure.histogram[index];
+    uint subgroupSum = subgroupAdd(count * index);
 
 	if (subgroupElect()) {
         sharedBinIndex[gl_SubgroupID] = subgroupSum;
@@ -61,18 +62,18 @@ void main() {
     }
 
     if (index == 0u) {
-        float weightedLogAverage = float(subgroupSum.x) / float(max(1u, subgroupSum.y));
-		float luminance = histogramBinToLum(weightedLogAverage);
+        float weightedLogAverage = float(subgroupSum) / max(viewWidth * viewHeight - float(count), 1.0);
+		float avgLuminance = histogramBinToLum(weightedLogAverage);
 
-        const float K = 12.5; // Calibration constant
+        const float K = 18.0; // Calibration constant
         const float calibration = exp2(AUTO_EV_BIAS) * K / ISO;
 
-        float targetExposure = calibration / luminance;
-        float prevExposure = loadExposure();
+        float targetExposure = calibration / avgLuminance;
+        float prevExposure = global.exposure.value;
 
         float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-        float exposure = mix(targetExposure, prevExposure, fastExp(-exposureRate * frameTime));
-
-		imageStore(colorimg1, ivec2(0), vec4(texelFetch(colortex1, ivec2(0), 0).rgb, exposure));
+        global.exposure.value = mix(targetExposure, prevExposure, exp2(-exposureRate * frameTime));
 	}
+
+    global.exposure.histogram[index] = 0u;
 }

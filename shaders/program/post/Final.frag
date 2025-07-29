@@ -28,6 +28,10 @@ out vec3 finalOut;
 uniform sampler2D colortex0; // LDR input
 #include "/lib/universal/Uniform.glsl"
 
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
 //======// Function //============================================================================//
 
 #include "/lib/universal/Random.glsl"
@@ -114,7 +118,7 @@ void HistogramDisplay(inout vec3 color, in ivec2 texel) {
 
     if (all(lessThan(texel, ivec2(HISTOGRAM_BIN_COUNT * binWidth, 256)))) {
 		int binIndex = texel.x / binWidth;
-		float binValue = texelFetch(colortex3, ivec2(binIndex, 0), 0).x;
+		uint binValue = global.exposure.histogram[binIndex];
 
 		color = vec3(step(texel.y + 1, binValue));
 	}

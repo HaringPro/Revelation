@@ -196,7 +196,4 @@ void main() {
     #else
         temporalOut = vec4(loadSceneColor(screenTexel), 1.0/*  + texture(colortex1, screenCoord - motionVector).a */);
     #endif
-
-    // Store the global exposure in the bottom-left corner of the history buffer
-    temporalOut.a = screenTexel == ivec2(0) ? loadExposure() : temporalOut.a;
 }
