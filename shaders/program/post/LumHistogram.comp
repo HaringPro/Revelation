@@ -19,11 +19,11 @@
 //======// Input //===============================================================================//
 
 layout (local_size_x = 16, local_size_y = 16) in;
-const vec2 workGroupsRender = vec2(1.0, 1.0);
+const vec2 workGroupsRender = vec2(0.5, 0.5);
 
 //======// Uniform //=============================================================================//
 
-layout (r11f_g11f_b10f) readonly uniform image2D colorimg0;
+layout (r11f_g11f_b10f) readonly uniform image2D colorimg4;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -53,10 +53,10 @@ void main() {
 	sharedHistogram[index] = 0u;
 	barrier();
 
-	if (all(lessThan(gl_GlobalInvocationID.xy, imageSize(colorimg0)))) {
+	if (all(lessThan(gl_GlobalInvocationID.xy, imageSize(colorimg4) >> 1u))) {
 		// Compute luminance
 		ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-		float luminance = luminance(imageLoad(colorimg0, texel).rgb);
+		float luminance = luminance(imageLoad(colorimg4, texel).rgb);
 
 		// Update histogram
 		uint binIndex = histogramLumToBin(luminance);

@@ -62,7 +62,7 @@ void main() {
     }
 
     if (index == 0u) {
-        float weightedLogAverage = float(subgroupSum) / max(viewWidth * viewHeight - float(count), 1.0);
+        float weightedLogAverage = float(subgroupSum) / max(viewWidth * viewHeight * 0.25 - float(count), 1.0);
 		float avgLuminance = histogramBinToLum(weightedLogAverage);
 
         const float K = 18.0; // Calibration constant
