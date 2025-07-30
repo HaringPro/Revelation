@@ -201,7 +201,7 @@ void main() {
 				float density = saturate(1.0 - exp2(-pow8(sdot(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
 				density *= exp2(-5.0 * curve(saturate(worldDir.y * 3.0)));
 
-				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(worldDir)).rgb;
+				vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(worldDir)).rgb;
 				sceneOut = mix(sceneOut, skyRadiance, density);
 			}
 		#endif

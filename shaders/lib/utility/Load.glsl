@@ -12,3 +12,12 @@
 	#define loadDepth0DH(texel) 	texelFetch(dhDepthTex0, texel, 0).x
 	#define loadDepth1DH(texel)		texelFetch(dhDepthTex1, texel, 0).x
 #endif
+
+#define skyViewTex					colortex5
+#define skyViewImg					colorimg5
+
+#define cloudReconstructTex			colortex9
+#define cloudReconstructImg			colorimg9
+
+#define cloudShadowTex				colortex10
+#define cloudShadowImg				colorimg10

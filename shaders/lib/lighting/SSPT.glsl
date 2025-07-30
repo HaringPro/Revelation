@@ -101,7 +101,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 				target.contribution *= loadAlbedo(targetTexel);
 				target.rayPos.xy *= viewPixelSize;
 			} else if (dot(lightmap, vec2(1.0)) > 1e-5) {
-				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
+				vec3 skyRadiance = texture(skyViewTex, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
 				sum += (skyRadiance * lightmap.y + lightmap.x) * target.contribution;
 				break;
 			}
@@ -131,7 +131,7 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
 				sum += sampleRadiance;
 			} else if (dot(lightmap, vec2(1.0)) > 1e-5) {
-				vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
+				vec3 skyRadiance = texture(skyViewTex, FromSkyViewLutParams(sampleDir) + vec2(0.0, 0.5)).rgb;
 				sum += skyRadiance * lightmap.y + lightmap.x;
 			}
 		}

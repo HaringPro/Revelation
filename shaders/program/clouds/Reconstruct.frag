@@ -219,8 +219,8 @@ void main() {
 		if (disocclusion) {
 			cloudOut = texture(cloudOriginTex, currCoord);
 		} else {
-			vec4 prevData = textureCatmullRomFast(colortex9, prevCoord, 0.5);
-			// vec4 prevData = textureSmoothFilter(colortex9, prevCoord);
+			vec4 prevData = textureCatmullRomFast(cloudReconstructTex, prevCoord, 0.5);
+			// vec4 prevData = textureSmoothFilter(cloudReconstructTex, prevCoord);
 			prevData = satU16f(prevData); // Fix black border artifacts
 			frameOut += frameIndex;
 

@@ -85,7 +85,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in vec3 worldDir, in float dit
 	vec3 reflection = vec3(0.0);
 	if (skylight > 1e-3 && !withinWater) {
 		vec2 skyViewCoord = FromSkyViewLutParams(rayDir) + vec2(0.0, 0.5);
-		vec3 skyRadiance = textureBicubic(colortex5, skyViewCoord).rgb;
+		vec3 skyRadiance = textureBicubic(skyViewTex, skyViewCoord).rgb;
 
 		reflection = skyRadiance * skylight;
 	}
@@ -177,7 +177,7 @@ void main() {
 	#ifdef CLOUD_SHADOWS
 		// float cloudShadow = CalculateCloudShadows(worldPos);
 		vec2 cloudShadowCoord = WorldToCloudShadowPos(worldPos);
-		float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).x;
+		float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
 	#else
 		float cloudShadow = 1.0 - wetness * 0.96;
 	#endif

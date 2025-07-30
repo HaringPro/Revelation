@@ -171,7 +171,7 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither) {
 			cloudShadowPos += shadowViewStep.xy;
 
 			// vec2 cloudShadowCoord = DistortCloudShadowPos(cloudShadowPos);
-			float cloudShadow = texture(colortex10, cloudShadowPos).x;
+			float cloudShadow = texture(cloudShadowTex, cloudShadowPos).x;
 			sampleShadow *= cloudShadow * cloudShadow;
 		#endif
 

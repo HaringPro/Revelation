@@ -74,7 +74,7 @@ void main() {
 	ivec2 viewTexel = ivec2(gl_FragCoord.xy);
 
 	// Read previous frame data
-	skyViewOut = texelFetch(colortex5, viewTexel, 0).rgb;
+	skyViewOut = texelFetch(skyViewTex, viewTexel, 0).rgb;
 	bool frameUpdate = skyViewOut.x < EPS || worldTimeChanged;
 
     // Checkerboard render

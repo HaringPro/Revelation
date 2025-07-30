@@ -74,7 +74,7 @@ void main() {
 
 	// Sample and compute SH coefficients
 	vec3 direction = sampleHemisphereVector(upDir, Hammersley(index, samples));
-	vec3 skyRadiance = texture(colortex5, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
+	vec3 skyRadiance = texture(skyViewTex, FromSkyViewLutParams(direction) + vec2(0.0, 0.5)).rgb;
 
 	vec3[4] shCoeff = ToSphericalHarmonics(skyRadiance, direction);
 

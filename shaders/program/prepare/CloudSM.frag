@@ -39,13 +39,13 @@ void main() {
 	ivec2 mapTexel = ivec2(gl_FragCoord.xy);
 
 	// Read previous frame data
-	cloudShadowOut = texelFetch(colortex10, mapTexel, 0).x;
+	cloudShadowOut = texelFetch(cloudShadowTex, mapTexel, 0).x;
 	bool frameUpdate = cloudShadowOut < EPS || worldTimeChanged;
 
     // Checkerboard render cloud shadow map
 	ivec2 offset = checkerboardOffset4x4[frameCounter % 16];
 	if (mapTexel % 4 == offset) {
-		vec2 mapCoord = gl_FragCoord.xy * rcp(textureSize(colortex10, 0));
+		vec2 mapCoord = gl_FragCoord.xy * rcp(textureSize(cloudShadowTex, 0));
         vec3 rayPos = CloudShadowToWorldPos(mapCoord);
         float cloudShadow = CalculateCloudShadows(rayPos);
 

@@ -11,7 +11,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 	vec3 reflection;
 	if (skylight > 1e-3) {
-		vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
+		vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
 
 		reflection = skyRadiance * skylight;
 	}
@@ -52,7 +52,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 				// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * approxSqrt(material.roughness)).rgb;
 				reflection = texelFetch(colortex4, ivec2(screenPos.xy) >> 1, 0).rgb;
 			} else if (skylight > 1e-3) {
-				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
+				vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
 
 				reflection = skyRadiance * skylight;
 			}
@@ -75,7 +75,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 			vec3 reflection;
 			if (skylight > 1e-3) {
-				vec3 skyRadiance = textureBicubic(colortex5, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
+				vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
 
 				reflection = skyRadiance * skylight;
 			}

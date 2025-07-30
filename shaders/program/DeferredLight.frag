@@ -110,7 +110,7 @@ void main() {
 
 	if (screenPos.z > 1.0 - EPS + float(materialID)) {
 		vec2 skyViewCoord = FromSkyViewLutParams(worldDir);
-		sceneOut = textureBicubic(colortex5, skyViewCoord).rgb;
+		sceneOut = textureBicubic(skyViewTex, skyViewCoord).rgb;
 
 		if (!RayIntersectsGround(viewerHeight, worldDir.y)) {
 			vec3 celestial = RenderSun(worldDir, worldSunVector);
@@ -131,7 +131,7 @@ void main() {
 			screenCoord += viewPixelSize * (dither * 2.0 - 1.0);
 
 			#ifdef CLOUD_CBR_ENABLED
-				vec4 cloudData = textureBicubic(colortex9, screenCoord);
+				vec4 cloudData = textureBicubic(cloudReconstructTex, screenCoord);
 			#else
 				vec4 cloudData = textureBicubic(cloudOriginTex, screenCoord);
 			#endif
@@ -221,8 +221,8 @@ void main() {
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(worldPos);
-			vec2 cloudShadowCoord = WorldToCloudShadowPos(worldPos) + (dither * 2.0 - 1.0) / textureSize(colortex10, 0);
-			float cloudShadow = textureBicubic(colortex10, saturate(cloudShadowCoord)).x;
+			vec2 cloudShadowCoord = WorldToCloudShadowPos(worldPos) + (dither * 2.0 - 1.0) / textureSize(cloudShadowTex, 0);
+			float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
 		#else
 			float cloudShadow = 1.0 - wetness * 0.96;
 		#endif

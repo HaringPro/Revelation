@@ -39,9 +39,10 @@ writeonly uniform image2D colorimg0; // LDR output
 uniform sampler2D colortex0; // Motion blur output
 uniform sampler2D colortex1; // TAA output
 uniform sampler2D colortex4; // Bloom tiles
-uniform sampler2D colortex5; // Sky-View LUT
 uniform sampler2D colortex6; // Rain alpha
 uniform sampler2D colortex8; // Bloomy fog transmittance
+
+uniform sampler2D skyViewTex;
 
 uniform float aspectRatio;
 uniform float rainStrength;
@@ -225,7 +226,7 @@ void main() {
 	// Debug sky-view
 	#ifdef DEBUG_SKYVIEW
 		if (all(lessThan(screenTexel, ivec2(skyViewRes.x, skyViewRes.y << 1)))) {
-			HDRImage = texelFetch(colortex5, screenTexel, 0).rgb;
+			HDRImage = texelFetch(skyViewTex, screenTexel, 0).rgb;
 		}
 	#endif
 

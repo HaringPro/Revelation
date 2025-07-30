@@ -488,7 +488,7 @@ vec4 RaymarchCrepuscular(in vec3 rayDir, in float dither) {
 	// Raymarch through the volume
 	for (uint i = 0u; i < steps; ++i, rayPos += rayStep) {
 		// vec2 cloudShadowCoord = DistortCloudShadowPos(rayPos);
-		float visibility = texture(colortex10, rayPos.xy).x;
+		float visibility = texture(cloudShadowTex, rayPos.xy).x;
 		scattering += visibility * transmittance;
 
 		transmittance *= stepTransmittance;
