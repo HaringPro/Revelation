@@ -44,20 +44,18 @@
 	}
 
 	mat2x3 VolumetricFogSpatialUpscale(in ivec2 texel, in float linearDepth) {
-		const ivec2 offset[4] = ivec2[4](
-			ivec2(-1, -1), ivec2(-1, 1), ivec2(1, -1), ivec2(1, 1)
-		);
+		const ivec2 offset[4] = ivec2[4](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));
 
 		float sigmaZ = -64.0 / linearDepth;
-		mat2x3 sum = mat2x3(vec3(0.0), vec3(0.0));
-		float sumWeight = 0.0;
+		mat2x3 sum = UnpackFogData(texelFetch(colortex11, texel, 0).rgb);
+		float sumWeight = 1.0;
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = texel + offset[i];
 			uvec4 sampleFogData = texelFetch(colortex11, sampleTexel, 0);
 
 			float sampleDepth = uintBitsToFloat(sampleFogData.w);
-			float weight = maxEps(exp2(abs(sampleDepth - linearDepth) * sigmaZ));
+			float weight = exp2(abs(sampleDepth - linearDepth) * sigmaZ);
 
 			sum += UnpackFogData(sampleFogData.rgb) * weight;
 			sumWeight += weight;
