@@ -31,6 +31,7 @@ layout (location = 1) out float bloomyFogTrans;
 //======// Uniform //=============================================================================//
 
 uniform usampler2D colortex11; // Volumetric Fog, linear depth
+uniform sampler2D brdfLutTex;
 
 #if defined DEPTH_OF_FIELD && CAMERA_FOCUS_MODE == 0
     uniform float centerDepthSmooth;
@@ -178,16 +179,34 @@ void main() {
 			sceneOut += (reflections.rgb - sceneOut) * reflections.a;
 		}
 		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			else if (material.hasReflections) {
+			else if (material.specularMask) {
 				// Specular reflections of other materials
 				vec4 reflectionData = texelFetch(colortex1, refractedTexel, 0);
 				vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
 
-				// float NdotV = saturate(-dot(worldNormal, worldDir));
-				// vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
-				// reflectionData.rgb *= mix(vec3(material.f0), albedo, material.metalness) * brdf.x + brdf.y;
+				float NdotV = abs(dot(worldNormal, worldDir));
+				vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
 
-				sceneOut += reflectionData.rgb * oms(material.metalness * oms(albedo));
+				#if TEXTURE_FORMAT == 0
+					vec3 f0;
+					uint metalIndex = uint(material.metalness * 255.0);
+
+					if (metalIndex < 230u) {
+						// Dielectrics
+						f0 = vec3(mix(DEFAULT_DIELECTRIC_F0, 1.0, material.metalness));
+					} else if (metalIndex < 238u) {
+						// Hardcoded metals
+						f0 = HardcodedMetalF0[metalIndex - 230u];
+					} else {
+						// Other metals
+						f0 = albedo;
+					}
+				#else
+					vec3 f0 = mix(vec3(DEFAULT_DIELECTRIC_F0), albedo, material.metalness);
+				#endif
+
+				vec3 specular = f0 * brdf.x + brdf.y;
+				sceneOut += reflectionData.rgb * specular;
 			}
 		#endif
 
@@ -246,4 +265,6 @@ void main() {
 	#elif DEBUG_NORMALS == 2
 		sceneOut = FetchFlatNormal(gbufferData0) * 0.5 + 0.5;
 	#endif
+
+	// sceneOut = texelFetch(brdfLutTex, screenTexel, 0).xyz;
 }

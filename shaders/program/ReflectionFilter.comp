@@ -117,7 +117,7 @@ void main() {
     #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
         Material material = GetMaterialData(loadGbufferData1(screenTexel).xy);
 
-        if (material.hasReflections && material.isRough) {
+        if (material.specularMask && material.isRough) {
             vec2 screenCoord = texelToUv(gl_GlobalInvocationID.xy);
             vec3 viewDir = ScreenToViewVector(screenCoord);
 

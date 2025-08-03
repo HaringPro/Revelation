@@ -4,6 +4,7 @@
 // https://schuttejoe.github.io/post/disneybsdf/
 // https://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#\
 // https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
+// https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
 
 //================================================================================================//
 
@@ -69,10 +70,37 @@ vec3 generateConeVector(vec3 vector, vec2 xy, float angle) {
     return rotate(sphereCap, vec3(0.0, 0.0, 1.0), vector);
 }
 
+// pdf = D * NoH / (4 * VoH)
+vec3 ImportanceSampleGGX(vec2 Xi, float roughness, vec3 N) {
+    float a = roughness/*  * roughness */;
+
+    // Spherical coordinates
+    float phi = TAU * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+    // Convert to hemisphere vector
+    vec3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+
+    // Convert tangent space normal to world space
+    vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+
+    return tangent * H.x + bitangent * H.y + N * H.z;
+}
+
 //======// Fresnel //=============================================================================//
 
 // Schlick approximation
 float FresnelSchlick(in float cosTheta, in float f0) {
+    return saturate(f0 + oms(f0) * pow5(1.0 - cosTheta));
+}
+
+vec3 FresnelSchlick(in float cosTheta, in vec3 f0) {
     return saturate(f0 + oms(f0) * pow5(1.0 - cosTheta));
 }
 
@@ -221,11 +249,11 @@ float G2SchlickGGX(in float NdotL, in float NdotV, in float alpha) {
 //================================================================================================//
 
 // Cook-Torrance model
-float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in float f0) {
+vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in vec3 f0) {
     alpha2 = maxEps(alpha2);
 
     // Fresnel term
-    float F = FresnelSchlick(LdotH, f0);
+    vec3 F = FresnelSchlick(LdotH, f0);
 
     // Distribution term
 	float D = NDFTrowbridgeReitz(NdotH, alpha2);
@@ -235,35 +263,6 @@ float SpecularBRDF(in float LdotH, in float NdotV, in float NdotL, in float Ndot
 
 	return F * D * G / (4.0 * NdotV);
 }
-
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_LIGHTING
-float SpecularInvPDF(in float NdotV, in float NdotL, in float NdotH, in float alpha2) {
-    float invG1 = G1SmithGGXInverse(NdotL, alpha2);
-	float D = NDFTrowbridgeReitz(NdotH, alpha2);
-    return invG1 / D * 4.0 * NdotV;
-}
-
-vec3 SpecularBRDFwithPDF(in float LdotH, in float NdotV, in float NdotL, in Material material) {
-    vec3 phase = vec3(1.0);
-
-    // Fresnel term
-    if (material.isHardcodedMetal) {
-        phase *= FresnelConductor(LdotH, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
-    } else if (material.metalness > 0.5) {
-        phase *= FresnelSchlick(LdotH, material.f0);
-    } else {
-        phase *= FresnelSchlickGaussian(LdotH, material.f0);
-    }
-
-    // Geometric term
-    if (material.isRough) {
-		phase *= G2withG1SmithGGX(NdotL, NdotV, material.roughness);
-    }
-
-    // Distribution term has already been offset by the PDF
-    return phase;
-}
-#endif
 
 // From https://www.gdcvault.com/play/1024478/PBR-Diffuse-Lighting-for-GGX
 vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {

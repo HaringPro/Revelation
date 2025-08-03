@@ -167,7 +167,7 @@ void main() {
 			Material material = GetMaterialData(specularTex);
 			specularOut = specularTex.rg;
 		#else
-			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, DEFAULT_DIELECTRIC_F0, 0.0, false, false);
+			Material material = Material(materialID == 46u || materialID == 51u ? 0.005 : 1.0, 0.0, 0.0, false, false);
 		#endif
 
 		float sssAmount = 0.0;
@@ -304,8 +304,29 @@ void main() {
 				sunlightDiffuse += PI * SUBSURFACE_SCATTERING_BRIGHTNESS * uniformPhase * sssAmount * distanceFade;
 				sceneOut += shadow * saturate(sunlightDiffuse);
 
-				specularHighlight = shadow * SpecularBRDF(LdotH, NdotV, saturate(NdotL), NdotH, material.roughness, material.f0);
-				specularHighlight *= oms(material.metalness * oms(albedo));
+				#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+					#if TEXTURE_FORMAT == 0
+						vec3 f0;
+						uint metalIndex = uint(material.metalness * 255.0);
+
+						if (metalIndex < 230u) {
+							// Dielectrics
+							f0 = vec3(mix(DEFAULT_DIELECTRIC_F0, 1.0, material.metalness));
+						} else if (metalIndex < 238u) {
+							// Hardcoded metals
+							f0 = HardcodedMetalF0[metalIndex - 230u];
+						} else {
+							// Other metals
+							f0 = albedo;
+						}
+					#else
+						vec3 f0 = mix(vec3(DEFAULT_DIELECTRIC_F0), albedo, material.metalness);
+					#endif
+				#else
+					const vec3 f0 = vec3(DEFAULT_DIELECTRIC_F0);
+				#endif
+
+				specularHighlight = shadow * SpecularGGX(LdotH, NdotV, saturate(NdotL), NdotH, material.roughness, f0);
 			}
 		}
 
@@ -365,22 +386,7 @@ void main() {
 			}
 		#endif
 
-		// Specular reflections
-		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-			if (material.hasReflections && materialID != 46u && materialID != 51u) {
-				lightmap.y = remap(0.3, 0.7, lightmap.y);
-
-				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
-
-				// Metallic diffuse elimination
-				material.metalness *= 0.2 * lightmap.y + 0.8;
-				albedo *= oms(material.metalness);
-			} else
-		#endif
-		// Clear buffer
-		reflectionOut = vec4(0.0);
-
-		// Global illumination
+		// Indirect diffuse lighting
 		#ifdef SSPT_ENABLED
 			#ifdef SVGF_ENABLED
 				float NdotV = abs(dot(worldNormal, worldDir));
@@ -396,6 +402,25 @@ void main() {
 
 		// Minimal ambient light
 		sceneOut += vec3(0.77, 0.82, 1.0) * ((worldNormal.y * 0.4 + 0.6) * MINIMUM_AMBIENT_BRIGHTNESS) * ao;
+
+		// Specular reflections
+		#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
+			if (material.specularMask && materialID != 46u && materialID != 51u) {
+				lightmap.y = remap(0.3, 0.7, lightmap.y);
+
+				reflectionOut = CalculateSpecularReflections(material, worldNormal, screenPos, worldDir, viewPos, lightmap.y, dither);
+
+				// Metallic diffuse elimination
+				#if TEXTURE_FORMAT == 0
+					material.metalness = step(229.5 / 255.0, material.metalness);
+				#endif
+
+				material.metalness *= 0.2 * lightmap.y + 0.8;
+				sceneOut *= oms(material.metalness);
+			} else
+		#endif
+		// Clear buffer
+		reflectionOut = vec4(0.0);
 
 		// Apply albedo
 		sceneOut *= albedo;

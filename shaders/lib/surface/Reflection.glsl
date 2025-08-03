@@ -3,7 +3,7 @@
 vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos) {
 	skylight = remap(0.3, 0.7, cube(skylight));
 
-	float NdotV = abs(dot(normal, -worldDir));
+	float NdotV = abs(dot(normal, worldDir));
     // Unroll the reflect function manually
 	vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
@@ -25,9 +25,8 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 		reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 	}
 
-	float brdf = FresnelDielectric(NdotV, 0.02);
-
-	return vec4(satU16f(reflection), brdf);
+	float fresnel = FresnelDielectric(NdotV, 0.02);
+	return vec4(satU16f(reflection), fresnel);
 }
 
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP && defined PASS_DEFERRED_LIGHTING
@@ -35,10 +34,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	#ifdef ROUGH_REFLECTIONS
 		if (material.isRough) {
     		NoiseGenerator noiseGenerator = initNoiseGenerator(uvec2(gl_FragCoord.xy), uint(frameCounter));
-			mat3 tbnMatrix = ConstructTBN(normal);
-
-			vec3 tangentDir = worldDir * tbnMatrix;
-			vec3 halfway = tbnMatrix * sampleGGXVNDF(-tangentDir, material.roughness, nextVec2(noiseGenerator));
+			vec3 halfway = ImportanceSampleGGX(nextVec2(noiseGenerator), material.roughness, normal);
 
 			vec3 lightDir = reflect(worldDir, halfway);
 
@@ -56,18 +52,17 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 				reflection = skyRadiance * skylight;
 			}
-            float LdotH = dot(lightDir, halfway);
-			float NdotV = abs(dot(normal, -worldDir));
-			vec3 brdfDivPdf = SpecularBRDFwithPDF(LdotH, NdotV, NdotL, material);
+            // float LdotH = dot(lightDir, halfway);
+			// float NdotV = abs(dot(normal, worldDir));
 
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
 			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
 
-			return vec4(satU16f(reflection * brdfDivPdf), targetDepth);
+			return vec4(satU16f(reflection), targetDepth);
 		} else
 	#endif
 		{
-			float NdotV = abs(dot(normal, -worldDir));
+			float NdotV = abs(dot(normal, worldDir));
 			// Unroll the reflect function manually
 			vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
@@ -80,7 +75,6 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 				reflection = skyRadiance * skylight;
 			}
 
-			float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
 			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, RAYTRACE_SAMPLES, screenPos);
 			if (hit) {
 				screenPos.xy *= viewPixelSize;
@@ -89,19 +83,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 				reflection += (texelFetch(colortex4, uvToTexel(screenPos.xy * 0.5), 0).rgb - reflection) * saturate(edgeFade);
 			}
 
-			vec3 brdf = vec3(1.0);
-
-    		// Fresnel term
-			if (material.isHardcodedMetal) {
-				brdf *= FresnelConductor(NdotV, material.hardcodedMetalCoeff[0], material.hardcodedMetalCoeff[1]);
-			} else if (material.metalness > 0.5) {
-				brdf *= FresnelSchlick(NdotV, material.f0);
-			} else {
-				brdf *= FresnelDielectric(NdotV, material.f0);
-			}
-			sceneOut *= 1.0 - brdf;
-
-			return vec4(satU16f(reflection * brdf), 0.0);
+			return vec4(satU16f(reflection), 0.0);
 		}
 	}
 #endif

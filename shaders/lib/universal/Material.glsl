@@ -19,62 +19,50 @@ vec3 F0FromIOR(in vec3 ior) {
 struct Material {
 	float roughness;
 	float metalness;
-	float f0;
 	float emissiveness;
-	bool hasReflections;
+	bool specularMask;
 	bool isRough;
-	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-		bool isHardcodedMetal;
-		mat2x3 hardcodedMetalCoeff;
-	#endif
 };
 
-// https://shaderlabs.org/wiki/LabPBR_Material_Standard
 #if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-	const mat2x3 GetMetalCoeff[8] = mat2x3[8]( // mat3(N, K)
-		mat2x3(vec3(2.91140, 2.94970, 2.58450), vec3(3.0893, 2.9318, 2.7670)), // 230: 铁 - Iron
-		mat2x3(vec3(0.18299, 0.42108, 1.37340), vec3(3.4242, 2.3459, 1.7704)), // 231: 金 - Gold
-		mat2x3(vec3(1.34560, 0.96521, 0.61722), vec3(7.4746, 6.3995, 5.3031)), // 232: 铝 - Aluminium
-		mat2x3(vec3(3.10710, 3.18120, 2.32300), vec3(3.3314, 3.3291, 3.1350)), // 233: 铬 - Chrome
-		mat2x3(vec3(0.27105, 0.67693, 1.31640), vec3(3.6092, 2.6248, 2.2921)), // 234: 铜 - Copper
-		mat2x3(vec3(1.91000, 1.83000, 1.44000), vec3(3.5100, 3.4000, 3.1800)), // 235: 铅 - Lead
-		mat2x3(vec3(2.37570, 2.08470, 1.84530), vec3(4.2655, 3.7153, 3.1365)), // 236: 铂 - Platinum
-		mat2x3(vec3(0.15943, 0.14512, 0.13547), vec3(3.9291, 3.1900, 2.3808))  // 237: 银 - Silver
+	// https://shaderlabs.org/wiki/LabPBR_Material_Standard
+	const mat2x3 HardcodedMetalCoeff[8] = mat2x3[8]( // mat3(N, K)
+		mat2x3(vec3(2.91140, 2.94970, 2.58450), vec3(3.0893, 2.9318, 2.7670)), // 铁 - Iron
+		mat2x3(vec3(0.18299, 0.42108, 1.37340), vec3(3.4242, 2.3459, 1.7704)), // 金 - Gold
+		mat2x3(vec3(1.34560, 0.96521, 0.61722), vec3(7.4746, 6.3995, 5.3031)), // 铝 - Aluminium
+		mat2x3(vec3(3.10710, 3.18120, 2.32300), vec3(3.3314, 3.3291, 3.1350)), // 铬 - Chromium
+		mat2x3(vec3(0.27105, 0.67693, 1.31640), vec3(3.6092, 2.6248, 2.2921)), // 铜 - Copper
+		mat2x3(vec3(1.91000, 1.83000, 1.44000), vec3(3.5100, 3.4000, 3.1800)), // 铅 - Lead
+		mat2x3(vec3(2.37570, 2.08470, 1.84530), vec3(4.2655, 3.7153, 3.1365)), // 铂 - Platinum
+		mat2x3(vec3(0.15943, 0.14512, 0.13547), vec3(3.9291, 3.1900, 2.3808))  // 银 - Silver
+	);
+
+	// https://physicallybased.info
+	const vec3 HardcodedMetalF0[8] = vec3[8](
+		vec3(0.612, 0.541, 0.422), // 铁 - Iron
+		vec3(1.000, 0.973, 0.597), // 金 - Gold
+		vec3(0.981, 0.979, 0.961), // 铝 - Aluminium
+		vec3(0.675, 0.720, 0.711), // 铬 - Chromium
+		vec3(0.999, 0.946, 0.705), // 铜 - Copper
+		vec3(0.819, 0.804, 0.769), // 铅 - Lead
+		vec3(0.816, 0.786, 0.671), // 铂 - Platinum
+		vec3(0.999, 0.998, 0.986)  // 银 - Silver
 	);
 
 	Material GetMaterialData(in vec4 specTex) {
 		Material material;
 
 		material.roughness = sqr(1.0 - specTex.r);
-		material.isHardcodedMetal = false;
+		material.metalness = specTex.g;
 
 		#if TEXTURE_FORMAT == 0
-			uint metalIndex = uint(specTex.g * 255.0);
-
-			if (metalIndex < 230u) {
-				// Dielectrics
-				material.metalness = 0.0;
-				material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
-			} else if (metalIndex < 238u) {
-				// Hardcoded metals
-				material.metalness = 1.0;
-				material.isHardcodedMetal = true;
-				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(metalIndex - 230u, 0u, 7u)];
-			} else {
-				// Other metals
-				material.metalness = 1.0;
-				material.f0 = 0.91;
-			}
 			material.emissiveness = specTex.a * step(specTex.a, 0.999);
 		#else
-			material.metalness = specTex.g;
-			material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
 			material.emissiveness = specTex.b;
 		#endif
-
 		material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 
-		material.hasReflections = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
+		material.specularMask = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
 		material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;
@@ -84,31 +72,9 @@ struct Material {
 		Material material;
 
 		material.roughness = sqr(1.0 - specTex.r);
-		material.isHardcodedMetal = false;
+		material.metalness = specTex.g;
 
-		#if TEXTURE_FORMAT == 0
-			uint metalIndex = uint(specTex.g * 255.0);
-
-			if (metalIndex < 230u) {
-				// Dielectrics
-				material.metalness = 0.0;
-				material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
-			} else if (metalIndex < 238u) {
-				// Hardcoded metals
-				material.metalness = 1.0;
-				material.isHardcodedMetal = true;
-				material.hardcodedMetalCoeff = GetMetalCoeff[clamp(metalIndex - 230u, 0u, 7u)];
-			} else {
-				// Other metals
-				material.metalness = 1.0;
-				material.f0 = 0.91;
-			}
-		#else
-			material.metalness = specTex.g;
-			material.f0 = mix(DEFAULT_DIELECTRIC_F0, 1.0, specTex.g);
-		#endif
-
-		material.hasReflections = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
+		material.specularMask = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
 		material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
 
 		return material;
