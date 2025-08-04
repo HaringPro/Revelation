@@ -196,7 +196,7 @@ void main() {
 				shadow *= sunlightMult;
 
 				float f0 = F0FromIOR(materialID == 3u ? WATER_REFRACT_IOR : GLASS_REFRACT_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, sqr(TRANSLUCENT_ROUGHNESS), vec3(f0));
+				lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
 			}
 		}
 	}
