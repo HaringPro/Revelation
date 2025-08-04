@@ -9,7 +9,7 @@
 
 //================================================================================================//
 
-vec3 sampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
+vec3 SampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 rayPos) {
 	if (viewDir.z > max0(-viewPos.z)) return vec3(1e6);
 
 	vec3 endPos = ViewToScreenSpace(viewDir + viewPos);
@@ -80,14 +80,14 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 		TracingData target = TracingData(screenPos, vec3(0.0), viewNormal, worldNormal, vec3(1.0));
 
 		for (uint bounce = 1u; bounce <= SSPT_BOUNCES; ++bounce) {
-			vec3 sampleDir = sampleCosineVector(target.worldNormal, nextVec2(noiseGenerator));
+			vec3 sampleDir = SampleCosineHemisphere(target.worldNormal, nextVec2(noiseGenerator));
 
-			// target.rayDir = dot(target.worldNormal, target.rayDir) < 0.0 ? -target.rayDir : target.rayDir;
 			target.rayDir = normalize(gbufferModelView * sampleDir);
+			if (dot(viewNormal, target.rayDir) < EPS) continue;
 
 			float dither = nextFloat(noiseGenerator);
 			vec3 targetViewPos = ScreenToViewSpaceRaw(target.rayPos) + target.viewNormal * 1e-2;
-			target.rayPos = sampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
+			target.rayPos = SampleRaytrace(targetViewPos, target.rayDir, dither, target.rayPos);
 
 			if (target.rayPos.z < screenDepthMax) {
 				ivec2 targetTexel = ivec2(target.rayPos.xy);
@@ -119,12 +119,12 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 	// Single bounce tracing.
 
 	for (uint spp = 0u; spp < SSPT_SPP; ++spp) {
-			vec3 sampleDir = sampleCosineVector(worldNormal, nextVec2(noiseGenerator));
+			vec3 sampleDir = SampleCosineHemisphere(worldNormal, nextVec2(noiseGenerator));
 
 			vec3 rayDir = normalize(gbufferModelView * sampleDir);
-			// rayDir = dot(viewNormal, rayDir) < 0.0 ? -rayDir : rayDir;
+			if (dot(viewNormal, rayDir) < EPS) continue;
 
-			vec3 hitPos = sampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, nextFloat(noiseGenerator), screenPos);
+			vec3 hitPos = SampleRaytrace(viewPos + viewNormal * 1e-2, rayDir, nextFloat(noiseGenerator), screenPos);
 
 			if (hitPos.z < screenDepthMax) {
 				vec3 sampleRadiance = texelFetch(colortex4, ivec2(hitPos.xy * 0.5), 0).rgb;

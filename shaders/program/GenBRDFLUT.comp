@@ -8,6 +8,7 @@
 
 	Pass: Generate BRDF LUT
 	Reference: https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
+               https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 
 --------------------------------------------------------------------------------
 */
@@ -32,7 +33,9 @@ writeonly uniform image2D brdfLutImg;
 #include "/lib/universal/Random.glsl"
 #include "/lib/surface/BRDF.glsl"
 
-vec2 IntegrateBRDF(float roughness, float NdotV, const uint samples) {
+const uint samples = 2048u;
+
+vec2 IntegrateBRDF(in float roughness, in float NdotV) {
     vec3 V; // View direction
     V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta)
     V.y = 0.0;
@@ -44,17 +47,15 @@ vec2 IntegrateBRDF(float roughness, float NdotV, const uint samples) {
 
     for (uint i = 0u; i < samples; ++i) {
         vec2 Xi = Hammersley(i, samples);
-        vec3 H = ImportanceSampleGGX(Xi, roughness, N);
+        vec3 H = SampleGGXVNDF(Xi, V, roughness, N);
         vec3 L = 2.0 * dot(V, H) * H - V;
 
         float NdotL = L.z;
         if (NdotL > 0.0) {
-			float NdotH = saturate(H.z);
 			float VdotH = saturate(dot(V, H));
 
             // Geometric occlusion term
-            float G = G2SmithGGX(NdotL, NdotV, roughness);
-            float G_Vis = G * VdotH / (NdotH * NdotV);
+            float G_Vis = G2withG1SmithGGX(NdotL, NdotV, roughness);
 
             // Fresnel term approximation
             float Fc = pow5(1.0 - VdotH);
@@ -73,6 +74,6 @@ void main() {
 	ivec2 lookupTexel = ivec2(gl_GlobalInvocationID.xy);
 	vec2 lookupCoord = (vec2(lookupTexel) + 0.5) / vec2(imageSize(brdfLutImg));
 
-    vec2 brdf = IntegrateBRDF(lookupCoord.x, lookupCoord.y, 2048u);
+    vec2 brdf = IntegrateBRDF(lookupCoord.x, lookupCoord.y);
 	imageStore(brdfLutImg, lookupTexel, vec4(brdf, 0.0, 1.0));
 }

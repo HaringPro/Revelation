@@ -189,8 +189,7 @@ const ivec2 skyViewRes = ivec2(256, 192);
 	#ifdef REFLECTION_FILTER
 	#endif
 
-	#define SPECULAR_IMPORTANCE_SAMPLING_BIAS 0.7 // Specular importance sampling bias. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-	// #define SPECULAR_HIGHLIGHT_BRIGHTNESS 0.6 // Brightness of the specular high light. [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 2.0 2.5 3.0 4.0 5.0 7.0 10.0 15.0]
+	#define SPECULAR_IMPORTANCE_SAMPLING_BIAS 0.3 // Specular importance sampling bias. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 /* Refractions */
 	// #define RAYTRACED_REFRACTION // WIP

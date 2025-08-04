@@ -34,7 +34,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 	#ifdef ROUGH_REFLECTIONS
 		if (material.isRough) {
     		NoiseGenerator noiseGenerator = initNoiseGenerator(uvec2(gl_FragCoord.xy), uint(frameCounter));
-			vec3 halfway = ImportanceSampleGGX(nextVec2(noiseGenerator), material.roughness, normal);
+			vec3 halfway = SampleGGXVNDF(nextVec2(noiseGenerator), -worldDir, material.roughness, normal);
 
 			vec3 lightDir = reflect(worldDir, halfway);
 
@@ -66,7 +66,8 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			// Unroll the reflect function manually
 			vec3 lightDir = worldDir + normal * NdotV * 2.0;
 
-			if (dot(normal, lightDir) < EPS) return vec4(0.0);
+			float NdotL = dot(normal, lightDir);
+			if (NdotL < EPS) return vec4(0.0);
 
 			vec3 reflection;
 			if (skylight > 1e-3) {
