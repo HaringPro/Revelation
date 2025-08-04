@@ -241,8 +241,8 @@ float G2SchlickGGX(in float NdotL, in float NdotV, in float alpha) {
 //================================================================================================//
 
 // Cook-Torrance model
-vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float alpha2, in vec3 f0) {
-    alpha2 = maxEps(alpha2);
+vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 f0) {
+    float alpha2 = maxEps(roughness * roughness);
 
     // Fresnel term
     vec3 F = FresnelSchlick(LdotH, f0);
@@ -258,7 +258,7 @@ vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH,
 
 // From https://www.gdcvault.com/play/1024478/PBR-Diffuse-Lighting-for-GGX
 vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {
-    float facing = max0(LdotV) * 0.5 + 0.5;
+    float facing = saturate(LdotV) * 0.5 + 0.5;
 
     float singleSmooth = 1.05 * oms(pow5(1.0 - NdotL)) * oms(pow5(1.0 - NdotV));
     float singleRough = facing * (0.45 - 0.2 * facing) * (rcp(NdotH) + 2.0);
