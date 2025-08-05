@@ -40,12 +40,8 @@ in vec4 vaColor;
 in vec2 vaUV0;
 in vec3 vaNormal;
 
-#ifndef MC_GL_VENDOR_INTEL
-	#define attribute in
-#endif
-
-attribute vec4 mc_Entity;
-attribute vec4 at_tangent;
+in vec4 mc_Entity;
+in vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
 
