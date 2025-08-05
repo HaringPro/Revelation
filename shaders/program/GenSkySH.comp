@@ -81,9 +81,7 @@ void main() {
 	// Reduce SH coefficients in subgroup
 	for (uint band = 0u; band < 4u; ++band) {
 		shCoeff[band] = subgroupAdd(shCoeff[band]);
-		if (subgroupElect()) {
-			sharedSkySH[gl_SubgroupID][band] = shCoeff[band];
-		}
+		SCALARIZED_LOAD(sharedSkySH[gl_SubgroupID][band], shCoeff[band])
 	}
     barrier();
 

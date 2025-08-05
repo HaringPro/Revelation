@@ -21,4 +21,10 @@
 
 //================================================================================================//
 
+#if defined MC_GL_VENDOR_AMD
+	#define SCALARIZED_LOAD(a, b) a = subgroupBroadcastFirst(b)
+#else
+	#define SCALARIZED_LOAD(a, b) if (subgroupElect()) { a = b; }
+#endif
+
 #define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])

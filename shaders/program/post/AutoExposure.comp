@@ -56,9 +56,7 @@ void main() {
     uint count = global.exposure.histogram[index];
     uint subgroupSum = subgroupAdd(count * index);
 
-	if (subgroupElect()) {
-        sharedBinIndex[gl_SubgroupID] = subgroupSum;
-	}
+	SCALARIZED_LOAD(sharedBinIndex[gl_SubgroupID], subgroupSum)
     barrier();
 
     if (index < gl_NumSubgroups) {
