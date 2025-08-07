@@ -34,7 +34,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
     vec3 rayStep = rayDir * stepLength;
     rayPos += rayStep * dither;
 
-	float diffTolerance = max(0.25 * oms(rayPos.z), -2.0 * rayStep.z);
+	float diffTolerance = max(1e-2 * inversesqrt(sdot(viewPos)), -2.0 * rayStep.z);
     #if defined DISTANT_HORIZONS
         float screenDepthMax = ViewToScreenDepth(ScreenToViewDepthDH(1.0));
     #else
