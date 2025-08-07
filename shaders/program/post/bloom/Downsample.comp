@@ -60,8 +60,7 @@ vec3 CalculateBloomTile(in vec2 uv) {
 			float weight = exp2(-sdot(vec2(x, y)) * 0.25);
 
 			#if DOWNSAMPLE_LEVEL == 0
-				// weight *= karisAverage(sampleTile);
-				sampleTile *= karisAverage(sampleTile);
+				weight *= karisAverage(sampleTile);
 			#endif
 
 			bloomTile += sampleTile * weight;
