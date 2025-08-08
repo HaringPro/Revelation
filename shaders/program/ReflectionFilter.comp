@@ -84,7 +84,7 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
         vec4 sampleData = imageLoad(colorimg1, sampleTexel);
 
         float sampleLinerDepth = FetchLinearDepth(sampleTexel);
-        vec3 sampleWorldNormal = FetchWorldNormal(loadGbufferData0(sampleTexel));
+        vec3 sampleWorldNormal = FetchWorldNormal(sampleTexel);
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
         float sampleRoughness = sqr(1.0 - loadGbufferData1(sampleTexel).x);
 
@@ -122,7 +122,7 @@ void main() {
             vec3 viewDir = ScreenToViewVector(screenCoord);
 
             vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
-            vec3 worldNormal = FetchWorldNormal(loadGbufferData0(screenTexel));
+            vec3 worldNormal = FetchWorldNormal(screenTexel);
 
             vec2 randOffset = R2(BlueNoiseTemporal(screenTexel));
             reflectionData = ReflectionFilter(screenTexel, reflectionData, material.roughness, worldNormal, worldDir, REFLECTION_FILTER_SIZE, randOffset);

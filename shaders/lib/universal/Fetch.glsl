@@ -21,6 +21,18 @@ vec3 FetchWorldNormal(in uvec4 data) {
 	#endif
 }
 
+vec3 FetchWorldNormal(in ivec2 texel) {
+	#if defined NORMAL_MAPPING
+		return OctDecodeUnorm(Unpack2x8U(loadGbufferData0(texel).w));
+	#else
+		return OctDecodeUnorm(Unpack2x8U(loadGbufferData0(texel).z));
+	#endif
+}
+
+vec3 FetchWorldNormal(in uint data) {
+	return OctDecodeUnorm(Unpack2x8U(data));
+}
+
 #if defined DISTANT_HORIZONS
 float FetchLinearDepth(in ivec2 texel) {
 	float depth = loadDepth0(texel);
