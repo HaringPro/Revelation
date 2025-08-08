@@ -43,20 +43,21 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 
 			bool hit = ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, uint(RAYTRACE_SAMPLES * oms(material.roughness)), screenPos);
 
-			vec3 reflection;
+			vec4 reflection = vec4(0.0);
 			if (hit) {
-				// reflection = textureLod(colortex4, screenPos.xy * viewPixelSize * 0.5, 8.0 * approxSqrt(material.roughness)).rgb;
-				reflection = texelFetch(colortex4, ivec2(screenPos.xy) >> 1, 0).rgb;
+				reflection.rgb = texelFetch(colortex4, ivec2(screenPos.xy) >> 1, 0).rgb;
+
+				vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
+				reflection.a = distance(reflectViewPos, viewPos);
 			} else if (skylight > 1e-3) {
 				vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
 
-				reflection = skyRadiance * skylight;
+				reflection = vec4(skyRadiance * skylight, far);
 			}
             // float LdotH = dot(lightDir, halfway);
 			// float NdotV = abs(dot(normal, worldDir));
 
-			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
-			return vec4(satU16f(reflection), distance(reflectViewPos, viewPos));
+			return satU16f(reflection);
 		} else
 	#endif
 		{
@@ -67,7 +68,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			float NdotL = dot(normal, lightDir);
 			if (NdotL < EPS) return vec4(0.0);
 
-			vec3 reflection;
+			vec3 reflection = vec3(0.0);
 			if (skylight > 1e-3) {
 				vec3 skyRadiance = textureBicubic(skyViewTex, FromSkyViewLutParams(lightDir) + vec2(0.0, 0.5)).rgb;
 
