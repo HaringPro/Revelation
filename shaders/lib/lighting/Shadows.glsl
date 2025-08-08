@@ -192,7 +192,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 float ScreenSpaceShadow(in vec3 viewPos, in vec3 viewNormal, in float dither, in float sssAmount) {
 	float viewDist = length(viewPos);
 	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += viewDist * maxOf(viewPixelSize) / max(sqr(NdotL), 0.05) * 0.25 * viewNormal;
+	viewPos += viewDist * maxOf(viewPixelSize) / max(sqr(NdotL), 0.05) * 0.5 * viewNormal;
 
     float absorption = exp2(-0.25 * approxSqrt(viewDist) / sssAmount);
 
