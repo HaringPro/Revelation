@@ -190,13 +190,11 @@ vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, 
 
 //================================================================================================//
 
-#define UnitToSubUv(uv, res) (uv + 0.5 / res) * (res / (res + 1.0))
-#define SubToUnitUv(uv, res) (uv - 0.5 / res) * (res / (res - 1.0))
+#define UnitToSubUv(uv, res) (uv + 0.5 / res) * (res / (res + 2.0))
+#define SubToUnitUv(uv, res) (uv - 0.5 / res) * (res / (res - 2.0))
 
 // Reference: https://sebh.github.io/publications/egsr2020.pdf
 vec3 ToSkyViewLutParams(in vec2 coord) {
-	coord.y *= 2.0;
-
 	// To unit UV
 	coord = SubToUnitUv(coord, vec2(skyViewRes));
 
@@ -231,5 +229,5 @@ vec2 FromSkyViewLutParams(in vec3 direction) {
 	// To sub UV
 	coord = UnitToSubUv(coord, vec2(skyViewRes));
 
-	return saturate(coord * vec2(1.0, 0.5));
+	return saturate(coord) * vec2(1.0, 0.5);
 }

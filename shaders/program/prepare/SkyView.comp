@@ -1,0 +1,84 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2024 HaringPro
+	Apache License 2.0
+
+    Pass: Compute Sky-View LUT
+
+--------------------------------------------------------------------------------
+*/
+
+#define PASS_SKY_VIEW
+
+//======// Input //===============================================================================//
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const ivec3 workGroups = ivec3(16, 8, 1);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Uniform //=============================================================================//
+
+writeonly uniform image2D colorimg5;
+
+uniform sampler3D atmosCombinedLut;
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// SSBO //================================================================================//
+
+#include "/lib/universal/SSBO.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Random.glsl"
+#include "/lib/universal/Offset.glsl"
+
+#include "/lib/atmosphere/Global.glsl"
+#include "/lib/atmosphere/PrecomputedAtmosphericScattering.glsl"
+
+#ifdef AURORA
+	#include "/lib/atmosphere/Aurora.glsl"
+#endif
+
+#include "/lib/atmosphere/clouds/Render.glsl"
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 viewTexel = ivec2(gl_GlobalInvocationID.xy);
+
+	// Read previous frame data
+	vec3 skyViewPrev = texelFetch(skyViewTex, viewTexel, 0).rgb;
+	bool frameUpdate = skyViewPrev.x < EPS || worldTimeChanged;
+
+    // Checkerboard render
+	ivec2 offset = checkerboardOffset4x4[frameCounter % 16];
+	if (viewTexel % 4 == offset || frameUpdate) {
+		// Render sky and transmittance view LUTs
+		vec2 viewCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * rcp(skyViewRes);
+		vec3 worldDir = ToSkyViewLutParams(viewCoord);
+		vec3 skyViewOut = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+
+		// Accumulate
+		float accumFactor = frameUpdate ? 1.0 : 0.25;
+		skyViewOut = mix(skyViewPrev, skyViewOut, accumFactor);
+
+		// Raw sky-view LUT
+		imageStore(colorimg5, viewTexel, vec4(skyViewOut, 1.0));
+
+		#ifdef CLOUDS
+			float cloudDepth;
+			vec4 cloudData = RenderClouds(worldDir, 0.5, cloudDepth);
+			skyViewOut = skyViewOut * cloudData.a + cloudData.rgb;
+		#endif
+
+		// Sky-view LUT with clouds
+		viewTexel.y += skyViewRes.y;
+		imageStore(colorimg5, viewTexel, vec4(skyViewOut, 1.0));
+	}
+}
