@@ -54,24 +54,24 @@ float lobeWeight(in vec3 cNormal, in vec3 sNormal, in float cRoughness, in float
 }
 
 vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
-    float smoothness = 1.0 - approxSqrt(roughness);
-    float linearDepth = FetchLinearDepth(texel);
-    float NdotV = abs(dot(worldNormal, -worldDir));
-
-    float offsetScale = filterSize * exp2(-oms(reflectionData.a) * smoothness);
+    float offsetScale = filterSize * saturate(20.0 * roughness);
+    offsetScale *= saturate(0.25 + reflectionData.a * 0.5);
 
     // Calculate kernel basis
     vec3 reflectedDir = reflect(-worldDir, worldNormal);
     vec2 tangent = normalize(cross(worldNormal, reflectedDir).xy) * offsetScale;
     vec2 bitangent = vec2(tangent.y, -tangent.x);
 
+    float NdotV = abs(dot(worldNormal, worldDir));
     // float skewFactor = mix(1.0, roughness, approxSqrt(saturate(1.0 - NdotV)));
     // tangent *= skewFactor;
 
     float skewFactor = mix(0.5 + 0.5 * roughness, 1.0, NdotV);
     bitangent *= 1.0 / skewFactor;
 
-    float sharpenWeight = 0.125 + 0.375 * saturate(reflectionData.a * 4.0);
+    // float sigmaN = 128.0 / (roughness + 0.125);
+    float hitDistPhi = -0.05 * oms(roughness) / (reflectionData.a + 1.0);
+    float sharpenWeight = 0.125 + 0.375 * saturate(reflectionData.a * 0.25);
     ivec2 texelEnd = ivec2(viewSize) - 1;
 
     reflectionData.rgb *= pow(sdot(reflectionData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
@@ -83,14 +83,12 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
 
         vec4 sampleData = imageLoad(colorimg1, sampleTexel);
 
-        float sampleLinerDepth = FetchLinearDepth(sampleTexel);
+        // float sampleLinerDepth = FetchLinearDepth(sampleTexel);
         vec3 sampleWorldNormal = FetchWorldNormal(sampleTexel);
         // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
         float sampleRoughness = sqr(1.0 - loadGbufferData1(sampleTexel).x);
 
-        float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 4.0) *
-                       fastExp(-(abs(reflectionData.a - sampleData.a) * smoothness
-                               + abs(sampleLinerDepth - linearDepth) * 4.0 * NdotV));
+        float weight = lobeWeight(worldNormal, sampleWorldNormal, roughness, sampleRoughness, 2.0) * exp2(abs(reflectionData.a - sampleData.a) * hitDistPhi);
         weight = saturate(weight);
 
         // Sharpen

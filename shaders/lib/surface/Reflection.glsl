@@ -56,9 +56,7 @@ vec4 CalculateSpecularReflections(in vec3 normal, in float skylight, in vec3 scr
 			// float NdotV = abs(dot(normal, worldDir));
 
 			vec3 reflectViewPos = ScreenToViewSpace(vec3(screenPos.xy * viewPixelSize, loadDepth0(ivec2(screenPos.xy))));
-			float targetDepth = saturate(distance(reflectViewPos, viewPos) * rcp(far));
-
-			return vec4(satU16f(reflection), targetDepth);
+			return vec4(satU16f(reflection), distance(reflectViewPos, viewPos));
 		} else
 	#endif
 		{
