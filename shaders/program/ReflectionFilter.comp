@@ -70,7 +70,8 @@ vec4 ReflectionFilter(in ivec2 texel, in vec4 reflectionData, in float roughness
     bitangent *= 1.0 / skewFactor;
 
     // float sigmaN = 128.0 / (roughness + 0.125);
-    float hitDistPhi = -0.05 * oms(roughness) / (reflectionData.a + 1.0);
+    float hitDistPhi = -0.125 * NdotV * oms(roughness) / (reflectionData.a + 1.0);
+
     float sharpenWeight = 0.125 + 0.375 * saturate(reflectionData.a * 0.25);
     ivec2 texelEnd = ivec2(viewSize) - 1;
 
