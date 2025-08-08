@@ -13,16 +13,18 @@
 
 #define PASS_CLOUD_SM
 
+//======// Input //===============================================================================//
+
+layout (local_size_x = 16, local_size_y = 16) in;
+const ivec3 workGroups = ivec3(32, 32, 1);
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
-
-/* RENDERTARGETS: 10 */
-out float cloudShadowOut;
-
 //======// Uniform //=============================================================================//
+
+writeonly uniform image2D cloudShadowImg;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -36,21 +38,23 @@ out float cloudShadowOut;
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 mapTexel = ivec2(gl_FragCoord.xy);
+	ivec2 mapTexel = ivec2(gl_GlobalInvocationID.xy);
 
 	// Read previous frame data
-	cloudShadowOut = texelFetch(cloudShadowTex, mapTexel, 0).x;
+	float cloudShadowOut = texelFetch(cloudShadowTex, mapTexel, 0).x;
 	bool frameUpdate = cloudShadowOut < EPS || worldTimeChanged;
 
     // Checkerboard render cloud shadow map
 	ivec2 offset = checkerboardOffset4x4[frameCounter % 16];
 	if (mapTexel % 4 == offset) {
-		vec2 mapCoord = gl_FragCoord.xy * rcp(textureSize(cloudShadowTex, 0));
+		vec2 mapCoord = (vec2(mapTexel) + 0.5) * rcp(textureSize(cloudShadowTex, 0));
         vec3 rayPos = CloudShadowToWorldPos(mapCoord);
         float cloudShadow = CalculateCloudShadows(rayPos);
 
 		// Accumulate
 		float accumFactor = frameUpdate ? 1.0 : 0.125;
 		cloudShadowOut = mix(cloudShadowOut, cloudShadow, accumFactor);
+
+		imageStore(cloudShadowImg, mapTexel, vec4(cloudShadowOut));
 	}
 }
