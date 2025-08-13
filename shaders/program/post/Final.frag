@@ -68,6 +68,9 @@ vec3 FsrCasFilter(in ivec2 texel) {
 }
 
 #ifdef FSR_ENABLED
+	uniform sampler2D colortex15;
+	// Make compiler happy, this should never be reached
+	#define FsrEasuCF(coord) vec3(0.0)
 	#include "/lib/post/FSR.glsl"
 #endif
 

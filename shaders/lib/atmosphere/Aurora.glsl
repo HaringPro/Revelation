@@ -6,7 +6,7 @@
 
 /*
 --------------------------------------------------------------------------------
-	There are two main hurdles I encountered rendering this effect. 
+	There are two main hurdles I encountered rendering this effect.
 	First, the nature of the texture that needs to be generated to get a believable effect
 	needs to be very specific, with large scale band-like structures, small scale non-smooth variations
 	to create the trail-like effect, a method for animating said texture smoothly and finally doing all
@@ -50,7 +50,7 @@ float triNoise2d(in vec2 p, in float spd) {
         bp *= 1.3;
         z2 *= 0.45;
         z *= 0.42;
-		p *= 1.21 + (rz - 1.0) * 0.02;    
+		p *= 1.21 + (rz - 1.0) * 0.02;
         p *= -m2;
         rz += tri(p.x + tri(p.y)) * z;
 	}
@@ -64,7 +64,11 @@ vec4 aurora(in vec3 ro, in vec3 rd) {
     vec4 col = vec4(0.0);
     vec4 avgCol = vec4(0.0);
 
-    float hash = 0.006 * hash21(gl_FragCoord.xy);
+    #ifdef COMPUTE_SHADER
+        float hash = 0.006 * hash21(vec2(gl_GlobalInvocationID.xy));
+    #else
+        float hash = 0.006 * hash21(gl_FragCoord.xy);
+    #endif
     float rf = 1.0 / (rd.y * 2.0 + 0.4);
 
     for (float i = 0.0; i < 36.0; ++i) {
@@ -77,7 +81,7 @@ vec4 aurora(in vec3 ro, in vec3 rd) {
         vec4 col2 = vec4(0.0, 0.0, 0.0, rzt);
         col2.rgb = (sin(1.0 - vec3(2.15, -0.5, 1.2) + i * 0.043) * 0.5 + 0.5) * rzt;
         avgCol = mix(avgCol, col2, 0.5);
-        col += avgCol * exp2(-i * 0.065 - 2.5) * smoothstep(0.0, 5.0, i);  
+        col += avgCol * exp2(-i * 0.065 - 2.5) * smoothstep(0.0, 5.0, i);
     }
 
     col *= saturate(rd.y * 15.0 + 0.4);
@@ -85,7 +89,7 @@ vec4 aurora(in vec3 ro, in vec3 rd) {
     return col;
 }
 
-vec3 NightAurora(in vec3 rayDir) {	
+vec3 NightAurora(in vec3 rayDir) {
     if (auroraAmount > 1e-2 && rayDir.y > 0.0 && eyeAltitude < 2e4) {
         float raylength = (planetRadius + 2e4 - viewerHeight) / rayDir.y * 1e-5;
 
