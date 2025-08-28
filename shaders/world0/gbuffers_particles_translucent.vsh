@@ -1,3 +1,3 @@
 #version 450 core
 
-#include "/program/gbuffers/Textured.vert"
+#include "/program/gbuffers/ParticlesTranslucent.vert"

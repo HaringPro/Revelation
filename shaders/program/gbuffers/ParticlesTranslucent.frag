@@ -5,14 +5,10 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 6,7 */
-layout (location = 0) out vec4 albedoOut;
+/* RENDERTARGETS: 1,7,8 */
+layout (location = 0) out vec4 lightingOut;
 layout (location = 1) out uvec4 gbufferOut0;
-
-#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-/* RENDERTARGETS: 6,7,8 */
 layout (location = 2) out vec2 gbufferOut1;
-#endif
 
 //======// Uniform //=============================================================================//
 
@@ -25,7 +21,6 @@ flat in vec3 flatNormal;
 in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
-flat in uint materialID;
 
 //======// Function //============================================================================//
 
@@ -42,13 +37,12 @@ void main() {
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	albedoOut = albedo;
+	lightingOut = vec4(0.0, 0.0, 0.0, 1.0); // wip
 
 	gbufferOut0.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
-	gbufferOut0.y = materialID;
-
+	gbufferOut0.y = 2u; // wip
 	gbufferOut0.z = Packup2x8U(OctEncodeUnorm(flatNormal));
-	#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
-		gbufferOut1 = vec2(0.0);
-	#endif
+
+	gbufferOut1.x = Packup2x8(albedo.rg);
+	gbufferOut1.y = Packup2x8(albedo.ba);
 }
