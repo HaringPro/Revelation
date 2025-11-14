@@ -29,8 +29,8 @@ vec3 SampleRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in vec3 r
 		if (sampleDepth < rayPos.z) {
 			float sampleDepthLinear = ScreenToViewDepth(sampleDepth);
 			float traceDepthLinear = ScreenToViewDepth(rayPos.z);
-			#if defined DISTANT_HORIZONS
-				if (sampleDepth > 1.0 - EPS) sampleDepthLinear = ScreenToViewDepthDH(loadDepth0DH(ivec2(rayPos.xy)));
+			#if defined LOD_MOD
+				if (sampleDepth > 1.0 - EPS) sampleDepthLinear = ScreenToViewDepthLod(loadDepthTransLod(ivec2(rayPos.xy)));
 			#endif
 
 			if (traceDepthLinear - sampleDepthLinear > 0.2 * traceDepthLinear) return vec3(rayPos.xy, sampleDepth);
@@ -54,8 +54,8 @@ vec3 CalculateSSPT(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in v
 
     NoiseGenerator noiseGenerator = initNoiseGenerator(gl_GlobalInvocationID.xy, uint(frameCounter));
 
-    #if defined DISTANT_HORIZONS
-        float screenDepthMax = ViewToScreenDepth(ScreenToViewDepthDH(1.0));
+    #if defined LOD_MOD
+        float screenDepthMax = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
     #else
         #define screenDepthMax 1.0
     #endif

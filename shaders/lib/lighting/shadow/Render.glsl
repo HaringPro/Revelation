@@ -166,11 +166,11 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 viewNormal, in float dither, in
 		ivec2 sampleTexel = uvToTexel(sampleCoord + 0.5);
 		float sampleDepth = loadDepth0(sampleTexel);
 
-		#if defined DISTANT_HORIZONS
+		#if defined LOD_MOD
 			float difference;
 			if (sampleDepth > 1.0 - EPS) {
-				sampleDepth = loadDepth0DH(sampleTexel);
-				difference = ScreenToViewDepthDH(sampleDepth) + rayPos.z;
+				sampleDepth = loadDepthTransLod(sampleTexel);
+				difference = ScreenToViewDepthLod(sampleDepth) + rayPos.z;
 			} else {
 				difference = ScreenToViewDepth(sampleDepth) + rayPos.z;
 			}

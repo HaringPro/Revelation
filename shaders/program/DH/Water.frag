@@ -75,7 +75,7 @@ void main() {
 			worldNormal = tbnMatrix * worldNormal;
 		#endif
 
-		float depth1 = loadDepth1DH(texel);
+		float depth1 = loadDepthOpaqueLod(texel);
 		vec3 viewPos1 = ScreenToViewSpace(vec3(gl_FragCoord.xy * viewPixelSize, depth1));
 		vec3 worldPos1 = transMAD(gbufferModelViewInverse, viewPos1);
 

@@ -142,9 +142,9 @@ void main() {
 
         ivec2 currentTexel = screenTexel << 1;
         float depth = loadDepth0(currentTexel);
-        #if defined DISTANT_HORIZONS
-            bool dhTerrainMask = depth > (1.0 - EPS);
-            if (dhTerrainMask) depth = loadDepth0DH(currentTexel);
+        #if defined LOD_MOD
+            bool lodTerrainMask = depth > (1.0 - EPS);
+            if (lodTerrainMask) depth = loadDepthTransLod(currentTexel);
         #endif
 
         if (depth < 1.0) {

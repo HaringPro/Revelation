@@ -65,10 +65,10 @@ void main() {
 
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
-	#if defined DISTANT_HORIZONS
+	#if defined LOD_MOD
 		if (depth > 1.0 - EPS) {
-			depth = screenPos.z = loadDepth0DH(screenTexel);
-			viewPos = ScreenToViewSpaceDH(screenPos);
+			depth = screenPos.z = loadDepthTransLod(screenTexel);
+			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
 
@@ -91,10 +91,10 @@ void main() {
 
 			float depth1 = loadDepth1(screenTexel);
 			vec3 viewPos1 = ScreenToViewSpace(vec3(screenCoord, depth1));
-			#if defined DISTANT_HORIZONS
+			#if defined LOD_MOD
 				if (depth1 > 1.0 - EPS) {
-					depth1 = loadDepth1DH(screenTexel);
-					viewPos1 = ScreenToViewSpaceDH(vec3(screenCoord, depth1));
+					depth1 = loadDepthOpaqueLod(screenTexel);
+					viewPos1 = ScreenToViewSpaceLod(vec3(screenCoord, depth1));
 				}
 			#endif
 			vec2 refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos, distance(viewPos, viewPos1));
@@ -137,8 +137,8 @@ void main() {
 
 		// Border fog
 		#ifdef BORDER_FOG
-			#if defined DISTANT_HORIZONS
-				#define far float(dhRenderDistance)
+			#if defined LOD_MOD
+				#define far float(lodRenderDistance)
 			#endif
 
 			if (isEyeInWater == 0) {

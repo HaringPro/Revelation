@@ -37,8 +37,8 @@ vec2 CalculateFogDensity(in vec3 rayPos) {
 #endif
 
 mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask) {
-	#if defined DISTANT_HORIZONS
-		#define far float(dhRenderDistance)
+	#if defined LOD_MOD
+		#define far float(lodRenderDistance)
 		uint steps = VF_MAX_SAMPLES << 1u;
 	#else
 		uint steps = VF_MAX_SAMPLES;

@@ -24,11 +24,11 @@ float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in vec2 dir)
 		float sampleDepth = loadDepth0(uvToTexel(sampleCoord));
 		if (sampleDepth < 0.56) continue;
 
-		#if defined DISTANT_HORIZONS
+		#if defined LOD_MOD
 			vec3 difference;
 			if (sampleDepth > 1.0 - EPS) {
-				sampleDepth = loadDepth0DH(uvToTexel(sampleCoord));
-				difference = ScreenToViewSpaceDH(vec3(sampleCoord, sampleDepth)) - viewPos;
+				sampleDepth = loadDepthTransLod(uvToTexel(sampleCoord));
+				difference = ScreenToViewSpaceLod(vec3(sampleCoord, sampleDepth)) - viewPos;
 			} else {
 				difference = ScreenToViewSpace(vec3(sampleCoord, sampleDepth)) - viewPos;
 			}

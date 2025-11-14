@@ -68,11 +68,11 @@ void main() {
 		if (material.specularMask) {
 			vec3 viewPos = ScreenToViewSpace(screenPos);
 
-			#if defined DISTANT_HORIZONS
-				bool dhTerrainMask = screenPos.z > 1.0 - EPS;
-				if (dhTerrainMask) {
-					screenPos.z = loadDepth0DH(texelPos);
-					viewPos = ScreenToViewSpaceDH(screenPos);
+			#if defined LOD_MOD
+				bool lodTerrainMask = screenPos.z > 1.0 - EPS;
+				if (lodTerrainMask) {
+					screenPos.z = loadDepthTransLod(texelPos);
+					viewPos = ScreenToViewSpaceLod(screenPos);
 				}
 			#endif
 

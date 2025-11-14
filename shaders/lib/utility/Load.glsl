@@ -10,8 +10,11 @@
 #define loadNormalPack(texel) 		texelFetch(colortex8, texel, 0)
 
 #if defined DISTANT_HORIZONS
-	#define loadDepth0DH(texel) 	texelFetch(dhDepthTex0, texel, 0).x
-	#define loadDepth1DH(texel)		texelFetch(dhDepthTex1, texel, 0).x
+	#define loadDepthTransLod(texel) 	texelFetch(dhDepthTex0, texel, 0).x
+	#define loadDepthOpaqueLod(texel)	texelFetch(dhDepthTex1, texel, 0).x
+#elif defined VOXY
+	#define loadDepthTransLod(texel) 	texelFetch(vxDepthTexTrans, texel, 0).x
+	#define loadDepthOpaqueLod(texel)	texelFetch(vxDepthTexOpaque, texel, 0).x
 #endif
 
 #define skyMapTex					colortex5

@@ -81,11 +81,11 @@ void main() {
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 
-	#if defined DISTANT_HORIZONS
-		bool dhTerrainMask = screenPos.z > 1.0 - EPS;
-		if (dhTerrainMask) {
-			screenPos.z = loadDepth0DH(screenTexel);
-			viewPos = ScreenToViewSpaceDH(screenPos);
+	#if defined LOD_MOD
+		bool lodTerrainMask = screenPos.z > 1.0 - EPS;
+		if (lodTerrainMask) {
+			screenPos.z = loadDepthTransLod(screenTexel);
+			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
 
@@ -202,8 +202,8 @@ void main() {
 
 		float worldDistSquared = sdot(worldPos);
 		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * sdot(worldPos.xz)));
-		#if defined DISTANT_HORIZONS
-			distanceFade = saturate(distanceFade + float(dhTerrainMask));
+		#if defined LOD_MOD
+			distanceFade = saturate(distanceFade + float(lodTerrainMask));
 		#endif
 
 		float NdotL = dot(worldNormal, worldLightVector);

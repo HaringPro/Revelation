@@ -61,14 +61,14 @@ void main() {
     ivec2 renderTexel = texelPos << 1;
 	float depth = GetClosestDepth(renderTexel);
 	// float depth = loadDepth0(renderTexel);
-	#if defined DISTANT_HORIZONS
-		bool dhTerrainMask = depth > 1.0 - EPS;
-		if (dhTerrainMask) depth = loadDepth0DH(renderTexel);
+	#if defined LOD_MOD
+		bool lodTerrainMask = depth > 1.0 - EPS;
+		if (lodTerrainMask) depth = loadDepthTransLod(renderTexel);
 	#endif
 
 	if (depth < 1.0) {
-		#if defined DISTANT_HORIZONS
-            if (dhTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthDH(depth));
+		#if defined LOD_MOD
+            if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
 		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 

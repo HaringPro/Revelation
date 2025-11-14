@@ -94,9 +94,9 @@ void main() {
 	if (clamp(materialID, 2u, 3u) != materialID && notParticle) return;
 
 	vec3 screenPos = vec3(texelToUv(screenTexel), loadDepth0(screenTexel));
-	#if defined DISTANT_HORIZONS
+	#if defined LOD_MOD
 		if (screenPos.z > 1.0 - EPS) {
-			screenPos.z = ViewToScreenDepth(ScreenToViewDepthDH(loadDepth0DH(screenTexel)));
+			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepthTransLod(screenTexel)));
 		}
 	#endif
 

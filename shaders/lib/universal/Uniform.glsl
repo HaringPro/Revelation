@@ -102,6 +102,8 @@ uniform mat4 shadowModelView;
 uniform mat4 shadowModelViewInverse;
 
 #if defined DISTANT_HORIZONS
+
+    #define LOD_MOD
     uniform sampler2D dhDepthTex0;
     uniform sampler2D dhDepthTex1;
 
@@ -113,4 +115,35 @@ uniform mat4 shadowModelViewInverse;
     uniform mat4 dhProjection;
     uniform mat4 dhProjectionInverse;
     uniform mat4 dhPreviousProjection;
+
+    #define lodRenderDistance dhRenderDistance
+
+    #define lodNearPlane dhNearPlane
+    #define lodFarPlane dhFarPlane
+
+    #define lodProj dhProjection
+    #define lodProjInv dhProjectionInverse
+    #define lodProjPrev dhPreviousProjection
+
+#elif defined VOXY
+
+    #define LOD_MOD
+    uniform sampler2D vxDepthTexTrans;
+    uniform sampler2D vxDepthTexOpaque;
+
+    uniform int vxRenderDistance;
+
+    uniform mat4 vxProj;
+    uniform mat4 vxProjInv;
+    uniform mat4 vxProjPrev;
+
+    #define lodRenderDistance vxRenderDistance
+
+    #define lodNearPlane 16
+    #define lodFarPlane 16*3000
+
+    #define lodProj vxProj
+    #define lodProjInv vxProjInv
+    #define lodProjPrev vxProjPrev
+
 #endif
