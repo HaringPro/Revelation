@@ -36,7 +36,7 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec3 flatNormal = vec3(uint((parameters.face>>1)==2), uint((parameters.face>>1)==0), uint((parameters.face>>1)==1)) * (float(int(parameters.face)&1)*2-1);
 	vec4 vertColor = parameters.sampledColour * parameters.tinting;
-	uint materialID = uint(parameters.customId - 10000) == 3u ? 3u : 2u;
+	uint materialID = uint(parameters.customId - 10000);
 
 	normalOut.xy = OctEncodeUnorm(flatNormal);
 
