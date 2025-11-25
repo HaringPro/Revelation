@@ -1,9 +1,17 @@
 {
     "version": 1,
     "uniforms": [
+        "vxProj",
+        "vxProjInv",
+        "vxModelViewInv",
+        "cameraPosition",
+        "frameTimeCounter",
+        "viewPixelSize"
     ],
     "samplers": {
-        "depthtex0": "sampler2D"
+        "vxDepthTexTrans": "sampler2D",
+        "vxDepthTexOpaque": "sampler2D",
+        "noisetex": "sampler2D"
     },
     "opaqueDrawBuffers": [
         6,
