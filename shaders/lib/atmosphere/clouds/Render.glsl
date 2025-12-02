@@ -73,7 +73,7 @@ float CloudMultiScatteringApproxOz(in float opticalDepth, in float phase) {
 float CloudMultiScatteringApproxHaringPro(in float opticalDepth, in float phase, in float extinction, in float albedo) {
 	// https://zhuanlan.zhihu.com/p/457997155
 	float msV = albedo * oms(exp2(-8.0 * extinction));
-	float msT = exp2(-0.25 * opticalDepth - 2.0);
+	float msT = 0.2 / (1.0 + 0.2 * opticalDepth);
 
 	float transmittance = exp2(-rLOG2 * opticalDepth);
 	return transmittance * phase + msT * msV / oms(msV) * uniformPhase;
@@ -90,7 +90,7 @@ vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float noise, in float pha
 vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float noise, in float phase) {
 	float density = CloudHighDensity(rayPos);
 	if (density > EPS) {
-		float opticalDepth = density * cloudHighThickness / abs(rayDir.y);
+		float opticalDepth = density * cloudHighThickness/*  / abs(rayDir.y) */;
 		float integral = oms(exp2(-rLOG2 * cirrusExtinction * opticalDepth));
 
 		float opticalDepthSun = 0.0; {
@@ -122,7 +122,7 @@ vec3 RenderCloudHigh(in vec2 rayPos, in vec3 rayDir, in float noise, in float ph
 		// See slide 85 of [Schneider, 2017]
 		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
 		// float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
-		float scatteringSky = 1.0 - density;
+		float scatteringSky = approxSqrt(1.0 - density);
 
 		// Compute powder effect
 		// Formula from [Schneider, 2015]
@@ -234,7 +234,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 						float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, lightDir, noise.y, CLOUD_LOW_SUNLIGHT_SAMPLES);
 
 						// Approximate sunlight multi-scattering
-						float coarseDensity = linearstep(0.5, 4.0, dimensionalProfile + stepDensity * 4.0);
+						float coarseDensity = sqr(dimensionalProfile) * 0.5 + stepDensity;
 						float scatteringSun = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseDensity, cumulusAlbedo);
 
 						#if CLOUD_CU_SKYLIGHT_SAMPLES > 0
@@ -250,14 +250,16 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 						#endif
 
 						// Estimate the light optical depth of the ground from the cloud volume
-						float scatteringGround = oms(dimensionalProfile * saturate(heightFraction * 4.0)) * 0.25 * uniformPhase;
+						float scatteringGround = oms(dimensionalProfile * saturate(heightFraction * 4.0)) * 0.2 * uniformPhase;
 
 						// Compute In-Scatter Probability
 						// See slide 92 of [Schneider, 2017]
-						// float depthProbability = 0.05 + pow(saturate(stepDensity * 8.0), remap(heightFraction, 0.3, 0.85, 0.5, 2.0));
-						// float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.75);
-						// float inScatterProbability = depthProbability * verticalProbability;
-						// scatteringSun *= inScatterProbability;
+						#if 0
+							float depthProbability = 0.05 + pow(saturate(stepDensity * 8.0), remap(heightFraction, 0.3, 0.85, 0.5, 2.0));
+							float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.75);
+							float inScatterProbability = depthProbability * verticalProbability;
+							scatteringSun *= inScatterProbability;
+						#endif
 
 						vec2 scattering = vec2(scatteringSun + scatteringGround * worldLightVector.y, scatteringSky);
 
@@ -270,12 +272,12 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 						transmittance *= stepTransmittance;
 
 						// Break if the cloud has reached the minimum transmittance
-						if (transmittance < cloudMinTransmittance) break;
+						if (transmittance < cloudMinTransmittance) {
+							transmittance = 0.0;
+							break;
+						}
 					}
 				}
-
-				// Remap to [0, 1]
-				transmittance = linearstep(cloudMinTransmittance, 1.0, transmittance);
 
 				// Update integral data
 				if (transmittance < 1.0 - cloudEpsilon) {
@@ -355,15 +357,13 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 		vec3 sunIrradiance, moonIrradiance;
 		vec3 skyIlluminance = GetSunAndSkyIrradiance(cloudPos, vec3(0.0, 1.0, 0.0), worldSunVector, sunIrradiance, moonIrradiance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 		vec3 directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * mix(sunIrradiance, moonIrradiance, moonlightFactor);
-
 		skyIlluminance += lightningShading * 0.05;
 
-		// Direct + Indirect
-		cloudScattering  = integralScattering.x * directIlluminance;
-		cloudScattering += integralScattering.y * uniformPhase * skyIlluminance;
-		cloudScattering *= mix(PI, hPI, wetness);
+		cloudScattering  = integralScattering.x * PI * directIlluminance;
+		cloudScattering += integralScattering.y * rPI * skyIlluminance;
+		cloudScattering *= 1.0 - wetness * 0.5;
 
-		// Compute aerial perspective
+		// Apply aerial perspective
 		#ifdef CLOUD_AERIAL_PERSPECTIVE
 			vec3 transmitAP;
 			vec3 scatterAP = GetSkyRadianceToPoint(cloudPos, worldSunVector, transmitAP) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;

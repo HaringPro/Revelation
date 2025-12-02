@@ -317,6 +317,11 @@ vec3 GetSkyRadianceToPoint(
         float mu_s = dot(camera, sun_direction) / r;
         float nu = dot(view_ray, sun_direction);
 		float d = length(point - camera);
+
+        #ifndef PLANET_GROUND
+            mu = max(mu, exp2(-0.002 * max0(viewerHeight - planetRadius - 512.0)) - 1.0);
+        #endif
+
         bool ray_r_mu_intersects_ground = RayIntersectsGround(r, mu);
 
         transmittance = GetTransmittance(r, mu, d, ray_r_mu_intersects_ground);
@@ -389,6 +394,10 @@ vec3 GetSkyRadiance(
         float mu_s = dot(camera, sun_direction) / r;
         float nu = dot(view_ray, sun_direction);
 
+        #ifndef PLANET_GROUND
+            mu = max(mu, exp2(-0.002 * max0(viewerHeight - planetRadius - 512.0)) - 1.0);
+        #endif
+
         bool ray_r_mu_intersects_ground = RayIntersectsGround(r, mu);
 
         transmittance = ray_r_mu_intersects_ground ? vec3(0.0) : GetTransmittanceToTopAtmosphereBoundary(r, mu);
@@ -417,8 +426,6 @@ vec3 GetSkyRadiance(
                 vec3 scatterAP = GetSkyRadianceToPoint(planet_point, sun_direction, transmitAP);
                 ground = ground * transmitAP + scatterAP;
             }
-        #else
-            ray_r_mu_intersects_ground = false;
         #endif
 
         sun_scattering = GetCombinedScattering(r, mu, mu_s, nu, ray_r_mu_intersects_ground, sun_single_mie_scattering);
@@ -461,6 +468,10 @@ vec3 GetSkyRadiance(
         float mu_s = dot(camera, sun_direction) / r;
         float nu = dot(view_ray, sun_direction);
 
+        #ifndef PLANET_GROUND
+            mu = max(mu, exp2(-0.002 * max0(viewerHeight - planetRadius - 512.0)) - 1.0);
+        #endif
+
         vec3 sun_single_mie_scattering;
         vec3 sun_scattering;
 
@@ -487,8 +498,6 @@ vec3 GetSkyRadiance(
                 vec3 scatterAP = GetSkyRadianceToPoint(planet_point, sun_direction, transmitAP);
                 ground = ground * transmitAP + scatterAP;
             }
-        #else
-            ray_r_mu_intersects_ground = false;
         #endif
 
         sun_scattering = GetCombinedScattering(r, mu, mu_s, nu, ray_r_mu_intersects_ground, sun_single_mie_scattering);

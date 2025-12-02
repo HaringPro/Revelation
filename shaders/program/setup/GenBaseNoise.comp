@@ -24,57 +24,87 @@ writeonly uniform image3D baseNoiseImg;
 
 //======// Function //============================================================================//
 
-#define UI0 1597334673U
-#define UI1 3812015801U
-#define UI3 uvec3(UI0, UI1, 2798796415U)
-#define UIF (1.0 / float(0xffffffffU))
+// Based on pcg3 by Mark Jarzynski: http://www.jcgt.org/published/0009/03/02/
+vec3 Hash33(vec3 x) {
+    uvec3 v = uvec3(x * 8192.0) * 1664525u + 1013904223u;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v ^= v >> 16u;
 
-vec3 Hash33(const vec3 p) {
-    uvec3 q = uvec3(ivec3(p)) * UI3;
-    q = (q.x ^ q.y ^ q.z) * UI3;
-    return vec3(q) * UIF;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    return vec3(v) * (1.0 / float(0xffffffffu));
 }
 
-#define FPRIME 1317666547U
-#define VPRIME uvec3(3480082861U, 2420690917U, 2149110343U)
-#define SMALLESTFLOAT (1.0 / float(0xffffffffU))
-float Hash13(const vec3 p) {
-    const uvec3 q = uvec3(ivec3(p)) * VPRIME;
-    const uint n = (q.x & q.y ^ q.z) * FPRIME;
-    return float(n) * SMALLESTFLOAT;
+float Hash13(vec3 x) {
+    uvec3 v = uvec3(x * 8192.0) * 1664525u + 1013904223u;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v ^= v >> 16u;
+    return float(v.x + v.y * v.z) * (1.0 / float(0xffffffffu));
+}
+
+// Gradient noise by iq (modified to be tileable)
+float GradientNoise(vec3 x, float freq) {
+    // grid
+    vec3 p = floor(x);
+    vec3 w = curve(x - p);
+
+    // quintic interpolant
+    vec3 u = w * w * w * (w * (w * 6. - 15.) + 10.);
+
+    // gradients
+    vec3 ga = Hash33(mod(p + vec3(0., 0., 0.), freq)) * 2.0 - 1.0;
+    vec3 gb = Hash33(mod(p + vec3(1., 0., 0.), freq)) * 2.0 - 1.0;
+    vec3 gc = Hash33(mod(p + vec3(0., 1., 0.), freq)) * 2.0 - 1.0;
+    vec3 gd = Hash33(mod(p + vec3(1., 1., 0.), freq)) * 2.0 - 1.0;
+    vec3 ge = Hash33(mod(p + vec3(0., 0., 1.), freq)) * 2.0 - 1.0;
+    vec3 gf = Hash33(mod(p + vec3(1., 0., 1.), freq)) * 2.0 - 1.0;
+    vec3 gg = Hash33(mod(p + vec3(0., 1., 1.), freq)) * 2.0 - 1.0;
+    vec3 gh = Hash33(mod(p + vec3(1., 1., 1.), freq)) * 2.0 - 1.0;
+
+    // projections
+    float va = dot(ga, w - vec3(0., 0., 0.));
+    float vb = dot(gb, w - vec3(1., 0., 0.));
+    float vc = dot(gc, w - vec3(0., 1., 0.));
+    float vd = dot(gd, w - vec3(1., 1., 0.));
+    float ve = dot(ge, w - vec3(0., 0., 1.));
+    float vf = dot(gf, w - vec3(1., 0., 1.));
+    float vg = dot(gg, w - vec3(0., 1., 1.));
+    float vh = dot(gh, w - vec3(1., 1., 1.));
+
+    // interpolation
+    return va +
+           u.x * (vb - va) +
+           u.y * (vc - va) +
+           u.z * (ve - va) +
+           u.x * u.y * (va - vb - vc + vd) +
+           u.y * u.z * (va - vc - ve + vg) +
+           u.z * u.x * (va - vb - ve + vf) +
+           u.x * u.y * u.z * (-va + vb + vc - vd + ve - vf - vg + vh);
 }
 
 /// Tileable 3D worley noise
 /// Source: <https://www.shadertoy.com/view/3dVXDc>
-float WorleyNoise(const vec3 uv, const float freq) {
-    const vec3 id = floor(uv);
-    const vec3 p = mod(uv, 1.0);
+float WorleyNoise(vec3 uv, float freq) {
+    vec3 id = floor(uv);
+    vec3 p = curve(uv - id);
 
-    float minDist = 10000.0;
-    for (float x = -1.0; x <= 1.0; ++x) {
-        for (float y = -1.0; y <= 1.0; ++y) {
-            for (float z = -1.0; z <= 1.0; ++z) {
-                const vec3 offset = vec3(x, y, z);
-                vec3 h = (-1.0 + 2.0 * Hash33(mod(id + offset, freq.xxx))) * 0.5 + 0.5;
-                h += offset;
-                const vec3 d = p - h;
+    float minDist = 1.0;
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            for (int z = -1; z <= 1; ++z) {
+                vec3 offset = vec3(x, y, z);
+                vec3 h = Hash33(mod(id + offset, freq)) + offset;
+                vec3 d = p - h;
                 minDist = min(minDist, dot(d, d));
             }
         }
     }
     return 1.0 - minDist;
-}
-
-float WorleyFbm(const vec3 p, const float freq) {
-    return WorleyNoise(p * freq, freq) * .625 +
-           WorleyNoise(p * freq * 2., freq * 2.) * .25 +
-           WorleyNoise(p * freq * 4., freq * 4.) * .125;
-}
-
-// Simplified Smoothstep https://www.desmos.com/calculator/un0o21eokv
-float SmoothValue(float x) {
-    x = clamp(x, 0.0, 1.0);
-    return x * x * (3.0 - 2.0 * x);
 }
 
 // Alligator Noise, originally from Side Effects:
@@ -117,7 +147,7 @@ float AlligatorNoise(vec3 p, uint gridsize, uvec3 seed) {
                 // performance. See: https://www.shadertoy.com/view/MflGWM
 
                 // Get random density scaled by the distance to the random point
-                float density = Hash13(cell) * SmoothValue(1.0 - dist);
+                float density = Hash13(cell) * curve(saturate(1.0 - dist));
 
                 // find largest values
                 if (densest < density) {
@@ -134,6 +164,60 @@ float AlligatorNoise(vec3 p, uint gridsize, uvec3 seed) {
     }
     // Subtract two largest density values for the result
     return densest - secondDensest;
+}
+
+float PerlinFbm(const vec3 p, float gridsize, const uint octaves, const float lacunarity, const float persistence) {
+    // Initialize the constants
+    // For Amplitude math see: https://www.desmos.com/calculator/xgqeepapwn
+    float amplitude = 1.0;
+    float amplitudeSum = 0.0;
+    float result = 0.0;
+
+    for (uint i = 0u; i < octaves; ++i) {
+        // sample noise and apply amplitude
+        result += GradientNoise(p * gridsize, gridsize) * amplitude;
+
+        // add up amplitude to normalize result later
+        amplitudeSum += amplitude;
+
+        // increase frequency for the next octave
+        gridsize *= lacunarity;
+
+        // decrease amplitude for the next octave
+        amplitude *= persistence;
+    }
+
+    // normalize the result to 0-1 range
+    result /= amplitudeSum;
+
+    return result;
+}
+
+float WorleyFbm(const vec3 p, float gridsize, const uint octaves, const float lacunarity, const float persistence) {
+    // Initialize the constants
+    // For Amplitude math see: https://www.desmos.com/calculator/xgqeepapwn
+    float amplitude = 1.0;
+    float amplitudeSum = 0.0;
+    float result = 0.0;
+
+    for (uint i = 0u; i < octaves; ++i) {
+        // sample noise and apply amplitude
+        result += WorleyNoise(p * gridsize, gridsize) * amplitude;
+
+        // add up amplitude to normalize result later
+        amplitudeSum += amplitude;
+
+        // increase frequency for the next octave
+        gridsize *= lacunarity;
+
+        // decrease amplitude for the next octave
+        amplitude *= persistence;
+    }
+
+    // normalize the result to 0-1 range
+    result /= amplitudeSum;
+
+    return result;
 }
 
 float AlligatorFbm(const vec3 p, float gridsize, const uint octaves, const float lacunarity, const float persistence) {
@@ -167,13 +251,26 @@ float AlligatorFbm(const vec3 p, float gridsize, const uint octaves, const float
     return result;
 }
 
+float WorleyFbm(vec3 p, float freq) {
+    return WorleyNoise(p * freq, freq) * .625 +
+           WorleyNoise(p * freq * 2., freq * 2.) * .25 +
+           WorleyNoise(p * freq * 4., freq * 4.) * .125;
+}
+
 //======// Main //================================================================================//
 void main() {
 	ivec3 tid = ivec3(gl_GlobalInvocationID.xyz);
 	vec3 uv = (vec3(tid) + 0.5) / vec3(imageSize(baseNoiseImg));
 
-    float noise = AlligatorFbm(uv, 5.0, 8, 2.0, 0.65);
-    noise = pow(noise * 1.5, 0.7);
+    // float hf = WorleyFbm(uv, 16.0);
+    // float hf = AlligatorFbm(uv, 16.0, 4, 2.0, 0.6);
+    // hf = pow(hf * 1.5, 0.3);
 
-	imageStore(baseNoiseImg, tid, vec4(noise));
+    // float lf = AlligatorFbm(uv, 4.0, 8, 2.0, 0.7);
+    // lf = pow(lf * 1.5, 0.5);
+
+    // Mapping perlin noise in between worley as minimum and 1.0 as maximum (as described in text of p.101 of GPU Pro 7)
+    float perlinWorley = mix(PerlinFbm(uv, 6.0, 5, 2.0, 0.6), 1.0, WorleyFbm(uv, 6.0, 5, 2.0, 0.6));
+
+	imageStore(baseNoiseImg, tid, vec4(perlinWorley, 0.0, 0.0, 1.0));
 }
