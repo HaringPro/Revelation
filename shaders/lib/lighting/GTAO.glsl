@@ -16,7 +16,7 @@ void SampleHorizonCos(in vec2 coord, in vec2 offset, in vec3 viewPos, in vec3 vi
 	#if defined LOD_MOD
 		vec3 sHorizonV;
 		if (sDepth > 1.0 - EPS) {
-			sDepth = loadDepthTransLod(uvToTexel(sTexCoord));
+			sDepth = loadDepth0Lod(uvToTexel(sTexCoord));
 			sHorizonV = ScreenToViewSpaceLod(vec3(sTexCoord, sDepth)) - viewPos;
 		} else {
 			sHorizonV = ScreenToViewSpace(vec3(sTexCoord, sDepth)) - viewPos;

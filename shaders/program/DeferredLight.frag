@@ -84,7 +84,7 @@ void main() {
 	#if defined LOD_MOD
 		bool lodTerrainMask = screenPos.z > 1.0 - EPS;
 		if (lodTerrainMask) {
-			screenPos.z = loadDepthTransLod(screenTexel);
+			screenPos.z = loadDepth0Lod(screenTexel);
 			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif

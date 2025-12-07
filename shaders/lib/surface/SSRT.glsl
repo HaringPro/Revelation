@@ -46,7 +46,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
         float sampleDepth = loadDepth2(ivec2(rayPos.xy));
         #if defined LOD_MOD
-            if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepthOpaqueLod(ivec2(rayPos.xy))));
+            if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(ivec2(rayPos.xy))));
         #endif
 
 		if (rayPos.z > sampleDepth) {
@@ -73,7 +73,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
             float sampleDepth = loadDepth2(ivec2(screenPos.xy));
             #if defined LOD_MOD
-                if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepthOpaqueLod(ivec2(screenPos.xy))));
+                if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(ivec2(screenPos.xy))));
             #endif
 
             screenPos += rayStep * fastSign(sampleDepth - screenPos.z);

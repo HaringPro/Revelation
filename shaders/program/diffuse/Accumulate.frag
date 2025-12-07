@@ -153,12 +153,12 @@ void main() {
         float depth = SampleDepthMin4x4(depthtex0, currentCoord);
         #if defined LOD_MOD
             bool lodTerrainMask = depth > (1.0 - EPS);
-            if (lodTerrainMask) depth = loadDepthTransLod(currentTexel);
+            if (lodTerrainMask) depth = loadDepth0Lod(currentTexel);
         #endif
 
         if (depth < 1.0) {
-            #if defined DISTANT_HORIZONS
-                if (dhTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthDH(depth));
+            #if defined LOD_MOD
+                if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
             #endif
 
             vec3 screenPos = vec3(currentCoord, depth);

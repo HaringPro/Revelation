@@ -67,7 +67,7 @@ void main() {
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	#if defined LOD_MOD
 		if (depth > 1.0 - EPS) {
-			depth = screenPos.z = loadDepthTransLod(screenTexel);
+			depth = screenPos.z = loadDepth0Lod(screenTexel);
 			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
@@ -93,7 +93,7 @@ void main() {
 			vec3 viewPos1 = ScreenToViewSpace(vec3(screenCoord, depth1));
 			#if defined LOD_MOD
 				if (depth1 > 1.0 - EPS) {
-					depth1 = loadDepthOpaqueLod(screenTexel);
+					depth1 = loadDepth1Lod(screenTexel);
 					viewPos1 = ScreenToViewSpaceLod(vec3(screenCoord, depth1));
 				}
 			#endif

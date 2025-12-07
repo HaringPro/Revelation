@@ -96,7 +96,7 @@ void main() {
 	vec3 screenPos = vec3(texelToUv(screenTexel), loadDepth0(screenTexel));
 	#if defined LOD_MOD
 		if (screenPos.z > 1.0 - EPS) {
-			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepthTransLod(screenTexel)));
+			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(screenTexel)));
 		}
 	#endif
 

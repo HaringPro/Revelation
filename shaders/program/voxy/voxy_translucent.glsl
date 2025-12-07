@@ -5,8 +5,8 @@
 //======// Utility //=============================================================================//
 
 // #include "/lib/utility/Load.glsl"
-#define loadDepthTransLod(texel) 	texelFetch(vxDepthTexTrans, texel, 0).x
-#define loadDepthOpaqueLod(texel)	texelFetch(vxDepthTexOpaque, texel, 0).x
+#define loadDepth0Lod(texel) 	texelFetch(vxDepthTexTrans, texel, 0).x
+#define loadDepth1Lod(texel)	texelFetch(vxDepthTexOpaque, texel, 0).x
 
 #include "/lib/utility/Math.glsl"
 #include "/lib/utility/Pack.glsl"
@@ -43,7 +43,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	if (materialID == 3u) { // water
 		ivec2 texel = ivec2(parameters.uv);
     	vec2 screenCoord = parameters.uv * viewPixelSize;
-		vec3 screenPos = vec3(screenCoord, loadDepthTransLod(texel));
+		vec3 screenPos = vec3(screenCoord, loadDepth0Lod(texel));
 		vec3 viewPos = ScreenToViewSpaceRawVoxy(screenPos);
 
 		viewPos = viewPos - vxProj[3].yzw;
@@ -51,7 +51,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		vec3 worldPos = transMAD(vxModelViewInv, viewPos);
 
 
-		float depthOpaque = loadDepthOpaqueLod(texel);
+		float depthOpaque = loadDepth1Lod(texel);
 		vec3 viewPosOpaque = ScreenToViewSpaceRawVoxy(vec3(parameters.uv * viewPixelSize, depthOpaque));
 		vec3 worldPosOpaque = transMAD(vxModelViewInv, viewPosOpaque);
 

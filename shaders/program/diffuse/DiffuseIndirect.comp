@@ -63,7 +63,7 @@ void main() {
 	// float depth = loadDepth0(renderTexel);
 	#if defined LOD_MOD
 		bool lodTerrainMask = depth > 1.0 - EPS;
-		if (lodTerrainMask) depth = loadDepthTransLod(renderTexel);
+		if (lodTerrainMask) depth = loadDepth0Lod(renderTexel);
 	#endif
 
 	if (depth < 1.0) {

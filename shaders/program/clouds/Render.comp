@@ -79,6 +79,8 @@ void main() {
 
 	#if defined DISTANT_HORIZONS
 		if (depthMax > 1.0 - EPS) depthMax = SampleDepthMax4x4(dhDepthTex1, renderCoord);
+	#elif defined VOXY
+		if (depthMax > 1.0 - EPS) depthMax = SampleDepthMax4x4(vxDepthTexOpaque, renderCoord);
 	#endif
 
 	if (depthMax > 1.0 - EPS) {

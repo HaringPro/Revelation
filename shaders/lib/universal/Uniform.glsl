@@ -139,6 +139,8 @@ uniform mat4 shadowModelViewInverse;
 
     #define lodRenderDistance vxRenderDistance
 
+    // Hardcoded near/far planes in Voxy
+    // src: https://github.com/MCRcortex/voxy/blob/aa314781d6b70acb1639d1285a734d9892363306/src/main/java/me/cortex/voxy/client/iris/VoxyUniforms.java#L62-L63
     #define lodNearPlane 16
     #define lodFarPlane 16*3000
 

@@ -169,7 +169,7 @@ float ScreenSpaceShadow(in vec3 viewPos, in vec3 viewNormal, in float dither, in
 		#if defined LOD_MOD
 			float difference;
 			if (sampleDepth > 1.0 - EPS) {
-				sampleDepth = loadDepthTransLod(sampleTexel);
+				sampleDepth = loadDepth0Lod(sampleTexel);
 				difference = ScreenToViewDepthLod(sampleDepth) + rayPos.z;
 			} else {
 				difference = ScreenToViewDepth(sampleDepth) + rayPos.z;

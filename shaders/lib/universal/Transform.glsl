@@ -84,7 +84,7 @@ float ViewToScreenDepth(in float depth) {
 
 //======// LoD Mods Transform Function //=================================================//
 
-#if defined DISTANT_HORIZONS || defined VOXY
+#if defined LOD_MOD
 	vec3 ScreenToViewSpaceRawLod(in vec3 screenPos) {
 		vec3 NDCPos = screenPos * 2.0 - 1.0;
 		return ProjectDivide(NDCPos, lodProjInv);
@@ -99,7 +99,7 @@ float ViewToScreenDepth(in float depth) {
 	}
 
 	vec3 ScreenToViewSpaceLod(in vec2 screenCoord) {
-		vec3 NDCPos = vec3(screenCoord, loadDepthTransLod(uvToTexel(screenCoord))) * 2.0 - 1.0;
+		vec3 NDCPos = vec3(screenCoord, loadDepth0Lod(uvToTexel(screenCoord))) * 2.0 - 1.0;
 		#ifdef TAA_ENABLED
 			NDCPos.xy -= taaOffset;
 		#endif
