@@ -1,6 +1,6 @@
 //======// Constants //===========================================================================//
 
-const float min_ev = -8.0;
+const float min_ev = -7.5;
 const float max_ev = 5.5;
 const float middle_grey = 0.18;
 
@@ -40,8 +40,8 @@ const vec3 rotation = vec3(2.0, -1.0, -3.0);
 // All values used to derive this implementation are sourced from Troy’s initial AgX implementation/OCIO config file available here:
 //   https://github.com/sobotka/AgX
 
-// 0: Default, 1: Golden, 2: Punchy, 3: Custom
-#define AGX_LOOK 3 // [0 1 2 3]
+// 0: Default, 1: Golden, 2: Punchy
+#define AGX_LOOK 0 // [0 1 2]
 
 // Mean error^2: 3.6705141e-06
 vec3 agxDefaultContrastApprox_6th(vec3 x) {

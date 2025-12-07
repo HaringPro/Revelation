@@ -41,7 +41,7 @@ uniform vec2 taaOffset;
 //======// Main //================================================================================//
 void main() {
 	lightmap = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.xy + gl_TextureMatrix[1][3].xy;
-	lightmap = saturate((lightmap - 0.03125) * 1.06667);
+	lightmap = vec2(0.0, saturate((lightmap.y - 0.03125) * 1.06667));
 
 	vertColor = gl_Color;
 

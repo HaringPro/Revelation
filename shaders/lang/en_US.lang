@@ -114,6 +114,8 @@ option.CLOUD_CUMULUS=Cumulus
 option.CLOUD_CU_COVERAGE=Cumulus Coverage
 option.CLOUD_CU_ALTITUDE=Cumulus Altitude
 option.CLOUD_CU_THICKNESS=Cumulus Thickness
+option.CLOUD_CU_DENSITY_B=Cumulus Bottom Density
+option.CLOUD_CU_DENSITY_T=Cumulus Top Density
 suffix.CLOUD_CU_ALTITUDE=m
 suffix.CLOUD_CU_THICKNESS=m
 
@@ -127,6 +129,7 @@ option.CLOUD_CC_COVERAGE=Cirrocumulus Coverage
 option.CLOUD_SHADOWS=Cloud Shadows
 option.CLOUD_SHADOW_SAMPLES=Cloud Shadow Samples
 option.CLOUD_SHADOW_DISTANCE=Cloud Shadow Distance
+option.CLOUD_SHADOW_STRENGTH=Cloud Shadow Strength
 value.CLOUD_SHADOW_DISTANCE.1024.0=64 Chunks
 value.CLOUD_SHADOW_DISTANCE.2048.0=128 Chunks
 value.CLOUD_SHADOW_DISTANCE.4096.0=256 Chunks

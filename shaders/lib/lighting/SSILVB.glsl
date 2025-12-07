@@ -52,6 +52,34 @@ float SamplePartialSlice(float x, float sin_thVN) {
     return x < 0.0 ? -y : y;
 }
 
+// https://www.shadertoy.com/view/lXBfWm
+// dir: normalized vector | out: angle in radians [-Pi, Pi] (max abs error ~0.000000546448 rad)
+float ArcTan(vec2 dir) {
+    float x = abs(dir.x);
+    float y =     dir.y;
+
+    float u = 0.63662 + x * (0.405285 + x * (-0.0602976 + (0.0261141 - 0.00772104 * x) * x));// max abs err ~0.0000454545 rad
+
+    float f = y / u;
+
+    if (dir.x < 0.0) f = (dir.y < 0.0 ? -PI : PI) - f;
+
+    return f;
+}
+
+float ArcTan11(vec2 dir) { // == ArcTan(dir) / Pi
+    float x = abs(dir.x);
+    float y =     dir.y;
+
+    float u = 2.0 + x * (1.27324 + x * (-0.189431 + (0.08204 - 0.0242564 * x) * x));
+
+    float f = y / u;
+
+    if (dir.x < 0.0) f = fastSign(dir.y) - f;
+
+    return f;
+}
+
 vec2 SamplePartialSliceDir(vec3 vvsN, vec2 dir0) {
     float l = sdot(vvsN.xy);
     if (l < EPS) return dir0;
@@ -62,7 +90,7 @@ vec2 SamplePartialSliceDir(vec3 vvsN, vec2 dir0) {
     dir0 = cmul(dir0, n * vec2(1.0, -1.0));
 
     // sample slice angle
-    float x = atan(dir0.x, dir0.y) * rPI;
+    float x = ArcTan11(dir0);
     float ang = SamplePartialSlice(x, l * rl) * PI;
 
     // ray space slice direction
@@ -70,6 +98,65 @@ vec2 SamplePartialSliceDir(vec3 vvsN, vec2 dir0) {
 
     // align x-axis with n
     return cmul(dir, n);
+}
+
+vec4 GetQuaternion(vec3 from, vec3 to) {
+    vec3 xyz = cross(from, to);
+    float s  =   dot(from, to);
+
+    float u = inversesqrt(max(0.0, s * 0.5 + 0.5));// rcp(cosine half-angle formula)
+
+    s    = 1.0 / u;
+    xyz *= u * 0.5;
+
+    return vec4(xyz, s);
+}
+
+vec4 GetQuaternion(vec3 to) {
+    //vec3 from = vec3(0.0, 0.0, 1.0);
+
+    vec3 xyz = vec3(-to.y, to.x, 0.0);// cross(from, to);
+    float s  =                   to.z;//   dot(from, to);
+
+    float u = inversesqrt(max(0.0, s * 0.5 + 0.5));// rcp(cosine half-angle formula)
+
+    s    = 1.0 / u;
+    xyz *= u * 0.5;
+
+    return vec4(xyz, s);
+}
+
+// transform v by unit quaternion q.xy0s
+vec3 Transform_Qz0(vec3 v, vec4 q) {
+    float k = v.y * q.x - v.x * q.y;
+    float g = 2.0 * (v.z * q.w + k);
+
+    vec3 r;
+    r.xy = v.xy + q.yx * vec2(g, -g);
+    r.z  = v.z  + 2.0 * (q.w * k - v.z * dot(q.xy, q.xy));
+
+    return r;
+}
+
+// transform v.xy0 by unit quaternion q.xy0s
+vec3 Transform_Vz0Qz0(vec2 v, vec4 q) {
+    float o = q.x * v.y;
+    float c = q.y * v.x;
+
+    vec3 b = vec3( o - c,
+                  -o + c,
+                   o - c);
+
+    return vec3(v, 0.0) + 2.0 * (b * q.yxw);
+}
+
+vec2 SliceRelCDF_Cos(vec2 x, float angN, float cosN) {
+    vec2 phi = x * PI - hPI;
+
+    vec2 t0 = 3.0 * cosN + -cos(angN - 2.0 * phi) + (4.0 * angN - 2.0 * phi + PI) * sin(angN);
+    float t1 = 4.0 * (cosN + angN * sin(angN));
+
+    return mix(x, t0 / t1, step(abs(x - 0.5), vec2(0.5)));
 }
 
 // https://cdrinmatane.github.io/posts/ssaovb-code/
@@ -85,10 +172,10 @@ uint updateSectors(in vec2 horizon) {
 
 //================================================================================================//
 
-vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in vec2 lightmap) {
+vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in float skylight) {
 	const int sliceCount = SSILVB_SLICE_COUNT;
 	const int sampleCount = SSILVB_SAMPLE_COUNT;
-	const float hitThickness = SSILVB_HIT_THICKNESS;
+	const float hitThickness = SSILVB_HIT_THICKNESS * 0.1;
 
 	const float rSliceCount = 1.0 / float(sliceCount);
 	const float rSampleCount = 1.0 / float(sampleCount);
@@ -99,20 +186,32 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
     vec3 viewDir = normalize(-viewPos);
     vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
+    vec4 Q_toV = GetQuaternion(viewDir);
+    vec4 Q_fromV = Q_toV * vec4(vec3(-1.0), 1.0);
+    vec3 normalVVS = Transform_Qz0(viewNormal, Q_fromV);
+
     vec4 irradiance = vec4(0.0);
 
     for (int slice = 0; slice < sliceCount; ++slice) {
         vec2 dir = SampleStbnUnitvec2(ivec2(gl_GlobalInvocationID.xy), slice + frameCounter * sliceCount);
-        dir = SamplePartialSliceDir(viewNormal, normalize(dir * 2.0 - 1.0));
+        dir = SamplePartialSliceDir(normalVVS, normalize(dir * 2.0 - 1.0));
+        vec3 smplDirVS = Transform_Vz0Qz0(dir, Q_toV);
 
-        vec3 sliceN = normalize(cross(viewDir, vec3(dir, 0.0)));
+        vec3 sliceN = normalize(cross(viewDir, smplDirVS));
         vec3 projN = viewNormal - sliceN * dot(viewNormal, sliceN);
         float cosN = dot(projN, viewDir) * inversesqrt(sdot(projN));
 
         float angN = fastSign(dot(projN, cross(viewDir, sliceN))) * acosFast4(clamp(cosN, -1.0, 1.0));
         float angOff = angN * rPI + 0.5;
 
-        vec3 endPos = ViewToScreenSpace(vec3(dir, 0.0) + viewPos);
+        // percentage of the slice we don't use ([0, angN]-integrated slice-relative pdf)
+        float w0 = saturate((sin(angN) / (cos(angN) + angN * sin(angN))) * (PI / 4.0) + 0.5);
+
+        // partial slice re-mapping constants
+        float w0_remap_mul = 1.0 / (1.0 - w0);
+        float w0_remap_add = -w0 * w0_remap_mul;
+
+        vec3 endPos = ViewToScreenSpace(smplDirVS + viewPos);
         vec2 rayDir = normalize(endPos.xy - fragCoord);
 
         float stepLength = minOf((step(0.0, rayDir) - fragCoord) / rayDir) * rSampleCount;
@@ -124,33 +223,40 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
             vec2 sampleUV = fragCoord + rayStep * (float(currentSample) + dither);
 
 			if (saturate(sampleUV) == sampleUV) {
-				vec3 sampleDiff = ScreenToViewSpace(sampleUV) - viewPos;
-                float frontDistSq = sdot(sampleDiff);
+                float sampleDepth = loadDepth0(uvToTexel(sampleUV));
+                if (sampleDepth > 1.0 - EPS) continue;
 
-                if (frontDistSq < 32.0 * 32.0) {
-                    vec3 sampleDirFront = sampleDiff * fastRcpSqrtNR0(frontDistSq);
-                    vec3 sampleDirBack = normalize(sampleDiff - viewDir * hitThickness);
+                vec3 samplePos = ScreenToViewSpace(vec3(sampleUV, sampleDepth));
+				vec3 sampleDiff = samplePos - viewPos;
 
-                    vec2 frontBackHorizon = vec2(dot(sampleDirFront, viewDir), dot(sampleDirBack, viewDir));
+                vec3 sampleDirFront = sampleDiff * fastRcpSqrtNR0(sdot(sampleDiff));
+                vec3 sampleDirBack = normalize(sampleDiff - viewDir * max(abs(samplePos.z) * hitThickness, 0.2));
 
-                    frontBackHorizon = acosFast4(clamp(frontBackHorizon, -1.0, 1.0));
-                    frontBackHorizon = saturate(frontBackHorizon * rPI + angOff);
+                vec2 frontBackHorizon = vec2(dot(sampleDirFront, viewDir), dot(sampleDirBack, viewDir));
 
-                    uint sBitMask = updateSectors(frontBackHorizon);
-                    uint sampleOccludedBit = sBitMask & ~bitMask;
+                frontBackHorizon = acosFast4(clamp(frontBackHorizon, -1.0, 1.0));
+                frontBackHorizon = saturate(frontBackHorizon * rPI + angOff);
 
-                    if (sampleOccludedBit > 0u) {
-                        ivec2 sampleTexel = uvToTexel(sampleUV);
-                        vec3 sampleNormal = mat3(gbufferModelView) * FetchSurfaceNormal(sampleTexel);
+                // map to slice relative distribution
+                frontBackHorizon = SliceRelCDF_Cos(frontBackHorizon, angN, cosN);
 
-                        vec3 sampleRadiance = texelFetch(colortex4, sampleTexel >> 1, 0).rgb;
-                        irradiance.rgb += float(bitCount(sampleOccludedBit)) *
-                            saturate(dot(viewNormal, sampleDirFront)) *
-                            saturate(0.5 - 0.5 * dot(sampleNormal, sampleDirFront)) *
-                            sampleRadiance;
+                // partial slice re-mapping
+                frontBackHorizon = frontBackHorizon * w0_remap_mul + w0_remap_add;
 
-                        bitMask |= sBitMask;
-                    }
+                uint sBitMask = updateSectors(frontBackHorizon);
+                uint sampleOccludedBit = sBitMask & ~bitMask;
+
+                if (sampleOccludedBit > 0u) {
+                    ivec2 sampleTexel = uvToTexel(sampleUV);
+                    // vec3 sampleNormal = mat3(gbufferModelView) * FetchSurfaceNormal(sampleTexel);
+
+                    vec3 sampleRadiance = texelFetch(colortex4, sampleTexel >> 1, 0).rgb;
+                    irradiance.rgb += float(bitCount(sampleOccludedBit)) *
+                        // saturate(dot(viewNormal, sampleDirFront)) *
+                        // saturate(0.5 - 0.5 * dot(sampleNormal, sampleDirFront)) *
+                        sampleRadiance;
+
+                    bitMask |= sBitMask;
                 }
 			}
         }
@@ -159,9 +265,9 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
     }
 
     irradiance *= rSectorCount * rSliceCount;
-    irradiance = vec4(irradiance.rgb * PI, saturate(1.0 - irradiance.a));
+    irradiance = vec4(irradiance.rgb, saturate(1.0 - irradiance.a));
 
-    vec3 skylight = ConvolvedReconstructSH3(global.light.skySH, worldNormal);
-    irradiance.rgb += skylight * irradiance.a * cube(lightmap.y);
+    vec3 skyIrradiance = ConvolvedReconstructSH3(global.light.skySH, worldNormal);
+    irradiance.rgb += skyIrradiance * irradiance.a * cube(skylight);
     return irradiance;
 }

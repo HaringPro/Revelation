@@ -112,19 +112,6 @@ void main() {
 
 	const float kernel[8] = {0.0625, 0.125, 0.0625, 0.125, 0.125, 0.0625, 0.125, 0.0625};
 
-	// 1/16 1/4 1/16
-	// 1/4  3/8  1/4
-	// 1/16 1/4 1/16
-	// const float h[8] = {1.0 / 16.0, 1.0 / 4.0, 1.0 / 16.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 16.0, 1.0 / 4.0, 1.0 / 16.0};
-
-	// 5x5 A-Trous kernel
-	// const float h[25] = {1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0,
-	//             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
-	//             3.0 / 128.0, 3.0 / 32.0, 9.0 / 64.0, 3.0 / 32.0, 3.0 / 128.0,
-	//             1.0 / 64.0, 1.0 / 16.0, 3.0 / 32.0, 1.0 / 16.0, 1.0 / 64.0,
-	//             1.0 / 256.0, 1.0 / 64.0, 3.0 / 128.0, 1.0 / 64.0, 1.0 / 256.0};
-
-
 	vec4 filteredColVar = imageLoad(colorimg3, texelPos);
 	float centerLuma = filteredColVar.r; // We use YCoCg color space
 
@@ -133,17 +120,15 @@ void main() {
 
 	// float variance = CalculateVariance(ivec2(localPos + padRadius));
 	float variance = filteredColVar.a;
+	float variancePhi = -2.0 * inversesqrt(variance + EPS);
 
-	const float invSigmaL = 2.0 * log2(1.0 + float(ATROUS_FILTER_SIZE));
-	float variancePhi = -invSigmaL / (variance + EPS);
-
-	const float sigmaZ = -8.0 * inversesqrt(float(ATROUS_FILTER_SIZE));
+	const float sigmaZ = -4.0 * inversesqrt(float(ATROUS_FILTER_SIZE));
 	const float sigmaN = 32.0;
 
     vec3 worldNormal = OctDecodeSnorm(normalDepthData.xy);
 
 	float sumWeight = 1.0;
-	ivec2 randTexel = texelPos + ivec2((SampleStbnVec2(texelPos, frameCounter) - 0.5) * float(min(ATROUS_FILTER_SIZE, 16)));
+	ivec2 randTexel = texelPos + ivec2((SampleStbnVec2(texelPos, frameCounter + ATROUS_FILTER_SIZE) - 0.5) * float(min(ATROUS_FILTER_SIZE, 16)));
 
 	for (uint i = 0u; i < 8u; ++i) {
 		ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(1), texelEnd);
@@ -161,13 +146,11 @@ void main() {
 
 		float weight = saturate(exp2((logWeightN + logWeightZ + logWeightL) * historyFactor));
 
-		// sampleColVar.a *= weight; // Variance squaring
-		filteredColVar += sampleColVar * weight;
+		filteredColVar += sampleColVar * vec4(vec3(weight), weight * weight);
 		sumWeight += weight;
 	}
 
 	sumWeight = rcp(sumWeight);
-	filteredColVar *= sumWeight;
-	// filteredColVar.a *= sumWeight; // Variance squaring
+	filteredColVar *= vec4(vec3(sumWeight), sumWeight * sumWeight);
 	imageStore(colorimg3, texelPos, filteredColVar);
 }

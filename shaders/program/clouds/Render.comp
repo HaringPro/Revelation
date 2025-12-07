@@ -82,7 +82,7 @@ void main() {
 	#endif
 
 	if (depthMax > 1.0 - EPS) {
-		vec2 noise = SampleStbnVec2(renderTexel, frameCounter + 11);
+		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
 
 		vec3 viewDir  = ScreenToViewVectorRaw(renderCoord);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
@@ -91,5 +91,5 @@ void main() {
 	}
 
 	imageStore(cloudOriginImg, texelPos, cloudOut);
-	imageStore(cloudOriginImg, texelPos + ivec2(viewSize * 0.5), vec4(cloudDepth));
+	imageStore(cloudOriginImg, texelPos + ivec2(halfViewSize), vec4(cloudDepth));
 }

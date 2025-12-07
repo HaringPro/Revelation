@@ -7,10 +7,10 @@
 		float sigmaZ = -2.0 * NdotV;
 
 		ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
-        ivec2 texelEnd = ivec2(halfViewEnd);
+        ivec2 texelEnd = ivec2(halfViewEnd) - 1;
 
 		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 sampleTexel = clamp(texel + offset3x3N[i], ivec2(0), texelEnd);
+			ivec2 sampleTexel = clamp(texel + offset3x3N[i], ivec2(1), texelEnd);
 
 			vec3 prevData = texelFetch(colortex2, sampleTexel + offsetToBR, 0).rgb;
 

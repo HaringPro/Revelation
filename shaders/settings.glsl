@@ -121,7 +121,7 @@ const ivec2 skyMapRes = ivec2(256, 256);
 	#define NIGHT_BRIGHTNESS 1.0 // Brightness of the night. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0] [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.7 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 
 /* Global Illumination */
-	// #define SSILVB_ENABLED
+	#define SSILVB_ENABLED
 	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
 
 	// #define SSPT_ENABLED // Enables screen-space path tracing
@@ -130,7 +130,7 @@ const ivec2 skyMapRes = ivec2(256, 256);
 	#define SSILVB_BLENDED_LIGHTMAP 0.25 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 	// #define SSPT_BLENDED_LIGHTMAP 0.25 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 
-	#define SSILVB_MAX_ACCUM_FRAMES 72.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+	#define SSILVB_MAX_ACCUM_FRAMES 48.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 	// #define SSPT_MAX_ACCUM_FRAMES 72.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 	// #define RSM_MAX_ACCUM_FRAMES  64.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
@@ -211,7 +211,7 @@ const ivec2 skyMapRes = ivec2(256, 256);
 /* Subsurface Scattering */
 	#define SUBSURFACE_SCATTERING_MODE 0 // [0 1 2]
 	#define SUBSURFACE_SCATTERING_STRENGTH 1.0 // [0.0 0.01 0.02 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 4.0 5.0 7.0 10.0 15.0]
-	#define SUBSURFACE_SCATTERING_BRIGHTNESS 2.0 // [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0]
+	#define SUBSURFACE_SCATTERING_BRIGHTNESS 1.0 // [0.0 0.1 0.2 0.3 0.5 0.7 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0]
 	#define SUBSURFACE_SCATTERING_RADIUS 0.1 // [0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.11 0.12 0.13 0.14 0.15 0.16 0.17 0.18 0.19 0.2 0.21 0.22 0.23 0.24 0.25 0.26 0.27 0.28 0.29 0.3 0.31 0.32 0.33 0.34 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 	#if !defined NORMAL_MAPPING
@@ -244,10 +244,6 @@ const ivec2 skyMapRes = ivec2(256, 256);
 	#define MOTION_BLUR_SAMPLES 6 // Sample count of motion blur. [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24]
 	#define MOTION_BLUR_STRENGTH 0.5 // Strength of the motion blur. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0 1.2 1.4 1.5 1.7 2.0 2.5 3.0 3.5 4.0 4.5 5.0 7.0 10.0 12.0 14.0 16.0 18.0 20.0]
 
-	#if RENDER_MODE == 0
-		#undef MOTION_BLUR
-	#endif
-
 /* Bloom */
 	#define BLOOM_ENABLED // Enables bloom
 	#define BLOOMY_FOG // Enables bloomy fog
@@ -274,6 +270,11 @@ const ivec2 skyMapRes = ivec2(256, 256);
 /* FidelityFX */
 	#define CAS_ENABLED // Sharpens the final image using AMD FidelityFX CAS (Contrast-Adaptive Sharpening)
 	#define CAS_STRENGTH 0.3 // Strength of the CAS. [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
+
+	#if RENDER_MODE == 0
+		#undef MOTION_BLUR
+		#undef CAS_ENABLED
+	#endif
 
 //======// Debug //===============================================================================//
 

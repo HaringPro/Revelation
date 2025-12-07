@@ -75,9 +75,9 @@ void main() {
     	vec2 screenCoord = texelToUv(renderTexel);
 		vec3 viewPos = ScreenToViewSpace(vec3(screenCoord, depth));
 
-		vec2 lightmap = Unpack2x8U(loadMaterialPack(renderTexel).x);
+		float lightmapSky = Unpack2x8UY(loadMaterialPack(renderTexel).x);
 
-		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmap);
+		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);
 		result.rgb = sRGBToYCoCg(result.rgb); // Convert to YCoCg color space (for filtering)
 		imageStore(colorimg3, texelPos, result);
 	}

@@ -24,9 +24,9 @@ vec2 wavedx(vec2 position, vec2 direction, float frequency, float time) {
 	float c = approxSqrt(9.8 * frequency);
 
 	#if WATER_WAVE_STYLE == 0
-		float x = time * c - dot(direction, position) * frequency;
-	#else
 		float x = time * c + dot(direction, position) * frequency;
+	#else
+		float x = time * c - dot(direction, position) * frequency;
 	#endif
 
 	float wave = exp2(sin(x));
@@ -37,16 +37,18 @@ vec2 wavedx(vec2 position, vec2 direction, float frequency, float time) {
 
 float CalculateWaterHeight(in vec2 position) {
 	vec3 noise = FetchSmoothNoise((position + frameTimeCounter) * 2e-3);
-	vec2 dir = sincos(noise.z * 32.0 * inversesqrt(sdot(position)));
+	vec2 dir = vec2(0.0);
 
 	float frequency = 1.0;
 	float weight = 1.0;
 	float sum = 0.0;
 	float sumWeight = 0.0;
 
-	float waveTime = 0.5 * WATER_WAVE_SPEED * frameTimeCounter;
+	float waveTime = WATER_WAVE_SPEED * frameTimeCounter;
+	position += noise.z * 8.0;
 
-	for (uint i = 0u; i < 12u; ++i) {
+	for (uint i = 0u; i < 14u; ++i) {
+		dir = sincos(Halton2(i) * hPI);
 		frequency *= 1.22;
 		weight *= 0.8;
 
@@ -55,15 +57,13 @@ float CalculateWaterHeight(in vec2 position) {
 
 		sum += res.x * weight;
 		sumWeight += weight;
-
-		dir = sincos(float(i * 211));
 	}
 
 	#if !defined PASS_SHADOW
-		sum *= saturate(noise.z * 2.0 - 1.0) * 3.0 + 1.0;
+		sum *= saturate(noise.z * 2.0 - 1.0) * 3.0 + 0.75;
 	#endif
 
-	return sum / sumWeight * (0.15 * WATER_WAVE_HEIGHT);
+	return sum / sumWeight * (0.125 * WATER_WAVE_HEIGHT);
 }
 
 //================================================================================================//

@@ -155,8 +155,8 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 			vec2 cloudShadowCoord = DistortCloudShadowPos(cloudShadowPos);
 			vec2 fade = saturate(32.0 - abs(cloudShadowCoord - 0.5) * 64.0);
 
-			float cloudShadow = max(texture(cloudShadowTex, cloudShadowCoord).x, 0.125);
-			sampleShadow *= mix(1.0 - wetness * 0.875, cloudShadow, fade.x * fade.y);
+			float cloudShadow = texture(cloudShadowTex, cloudShadowCoord).x;
+			sampleShadow *= mix(1.0 - wetness * CLOUD_SHADOW_STRENGTH, cloudShadow, fade.x * fade.y);
 		#endif
 
 		vec2 stepPhase = max(phase, uniformPhase * saturate(stepFogmass * 2.0));
@@ -176,7 +176,7 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 	}
 
 	#ifndef VF_CLOUD_SHADOWS
-		scatteringSun *= 1.0 - wetness * 0.75;
+		scatteringSun *= 1.0 - wetness * CLOUD_SHADOW_STRENGTH;
 	#endif
 	scatteringSky *= eyeSkylightSmooth;
 

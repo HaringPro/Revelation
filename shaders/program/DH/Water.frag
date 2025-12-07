@@ -47,7 +47,10 @@ in vec3 worldPos;
 //======// Main //================================================================================//
 void main() {
 	ivec2 texel = ivec2(gl_FragCoord.xy);
-    if (loadDepth0(texel) < 1.0) { discard; return; }
+    float fade = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
+	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
+
+    if (fade < dither || loadDepth0(texel) < 1.0) { discard; return; }
 
 	normalOut.xy = OctEncodeUnorm(flatNormal);
 
@@ -91,6 +94,6 @@ void main() {
 		waterOut = vec4(0.0);
 	}
 
-	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Packup2x8U(lightmap);
 	materialOut.y = materialID;
 }

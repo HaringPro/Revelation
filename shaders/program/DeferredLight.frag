@@ -201,7 +201,7 @@ void main() {
 		vec3 specularDirect = vec3(0.0);
 
 		float worldDistSquared = sdot(worldPos);
-		float distanceFade = sqr(pow16(0.64 * rcp(shadowDistance * shadowDistance) * sdot(worldPos.xz)));
+		float distanceFade = linearstep(shadowDistance - 8.0, shadowDistance, length(worldPos.xz));
 		#if defined LOD_MOD
 			distanceFade = saturate(distanceFade + float(lodTerrainMask));
 		#endif
@@ -216,7 +216,7 @@ void main() {
 			// PCSS
         	if (distanceFade < EPS) {
 				vec3 normalOffset = flatNormal * (approxSqrt(worldDistSquared) * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
-				shadow = CalculatePCSS(worldPos, normalOffset, dither, sssAmount * float(!doShadows));
+				shadow = CalculatePCSS(worldPos, normalOffset, dither, sssAmount);
 			}
 
 			if (dot(shadow, vec3(1.0)) > EPS) {
@@ -234,6 +234,17 @@ void main() {
 
 				float LdotV = dot(worldLightVector, -worldDir);
 
+				// Subsurface scattering
+				if (sssAmount > 1e-3) {
+					float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
+					vec3 sss = mix(shadow, vec3(contactShadow), saturate(distanceFade + cutout * mix(0.5, 0.25, isEyeInWater > 0)));
+
+					// Wavelength-dependent approximation
+					sss *= pow((albedo + EPS), vec3(sqr(saturate(1.0 - mean(sss))) * 2.0 - 0.25)) * sunlightBase;
+
+					float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
+					sceneOut += sss * phase * (PI * SUBSURFACE_SCATTERING_BRIGHTNESS);
+				}
 				if (doShadows) {
 					shadow *= contactShadow * sunlightBase;
 
@@ -249,8 +260,7 @@ void main() {
 					float NdotH = dot(worldNormal, halfway);
 					float LdotH = dot(worldLightVector, halfway);
 
-					vec3 brdf = DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
-					sceneOut += shadow * mix(brdf, vec3(rPI), sssAmount * 0.5);
+					sceneOut += shadow * DiffuseHammon(LdotV, NdotV, NdotL, NdotH, material.roughness, albedo);
 
 					#if defined SPECULAR_MAPPING && defined MC_SPECULAR_MAP
 						vec3 f0 = GetMaterialF0(material.metalness, albedo);
@@ -259,18 +269,6 @@ void main() {
 					#endif
 
 					specularDirect = shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, material.roughness, f0);
-				} else {
-					// Subsurface scattering
-					if (isEyeInWater == 0) {
-						float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
-						shadow = mix(shadow, vec3(contactShadow), saturate(distanceFade + cutout * 0.5));
-					}
-
-					// Wavelength-dependent approximation
-					shadow *= saturate(pow(albedo, vec3(sqr(1.0 - mean(shadow)) - 0.2))) * sunlightBase;
-
-					float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
-					sceneOut += shadow * phase * SUBSURFACE_SCATTERING_BRIGHTNESS;
 				}
 			}
 		}
@@ -335,11 +333,11 @@ void main() {
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
 			if (heldBlockLightValue + heldBlockLightValue2 > EPS) {
-				float NdotL = saturate(dot(worldNormal, -worldDir)) * 0.8 + 0.2;
+				float NdotL = saturate(dot(worldNormal, -worldDir));
 				float attenuation = rcp(1.0 + worldDistSquared) * NdotL;
-				float irradiance = attenuation * max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS;
+				float irradiance = max(heldBlockLightValue, heldBlockLightValue2) * HELD_LIGHT_BRIGHTNESS;
 
-				sceneOut += irradiance * (ao - oms(ao) * sqr(attenuation)) * blocklightColor;
+				sceneOut += irradiance * attenuation * blocklightColor;
 			}
 		#endif
 

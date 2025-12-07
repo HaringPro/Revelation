@@ -10,14 +10,6 @@
 
 //================================================================================================//
 
-// Referred from https://github.com/zombye/spectrum/blob/master/shaders/include/fragment/raytracer.fsh
-// MIT License
-float AscribeDepth(in float depth, in float zThickness) {
-    depth = depth * 2.0 - 1.0;
-    depth = (depth - zThickness * gbufferProjection[2].z) / (1.0 + zThickness);
-    return depth * 0.5 + 0.5;
-}
-
 bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in uint steps, inout vec3 screenPos) {
     vec3 origin = screenPos;
 
@@ -29,8 +21,6 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
     float rSteps = 1.0 / float(steps);
     vec3 rayStep = rayDir * rSteps;
-
-	float zThickness = 8.0 * viewPixelSize.y * gbufferProjectionInverse[1].y;
     float invDirZ = 1.0 / abs(rayDir.z);
 
     #if defined LOD_MOD
@@ -41,7 +31,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
 	bool hit = false;
 
-    float t = dither * rSteps;
+    float t = dither * minOf((step(0.0, rayDir) - screenPos) / rayDir) * rSteps;
     for (uint i = 0u; i < steps; ++i) {
         vec3 rayPos = origin + rayDir * t;
 
@@ -60,8 +50,10 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
         #endif
 
 		if (rayPos.z > sampleDepth) {
-            float ascribedDepth = AscribeDepth(sampleDepth, zThickness);
-            if (ascribedDepth > rayPos.z - abs(rayStep.z)) {
+            float sampleViewZ = ScreenToViewDepth(sampleDepth);
+            float stepViewZ = ScreenToViewDepth(rayPos.z);
+
+            if (distance(sampleViewZ, stepViewZ) > 0.1 * stepViewZ) {
                 screenPos = rayPos;
                 hit = true;
                 break;
