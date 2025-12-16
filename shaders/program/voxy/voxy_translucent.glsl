@@ -1,15 +1,8 @@
-#include "/settings.glsl"
-
 #define PASS_VOXY_WATER
 
 //======// Utility //=============================================================================//
 
-// #include "/lib/utility/Load.glsl"
-#define loadDepth0Lod(texel) 	texelFetch(vxDepthTexTrans, texel, 0).x
-#define loadDepth1Lod(texel)	texelFetch(vxDepthTexOpaque, texel, 0).x
-
-#include "/lib/utility/Math.glsl"
-#include "/lib/utility/Pack.glsl"
+#include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
 
@@ -18,6 +11,16 @@ layout (location = 1) out vec4 normalOut;
 layout (location = 2) out vec4 waterOut;
 
 //======// Function //============================================================================//
+
+// Interleaved Gradient Noise
+// https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
+// https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
+float InterleavedGradientNoiseTemporal(in vec2 coord) {
+	#ifdef TAA_ENABLED
+        coord += 5.588238 * float(frameCounter % 64);
+	#endif
+    return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
+}
 
 // #include "/lib/universal/Transform.glsl"
 vec3 ProjectDivide(in vec3 v, in mat4 m) {
@@ -34,6 +37,17 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 
 //======// Main //================================================================================//
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
+	ivec2 texel = ivec2(parameters.uv);
+    vec2 screenCoord = parameters.uv * viewPixelSize;
+	float depth = loadDepth0Lod(texel);
+	vec3 viewPos = ScreenToViewSpaceRawVoxy(vec3(screenCoord, depth));
+	vec3 worldPos = transMAD(vxModelViewInv, viewPos);
+	
+    float fade = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
+	float dither = InterleavedGradientNoiseTemporal(screenCoord);
+
+    if (fade < dither) { discard; return; }
+
 	vec3 flatNormal = vec3(uint((parameters.face>>1)==2), uint((parameters.face>>1)==0), uint((parameters.face>>1)==1)) * (float(int(parameters.face)&1)*2-1);
 	vec4 vertColor = parameters.sampledColour * parameters.tinting;
 	uint materialID = uint(parameters.customId - 10000);
@@ -41,24 +55,14 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	normalOut.xy = OctEncodeUnorm(flatNormal);
 
 	if (materialID == 3u) { // water
-		ivec2 texel = ivec2(parameters.uv);
-    	vec2 screenCoord = parameters.uv * viewPixelSize;
-		vec3 screenPos = vec3(screenCoord, loadDepth0Lod(texel));
-		vec3 viewPos = ScreenToViewSpaceRawVoxy(screenPos);
-
-		viewPos = viewPos - vxProj[3].yzw;
-
-		vec3 worldPos = transMAD(vxModelViewInv, viewPos);
-
-
-		float depthOpaque = loadDepth1Lod(texel);
-		vec3 viewPosOpaque = ScreenToViewSpaceRawVoxy(vec3(parameters.uv * viewPixelSize, depthOpaque));
-		vec3 worldPosOpaque = transMAD(vxModelViewInv, viewPosOpaque);
+		float depth1 = loadDepth1Lod(texel);
+		vec3 viewPos1 = ScreenToViewSpaceRawVoxy(vec3(screenCoord, depth1));
+		vec3 worldPos1 = transMAD(vxModelViewInv, viewPos1);
 
 		vec2 encodedNormal = normalOut.xy;
 		normalOut.zw = encodedNormal;
 
-		waterOut = vec4(distance(worldPos, worldPosOpaque) * r255, Packup2x8(encodedNormal), 0.0, 1.0);
+		waterOut = vec4(distance(worldPos, worldPos1) * r255, Packup2x8(encodedNormal), 0.0, 1.0);
 	} else {
 		normalOut.zw = normalOut.xy;
 
@@ -67,6 +71,6 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		waterOut = vec4(0.0);
 	}
 
-	materialOut.x = PackupDithered2x8U(parameters.lightMap, bayer4(parameters.uv));
+	materialOut.x = Packup2x8U(vec2(0.0, saturate((parameters.lightMap.y - 0.03125) * 1.06667)));
 	materialOut.y = materialID;
 }

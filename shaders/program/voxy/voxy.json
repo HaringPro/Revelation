@@ -1,12 +1,20 @@
 {
+    "unusedThing": "
+#include "/settings.glsl"
+",
     "version": 1,
     "uniforms": [
+#ifdef TAA_ENABLED
+        "frameCounter",
+#endif
+        "cameraPosition",
+        "frameTimeCounter",
+        "far",
+        "viewPixelSize",
         "vxProj",
         "vxProjInv",
         "vxModelViewInv",
-        "cameraPosition",
-        "frameTimeCounter",
-        "viewPixelSize"
+        "vxViewProjInv"
     ],
     "samplers": {
         "vxDepthTexTrans": "sampler2D",
