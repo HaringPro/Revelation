@@ -69,7 +69,7 @@ void main() {
 	#if defined NORMAL_MAPPING
 		tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
+		tbnMatrix[1] = signMul(cross(tbnMatrix[0], tbnMatrix[2]), at_tangent.w);
 	#else
 		flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#endif

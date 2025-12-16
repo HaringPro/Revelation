@@ -78,9 +78,6 @@ void main() {
 
 	isWater = 0u;
 	if (int(mc_Entity.x) == 10003) {
-		// tbnMatrix[0] = mat3(shadowModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		// tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
-
 		isWater = 1u;
 		vectorData = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;
 	} else {

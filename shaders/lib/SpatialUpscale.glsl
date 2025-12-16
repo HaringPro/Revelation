@@ -4,20 +4,19 @@
 		vec3 sum = texelFetch(colortex3, texel, 0).rgb;
 		float sumWeight = 1.0;
 
-		float sigmaZ = -2.0 * NdotV;
+		float sigmaZ = -4.0 * NdotV;
 
-		ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+		ivec2 tileOffset = ivec2(halfViewSize.x, 0);
         ivec2 texelEnd = ivec2(halfViewEnd) - 1;
 
 		for (uint i = 0u; i < 8u; ++i) {
 			ivec2 sampleTexel = clamp(texel + offset3x3N[i], ivec2(1), texelEnd);
 
-			vec3 prevData = texelFetch(colortex2, sampleTexel + offsetToBR, 0).rgb;
+			vec3 prevData = texelFetch(colortex2, sampleTexel + tileOffset, 0).rgb;
 
 			float weight = pow32(saturate(dot(OctDecodeSnorm(prevData.xy), worldNormal)));
 			weight *= exp2(distance(prevData.z, viewDistance) * sigmaZ);
 
-			if (weight < EPS) continue;
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
 
 			sum += sampleLight * weight;

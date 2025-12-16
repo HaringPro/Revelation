@@ -93,17 +93,11 @@ void main() {
 	uvec2 localPos = QuadLayout8x8(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
-	ivec2 offsetToBR = ivec2(halfViewSize.x, 0);
+	ivec2 tileOffset = ivec2(halfViewSize.x, 0);
 	ivec2 texelEnd = ivec2(halfViewEnd) - 1;
 
-	vec3 normalDepthData = texelFetch(colortex2, texelPos + offsetToBR, 0).rgb;
+	vec3 normalDepthData = texelFetch(colortex2, texelPos + tileOffset, 0).rgb;
 	// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
-
-	const ivec2 offset[8] = {
-		ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
-		ivec2(-1,  0), 				 ivec2(1,  0),
-		ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
-	};
 
 	// 0.0625 0.125 0.0625
 	// 0.125  0.25  0.125
@@ -116,11 +110,11 @@ void main() {
 	float centerLuma = filteredColVar.r; // We use YCoCg color space
 
 	float frameIndex = texelFetch(colortex2, texelPos, 0).a;
-	float historyFactor = saturate(frameIndex * rcp(16.0));
+	float historyFactor = saturate(frameIndex * rcp(12.0)) * 0.9 + 0.1;
 
 	// float variance = CalculateVariance(ivec2(localPos + padRadius));
 	float variance = filteredColVar.a;
-	float variancePhi = -2.0 * inversesqrt(variance + EPS);
+	float variancePhi = -inversesqrt(variance + EPS);
 
 	const float sigmaZ = -4.0 * inversesqrt(float(ATROUS_FILTER_SIZE));
 	const float sigmaN = 32.0;
@@ -128,11 +122,11 @@ void main() {
     vec3 worldNormal = OctDecodeSnorm(normalDepthData.xy);
 
 	float sumWeight = 1.0;
-	ivec2 randTexel = texelPos + ivec2((SampleStbnVec2(texelPos, frameCounter + ATROUS_FILTER_SIZE) - 0.5) * float(min(ATROUS_FILTER_SIZE, 16)));
+	ivec2 randTexel = texelPos + ivec2((SampleStbnVec2(texelPos, frameCounter + ATROUS_FILTER_SIZE) - 0.5) * float(min(ATROUS_FILTER_SIZE, 8)));
 
 	for (uint i = 0u; i < 8u; ++i) {
-		ivec2 sampleTexel = clamp(randTexel + offset[i] * ATROUS_FILTER_SIZE, ivec2(1), texelEnd);
-		vec3 sampleAux = texelFetch(colortex2, sampleTexel + offsetToBR, 0).rgb;
+		ivec2 sampleTexel = clamp(randTexel + offset3x3N[i] * ATROUS_FILTER_SIZE, ivec2(1), texelEnd);
+		vec3 sampleAux = texelFetch(colortex2, sampleTexel + tileOffset, 0).rgb;
 
 		vec4 sampleColVar = imageLoad(colorimg3, sampleTexel);
 		float sampleLuma = sampleColVar.r; // We use YCoCg color space

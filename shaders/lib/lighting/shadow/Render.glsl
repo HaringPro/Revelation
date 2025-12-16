@@ -142,43 +142,36 @@ vec3 CalculatePCSS(in vec3 worldPos, in vec3 normalOffset, in float dither, in f
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 viewPos, in vec3 viewNormal, in float dither, in float sssAmount) {
+float ScreenSpaceShadow(in vec3 rayPos, in vec3 viewPos, in float dither, in float sssAmount) {
+	vec3 rayDir = ViewToScreenSpace(viewLightVector * abs(viewPos.z) + viewPos) - rayPos;
+	rayDir *= minOf((step(0.0, rayDir) - rayPos) / rayDir);
+	rayDir *= inversesqrt(sdot(rayDir.xy));
+
+	vec3 rayStep = rayDir * (0.05 / float(SCREEN_SPACE_SHADOWS_SAMPLES));
+	rayPos += (dither + 0.5) * rayStep;
+
 	float viewDist = length(viewPos);
-	float NdotL = dot(viewLightVector, viewNormal);
-	viewPos += viewDist * maxOf(viewPixelSize) / max(sqr(NdotL), 0.05) * 0.5 * viewNormal;
+	float diffTolerance = 5e-4 / viewDist + abs(rayStep.z);
+    float absorption = exp2(-0.125 * viewDist / sssAmount);
 
-    float absorption = exp2(-0.125 * approxSqrt(viewDist) / sssAmount);
-
-	float stepLength = 0.125 / float(SCREEN_SPACE_SHADOWS_SAMPLES) * approxSqrt(-viewPos.z);
-	vec3 rayDir = viewLightVector * stepLength * oms(sssAmount * 0.5);
-	rayDir = vec3(diagonal2(gbufferProjection) * rayDir.xy * 0.5, -rayDir.z);
-
-	vec3 rayPos = vec3((diagonal2(gbufferProjection) * viewPos.xy + gbufferProjection[3].xy) * 0.5, -viewPos.z);
-	rayPos += (dither + 0.5) * rayDir;
-
-	float diffTolerance = 2e-2 + 1e-2 * viewDist;
 	float result = 1.0;
 
-	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayDir) {
-		vec2 sampleCoord = rayPos.xy / rayPos.z + taaOffset * 0.5;
-		if (any(greaterThan(abs(sampleCoord), vec2(0.5))) || result < 1e-2) break;
+	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
+		if (saturate(rayPos.xy) != rayPos.xy || result < 1e-2) break;
 
-		ivec2 sampleTexel = uvToTexel(sampleCoord + 0.5);
+		ivec2 sampleTexel = uvToTexel(rayPos.xy);
 		float sampleDepth = loadDepth0(sampleTexel);
 
 		#if defined LOD_MOD
-			float difference;
 			if (sampleDepth > 1.0 - EPS) {
 				sampleDepth = loadDepth0Lod(sampleTexel);
-				difference = ScreenToViewDepthLod(sampleDepth) + rayPos.z;
-			} else {
-				difference = ScreenToViewDepth(sampleDepth) + rayPos.z;
+				sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(sampleDepth));
 			}
-		#else
-			float difference = ScreenToViewDepth(sampleDepth) + rayPos.z;
 		#endif
 
-		if (clamp(difference, 0.0, diffTolerance) == difference) result *= absorption;
+		if (abs(sampleDepth - rayPos.z + diffTolerance) < diffTolerance && rayPos.z > sampleDepth) {
+			result *= absorption;
+		}
 	}
 
 	return result;

@@ -40,17 +40,26 @@ layout (location = 2) out vec2 motionVectorOut;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 
-vec3 GetClosestFragment(in ivec2 texel, in float depth) {
-    vec3 closestFragment = vec3(texel, depth);
+vec3 CrossClosestFragment(in ivec2 texelPos, in float depth) {
+    vec3 closest = vec3(vec2(texelPos), depth);
 
-    for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = offset3x3N[i] + texel;
-        float sampleDepth = loadDepth0(sampleTexel);
-        closestFragment = sampleDepth < closestFragment.z ? vec3(sampleTexel, sampleDepth) : closestFragment;
-    }
+    ivec2 t1 = texelPos + ivec2( 1,  1);
+    ivec2 t2 = texelPos + ivec2(-1,  1);
+    ivec2 t3 = texelPos + ivec2( 1, -1);
+    ivec2 t4 = texelPos + ivec2(-1, -1);
 
-    closestFragment.xy *= viewPixelSize;
-    return closestFragment;
+    float d1 = loadDepth0(t1);
+    float d2 = loadDepth0(t2);
+    float d3 = loadDepth0(t3);
+    float d4 = loadDepth0(t4);
+
+    closest = closest.z > d1 ? vec3(vec2(t1), d1) : closest;
+    closest = closest.z > d2 ? vec3(vec2(t2), d2) : closest;
+    closest = closest.z > d3 ? vec3(vec2(t3), d3) : closest;
+    closest = closest.z > d4 ? vec3(vec2(t4), d4) : closest;
+
+    closest.xy *= viewPixelSize;
+    return closest;
 }
 
 // Lumiance aware perceptual weight
@@ -94,32 +103,29 @@ vec4 TemporalReprojection(in vec2 screenCoord, in vec2 motionVector) {
     float temporalContrast = saturate(abs(currLum - prevLum) / max(currLum, prevLum));
 
     #ifdef TAA_CLIPPING
-        #define currentLoad(offset) sRGBToYCoCg(texelFetchOffset(colortex0, texel, 0, offset).rgb)
-        #define mean(a, b, c, d, e, f, g, h, i) (a + b + c + d + e + f + g + h + i) * rcp(9.0)
-        #define sqrMean(a, b, c, d, e, f, g, h, i) (a * a + b * b + c * c + d * d + e * e + f * f + g * g + h * h + i * i) * rcp(9.0)
+        vec3 moment1 = currData;
+        vec3 moment2 = currData * currData;
 
-        vec3 sample0 = currData;
-        vec3 sample1 = currentLoad(ivec2(-1,  1));
-        vec3 sample2 = currentLoad(ivec2( 0,  1));
-        vec3 sample3 = currentLoad(ivec2( 1,  1));
-        vec3 sample4 = currentLoad(ivec2(-1,  0));
-        vec3 sample5 = currentLoad(ivec2( 1,  0));
-        vec3 sample6 = currentLoad(ivec2(-1, -1));
-        vec3 sample7 = currentLoad(ivec2( 0, -1));
-        vec3 sample8 = currentLoad(ivec2( 1, -1));
+	    for (uint i = 0u; i < 8u; ++i) {
+            vec3 sampleData = texelFetch(colortex0, texel + offset3x3N[i], 0).rgb;
+            sampleData = sRGBToYCoCg(sampleData);
 
-        vec3 clipAvg = mean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
-        vec3 clipAvg2 = sqrMean(sample0, sample1, sample2, sample3, sample4, sample5, sample6, sample7, sample8);
-        vec3 clipStdDev = sqrt(abs(clipAvg2 - clipAvg * clipAvg)) * TAA_AGGRESSION;
+            moment1 += sampleData;
+            moment2 += sampleData * sampleData;
+        }
+        moment1 *= rcp(9.0);
+        moment2 *= rcp(9.0);
+
+        vec3 clipStdDev = sqrt(abs(moment2 - moment1 * moment1)) * TAA_AGGRESSION;
 
         #if 1
             // Ellipsoid intersection clipping
-            prevData -= clipAvg;
+            prevData -= moment1;
             prevData *= saturate(inversesqrt(sdot(prevData / clipStdDev)));
-            prevData += clipAvg;
+            prevData += moment1;
         #else
             // AABB clipping
-            prevData = historyClipAABB(prevData, clipAvg, clipStdDev);
+            prevData = historyClipAABB(prevData, moment1, clipStdDev);
         #endif
     #endif
 
@@ -144,7 +150,7 @@ void main() {
 
     #if RENDER_MODE == 1
         #ifdef TAA_CLOSEST_FRAGMENT
-            vec3 closestFragment = GetClosestFragment(screenTexel, depth);
+            vec3 closestFragment = CrossClosestFragment(screenTexel, depth);
             vec2 motionVector = closestFragment.xy - Reproject(closestFragment).xy;
         #else
             vec2 motionVector = screenCoord - Reproject(vec3(screenCoord, depth)).xy;

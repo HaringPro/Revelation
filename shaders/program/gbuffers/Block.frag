@@ -105,7 +105,7 @@ void main() {
 		vec3 worldDir = normalize(worldPos);
 		vec3 worldDirAbs = abs(worldDir);
 		vec3 samplePartAbs = step(maxOf(worldDirAbs), worldDirAbs);
-		vec3 samplePart = samplePartAbs * fastSign(worldDir);
+		vec3 samplePart = signMul(samplePartAbs, worldDir);
 		float intersection = 1.0 / dot(samplePartAbs, worldDirAbs);
 		vec3 sampleNDCRaw = samplePart - worldDir * intersection;
 		vec2 sampleNDC = sampleNDCRaw.xy * vec2(samplePartAbs.y + samplePart.z, 1.0 - samplePartAbs.y) + sampleNDCRaw.z * vec2(-samplePart.x, samplePartAbs.y);

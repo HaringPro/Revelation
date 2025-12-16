@@ -74,6 +74,19 @@ vec3 YCoCgToSRGB(in vec3 YCoCg) {
     ) * YCoCg;
 }
 
+// Matrices for rec 2020 <> rec 709 color space conversion
+// matrix provided in row-major order so it has been transposed
+// https://www.itu.int/pub/R-REP-BT.2407-2017
+const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
+	vec3(  1.660491, -0.124550, -0.018151 ),
+	vec3( -0.587641,  1.132900, -0.100579 ),
+	vec3( -0.072850, -0.008349,  1.118730 ));
+
+const mat3 LINEAR_SRGB_TO_LINEAR_REC2020 = mat3(
+	vec3( 0.627404, 0.069097, 0.016391 ),
+	vec3( 0.329283, 0.919540, 0.088013 ),
+	vec3( 0.043313, 0.011362, 0.895595 ));
+
 // Adapted from https://github.com/zubetto/BlackBodyRadiation
 // MIT License
 // Copyright (c) 2021 Alexander

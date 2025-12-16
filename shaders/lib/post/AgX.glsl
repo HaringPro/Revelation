@@ -150,20 +150,6 @@ vec3 AgX_Minimal(in vec3 value) {
 
 //======// AgX Full //============================================================================//
 
-// Matrices for rec 2020 <> rec 709 color space conversion
-// matrix provided in row-major order so it has been transposed
-// https://www.itu.int/pub/R-REP-BT.2407-2017
-const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
-	vec3(  1.660491, -0.124550, -0.018151 ),
-	vec3( -0.587641,  1.132900, -0.100579 ),
-	vec3( -0.072850, -0.008349,  1.118730 ));
-
-const mat3 LINEAR_SRGB_TO_LINEAR_REC2020 = mat3(
-	vec3( 0.627404, 0.069097, 0.016391 ),
-	vec3( 0.329283, 0.919540, 0.088013 ),
-	vec3( 0.043313, 0.011362, 0.895595 ));
-
-
 vec3 unproject(vec2 xy) {
     if (xy.y == 0.0) return vec3(0.0);
 
@@ -302,11 +288,5 @@ vec3 AgXConfigurable(in vec3 rgb) {
 }
 
 vec3 AgX_Full(in vec3 rgb) {
-    rgb = LINEAR_SRGB_TO_LINEAR_REC2020 * rgb;
-    rgb = AgXConfigurable(rgb);
-
-    rgb = sRGBtoLinear(rgb);
-    rgb = LINEAR_REC2020_TO_LINEAR_SRGB * rgb;
-
-    return linearToSRGB(rgb);
+    return AgXConfigurable(rgb);
 }

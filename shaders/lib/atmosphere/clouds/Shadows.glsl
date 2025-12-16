@@ -84,7 +84,7 @@ float CalculateCloudShadows(in vec3 rayPos) {
 	vec3 rayStep = worldLightVector * stepLength;
 
 	rayPos += worldLightVector * intersection.x;
-	rayPos += rayStep * BlueNoiseTemporal(ivec2(gl_GlobalInvocationID.xy));
+	rayPos += rayStep * BlueNoise(ivec2(gl_GlobalInvocationID.xy), frameCounter);
 
 	float extinction = 0.0;
 	const float maxExtinction = -log2(cloudMinTransmittance) / cumulusExtinction;

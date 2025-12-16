@@ -39,9 +39,6 @@ vec2 CalculateFogDensity(in vec3 rayPos) {
 mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask) {
 	#if defined LOD_MOD
 		#define far float(lodRenderDistance)
-		uint steps = VF_MAX_SAMPLES << 1u;
-	#else
-		uint steps = VF_MAX_SAMPLES;
 	#endif
 
 	vec3 rayStart = gbufferModelViewInverse[3].xyz;
@@ -52,6 +49,10 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 
 	vec3 worldDir = worldPos * norm;
 
+	// Adaptive step count
+	uint steps = VF_MAX_SAMPLES;
+	steps = min(steps, uint(float(steps) * 0.4 + rayLength * rcp(16.0)));
+
 	if (skyMask) {
 		vec2 intersection = RaySphericalShellIntersection(viewerHeight, worldDir.y, atmosphereModel.bottom_radius, cumulusTopRadius);
 
@@ -60,10 +61,9 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 
 		rayLength = clamp(intersection.y - intersection.x, 0.0, far);
 		rayStart += worldDir * intersection.x;
+		// steps *= 2u;
 	}
 
-	// Adaptive step count
-	steps = min(steps, uint(float(steps) * 0.4 + rayLength * rcp(16.0)));
 	float rSteps = rcp(float(steps));
 
 	float stepLength = rayLength * rSteps;
@@ -86,7 +86,7 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 	#endif
 
 	float LdotV = dot(worldLightVector, worldDir);
-	vec2 phase = vec2(CornetteShanksPhase(LdotV, mie_phase_g), RayleighPhase(LdotV));
+	vec2 phase = vec2(CornetteShanksPhase(LdotV, 0.7), RayleighPhase(LdotV));
 
 	float mieDensityMult = VF_MIE_DENSITY * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
 
@@ -120,10 +120,10 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 	vec3 transmittance = vec3(1.0);
 
 	for (uint i = 0u; i < steps; ++i, rayPos += rayStep, shadowPos += shadowStep) {
-		vec2 stepFogmass = CalculateFogDensity(rayPos);
-		stepFogmass += linearstep(cumulusTopAltitude, cumulusBottomAltitude, rayPos.y) * uniformFog;
+		vec2 stepDensity = CalculateFogDensity(rayPos);
+		stepDensity += linearstep(cumulusTopAltitude, cumulusBottomAltitude, rayPos.y) * uniformFog;
 
-		if (dot(stepFogmass, vec2(1.0)) < EPS) continue; // Faster than maxOf()
+		if (dot(stepDensity, vec2(1.0)) < EPS) continue; // Faster than maxOf()
 
     #if defined PASS_SKY_MAP
         const float sampleShadow = 1.0;
@@ -159,16 +159,17 @@ mat2x3 RaymarchAtmosphericFog(in vec3 worldPos, in float dither, in bool skyMask
 			sampleShadow *= mix(1.0 - wetness * CLOUD_SHADOW_STRENGTH, cloudShadow, fade.x * fade.y);
 		#endif
 
-		vec2 stepPhase = max(phase, uniformPhase * saturate(stepFogmass * 2.0));
-		stepFogmass *= stepLength;
+		vec3 stepExtinction = fogExtinctionCoeff * stepDensity;
+		vec3 stepTransmittance = exp(-stepLength * stepExtinction);
 
-		vec3 opticalDepth = fogExtinctionCoeff * stepFogmass;
-		vec3 stepTransmittance = exp(-opticalDepth);
+		vec3 stepIntegral = transmittance * oms(stepTransmittance) / maxEps(stepExtinction);
 
-		vec3 stepScattering = transmittance * oms(stepTransmittance) / maxEps(opticalDepth);
+		// https://zhuanlan.zhihu.com/p/457997155
+		vec2 msV = 0.9 * oms(exp(-stepDensity));
+		vec2 msEnergy = 0.5 * uniformPhase * msV / oms(msV);
 
-		scatteringSun += fogScatteringCoeff * (stepFogmass * stepPhase) * sampleShadow * stepScattering;
-		scatteringSky += fogScatteringCoeff * stepFogmass * stepScattering;
+		scatteringSun += fogScatteringCoeff * (stepDensity * (phase * sampleShadow + msEnergy)) * stepIntegral;
+		scatteringSky += fogScatteringCoeff * stepDensity * stepIntegral;
 
 		transmittance *= stepTransmittance;
 

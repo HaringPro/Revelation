@@ -24,8 +24,6 @@ out uvec4 packedFogData;
 
 //======// Uniform //=============================================================================//
 
-uniform usampler2D colortex11; // Volumetric Fog, linear depth
-
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
@@ -60,22 +58,22 @@ mat2x3 UnpackFogData(in uvec3 data) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy * 2.0);
+    ivec2 texelPos = ivec2(gl_FragCoord.xy * 2.0);
 
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 screenPos = vec3(screenCoord, loadDepth0(screenTexel));
+	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	#if defined LOD_MOD
 		if (screenPos.z > 1.0 - EPS) {
-			screenPos.z = loadDepth0Lod(screenTexel);
+			screenPos.z = loadDepth0Lod(texelPos);
 			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
-	float dither = BlueNoiseTemporal(screenTexel);
+	float dither = BlueNoise(texelPos, frameCounter);
 
 	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
 

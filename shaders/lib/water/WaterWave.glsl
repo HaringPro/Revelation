@@ -1,69 +1,64 @@
 #if !defined INCLUDE_WATER_WATERWAVE
 #define INCLUDE_WATER_WATERWAVE
 
-vec3 FetchSmoothNoise(in vec2 coord) {
-	coord *= 256.0;
+const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
-    vec2 whole = floor(coord);
-    vec2 part = curve(coord - whole);
-
-	coord = (whole + 1.0) * rcp(256.0);
-	vec4 sx = textureGather(noisetex, coord, 0);
-	vec4 sy = textureGather(noisetex, coord, 1);
-	vec4 sz = textureGather(noisetex, coord, 2);
-
-    vec3 s0 = mix(vec3(sx.w, sy.w, sz.w), vec3(sx.z, sy.z, sz.z), part.x);
-    vec3 s1 = mix(vec3(sx.x, sy.x, sz.x), vec3(sx.y, sy.y, sz.y), part.x);
-    return mix(s0, s1, part.y);
+float FetchNoise(in vec2 coord, in float t) {
+	coord.y = coord.y * 2.0 + t;
+	return sqr(1.0 - texture(noisetex, coord).z);
 }
 
-// Based on https://www.shadertoy.com/view/MdXyzX
-// afl_ext 2017-2024
-// MIT License
-vec2 wavedx(vec2 position, vec2 direction, float frequency, float time) {
-	float c = approxSqrt(9.8 * frequency);
-
-	#if WATER_WAVE_STYLE == 0
-		float x = time * c + dot(direction, position) * frequency;
-	#else
-		float x = time * c - dot(direction, position) * frequency;
-	#endif
-
-	float wave = exp2(sin(x));
-	float dx = wave * cos(x);
-
-	return vec2(wave, dx);
+float FetchNoiseSmooth(in vec2 coord, in float t) {
+	coord.y = coord.y * 2.0 + t;
+	return sqr(1.0 - textureBicubic(noisetex, coord).z);
 }
 
 float CalculateWaterHeight(in vec2 position) {
-	vec3 noise = FetchSmoothNoise((position + frameTimeCounter) * 2e-3);
-	vec2 dir = vec2(0.0);
+	vec2 pos = 0.01 * position;
+	float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
+	float waves = FetchNoise(pos, waveTime);
 
-	float frequency = 1.0;
-	float weight = 1.0;
-	float sum = 0.0;
-	float sumWeight = 0.0;
+	pos = goldenRotate * (1.75 * pos) + waves * 0.05;
+	waveTime *= 1.25;
+	waves += FetchNoise(pos, waveTime) * 0.75;
 
-	float waveTime = WATER_WAVE_SPEED * frameTimeCounter;
-	position += noise.z * 8.0;
+	pos = goldenRotate * (1.75 * pos) + waves * 0.05;
+	waveTime *= 1.25;
+	waves += FetchNoise(pos, waveTime) * 0.15;
 
-	for (uint i = 0u; i < 14u; ++i) {
-		dir = sincos(Halton2(i) * hPI);
-		frequency *= 1.22;
-		weight *= 0.8;
-
-		vec2 res = wavedx(position + dir * noise.xy * (8.0 * weight), dir, frequency, waveTime);
-		position -= dir * res.y * weight * 0.2;
-
-		sum += res.x * weight;
-		sumWeight += weight;
-	}
+	// pos = goldenRotate * (1.5 * pos);
+	// waves += FetchNoise(pos, waveTime) * 0.1;
 
 	#if !defined PASS_SHADOW
-		sum *= saturate(noise.z * 2.0 - 1.0) * 3.0 + 0.75;
+		float localHeight = texture(noisetex, pos * 0.2 + waveTime * 0.1).z;
+		waves *= saturate(localHeight * 2.0 - 0.75) * 0.75 + 0.5;
 	#endif
 
-	return sum / sumWeight * (0.125 * WATER_WAVE_HEIGHT);
+	return WATER_WAVE_HEIGHT * 0.5 * waves;
+}
+
+float CalculateWaterHeightFull(in vec2 position) {
+	vec2 pos = 0.01 * position;
+	float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
+	float waves = FetchNoiseSmooth(pos, waveTime);
+
+	pos = goldenRotate * (1.75 * pos) + waves * 0.05;
+	waveTime *= 1.25;
+	waves += FetchNoiseSmooth(pos, waveTime) * 0.75;
+
+	pos = goldenRotate * (1.75 * pos) + waves * 0.05;
+	waveTime *= 1.25;
+	waves += FetchNoiseSmooth(pos, waveTime) * 0.15;
+
+	pos = goldenRotate * (1.5 * pos);
+	waves += FetchNoise(pos, waveTime) * 0.1;
+
+	#if !defined PASS_SHADOW
+		float localHeight = texture(noisetex, pos * 0.2 + waveTime * 0.1).z;
+		waves *= saturate(localHeight * 2.0 - 0.75) * 0.75 + 0.5;
+	#endif
+
+	return WATER_WAVE_HEIGHT * 0.5 * waves;
 }
 
 //================================================================================================//
@@ -71,17 +66,16 @@ float CalculateWaterHeight(in vec2 position) {
 vec3 CalculateWaterNormal(in vec2 position) {
 	const float delta = 0.1;
 
-	float height0 = CalculateWaterHeight(position);
-	float height1 = CalculateWaterHeight(position + vec2(delta, 0.0));
-	float height2 = CalculateWaterHeight(position + vec2(0.0, delta));
+	float height0 = CalculateWaterHeightFull(position);
+	float height1 = CalculateWaterHeightFull(position + vec2(delta, 0.0));
+	float height2 = CalculateWaterHeightFull(position + vec2(0.0, delta));
 
 	vec2 waveNormal = vec2(height0 - height1, height0 - height2);
-	waveNormal *= rcp(1.0 + dot(fwidth(position), vec2(0.15)));
-	return normalize(vec3(waveNormal, delta));
+	return normalize(vec3(waveNormal, delta * (1.0 + dot(fwidth(position), vec2(0.2)))));
 }
 
 vec3 CalculateWaterNormal(in vec3 rayPos, in vec3 rayDir) {
-	const uint steps = 8u;
+	const uint steps = 12u;
 
 	vec3 rayStep = vec3(rayDir.xy / rayDir.z, 1.0) * inversesqrt(steps);
 
@@ -96,4 +90,4 @@ vec3 CalculateWaterNormal(in vec3 rayPos, in vec3 rayDir) {
 	return CalculateWaterNormal(rayPos.xz + offset.xy);
 }
 
-#endif
+#endif // INCLUDE_WATER_WATERWAVE

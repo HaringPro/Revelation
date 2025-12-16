@@ -25,8 +25,6 @@ layout (location = 1) out float bloomyFogMask;
 
 //======// Uniform //=============================================================================//
 
-uniform usampler2D colortex11; // Volumetric Fog, linear depth
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// SSBO //================================================================================//
@@ -54,53 +52,78 @@ uniform usampler2D colortex11; // Volumetric Fog, linear depth
 #include "/lib/water/WaterFog.glsl"
 
 #include "/lib/surface/BRDF.glsl"
-#include "/lib/surface/Refraction.glsl"
+#include "/lib/surface/SSRT.glsl"
+
+vec2 CalculateRefractedCoord(in ivec2 texelPos, in vec3 viewPos, in vec3 screenPos, in bool waterMask) {
+	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
+	float viewLengthInv = inversesqrt(sdot(viewPos));
+	vec3 viewDir = viewPos * viewLengthInv;
+
+	vec3 refractedDir;
+	if (waterMask) {
+		vec3 viewGeometryNormal = mat3(gbufferModelView) * FetchGeometryNormal(texelPos);
+		refractedDir = refract(viewDir, viewNormal - viewGeometryNormal * 0.95, 1.0 / WATER_IOR);
+	} else {
+		refractedDir = refract(viewDir, viewNormal, 1.0 / GLASS_IOR);
+	}
+
+	#ifdef RAYTRACED_REFRACTION
+		float dither = BlueNoise(texelPos, frameCounter);
+		vec3 rayPos = screenPos;
+
+		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, 16, rayPos)) return screenPos.xy;
+
+		vec2 refractedCoord = rayPos.xy;
+	#else
+		// Estimate refraction depth
+		float depth1 = loadDepth1(texelPos);
+		vec3 viewPos1 = ScreenToViewSpace(vec3(screenPos.xy, depth1));
+		#if defined LOD_MOD
+			if (depth1 > 1.0 - EPS) {
+				depth1 = loadDepth1Lod(texelPos);
+				viewPos1 = ScreenToViewSpaceLod(vec3(screenPos.xy, depth1));
+			}
+		#endif
+
+		refractedDir *= min(distance(viewPos, viewPos1) * viewLengthInv, 4.0);
+		refractedDir *= mix(0.125, 4.0, waterMask) * REFRACTION_STRENGTH;
+
+		vec2 refractedCoord = ViewToScreenSpace(viewPos + refractedDir).xy;
+	#endif
+
+	float refractedDepth = loadDepth1(uvToTexel(refractedCoord));
+	refractedCoord = mix(refractedCoord, screenPos.xy, step(refractedDepth, screenPos.z));
+
+	vec2 edgeFade = smoothstep(0.8, 1.0, abs(refractedCoord * 2.0 - 1.0));
+	return mix(refractedCoord, screenPos.xy, edgeFade);
+}
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    ivec2 texelPos = ivec2(gl_FragCoord.xy);
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
-	float depth = loadDepth0(screenTexel);
+	float depth = loadDepth0(texelPos);
 
 	vec3 screenPos = vec3(screenCoord, depth);
 	vec3 viewPos = ScreenToViewSpace(screenPos);
 	#if defined LOD_MOD
 		if (depth > 1.0 - EPS) {
-			depth = screenPos.z = loadDepth0Lod(screenTexel);
+			depth = screenPos.z = loadDepth0Lod(texelPos);
 			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
 
-	uvec4 materialPack = loadMaterialPack(screenTexel);
+	uvec4 materialPack = loadMaterialPack(texelPos);
 
 	uint materialID = materialPack.y;
 	bool glassMask = materialID == 2u;
 	bool waterMask = materialID == 3u;
 
 	// Process refraction
-	ivec2 refractedTexel = screenTexel;
+	ivec2 refractedTexel = texelPos;
 	if (glassMask || waterMask) {
-		vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(screenTexel);
-
-		#ifdef RAYTRACED_REFRACTION
-			vec2 refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos);
-		#else
-			vec3 viewFlatNormal = mat3(gbufferModelView) * FetchGeometryNormal(screenTexel);
-			viewNormal -= float(waterMask) * viewFlatNormal; // Fix water refraction artifacts
-
-			float depth1 = loadDepth1(screenTexel);
-			vec3 viewPos1 = ScreenToViewSpace(vec3(screenCoord, depth1));
-			#if defined LOD_MOD
-				if (depth1 > 1.0 - EPS) {
-					depth1 = loadDepth1Lod(screenTexel);
-					viewPos1 = ScreenToViewSpaceLod(vec3(screenCoord, depth1));
-				}
-			#endif
-			vec2 refractedCoord = CalculateRefractedCoord(waterMask, viewPos, viewNormal, screenPos, distance(viewPos, viewPos1));
-		#endif
-
-		refractedTexel = uvToTexel(refractedCoord);
+		refractedTexel = uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask));
 	}
 
     sceneOut = loadSceneMain(refractedTexel);
@@ -113,7 +136,7 @@ void main() {
 
 		// Particle translucent
 		if (materialID == 500u) {
-			vec3 diffuseLight = texelFetch(colortex3, screenTexel, 0).rgb;
+			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
 			vec3 albedo = sRGBtoLinear(translucent.rgb);
 			sceneOut = mix(sceneOut, albedo * diffuseLight, translucent.a);
 		}
@@ -131,7 +154,7 @@ void main() {
 			}
 
 			// Apply specular lighting
-			vec4 specularLight = texelFetch(colortex3, screenTexel, 0);
+			vec4 specularLight = texelFetch(colortex3, texelPos, 0);
 			sceneOut = sceneOut * specularLight.a + specularLight.rgb;
 		}
 
@@ -157,7 +180,7 @@ void main() {
 	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = VolumetricFogSpatialUpscale(screenTexel >> 1, -viewPos.z);
+			mat2x3 volFogData = VolumetricFogSpatialUpscale(texelPos >> 1, -viewPos.z);
 			sceneOut = ApplyFog(sceneOut, volFogData);
 			bloomyFogMask = mean(volFogData[1]);
 		}
@@ -169,7 +192,7 @@ void main() {
 	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
-			mat2x3 waterFog = VolumetricFogSpatialUpscale(screenTexel >> 1, -viewPos.z);
+			mat2x3 waterFog = VolumetricFogSpatialUpscale(texelPos >> 1, -viewPos.z);
 		#else
 			mat2x3 waterFog = AnalyticWaterFog(eyeSkylightSmooth, viewDistance, LdotV);
 		#endif
@@ -181,8 +204,8 @@ void main() {
 	RenderVanillaFog(sceneOut, bloomyFogMask, viewDistance);
 
 	#if DEBUG_NORMALS == 1
-		sceneOut = FetchSurfaceNormal(screenTexel) * 0.5 + 0.5;
+		sceneOut = FetchSurfaceNormal(texelPos) * 0.5 + 0.5;
 	#elif DEBUG_NORMALS == 2
-		sceneOut = FetchGeometryNormal(screenTexel) * 0.5 + 0.5;
+		sceneOut = FetchGeometryNormal(texelPos) * 0.5 + 0.5;
 	#endif
 }

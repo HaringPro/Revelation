@@ -99,9 +99,9 @@ float BlueNoise(in ivec2 texel) {
 	return texelFetch(noisetex, texel & 255, 0).a;
 }
 
-float BlueNoiseTemporal(in ivec2 texel) {
+float BlueNoise(in ivec2 texel, in int frame) {
 	#ifdef TAA_ENABLED
-		return R1(frameCounter % 256, texelFetch(noisetex, texel & 255, 0).a);
+		return R1(frame, texelFetch(noisetex, texel & 255, 0).a);
 	#else
 		return texelFetch(noisetex, texel & 255, 0).a;
 	#endif
@@ -135,14 +135,6 @@ float bayer32(vec2 a)  { return bayer16(0.5 * a) * 0.25 + bayer2(a); }
 float bayer64(vec2 a)  { return bayer32(0.5 * a) * 0.25 + bayer2(a); }
 float bayer128(vec2 a) { return bayer64(0.5 * a) * 0.25 + bayer2(a); }
 
-float Bayer64Temporal(in vec2 coord) {
-	#ifdef TAA_ENABLED
-		return R1(frameCounter % 256, bayer64(coord));
-	#else
-		return bayer32(0.5 * coord) * 0.25 + bayer2(coord);
-	#endif
-}
-
 //================================================================================================//
 
 // Interleaved Gradient Noise
@@ -152,9 +144,9 @@ float InterleavedGradientNoise(in vec2 coord) {
 	return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 }
 
-float InterleavedGradientNoiseTemporal(in vec2 coord) {
+float InterleavedGradientNoise(in vec2 coord, in int frame) {
 	#ifdef TAA_ENABLED
-        coord += 5.588238 * float(frameCounter % 64);
+        coord += 5.588238 * float(frame % 64);
 	#endif
     return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 }

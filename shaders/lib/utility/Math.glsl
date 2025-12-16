@@ -128,16 +128,40 @@ float smin(in float a, in float b, in float k) {
     return min(a, b) - h * h * k * 0.25;
 }
 
-float fastSign(in float x) {
+//================================================================================================//
+
+// Fast sign functions from GeForceLegend
+float signI(in float x) {
     return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
 }
 
-vec2 fastSign(in vec2 x) {
+vec2 signI(in vec2 x) {
     return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
 }
 
-vec3 fastSign(in vec3 x) {
+vec3 signI(in vec3 x) {
     return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+}
+
+// = x * sign(y)
+float signMul(in float x, in float y) {
+    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+}
+
+vec2 signMul(in vec2 x, in float y) {
+    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+}
+
+vec2 signMul(in vec2 x, in vec2 y) {
+    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+}
+
+vec3 signMul(in vec3 x, in float y) {
+    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+}
+
+vec3 signMul(in vec3 x, in vec3 y) {
+    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 // https://www.shadertoy.com/view/wlyXRt
@@ -169,6 +193,8 @@ vec2 fastAsin(in vec2 x) {
 
 // https://www.desmos.com/calculator/cd3mvg1gfo
 float approxExp(in float x) { return rcp(x * x - x + 1.0); }
+
+//================================================================================================//
 
 float cubicLength(in vec2 v) {
     vec2 t = abs(cube(v));

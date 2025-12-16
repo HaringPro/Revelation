@@ -76,7 +76,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
                 if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(ivec2(screenPos.xy))));
             #endif
 
-            screenPos += rayStep * fastSign(sampleDepth - screenPos.z);
+            screenPos += signMul(rayStep, sampleDepth - screenPos.z);
         }
     }
     #endif

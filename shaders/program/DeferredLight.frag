@@ -69,10 +69,10 @@ uniform sampler2D cloudOriginTex;
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+	ivec2 texelPos = ivec2(gl_FragCoord.xy);
     vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
-	vec3 screenPos = vec3(screenCoord, loadDepth0(screenTexel));
+	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
 	// Hand-depth correction
 	if (screenPos.z < 0.56) {
@@ -84,7 +84,7 @@ void main() {
 	#if defined LOD_MOD
 		bool lodTerrainMask = screenPos.z > 1.0 - EPS;
 		if (lodTerrainMask) {
-			screenPos.z = loadDepth0Lod(screenTexel);
+			screenPos.z = loadDepth0Lod(texelPos);
 			viewPos = ScreenToViewSpaceLod(screenPos);
 		}
 	#endif
@@ -92,12 +92,12 @@ void main() {
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
 
-	uvec4 materialPack = loadMaterialPack(screenTexel);
+	uvec4 materialPack = loadMaterialPack(texelPos);
 	uint materialID = materialPack.y;
 
-	vec3 albedo = sRGBtoLinear(loadAlbedo(screenTexel));
+	vec3 albedo = sRGBtoLinear(loadAlbedo(texelPos));
 
-	float dither = BlueNoiseTemporal(screenTexel);
+	float dither = BlueNoise(texelPos, frameCounter);
 
 	sceneOut = vec3(0.0);
 
@@ -129,12 +129,12 @@ void main() {
 			sceneOut = sceneOut * cloudData.a + cloudData.rgb;
 		#endif
 
-		imageStore(colorimg7, screenTexel, uvec4(0));
+		imageStore(colorimg7, texelPos, uvec4(0));
 	} else {
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		vec3 flatNormal, worldNormal;
-		FetchNormalData(screenTexel, flatNormal, worldNormal);
+		FetchNormalData(texelPos, flatNormal, worldNormal);
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		vec2 lightmap = Unpack2x8U(materialPack.x);
@@ -154,7 +154,7 @@ void main() {
 			Material material = GetMaterialData(specularTex);
 
 			materialPack.z = Packup2x8U(specularTex.xy);
-			imageStore(colorimg7, screenTexel, materialPack);
+			imageStore(colorimg7, texelPos, materialPack);
 		#else
 			Material material = Material(1.0, 0.0, 0.0, false, false);
 		#endif
@@ -227,7 +227,7 @@ void main() {
 					#define viewFlatNormal viewNormal
 				#endif
 
-				float contactShadow = materialID == 39u ? 1.0 : ScreenSpaceShadow(viewPos, viewFlatNormal, dither, sssAmount);
+				float contactShadow = ScreenSpaceShadow(screenPos, viewPos, dither, sssAmount);
 			#else
 				float contactShadow = float(doShadows);
 			#endif
@@ -237,13 +237,13 @@ void main() {
 				// Subsurface scattering
 				if (sssAmount > 1e-3) {
 					float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
-					vec3 sss = mix(shadow, vec3(contactShadow), saturate(distanceFade + cutout * mix(0.5, 0.25, isEyeInWater > 0)));
+					vec3 sss = mix(shadow, vec3(contactShadow), saturate(distanceFade + cutout * 0.3));
 
 					// Wavelength-dependent approximation
-					sss *= pow((albedo + EPS), vec3(sqr(saturate(1.0 - mean(sss))) * 2.0 - 0.25)) * sunlightBase;
+					sss *= pow((albedo + EPS), vec3(cube(saturate(1.0 - mean(sss))) * 2.0 - 0.2)) * sunlightBase;
 
 					float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
-					sceneOut += sss * phase * (PI * SUBSURFACE_SCATTERING_BRIGHTNESS);
+					sceneOut += sss * phase * (2.0 * SUBSURFACE_SCATTERING_BRIGHTNESS);
 				}
 				if (doShadows) {
 					shadow *= contactShadow * sunlightBase;
@@ -251,7 +251,7 @@ void main() {
 					// Apply parallax shadows
 					#ifdef PARALLAX_SHADOW
 						#if defined PARALLAX && !defined PARALLAX_DEPTH_WRITE
-							shadow *= oms(loadSceneMain(screenTexel).x);
+							shadow *= oms(loadSceneMain(texelPos).x);
 						#endif
 					#endif
 
@@ -277,9 +277,9 @@ void main() {
 		#if AO_ENABLED > 0 && !defined SSILVB_ENABLED
 			vec3 ao = vec3(1.0);
 			#if AO_ENABLED == 1
-				ao.x = CalculateSSAO(screenCoord, viewPos, viewNormal, SampleStbnUnitvec2(screenTexel, frameCounter));
+				ao.x = CalculateSSAO(screenCoord, viewPos, viewNormal, SampleStbnUnitvec2(texelPos, frameCounter));
 			#else
-				ao.x = CalculateGTAO(screenCoord, viewPos, viewNormal, SampleStbnVec2(screenTexel, frameCounter));
+				ao.x = CalculateGTAO(screenCoord, viewPos, viewNormal, SampleStbnVec2(texelPos, frameCounter));
 			#endif
 
 			#ifdef AO_MULTI_BOUNCE
@@ -345,9 +345,9 @@ void main() {
 		#ifdef SSILVB_ENABLED
 			#ifdef SVGF_ENABLED
 				float NdotV = abs(dot(worldNormal, worldDir));
-				sceneOut += YCoCgToSRGB(SpatialUpscale(screenTexel >> 1, worldNormal, length(viewPos), NdotV));
+				sceneOut += YCoCgToSRGB(SpatialUpscale(texelPos >> 1, worldNormal, length(viewPos), NdotV));
 			#else
-				sceneOut += YCoCgToSRGB(texelFetch(colortex3, screenTexel >> 1, 0).rgb);
+				sceneOut += YCoCgToSRGB(texelFetch(colortex3, texelPos >> 1, 0).rgb);
 			#endif
 		#endif
 

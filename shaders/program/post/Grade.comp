@@ -199,43 +199,54 @@ void main() {
 	#endif
 
 	#ifdef MOTION_BLUR
-		vec3 HDRImage = texelFetch(colortex0, texelPos, 0).rgb;
+		vec3 color = texelFetch(colortex0, texelPos, 0).rgb;
 	#else
-		vec3 HDRImage = texelFetch(colortex1, texelPos, 0).rgb;
+		vec3 color = texelFetch(colortex1, texelPos, 0).rgb;
 	#endif
 
 	// Bloom and fog
 	#ifdef BLOOM_ENABLED
-		CombineBloomAndFog(HDRImage, texelPos, exposure);
+		CombineBloomAndFog(color, texelPos, exposure);
 	#endif
 
 	// Debug sky environment map
 	#ifdef DEBUG_SKY_MAP
 		if (all(lessThan(texelPos, skyMapRes))) {
-			HDRImage = texelFetch(skyMapTex, texelPos, 0).rgb;
+			color = texelFetch(skyMapTex, texelPos, 0).rgb;
 		}
 	#endif
 
 	// Apply exposure
-	HDRImage *= exposure;
+	color *= exposure;
 
 	// Purkinje shift
 	#ifdef PURKINJE_SHIFT
-		HDRImage = PurkinjeShift(HDRImage);
+		color = PurkinjeShift(color);
 	#endif
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
 		vec2 clipCoord = texelToUv(texelPos) * 2.0 - 1.0;
 		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
-		HDRImage *= exp2(-0.5 * sdot(clipCoord) * VIGNETTE_STRENGTH);
+		color *= exp2(-0.5 * sdot(clipCoord) * VIGNETTE_STRENGTH);
 	#endif
 
-	// Tone mapping
-	vec3 LDRImage = TONE_MAPPER(HDRImage);
+	// Apply DRT
+	{
+		// Working to DRT space
+		color = LINEAR_SRGB_TO_LINEAR_REC2020 * color;
 
-	// LDR range clamp
-	LDRImage = saturate(LDRImage);
+		// Tone mapping
+		color = TONE_MAPPER(color);
+		// Gamma correction
+		color = sRGBtoLinear(color);
 
-	imageStore(colorimg8, texelPos, vec4(LDRImage, 1.0));
+		// DRT to working space
+		color = LINEAR_REC2020_TO_LINEAR_SRGB * color;
+
+		// Working to display space
+		color = saturate(linearToSRGB(color));
+	}
+
+	imageStore(colorimg8, texelPos, vec4(color, 1.0));
 }

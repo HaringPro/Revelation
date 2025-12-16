@@ -51,7 +51,7 @@
     #define CLOUD_CU_THICKNESS 		    1500.0  // Thickness of cumulus clouds. [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1450.0 1500.0 1550.0 1600.0 1650.0 1700.0 1750.0 1800.0 1850.0 1900.0 1950.0 2000.0 2050.0 2100.0 2150.0 2200.0 2250.0 2300.0 2350.0 2400.0 2450.0 2500.0 2550.0 2600.0 2650.0 2700.0 2750.0 2800.0 2850.0 2900.0 2950.0 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0]
     #define CLOUD_CU_COVERAGE           0.5     // Coverage of cumulus clouds. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
     #define CLOUD_CU_DENSITY_B          0.2     // Bottom density of cumulus clouds. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.8 4.9 5.0]
-    #define CLOUD_CU_DENSITY_T          3.0     // Top density of cumulus clouds. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.8 4.9 5.0]
+    #define CLOUD_CU_DENSITY_T          2.0     // Top density of cumulus clouds. [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4 3.5 3.6 3.7 3.8 3.9 4.0 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.8 4.9 5.0]
 
 /* Mid-level clouds */
     #define CLOUD_MID_ALTITUDE 			4000.0  // Altitude of mid clouds.  [500.0 600.0 700.0 800.0 900.0 1000.0 1100.0 1200.0 1300.0 1400.0 1500.0 1600.0 1700.0 1800.0 1900.0 2000.0 2500.0 3000.0 3500.0 4000.0 4500.0 5000.0 5500.0 6000.0 6500.0 7000.0 7500.0 8000.0 8500.0 9000.0 9500.0 10000.0 10500.0 11000.0 11500.0 12000.0]
@@ -77,7 +77,7 @@
 /* Cloud shadows */
     #define CLOUD_SHADOW_DISTANCE 		2048.0  // Render distance of cloud shadows. [256.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
     #define CLOUD_SHADOW_SAMPLES 	    16      // Sample count for cloud shadows. [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 22 24 26 28 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 410 420 430 440 450 460 470 480 490 500]
-    #define CLOUD_SHADOW_STRENGTH 	    0.8     // Strength of cloud shadows. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+    #define CLOUD_SHADOW_STRENGTH 	    0.9     // Strength of cloud shadows. [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 
 //================================================================================================//
@@ -112,13 +112,13 @@ const float cloudHighThickness      = CLOUD_HIGH_THICKNESS;
 const float cloudMidRadius          = planetRadius + CLOUD_MID_ALTITUDE;
 const float cloudHighRadius         = planetRadius + CLOUD_HIGH_ALTITUDE;
 
-const float cumulusAlbedo 		    = 0.93;
+const float cumulusAlbedo 		    = 0.94;
 const float stratusAlbedo 		    = 0.88;
 const float cirrusAlbedo 		    = 0.85;
 
-const float cumulusScattering 		= 0.06;
+const float cumulusScattering 		= 0.05;
 const float stratusScattering 		= 0.04;
-const float cirrusScattering 		= 0.02;
+const float cirrusScattering 		= 0.01;
 
 const float cumulusExtinction 		= cumulusScattering / cumulusAlbedo;
 const float stratusExtinction 		= stratusScattering / stratusAlbedo;

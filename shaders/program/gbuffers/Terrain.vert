@@ -79,7 +79,7 @@ void main() {
 	#if defined NORMAL_MAPPING
 		tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 		tbnMatrix[0] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * at_tangent.xyz);
-		tbnMatrix[1] = cross(tbnMatrix[0], tbnMatrix[2]) * fastSign(at_tangent.w);
+		tbnMatrix[1] = signMul(cross(tbnMatrix[0], tbnMatrix[2]), at_tangent.w);
 	#else
 		flatNormal = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);
 	#endif
@@ -119,7 +119,7 @@ void main() {
 
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 		vec2 minMidCoord = texCoord - mc_midTexCoord;
-		tileBase = fastSign(minMidCoord) * 0.5 + 0.5;
+		tileBase = signI(minMidCoord) * 0.5 + 0.5;
 		tileScale = abs(minMidCoord) * 2.0;
 		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
 

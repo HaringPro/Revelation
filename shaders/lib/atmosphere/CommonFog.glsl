@@ -1,7 +1,3 @@
-
-uniform float blindness;
-uniform float darknessFactor;
-
 void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float viewDistance) {
     // Lava fog
 	#ifdef LAVA_FOG

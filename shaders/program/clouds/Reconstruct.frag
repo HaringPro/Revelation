@@ -118,21 +118,18 @@ void main() {
 		vec4 currData = texelFetch(cloudOriginTex, currTexel, 0);
 
 		#ifdef CLOUD_TAAU_CLIPPING
-			vec4 moment1  = vec4(0.0);
-			vec4 moment2  = vec4(0.0);
+			vec4 moment1 = currData;
+			vec4 moment2 = currData * currData;
 
-			// Fetch 4x4 neighbour pixels
-			ivec2 baseTexel = currTexel - 1;
-			for (uint y = 0u; y < 4u; ++y) {
-				for (uint x = 0u; x < 4u; ++x) {
-					vec4 sampleData = texelFetch(cloudOriginTex, baseTexel + ivec2(x, y), 0);
+			// Fetch 3x3 neighbour pixels
+			for (uint i = 0u; i < 8u; ++i) {
+				vec4 sampleData = texelFetch(cloudOriginTex, currTexel + offset3x3N[i], 0);
 
-					moment1 += sampleData;
-					moment2 += sampleData * sampleData;
-				}
+				moment1 += sampleData;
+				moment2 += sampleData * sampleData;
 			}
-			moment1 *= 1.0 / 16.0;
-			moment2 *= 1.0 / 16.0;
+			moment1 *= rcp(9.0);
+			moment2 *= rcp(9.0);
 
 			// Ellipsoid intersection clipping
 			vec4 clipStdDevInv = inversesqrt(abs(moment2 - moment1 * moment1) + EPS);

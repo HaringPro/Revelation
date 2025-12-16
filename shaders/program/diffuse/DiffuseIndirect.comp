@@ -45,7 +45,7 @@ float GetClosestDepth(in ivec2 texel) {
     float depth = loadDepth0(texel);
 
     for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = (offset3x3N[i] << 1) + texel;
+        ivec2 sampleTexel = offset3x3N[i] + texel;
         float sampleDepth = loadDepth0(sampleTexel);
         depth = min(depth, sampleDepth);
     }
@@ -80,5 +80,7 @@ void main() {
 		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);
 		result.rgb = sRGBToYCoCg(result.rgb); // Convert to YCoCg color space (for filtering)
 		imageStore(colorimg3, texelPos, result);
+	} else {
+		imageStore(colorimg3, texelPos, vec4(0.0));
 	}
 }

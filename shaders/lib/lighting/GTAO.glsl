@@ -64,7 +64,7 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in vec2 dith
 		float normV = inversesqrt(lenV);
 		lenV *= normV;
 
-		float sgnN = fastSign(dot(orthoDirectionV, projNormalV));
+		float sgnN = signI(dot(orthoDirectionV, projNormalV));
 		float cosN = saturate(dot(projNormalV, viewDir) * normV);
 		float n = sgnN * fastAcos(cosN);
 

@@ -30,19 +30,19 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 
 #include "/lib/universal/Random.glsl"
 
-vec3 MotionBlur(in ivec2 texel) {
-	vec2 motionVector = texelFetch(colortex3, texel, 0).xy;
+vec3 MotionBlur(in ivec2 texelPos) {
+	vec2 motionVector = texelFetch(colortex3, texelPos, 0).xy;
 	float motionNorm = inversesqrt(sdot(motionVector));
 
-	if (motionNorm > 1e6) return texelFetch(colortex1, texel, 0).rgb;
+	if (motionNorm > 1e6) return texelFetch(colortex1, texelPos, 0).rgb;
 	motionVector *= saturate(motionNorm);
 
 	const float strength = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES) * 0.01;
 	motionVector *= strength / max(frameTime, 1e-3) * viewSize;
 
-	float dither = BlueNoiseTemporal(texel);
+	float dither = BlueNoise(texelPos, frameCounter);
 
-    vec2 sampleCoord = vec2(texel) + 0.5 + motionVector * dither;
+    vec2 sampleCoord = vec2(texelPos) + 0.5 + motionVector * dither;
 	sampleCoord -= motionVector * MOTION_BLUR_SAMPLES * 0.5;
 
 	vec3 sum = vec3(0.0);
@@ -55,7 +55,7 @@ vec3 MotionBlur(in ivec2 texel) {
 		}
 	}
 
-	if (sumWeight < EPS) return texelFetch(colortex1, texel, 0).rgb;
+	if (sumWeight < EPS) return texelFetch(colortex1, texelPos, 0).rgb;
 
 	return sum * rcp(sumWeight);
 }

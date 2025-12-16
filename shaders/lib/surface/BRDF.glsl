@@ -15,7 +15,7 @@ vec3 SampleCosineHemisphere(in vec3 normal, in vec2 xy) {
     vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
 
 	vec3 cosineVector = normalize(normal + hemisphere);
-	return cosineVector * fastSign(dot(cosineVector, normal));
+	return signMul(cosineVector, dot(cosineVector, normal));
 }
 
 // From https://github.com/Jessie-LC/open-source-utility-code/blob/main/simple/misc.glsl
