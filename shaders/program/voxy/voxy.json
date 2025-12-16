@@ -7,19 +7,14 @@
 #ifdef TAA_ENABLED
         "frameCounter",
 #endif
-        "cameraPosition",
-        "frameTimeCounter",
         "far",
         "viewPixelSize",
-        "vxProj",
         "vxProjInv",
-        "vxModelViewInv",
-        "vxViewProjInv"
+        "vxModelViewInv"
     ],
     "samplers": {
         "vxDepthTexTrans": "sampler2D",
-        "vxDepthTexOpaque": "sampler2D",
-        "noisetex": "sampler2D"
+        "vxDepthTexOpaque": "sampler2D"
     },
     "opaqueDrawBuffers": [
         6,

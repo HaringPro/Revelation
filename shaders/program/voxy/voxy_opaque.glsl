@@ -44,7 +44,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec3 worldPos = transMAD(vxModelViewInv, viewPos);
 	
     float fade = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
-	float dither = InterleavedGradientNoiseTemporal(screenCoord);
+	float dither = InterleavedGradientNoiseTemporal(parameters.uv);
 
     if (fade < dither) { discard; return; }
 
