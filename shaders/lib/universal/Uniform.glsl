@@ -161,6 +161,9 @@ uniform vec3 lightningShading;
     uniform mat4 dhProjectionInverse;
     uniform mat4 dhPreviousProjection;
 
+    #define lodDepthTex0 dhDepthTex0
+    #define lodDepthTex1 dhDepthTex1
+
     #define lodRenderDistance dhRenderDistance
 
     #define lodNearPlane dhNearPlane
@@ -181,6 +184,9 @@ uniform vec3 lightningShading;
     uniform mat4 vxProj;
     uniform mat4 vxProjInv;
     uniform mat4 vxProjPrev;
+
+    #define lodDepthTex0 vxDepthTexTrans
+    #define lodDepthTex1 vxDepthTexOpaque
 
     #define lodRenderDistance vxRenderDistance
 

@@ -1,5 +1,3 @@
-uniform ivec2 atlasSize;
-
 #define atlasCoord(coord) (tileOffset + tileScale * fract(coord))
 #define atlasTexel(coord) ivec2((tileOffset + tileScale * fract(coord)) * vec2(atlasSize))
 
