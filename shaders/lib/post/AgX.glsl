@@ -106,7 +106,7 @@ vec3 agxEotf(vec3 val) {
     // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
     // NOTE: We're linearizing the output here. Comment/adjust when
     // *not* using a sRGB render target
-    // val = pow(val, vec3(2.2));
+    val = pow(val, vec3(2.2));
 
     return val;
 }
@@ -288,5 +288,5 @@ vec3 AgXConfigurable(in vec3 rgb) {
 }
 
 vec3 AgX_Full(in vec3 rgb) {
-    return AgXConfigurable(rgb);
+    return sRGBtoLinear(AgXConfigurable(rgb));
 }

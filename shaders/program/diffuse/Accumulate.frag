@@ -94,19 +94,23 @@ vec4 TemporalFilter(in ivec2 texel, in vec3 screenPos, in vec3 worldNormal, out 
         };
 
         ivec2 tileOffset = ivec2(halfViewSize.x, 0);
-		float depthPhi = -8.0 * abs(dot(worldNormal, worldDir));
+		float NdotV = abs(dot(worldNormal, worldDir));
 
         for (uint i = 0u; i < 4u; ++i) {
             ivec2 sampleTexel = floorTexel + offset2x2[i];
             if (clamp(sampleTexel, ivec2(1), texelEnd) == sampleTexel) {
                 vec3 sampleAux = texelFetch(colortex2, sampleTexel + tileOffset, 0).rgb;
 
-                float weight = pow8(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
-                weight *= exp2(abs(viewDistance - sampleAux.z) * depthPhi);
+                vec4 sampleDiffuse = texelFetch(colortex2, sampleTexel, 0);
+
+                float weight = -abs(viewDistance - sampleAux.z) * NdotV;
+                weight += log2(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
+                weight = exp2(weight * sampleDiffuse.a * (8.0 / SSILVB_MAX_ACCUM_FRAMES));
+
                 confidence = max(confidence, weight);
                 weight *= bilinearWeight[i];
 
-                prevDiffuse += texelFetch(colortex2, sampleTexel, 0) * weight;
+                prevDiffuse += sampleDiffuse * weight;
                 prevMoments += texelFetch(colortex14, sampleTexel, 0).xy * weight;
                 sumWeight += weight;
             }
@@ -117,8 +121,8 @@ vec4 TemporalFilter(in ivec2 texel, in vec3 screenPos, in vec3 worldNormal, out 
             prevDiffuse *= sumWeight;
             prevMoments *= sumWeight;
 
-            float sampleIndex = min(prevDiffuse.a + 1.0, SSILVB_MAX_ACCUM_FRAMES);
-            float alpha = rcp(sampleIndex * confidence + 1.0);
+            float sampleIndex = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
+            float alpha = rcp(sampleIndex);
 
             // See section 4.2 of the paper
             // if (sampleIndex > 4.5) {
@@ -141,51 +145,58 @@ vec4 TemporalFilter(in ivec2 texel, in vec3 screenPos, in vec3 worldNormal, out 
     return vec4(indirectCurrent.rgb, 1.0);
 }
 
-float SampleDepthMin4x4(in sampler2D depthTex, in vec2 coord) {
-	// 4x4 pixel neighborhood using textureGatherOffset
-	float LL = minOf(textureGatherOffset(depthTex, coord, ivec2(-2, -2)));
-	float LR = minOf(textureGatherOffset(depthTex, coord, ivec2(-2,  2)));
-	float UL = minOf(textureGatherOffset(depthTex, coord, ivec2( 2, -2)));
-	float UR = minOf(textureGatherOffset(depthTex, coord, ivec2( 2,  2)));
+float GetClosestDepthN(in ivec2 texel) {
+    float depth = 1.0;
 
-	return min(min(LL, LR), min(UL, UR));
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = offset3x3N[i] + texel;
+        float sampleDepth = loadDepth0(sampleTexel);
+        depth = min(depth, sampleDepth);
+    }
+
+    return depth;
 }
 
 //======// Main //================================================================================//
 void main() {
-    vec2 currentCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
+    vec2 renderCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
 
     indirectCurrent = vec4(0.0);
     varianceMoments = vec2(0.0);
 
-    if (saturate(currentCoord) == currentCoord) {
-        ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    if (saturate(renderCoord) == renderCoord) {
+        ivec2 texelPos = ivec2(gl_FragCoord.xy);
 
-        ivec2 currentTexel = screenTexel << 1;
-        float depth = SampleDepthMin4x4(depthtex0, currentCoord);
+        ivec2 renderTexel = texelPos << 1;
+
+        float depth = loadDepth0(renderTexel);
+        bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
         #if defined LOD_MOD
-            bool lodTerrainMask = depth > (1.0 - EPS);
-            if (lodTerrainMask) depth = loadDepth0Lod(currentTexel);
+            bool lodTerrainMask = !terrainCheck;
+            if (lodTerrainMask) {
+                depth = loadDepth0Lod(renderTexel);
+                terrainCheck = depth < 1.0;
+            }
         #endif
 
-        if (depth < 1.0) {
+        if (terrainCheck) {
             #if defined LOD_MOD
-                if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
+			    if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
             #endif
 
-            vec3 screenPos = vec3(currentCoord, depth);
-            vec3 worldNormal = FetchSurfaceNormal(currentTexel);
+            vec3 screenPos = vec3(renderCoord, depth);
+            vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 
             float viewDistance;
-            vec4 indirectHistory = TemporalFilter(screenTexel, screenPos, worldNormal, viewDistance);
+            vec4 indirectHistory = TemporalFilter(texelPos, screenPos, worldNormal, viewDistance);
 
             // Vanilla lightmap blending
-            float blocklight = Unpack2x8UX(loadMaterialPack(currentTexel).x);
+            float blocklight = Unpack2x8UX(loadMaterialPack(renderTexel).x);
             blocklight = pow5(blocklight) * exp2(-16.0 * indirectCurrent.x * global.exposure.value);
             indirectCurrent.rgb += sRGBToYCoCg(blackbody(float(BLOCKLIGHT_TEMPERATURE))) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;
 
-            imageStore(colorimg2, screenTexel, indirectHistory);
-            imageStore(colorimg2, screenTexel + ivec2(halfViewSize.x, 0), vec4(OctEncodeSnorm(worldNormal), viewDistance, 1.0));
+            imageStore(colorimg2, texelPos, indirectHistory);
+            imageStore(colorimg2, texelPos + ivec2(halfViewSize.x, 0), vec4(OctEncodeSnorm(worldNormal), viewDistance, 1.0));
         }
     }
 }

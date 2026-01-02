@@ -50,10 +50,6 @@ shared uint sharedPrefix[HISTOGRAM_BIN_COUNT];
 const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
 
-float histogramBinToLum(in float bin) {
-    return exp2(bin * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN);
-}
-
 void ParallelSum(in uint index) {
     #ifdef SUBGROUP_OPS
         uint sum = subgroupAdd(sharedBinIndex[index]);
@@ -124,14 +120,15 @@ void main() {
     // Compute exposure value in thread 0
     if (index == 0u) {
 		float avgLuminance = float(sharedBinIndex[0]) / float(upperBound - lowerBound);
-        avgLuminance = histogramBinToLum(avgLuminance);
+        avgLuminance = avgLuminance * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN;
 
         // Exposure compensation curve
-        #define log10(x) (log2(x) * rcp(log2(10.0)))
-        float keyValue = 1.03 - 2.0 / (log10(avgLuminance + 1.0) + 2.0);
-        keyValue = mix(keyValue, 0.5, nightVision);
+        // #define log10(x) (log2(x) * rcp(log2(10.0)))
+        // float keyValue = 1.03 - 2.0 / (log10(avgLuminance + 1.0) + 2.0);
+        // keyValue = mix(keyValue, 0.5, nightVision);
+        float exposureCurve = mix(0.65, 1.0, nightVision);
 
-        float targetExposure = exp2(AUTO_EV_BIAS) * keyValue / avgLuminance;
+        float targetExposure = exp2(AUTO_EV_BIAS - exposureCurve * avgLuminance) * 0.18;
         float prevExposure = global.exposure.value;
 
         float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;

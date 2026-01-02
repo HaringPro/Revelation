@@ -94,16 +94,15 @@ void HistogramDisplay(inout vec3 color, in ivec2 texel) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
+    ivec2 texelPos = ivec2(gl_FragCoord.xy);
+
+	// Update SSBO
+	global.prevWorldTime = worldTime;
 
 	#ifdef DEBUG_BLOOM_TILES
-		finalOut = texelFetch(colortex4, screenTexel, 0).rgb;
+		finalOut = texelFetch(colortex4, texelPos, 0).rgb;
 	#else
-		if (abs(MC_RENDER_QUALITY - 1.0) < 1e-2) {
-			finalOut = FFXCasFilter(screenTexel, CAS_STRENGTH);
-		} else {
-			finalOut = textureCatmullRomFast(colortex8, gl_FragCoord.xy * viewPixelSize * MC_RENDER_QUALITY).rgb;
-		}
+		finalOut = FFXCasFilter(texelPos, CAS_STRENGTH);
 	#endif
 
 	// Text display
@@ -112,35 +111,14 @@ void main() {
 		finalOut = saturate(finalOut);
 	#endif
 
-	// Time display
-	#if 0
-		const ivec2 size = ivec2(30, 200);
-		const int strokewidth = 3;
-		const ivec2 start = ivec2(60, 200);
-		const ivec2 end = start + size;
-		const int center = (start.y + end.y) >> 1;
-
-		if (clamp(screenTexel, start - strokewidth, end + strokewidth) == screenTexel) {
-			finalOut = vec3(0.0);
-			if (clamp(screenTexel, start, end) == screenTexel && clamp(screenTexel.y, center - 1, center + 1) != screenTexel.y) {
-				float t = 1.0 - sunAngle * 2.0 + step(0.5, sunAngle);
-				if (screenTexel.y > start.y + t * size.y) {
-					finalOut = sunAngle < 0.5 ? vec3(0.2, 0.7, 1.0) : vec3(0.08, 0.24, 0.4);
-				} else {
-					finalOut = vec3(1.0);
-				}
-			}
-		}
-	#endif
-
 	#ifdef DEBUG_CLOUD_SHADOWS
-		if (all(lessThan(screenTexel, textureSize(cloudShadowTex, 0)))) {
-			finalOut = vec3(texelFetch(cloudShadowTex, screenTexel, 0).x);
+		if (all(lessThan(texelPos, textureSize(cloudShadowTex, 0)))) {
+			finalOut = vec3(texelFetch(cloudShadowTex, texelPos, 0).x);
 		}
 	#endif
 
 	#ifdef DEBUG_CLOUD_MAP
-		ivec2 tempTexel = screenTexel;
+		ivec2 tempTexel = texelPos;
 		if (all(lessThan(tempTexel, textureSize(cloudMapTex, 0)))) {
 			finalOut = vec3(texelFetch(cloudMapTex, tempTexel, 0).x);
 		}
@@ -151,22 +129,19 @@ void main() {
 	#endif
 
 	#ifdef DEBUG_CLOUD_NOISE
-		if (all(lessThan(screenTexel, textureSize(baseNoiseTex, 0).xy))) {
-			finalOut = vec3(texelFetch(baseNoiseTex, ivec3(screenTexel, 0), 0).x);
+		if (all(lessThan(texelPos, textureSize(baseNoiseTex, 0).xy))) {
+			finalOut = vec3(texelFetch(baseNoiseTex, ivec3(texelPos, 0), 0).x);
 		}
 	#endif
 
 	#ifdef DEBUG_SKY_COLOR
-		if (all(lessThan(gl_FragCoord.xy * viewPixelSize, vec2(0.4)))) finalOut = skyColor;
+		if (all(lessThan(gl_FragCoord.xy * viewPixelSize, vec2(0.25)))) finalOut = skyColor;
 	#endif
 
 	#if 0
-		HistogramDisplay(finalOut, screenTexel);
+		HistogramDisplay(finalOut, texelPos);
 	#endif
 
 	// Apply bayer dithering to reduce banding artifacts
 	finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * r255;
-
-	// Update SSBO
-	global.prevWorldTime = worldTime;
 }

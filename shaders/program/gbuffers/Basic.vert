@@ -45,17 +45,19 @@ void main() {
 
         vec4 linePosStart = projectionMatrix * modelViewMatrix * vec4(vaPosition, 1.0) * viewScale;
         vec4 linePosEnd = projectionMatrix * modelViewMatrix * vec4(vaPosition + vaNormal, 1.0) * viewScale;
+
         vec3 NDCStart = linePosStart.xyz / linePosStart.w;
         vec3 NDCEnd = linePosEnd.xyz / linePosEnd.w;
+
         vec2 lineScreenDir = normalize((NDCEnd.xy - NDCStart.xy) * viewSize);
         vec2 lineOffset = vec2(-lineScreenDir.y, lineScreenDir.x) * SELECTION_BOX_WIDTH * viewPixelSize;
         if (lineScreenDir.y < 0.0) lineOffset *= -1.0;
+
         gl_Position = vec4(linePosStart.w);
-        if (gl_VertexID % 2 == 0) gl_Position.xyz *= NDCStart + vec3(lineOffset, 0.0);
-        else gl_Position.xyz *= NDCStart - vec3(lineOffset, 0.0);
+        gl_Position.xyz *= NDCStart + vec3(gl_VertexID % 2 == 0 ? lineOffset : -lineOffset, 0.0);
 
         vertColor.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
-        lightmap = vec2(dot(vertColor.rgb, vec3(0.333333)));
+        lightmap = vec2(mean(vertColor.rgb));
     } else {
         vec3 viewPos = transMAD(modelViewMatrix, vaPosition);
         gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];

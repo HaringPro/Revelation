@@ -121,5 +121,5 @@ float NumericalMieFit(float cosTheta) {
     float p1 = cosTheta + bestParams[3];
     vec4 expValues = exp(vec4(bestParams[1] * cosTheta + bestParams[2], bestParams[5] * p1 * p1, bestParams[6] * cosTheta, bestParams[9] * cosTheta));
     vec4 expValWeight= vec4(bestParams[0], bestParams[4], bestParams[7], bestParams[8]);
-    return dot(expValues, expValWeight) * uniformPhase;
+    return dot(expValues, expValWeight) * 0.25;
 }

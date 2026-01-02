@@ -1,6 +1,8 @@
 #include "/lib/surface/SSRT.glsl"
 
 vec4 CalculateSpecularReflections(Material material, in vec3 worldNormal, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos, in float skylight, in float dither) {
+	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
+
 #ifdef ROUGH_REFLECTIONS
 	if (material.isRough) {
 		mat3 tbnMatrix = ConstructTBN(worldNormal);
@@ -34,9 +36,7 @@ vec4 CalculateSpecularReflections(Material material, in vec3 worldNormal, in vec
 	} else
 #endif
 	{
-		float NdotV = abs(dot(worldNormal, worldDir));
-		// Unroll the reflect function manually
-		vec3 lightDir = worldDir + worldNormal * NdotV * 2.0;
+		vec3 lightDir = reflect(worldDir, worldNormal);
 
 		float NdotL = dot(worldNormal, lightDir);
 		if (NdotL < EPS) return vec4(0.0);

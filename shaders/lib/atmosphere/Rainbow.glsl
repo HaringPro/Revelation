@@ -5,18 +5,18 @@
 
 //================================================================================================//
 
-vec3 RainbowPhase(in float angle, in vec3 angleDev, in float falloff) {
-    return exp2(-falloff * sqr(angle - angleDev * (PI / 180.0)));
+vec3 RainbowPhase(in float angle, in vec3 angleDev) {
+	return curve(saturate(1.0 - abs((angleDev - angle) / (angleDev.b - angleDev.r))));
 }
 
 vec3 RenderRainbows(in float mu) {
     float theta = fastAcos(saturate(-mu));
 
 	// Primary Rainbow
-    vec3 phase = RainbowPhase(theta, vec3(42.3 - 0.25, 41.5, 40.6 + 0.35), 8192.0) * RAINBOWS_PRIMARY_INTENSITY;
+    vec3 phase = RainbowPhase(theta, radians(vec3(42.3, 41.5, 40.6))) * RAINBOWS_PRIMARY_INTENSITY;
 
 	// Secondary Rainbow
-    phase += RainbowPhase(theta, vec3(50.1 + 0.75, 51.5, 53.7 - 1.0), 2048.0) * (RAINBOWS_SECONDARY_INTENSITY * rPI);
+    phase += RainbowPhase(theta, radians(vec3(50.1, 51.5, 53.7))) * (RAINBOWS_SECONDARY_INTENSITY * rPI);
 
-    return phase * 0.25;
+    return phase;
 }

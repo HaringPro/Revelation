@@ -41,8 +41,8 @@ writeonly restrict uniform image2D colorimg3;
 #include "/lib/surface/BRDF.glsl"
 #include "/lib/lighting/SSILVB.glsl"
 
-float GetClosestDepth(in ivec2 texel) {
-    float depth = loadDepth0(texel);
+float GetClosestDepthN(in ivec2 texel) {
+    float depth = 1.0;
 
     for (uint i = 0u; i < 8u; ++i) {
         ivec2 sampleTexel = offset3x3N[i] + texel;
@@ -59,22 +59,25 @@ void main() {
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
     ivec2 renderTexel = texelPos << 1;
-	float depth = GetClosestDepth(renderTexel);
-	// float depth = loadDepth0(renderTexel);
+	float depth = loadDepth0(renderTexel);
+	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
 	#if defined LOD_MOD
-		bool lodTerrainMask = depth > 1.0 - EPS;
-		if (lodTerrainMask) depth = loadDepth0Lod(renderTexel);
+        bool lodTerrainMask = !terrainCheck;
+		if (lodTerrainMask) {
+			depth = loadDepth0Lod(renderTexel);
+			terrainCheck = depth < 1.0;
+		}
 	#endif
 
-	if (depth < 1.0) {
+	if (terrainCheck) {
 		#if defined LOD_MOD
-            if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
+			if (lodTerrainMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
-		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 
     	vec2 screenCoord = texelToUv(renderTexel);
 		vec3 viewPos = ScreenToViewSpace(vec3(screenCoord, depth));
 
+		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 		float lightmapSky = Unpack2x8UY(loadMaterialPack(renderTexel).x);
 
 		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);

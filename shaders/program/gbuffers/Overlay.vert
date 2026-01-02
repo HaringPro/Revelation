@@ -5,11 +5,13 @@
 
 //======// Output //==============================================================================//
 
+flat out vec4 vertColor;
 out vec2 texCoord;
 
 //======// Attribute //===========================================================================//
 
 in vec3 vaPosition;
+in vec4 vaColor;
 in vec2 vaUV0;
 
 //======// Uniform //=============================================================================//
@@ -18,6 +20,7 @@ uniform vec3 chunkOffset;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 textureMatrix = mat4(1.0);
 
 uniform vec2 taaOffset;
 
@@ -28,6 +31,7 @@ void main() {
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;
 	#endif
-	
-	texCoord = vaUV0;
+
+	vertColor = vaColor;
+    texCoord = vec2(textureMatrix * vec4(vaUV0, 0.0, 1.0));
 }

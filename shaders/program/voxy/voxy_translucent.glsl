@@ -35,6 +35,19 @@ vec3 ScreenToViewSpaceRawVoxy(in vec3 screenPos) {
 float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
 #define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
 
+float R1(in int n, in float seed) {
+    const float g = 1.6180339887498948482;
+    const float a = 1.0 / g;
+	return fract(seed + n * a);
+}
+float BlueNoise(in ivec2 texel, in int frame) {
+	#ifdef TAA_ENABLED
+		return R1(frame, texelFetch(noisetex, texel & 255, 0).a);
+	#else
+		return texelFetch(noisetex, texel & 255, 0).a;
+	#endif
+}
+
 //======// Main //================================================================================//
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	ivec2 texel = ivec2(parameters.uv);
@@ -42,11 +55,14 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	float depth = loadDepth0Lod(texel);
 	vec3 viewPos = ScreenToViewSpaceRawVoxy(vec3(screenCoord, depth));
 	vec3 worldPos = transMAD(vxModelViewInv, viewPos);
-	
-    float fade = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
-	float dither = InterleavedGradientNoiseTemporal(parameters.uv);
 
-    if (fade < dither) { discard; return; }
+    float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
+	float dither = BlueNoise(texel, frameCounter);
+
+    if (alpha < dither || loadDepth0Lod(texel) < 1.0) {
+        discard;
+        return;
+    }
 
 	vec3 flatNormal = vec3(uint((parameters.face>>1)==2), uint((parameters.face>>1)==0), uint((parameters.face>>1)==1)) * (float(int(parameters.face)&1)*2-1);
 	vec4 vertColor = parameters.sampledColour * parameters.tinting;

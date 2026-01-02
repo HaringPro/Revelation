@@ -15,13 +15,14 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
     float fixZ = step(viewDir.z, 0.0) * 1e23 - (viewPos.z + near) / viewDir.z;
     vec3 rayDir = normalize(ViewToScreenSpace(viewDir * fixZ + viewPos) - origin);
+    rayDir *= minOf((step(0.0, rayDir) - screenPos) / rayDir);
 
     rayDir.xy *= viewSize;
     origin.xy *= viewSize;
 
     float rSteps = 1.0 / float(steps);
+    float invDirZ = rcp(rayDir.z);
     vec3 rayStep = rayDir * rSteps;
-    float invDirZ = 1.0 / abs(rayDir.z);
 
     #if defined LOD_MOD
         float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
@@ -31,7 +32,7 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
 
 	bool hit = false;
 
-    float t = dither * minOf((step(0.0, rayDir) - screenPos) / rayDir) * rSteps;
+    float t = dither * rSteps;
     for (uint i = 0u; i < steps; ++i) {
         vec3 rayPos = origin + rayDir * t;
 
@@ -58,10 +59,8 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
                 hit = true;
                 break;
             }
-
-            t += rSteps;
         } else {
-            t += clamp(distance(sampleDepth, rayPos.z) * invDirZ, rSteps * 0.05, rSteps * 1.25);
+            t += clamp((sampleDepth - rayPos.z) * invDirZ, rSteps * 0.01, rSteps * 1.25);
         }
     }
 

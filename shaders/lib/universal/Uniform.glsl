@@ -40,6 +40,8 @@ uniform sampler2D verticalLut;
 uniform sampler2D curlNoiseTex;
 uniform sampler2D cirroLutTex;
 
+uniform sampler2D cloudShadowTex;
+
 //================================================================================================//
 
 uniform int heldItemId;                         // held item ID (main hand), used only for items defined in "item.properties"
@@ -119,10 +121,13 @@ uniform float alphaTestRef;                     // alpha test reference value, t
 uniform float darknessFactor;                   // strength of the darkness effect (0.0-1.0)
 uniform float darknessLightFactor;              // lightmap variations caused by the darkness effect (0.0-1.0)
 
+uniform vec4 lightningBoltPosition;
+
 // Custom uniforms
 uniform bool worldTimeChanged;
 uniform bool viewSizeChanged;
 
+uniform float moonlightMult;
 uniform float wetnessCustom;
 uniform float eyeSkylightSmooth;
 uniform float worldTimeCounter;
@@ -143,7 +148,6 @@ uniform vec3 cameraMovement;
 uniform vec3 worldSunVector;
 uniform vec3 worldLightVector;
 uniform vec3 viewLightVector;
-uniform vec3 lightningShading;
 
 
 #if defined DISTANT_HORIZONS

@@ -73,10 +73,10 @@ float CloudMultiScatteringApproxOz(in float opticalDepth, in float phase) {
 float CloudMultiScatteringApproxHaringPro(in float opticalDepth, in float phase, in float extinction, in float albedo) {
 	// https://zhuanlan.zhihu.com/p/457997155
 	float msV = albedo * oms(exp2(-8.0 * extinction));
-	float msEnergy = msV / ((2.0 + 1.25 * opticalDepth) * oms(msV));
+	float msEnergy = msV / ((3.0 + opticalDepth) * oms(msV));
 
 	float transmittance = exp2(-rLOG2 * opticalDepth);
-	return transmittance * phase + msEnergy * mix(phase, uniformPhase, msV);
+	return transmittance * phase + msEnergy * uniformPhase;
 }
 
 //================================================================================================//
@@ -161,7 +161,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 	// Compute phase function
 	#if 0
 		float phase = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
-	#elif 1
+	#elif 0
 		float phase = HgDrainePhase(LdotV, 11.0);
 	#else
 		float phase = NumericalMieFit(LdotV);
@@ -185,21 +185,12 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 
 			// Intersect the volume
 			if (intersection.y > 0.0) {
-				float withinVolumeSmooth = linearstep(cumulusThickness + 32.0, cumulusThickness - 64.0, abs(r * 2.0 - (cumulusBottomRadius + cumulusTopRadius)));
-
 				float rayLength = clamp(intersection.y - intersection.x, 0.0, 5e4);
 
-				#if defined PASS_SKY_MAP
-					uint raySteps = CLOUD_LOW_SAMPLES >> 1u;
-					// Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * oms(abs(mu) * 0.5));
-				#else
-					uint raySteps = CLOUD_LOW_SAMPLES;
-					// Reduce ray steps for vertical rays
-					raySteps = uint(float(raySteps) * mix(oms(abs(mu) * 0.5), 4.0, withinVolumeSmooth));
-				#endif
+				float raySteps = float(CLOUD_LOW_SAMPLES_MAX) / 5e4 * rayLength;
+				raySteps = round(max(raySteps, float(CLOUD_LOW_SAMPLES_MIN)));
 
-				float stepSize = rayLength * rcp(float(raySteps));
+				float stepSize = rayLength * rcp(raySteps);
 				float rayT = intersection.x + stepSize * noise.x;
 
 				float rayLengthWeighted = 0.0;
@@ -209,7 +200,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 				float transmittance = 1.0;
 
 				// Raymarch through the cloud volume
-				for (uint i = 0u; i < raySteps; ++i, rayT += stepSize) {
+				for (uint i = 0u; i < uint(raySteps); ++i, rayT += stepSize) {
 					vec3 rayPos = camera + rayDir * rayT;
 
 					// Method from [Hillaire, 2016]
@@ -341,11 +332,11 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise, out float cloudDepth) {
 		vec3 sunIrradiance, moonIrradiance;
 		vec3 skyIlluminance = GetSunAndSkyIrradiance(cloudPos, normalize(cloudPos), worldSunVector, sunIrradiance, moonIrradiance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
 		vec3 directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * mix(sunIrradiance, moonIrradiance, moonlightFactor);
-		skyIlluminance += lightningShading * 0.05;
 
 		integralSL  = integralPV.x * PI * directIlluminance;
 		integralSL += integralPV.y * rPI * skyIlluminance;
-		integralSL *= 1.0 - wetness * 0.5;
+
+		integralSL += LightningContribution(cloudPos - camera) * sqr(integralPV.y);
 
 		// Apply aerial perspective
 		#ifdef CLOUD_AERIAL_PERSPECTIVE

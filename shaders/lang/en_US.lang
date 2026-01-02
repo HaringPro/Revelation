@@ -88,27 +88,34 @@ option.CLOUD_TAAU_CLIPPING=Upsampling Clipping
 option.CLOUD_MAX_ACCUM_FRAMES=Max Accumulated Frames
 option.CLOUD_TAAU_ANTIFLICKER=Anti-flicker
 
-option.CLOUD_LOW_SAMPLES=Samples
-option.CLOUD_LOW_SKYLIGHT_SAMPLES=Skylight Samples
+option.CLOUD_LOW_SAMPLES_MIN=Min Main Samples
+option.CLOUD_LOW_SAMPLES_MAX=Max Main Samples
 option.CLOUD_LOW_SUNLIGHT_SAMPLES=Sunlight Samples
+option.CLOUD_LOW_SKYLIGHT_SAMPLES=Skylight Samples
 option.CLOUD_LOW_WIND_SPEED=Wind Speed
 suffix.CLOUD_LOW_WIND_SPEED=m/s
+option.CLOUD_LOW_WIND_ANGLE=Wind Angle
+suffix.CLOUD_LOW_WIND_ANGLE=°
 
 option.CLOUD_MID_ALTITUDE=Altitude
 option.CLOUD_MID_THICKNESS=Thickness
 option.CLOUD_MID_SUNLIGHT_SAMPLES=Sunlight Samples
-option.CLOUD_MID_WIND_SPEED=Wind Speed
 suffix.CLOUD_MID_ALTITUDE=m
 suffix.CLOUD_MID_THICKNESS=m
+option.CLOUD_MID_WIND_SPEED=Wind Speed
 suffix.CLOUD_MID_WIND_SPEED=m/s
+option.CLOUD_MID_WIND_ANGLE=Wind Angle
+suffix.CLOUD_MID_WIND_ANGLE=°
 
 option.CLOUD_HIGH_ALTITUDE=Altitude
 option.CLOUD_HIGH_THICKNESS=Thickness
 option.CLOUD_HIGH_SUNLIGHT_SAMPLES=Sunlight Samples
-option.CLOUD_HIGH_WIND_SPEED=Wind Speed
 suffix.CLOUD_HIGH_ALTITUDE=m
 suffix.CLOUD_HIGH_THICKNESS=m
+option.CLOUD_HIGH_WIND_SPEED=Wind Speed
 suffix.CLOUD_HIGH_WIND_SPEED=m/s
+option.CLOUD_HIGH_WIND_ANGLE=Wind Angle
+suffix.CLOUD_HIGH_WIND_ANGLE=°
 
 option.CLOUD_CUMULUS=Cumulus
 option.CLOUD_CU_COVERAGE=Cumulus Coverage
@@ -339,9 +346,9 @@ option.MOTION_BLUR=Motion Blur
 option.MOTION_BLUR_SAMPLES=Motion Blur Samples
 option.MOTION_BLUR_STRENGTH=Motion Blur Strength
 
-option.BLOOM_ENABLED=Bloom
+option.BLOOM=Bloom
+option.BLOOM_KARIS_AVERAGE=Karis Average
 option.BLOOM_INTENSITY=Bloom Intensity
-option.BLOOM_BLUR_SAMPLES=Bloom Blur Samples
 option.BLOOMY_FOG=Bloomy Fog
 option.BLOOMY_FOG_INTENSITY=Bloomy Fog Intensity
 

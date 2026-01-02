@@ -83,36 +83,62 @@ float rgbToYc(in vec3 rgb) {
 	return (rgb.r + rgb.g + rgb.b + yc_radius_weight * chroma) / 3.0;
 }
 
-const mat3 AP0toXYZ = mat3(
+const mat3 Rec2020_2_AP0 = mat3(
+     0.6790856347, 0.1577009146, 0.1632134507,
+     0.0460020031, 0.8590546730, 0.0949433240,
+    -0.0005739432, 0.0284677684, 0.9721061748
+);
+
+const mat3 Rec2020_2_AP1 = mat3(
+    0.9748949779, 0.0195991086, 0.0055059134,
+    0.0021795628, 0.9955354689, 0.0022849683,
+    0.0047972397, 0.0245320166, 0.9706707437
+);
+
+const mat3 AP0_2_Rec2020 = mat3(
+     1.4904095205, -0.2661709193, -0.2242386013,
+    -0.0801674998,  1.1821671211, -0.1019996212,
+     0.0032276312, -0.0347764757,  1.0315488446
+);
+
+const mat3 AP1_2_Rec2020 = mat3(
+     1.0258247477, -0.0200531908, -0.0057715568,
+    -0.0022343695,  1.0045865019, -0.0023521324,
+    -0.0050133515, -0.0252900718,  1.0303034233
+);
+
+const mat3 AP0_2_XYZ = mat3(
 	 0.9525523959,  0.0000000000,  0.0000936786,
 	 0.3439664498,  0.7281660966, -0.0721325464,
 	 0.0000000000,  0.0000000000,  1.0088251844
 );
-const mat3 XYZtoAP0 = mat3(
+const mat3 XYZ_2_AP0 = mat3(
 	 1.0498110175,  0.0000000000, -0.0000974845,
 	-0.4959030231,  1.3733130458,  0.0982400361,
 	 0.0000000000,  0.0000000000,  0.9912520182
 );
 
-const mat3 AP1toXYZ = mat3(
+const mat3 AP1_2_XYZ = mat3(
 	 0.6624541811,  0.1340042065,  0.1561876870,
 	 0.2722287168,  0.6740817658,  0.0536895174,
 	-0.0055746495,  0.0040607335,  1.0103391003
 );
-const mat3 XYZtoAP1 = mat3(
+const mat3 XYZ_2_AP1 = mat3(
 	 1.6410233797, -0.3248032942, -0.2364246952,
 	-0.6636628587,  1.6153315917,  0.0167563477,
 	 0.0117218943, -0.0082844420,  0.9883948585
 );
 
-const mat3 AP0toAP1 = AP0toXYZ * XYZtoAP1;
-const mat3 AP1toAP0 = AP1toXYZ * XYZtoAP0;
+const mat3 AP0_2_AP1 = AP0_2_XYZ * XYZ_2_AP1;
+const mat3 AP1_2_AP0 = AP1_2_XYZ * XYZ_2_AP0;
 
 const mat3 D60ToD65_CAT = mat3(
      0.98722400, -0.00611327, 0.01595330,
     -0.00759836,  1.00186000, 0.00533002,
      0.00307257, -0.00509595, 1.08168000
 );
+
+const vec3 AP1_RGB2Y = vec3(0.2722287168, 0.6740817658, 0.0536895174);
 
 // "Glow" module constants
 const float rrtGlowGain  = 0.05;   	// Default: 0.05
@@ -126,7 +152,7 @@ const float rrtRedWidth  = 135.0; 	// Default: 135.0
 
 // Desaturation contants
 const float rrtSatFactor = 0.96; 	// Default: 0.96
-const float odtSatFactor = 1.0; 	// Default: 0.93
+const float odtSatFactor = 0.93; 	// Default: 0.93
 
 // ------- Glow module functions
 float GlowFwd(in float yc_in, in float glow_gain_in, in const float glow_mid) {
@@ -220,12 +246,10 @@ vec3 RRTSweeteners(in vec3 aces) {
 	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oms(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
-    aces = satU16f(aces);
-	vec3 rgbPre = satU16f(aces * AP0toAP1);
+	vec3 rgbPre = max0(aces * AP0_2_AP1);
 
 	// --- Global desaturation --- //
-	float luminance = luminance(rgbPre);
-	rgbPre = mix(vec3(luminance), rgbPre, rrtSatFactor);
+	rgbPre = mix(vec3(dot(rgbPre, AP1_RGB2Y)), rgbPre, rrtSatFactor);
 
 	return rgbPre;
 }
@@ -366,17 +390,18 @@ vec3 RRTAndODTFit(in vec3 rgb) {
 
 vec3 AcademyFit(in vec3 rgb) {
 	rgb *= 1.4;
+	rgb *= Rec2020_2_AP0;
 
 	// Apply RRT sweeteners
-	rgb = RRTSweeteners(rgb * AP1toAP0);
+	rgb = RRTSweeteners(rgb);
 
 	// Apply RRT and ODT
 	rgb = RRTAndODTFit(rgb);
 
 	// Global desaturation
-	rgb = colorSaturation(rgb, odtSatFactor);
+	rgb = mix(vec3(dot(rgb, AP1_RGB2Y)), rgb, odtSatFactor);
 
-	return linearToSRGB(rgb);
+	return rgb * AP1_2_Rec2020;
 }
 
 //======// ACES Full //===========================================================================//
@@ -398,12 +423,10 @@ vec3 RRT(in vec3 aces) {
 	aces.r += hueWeight * saturation * (rrtRedPivot - aces.r) * oms(rrtRedScale);
 
     // --- ACES to RGB rendering space --- //
-    aces = satU16f(aces);
-	vec3 rgbPre = satU16f(aces * AP0toAP1);
+	vec3 rgbPre = max0(aces * AP0_2_AP1);
 
 	// --- Global desaturation --- //
-	float luminance = luminance(rgbPre);
-	rgbPre = mix(vec3(luminance), rgbPre, rrtSatFactor);
+	rgbPre = mix(vec3(dot(rgbPre, AP1_RGB2Y)), rgbPre, rrtSatFactor);
 
     // --- Apply the tonescale independently in rendering-space RGB --- //
     vec3 rgbPost;
@@ -436,13 +459,13 @@ vec3 xyY_to_XYZ(in vec3 xyY) {
 vec3 dark_surround_to_dim_surround(in vec3 linearCV) {
 	const float dimSurroundGamma = 0.9811;
 
-	vec3 XYZ = linearCV * AP1toXYZ;
+	vec3 XYZ = linearCV * AP1_2_XYZ;
 	vec3 xyY = XYZ_to_xyY(XYZ);
 
 	xyY.z = max0(xyY.z);
 	xyY.z = pow(xyY.z, dimSurroundGamma);
 
-	return xyY_to_XYZ(xyY) * XYZtoAP1;
+	return xyY_to_XYZ(xyY) * XYZ_2_AP1;
 }
 
 
@@ -479,18 +502,17 @@ vec3 ODT_sRGB_100nits_dim(in vec3 rgbPre) {
 	linearCV = dark_surround_to_dim_surround(linearCV);
 
 	// Apply desaturation to compensate for luminance difference
-	float luminance = luminance(linearCV);
-	linearCV = mix(vec3(luminance), linearCV, odtSatFactor);
+	linearCV = mix(vec3(dot(linearCV, AP1_RGB2Y)), linearCV, odtSatFactor);
 
     // Convert to display primary encoding
     // Rendering space RGB to XYZ
-    vec3 XYZ = linearCV * AP1toXYZ;
+    vec3 XYZ = linearCV * AP1_2_XYZ;
 
     // Apply CAT from ACES white point to assumed observer adapted white point
     XYZ *= D60ToD65_CAT;
 
     // CIE XYZ to display primaries
-    linearCV = XYZ * XYZtoSRGB;
+    linearCV = XYZ * XYZ_2_Rec2020;
 
     // Handle out-of-gamut values
     // Clip values < 0 or > 1 (i.e. projecting outside the display primaries)
@@ -539,18 +561,17 @@ vec3 ODT_Rec2020_P3D65limited_100nits_dim(in vec3 rgbPre) {
 	linearCV = dark_surround_to_dim_surround(linearCV);
 
 	// Apply desaturation to compensate for luminance difference
-	float luminance = luminance(linearCV);
-	linearCV = mix(vec3(luminance), linearCV, odtSatFactor);
+	linearCV = mix(vec3(dot(linearCV, AP1_RGB2Y)), linearCV, odtSatFactor);
 
     // Convert to display primary encoding
     // Rendering space RGB to XYZ
-    vec3 XYZ = linearCV * AP1toXYZ;
+    vec3 XYZ = linearCV * AP1_2_XYZ;
 
     // Apply CAT from ACES white point to assumed observer adapted white point
     XYZ *= D60ToD65_CAT;
 
     // CIE XYZ to display primaries
-    linearCV = XYZ * XYZtoSRGB;
+    linearCV = XYZ * XYZ_2_sRGB;
 
     // Handle out-of-gamut values
     // Clip values < 0 or > 1 (i.e. projecting outside the display primaries)
@@ -564,15 +585,9 @@ vec3 ODT_Rec2020_P3D65limited_100nits_dim(in vec3 rgbPre) {
 	return bt1886_r(linearCV, dispGamma, lW, lB);
 }
 
-const mat3 sRGBtoACES = mat3(
-    0.43963298, 0.38298870, 0.17737832,
-    0.08977644, 0.81343943, 0.09678413,
-    0.01754117, 0.11154655, 0.87091228
-);
-
 vec3 AcademyFull(in vec3 rgb) {
 	rgb *= 1.4;
-	rgb *= sRGBtoACES;
+	rgb *= Rec2020_2_AP0;
 
 	// Apply RRT
 	rgb = RRT(rgb);
@@ -580,5 +595,5 @@ vec3 AcademyFull(in vec3 rgb) {
 	// Apply ODT
 	rgb = ODT_sRGB_100nits_dim(rgb);
 
-	return rgb;
+	return sRGBtoLinear(rgb);
 }

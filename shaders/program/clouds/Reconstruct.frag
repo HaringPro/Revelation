@@ -51,18 +51,18 @@ vec3 ReprojectClouds(in vec2 coord, in float depth) {
 	float radius = depth + viewerHeight;
 	if (radius < cloudMidRadius) {
 		// Low clouds
-		const float windAngle = radians(45.0);
+		const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
 		const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
 		const vec3 windVelocity = windDir * CLOUD_LOW_WIND_SPEED;
 		motionVector -= windVelocity;
 	} else if (radius < cloudHighRadius) {
 		// Mid clouds
-		const float windAngle = radians(10.0);
+		const float windAngle = radians(CLOUD_MID_WIND_ANGLE);
 		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_MID_WIND_SPEED;
 		motionVector.xz -= windVelocity;
 	} else {
 		// High clouds
-		const float windAngle = radians(30.0);
+		const float windAngle = radians(CLOUD_HIGH_WIND_ANGLE);
 		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_HIGH_WIND_SPEED;
 		motionVector.xz -= windVelocity;
 	}

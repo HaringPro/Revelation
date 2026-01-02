@@ -7,6 +7,7 @@
 	Apache License 2.0
 
 	Pass: Downsample bloom tiles
+	Reference: https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
 
 --------------------------------------------------------------------------------
 */
@@ -15,11 +16,23 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
+#if DOWNSAMPLE_LEVEL == 0
+const vec2 workGroupsRender = vec2(0.5, 0.5);
+#elif DOWNSAMPLE_LEVEL == 1
+const vec2 workGroupsRender = vec2(0.25, 0.25);
+#elif DOWNSAMPLE_LEVEL == 2
+const vec2 workGroupsRender = vec2(0.125, 0.125);
+#elif DOWNSAMPLE_LEVEL == 3
+const vec2 workGroupsRender = vec2(0.0625, 0.0625);
+#elif DOWNSAMPLE_LEVEL == 4
+const vec2 workGroupsRender = vec2(0.03125, 0.03125);
+#elif DOWNSAMPLE_LEVEL == 5
+const vec2 workGroupsRender = vec2(0.015625, 0.015625);
+#endif
+
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
-
-#define BLOOM_BLUR_SAMPLES 1 // [1 2 3 4 5 6 7 8]
 
 //======// Uniform //=============================================================================//
 
@@ -38,51 +51,97 @@ uniform vec2 viewPixelSize;
 #else
 	#define bloomTileTex colortex4
 #endif
-#define loadTile(uv) textureLod(bloomTileTex, uv, 0.0).rgb
 
-const vec2 bloomTileOffset[7] = vec2[7](
+const vec2 bloomTileOffset[6] = vec2[6](
 	vec2(0.0000, 0.0000),
 	vec2(0.0000, 0.5000),
 	vec2(0.2500, 0.5000),
 	vec2(0.2500, 0.6250),
 	vec2(0.3125, 0.6250),
-	vec2(0.3150, 0.6563),
-	vec2(0.3281, 0.6563)
+	vec2(0.3150, 0.6563)
+);
+
+const ivec2 sampleOffsets[13] = ivec2[13](
+    ivec2(-2, -2),
+	ivec2( 0, -2),
+	ivec2( 2, -2),
+    ivec2(-2,  0),
+	ivec2( 0,  0),
+	ivec2( 2,  0),
+    ivec2(-2,  2),
+	ivec2( 0,  2),
+	ivec2( 2,  2),
+    ivec2(-1, -1),
+	ivec2( 1, -1),
+    ivec2(-1,  1),
+	ivec2( 1,  1)
 );
 
 vec3 CalculateBloomTile(in vec2 uv) {
-	vec3  bloomTile = vec3(0.0);
-	float sumWeight = EPS;
+	// Custom hand-crafted 36-texel downsample (13 bilinear fetches)
+    vec3 b00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[0]).rgb;
+    vec3 b01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[1]).rgb;
+    vec3 b02 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[2]).rgb;
+    vec3 b10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[3]).rgb;
+    vec3 b11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[4]).rgb;
+    vec3 b12 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[5]).rgb;
+    vec3 b20 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[6]).rgb;
+    vec3 b21 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[7]).rgb;
+    vec3 b22 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[8]).rgb;
+    vec3 c00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[9]).rgb;
+    vec3 c01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[10]).rgb;
+    vec3 c10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[11]).rgb;
+    vec3 c11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[12]).rgb;
 
-	for (int y = -BLOOM_BLUR_SAMPLES; y <= BLOOM_BLUR_SAMPLES; ++y) {
-		for (int x = -BLOOM_BLUR_SAMPLES; x <= BLOOM_BLUR_SAMPLES; ++x) {
-			vec3 sampleTile = loadTile(uv + vec2(x, y) * viewPixelSize);
-			float weight = saturate(1.0 - sdot(vec2(x, y)) * 0.25);
+    vec3 B00 = (b00 + b01 + b10 + b11) * 0.25;
+    vec3 B01 = (b01 + b02 + b11 + b12) * 0.25;
+    vec3 B10 = (b10 + b11 + b20 + b21) * 0.25;
+    vec3 B11 = (b11 + b12 + b21 + b22) * 0.25;
+    vec3 C00 = (c00 + c01 + c10 + c11) * 0.25;
 
-			#if DOWNSAMPLE_LEVEL == 0
-				weight *= karisAverage(sampleTile);
-			#endif
+	#if defined BLOOM_KARIS_AVERAGE && DOWNSAMPLE_LEVEL == 0
+		// [Karis2013] proposes reducing the dynamic range before averaging
+		vec4 bloomTile = vec4(0.0);
 
-			bloomTile += sampleTile * weight;
-			sumWeight += weight;
-		}
-	}
+		float weight = karisAverage(C00) * 0.5;
+		bloomTile += vec4(C00 * weight, weight);
 
-	return bloomTile * rcp(sumWeight);
+		weight = karisAverage(B00) * 0.125;
+		bloomTile += vec4(B00 * weight, weight);
+
+		weight = karisAverage(B01) * 0.125;
+		bloomTile += vec4(B01 * weight, weight);
+
+		weight = karisAverage(B10) * 0.125;
+		bloomTile += vec4(B10 * weight, weight);
+
+		weight = karisAverage(B11) * 0.125;
+		bloomTile += vec4(B11 * weight, weight);
+
+		return bloomTile.rgb / bloomTile.a;
+	#else
+		return (B00 + B01 + B10 + B11) * 0.125 + C00 * 0.5;
+	#endif
 }
 
 //======// Main //================================================================================//
 void main() {
-    vec2 baseUv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
+    vec2 srcUv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
+	srcUv *= viewPixelSize;
 
-	const int index = max(0, DOWNSAMPLE_LEVEL - 1);
-    vec2 srcUv = (baseUv + float(index * 12)) * viewPixelSize + bloomTileOffset[index];
+    if (any(greaterThanEqual(srcUv, vec2(exp2(-float(DOWNSAMPLE_LEVEL)))))) {
+        return;
+    }
 
-	if (clamp(srcUv, viewPixelSize, 1.0 - viewPixelSize) == srcUv) {
-		vec3 bloomTile = CalculateBloomTile(srcUv);
+	#if DOWNSAMPLE_LEVEL > 0
+		const int srcIndex = DOWNSAMPLE_LEVEL - 1;
+		srcUv += float(srcIndex * 8) * viewPixelSize + bloomTileOffset[srcIndex];
+	#endif
 
-		vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + DOWNSAMPLE_LEVEL * 12);
-		dstTexel += bloomTileOffset[DOWNSAMPLE_LEVEL] * viewSize + 0.5;
-		imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
-	}
+	vec3 bloomTile = CalculateBloomTile(srcUv);
+
+	const int dstIndex = DOWNSAMPLE_LEVEL;
+	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + dstIndex * 8);
+	dstTexel += bloomTileOffset[dstIndex] * viewSize + 0.5;
+	imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
 }

@@ -31,7 +31,7 @@ float CalculateWaterHeight(in vec2 position) {
 
 	#if !defined PASS_SHADOW
 		float localHeight = texture(noisetex, pos * 0.2 + waveTime * 0.1).z;
-		waves *= saturate(localHeight * 2.0 - 0.75) * 0.75 + 0.5;
+		waves *= saturate(localHeight * 2.0 - 0.75) + 0.25;
 	#endif
 
 	return WATER_WAVE_HEIGHT * 0.5 * waves;
@@ -55,7 +55,7 @@ float CalculateWaterHeightFull(in vec2 position) {
 
 	#if !defined PASS_SHADOW
 		float localHeight = texture(noisetex, pos * 0.2 + waveTime * 0.1).z;
-		waves *= saturate(localHeight * 2.0 - 0.75) * 0.75 + 0.5;
+		waves *= saturate(localHeight * 2.0 - 0.75) + 0.25;
 	#endif
 
 	return WATER_WAVE_HEIGHT * 0.5 * waves;

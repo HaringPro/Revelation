@@ -52,6 +52,7 @@ void main() {
 
 		vec3 worldDir = UnprojectSky(uv);
 		vec3 skyRadiance = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+		skyRadiance = colorSaturation(skyRadiance, 1.0 - wetness * 0.5); // Post-process
 
 		vec2 noise = SampleStbnVec2(tid, frameCounter);
 

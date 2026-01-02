@@ -44,7 +44,7 @@ float CloudMidDensity(in vec2 rayPos) {
 // Adapted from [Schneider, 2022]
 float CloudHighDensity(in vec2 rayPos) {
 	// Wind field
-	const float windAngle = radians(30.0);
+	const float windAngle = radians(CLOUD_HIGH_WIND_ANGLE);
 	const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_HIGH_WIND_SPEED;
 	vec2 windOffset = windVelocity * worldTimeCounter;
 
@@ -77,12 +77,12 @@ float CloudHighDensity(in vec2 rayPos) {
 		float coverage = CLOUD_CC_COVERAGE - saturate(texture(noisetex, position * 0.01).z * 2.0);
 		coverage = saturate(texture(cloudMapTex, (position * 0.01)).x + coverage);
 
-		if (coverage > 0.35) {
+		if (coverage > 0.3) {
 			vec2 p = position + coverage * 0.5 - windOffset * 1e-4;
 			float cirrocumulus = sqr(textureBicubic(cirroLutTex, p * 0.3).x);
 
 			cirrocumulus *= saturate(cirrocumulus + coverage);
-			cirrocumulus *= linearstep(0.35, 1.0, coverage);
+			cirrocumulus *= smoothstep(0.3, 1.0, coverage);
 
 			density += cirrocumulus;
 		}
@@ -100,12 +100,12 @@ float CloudHighDensity(in vec2 rayPos) {
 	}
 #else
 	float GetVerticalProfile(in float h, in float t) {
-		float stratus = linearstep(0.1, 0.15, h) * linearstep(0.25, 0.15, h);
-		float stratocumulus = saturate(h * 6.0) * linearstep(0.6, 0.2, h);
-		float cumulus = saturate(h * 8.0) * linearstep(1.0, 0.75, h);
+		float stratus = saturate(h * 16.0) * linearstep(0.2, 0.1, h);
+		float stratocumulus = saturate(h * 7.0) * linearstep(0.5, 0.2, h);
+		float cumulus = saturate(h * 9.0) * linearstep(1.0, 0.75, h);
 
 		float gradient = mix(stratus, stratocumulus, smoothstep(0.0, 0.5, t));
-		return mix(gradient, cumulus, smoothstep(0.5, 1.0, t));
+		return mix(gradient, cumulus, linearstep(0.5, 1.0, t));
 	}
 #endif
 
@@ -114,7 +114,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	heightFraction = saturate((length(rayPos) - cumulusBottomRadius) * rcp(cumulusThickness));
 
 	// Wind field
-	const float windAngle = radians(45.0);
+	const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
 	const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
 	const vec3 windVelocity = windDir * CLOUD_LOW_WIND_SPEED;
 	vec3 windOffset = windVelocity * worldTimeCounter;
@@ -126,16 +126,17 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	vec2 cloudMap = texture(cloudMapTex, (rayPos.xz * rcp(cloudMapExtend))).xy;
 
 	// Coveage profile
-	vec2 stepEdge = mix(vec2(0.6, 1.0) - CLOUD_CU_COVERAGE * 0.4, vec2(0.1, 0.5), sqr(wetness));
+	vec2 stepEdge = mix(vec2(0.52, 0.9) - CLOUD_CU_COVERAGE * 0.3, vec2(0.1, 0.5), sqr(wetness));
 	float coverage = linearstep(stepEdge.x, stepEdge.y, cloudMap.x);
-	coverage *= linearstep(stepEdge.x * 1.2, stepEdge.y * 0.7, texture(noisetex, rayPos.xz * rcp(512e3)).z);
+	coverage += linearstep(stepEdge.x * 1.3, stepEdge.y * 0.75, texture(noisetex, rayPos.xz * rcp(786e3)).z);
+	coverage = saturate(coverage - 1.0);
 
 	// Vertical profile
-	float type = curve(cloudMap.y) * coverage;
+	float type = curve(cloudMap.y * coverage);
 	float gradient = GetVerticalProfile(heightFraction, type);
 
-	// dimensionalProfile = gradient * coverage;
-	dimensionalProfile = saturate(gradient + coverage - 1.0);
+	dimensionalProfile = gradient * coverage;
+	// dimensionalProfile = saturate(gradient + coverage - 1.0);
 	if (dimensionalProfile < 0.1) return 0.0;
 
 	vec3 noisePos = (rayPos - windDir * heightFraction * cumulusTopOffset) * rcp(3e3);
@@ -157,7 +158,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 	float heightFade = smoothstep(0.4, 0.2, heightFraction);
 
 	// Detail erosion
-	float detailNoise = 0.125;
+	float detailNoise = 0.1;
 
 	#if !defined PASS_SKY_MAP
 	if (detail) {
@@ -167,7 +168,7 @@ float CloudVolumeDensity(in vec3 rayPos, out float heightFraction, out float dim
 		detailNoise = texture(detailNoiseTex, noisePos * 8.0).x;
 
 		// Transition from wispy shapes to billowy shapes over height
-		detailNoise = sqr(mix(0.75 - detailNoise * 0.5, detailNoise, heightFade)) * 0.5;
+		detailNoise = sqr(mix(0.75 - detailNoise * 0.5, detailNoise, heightFade)) * 0.4;
 	}
 	#endif
 

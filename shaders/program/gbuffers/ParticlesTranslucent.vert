@@ -9,6 +9,8 @@ in ivec2 vaUV2;
 
 //======// Output //==============================================================================//
 
+out vec3 worldPos;
+
 out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
@@ -26,6 +28,8 @@ uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform mat4 gbufferModelViewInverse;
+
 uniform vec2 taaOffset;
 
 //======// Main //================================================================================//
@@ -37,6 +41,7 @@ void main() {
 
 	vec3 viewPos = transMAD(modelViewMatrix, vaPosition + chunkOffset);
 	gl_Position = diagonal4(projectionMatrix) * viewPos.xyzz + projectionMatrix[3];
+	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaOffset * gl_Position.w;

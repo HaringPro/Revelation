@@ -5,6 +5,7 @@
 // https://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models#\
 // https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
 // https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
+// https://www.guerrilla-games.com/read/decima-engine-advances-in-lighting-and-aa
 
 //================================================================================================//
 
@@ -177,8 +178,7 @@ vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
 
 //======// Normal Distribution //=================================================================//
 
-float NDFBeckmann(in float NdotH, in float alpha2) {
-    float NdotH2 = NdotH * NdotH;
+float NDFBeckmann(in float NdotH2, in float alpha2) {
     return maxEps(rcp(PI * alpha2 * NdotH2 * NdotH2) * exp((NdotH2 - 1.0) / (alpha2 * NdotH2)));
 }
 
@@ -187,14 +187,13 @@ float NDFGaussian(in float NdotH, in float alpha2) {
     return exp(-thetaH * thetaH / alpha2);
 }
 
-float NDFGGX(in float NdotH, in float alpha) {
-    float NdotH2 = NdotH * NdotH;
+float NDFGGX(in float NdotH2, in float alpha) {
     float tanNdotH2 = oms(NdotH2) / NdotH2;
     return rPI * sqr(alpha / (NdotH2 * (sqr(alpha) + tanNdotH2)));
 }
 
-float NDFTrowbridgeReitz(in float NdotH, in float alpha2) {
-	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH * NdotH);
+float NDFTrowbridgeReitz(in float NdotH2, in float alpha2) {
+	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH2);
 }
 
 //======// Geometric GGX //=======================================================================//
@@ -264,7 +263,7 @@ vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH,
     vec3 F = FresnelSchlick(LdotH, f0);
 
     // Distribution term
-	float D = NDFTrowbridgeReitz(NdotH, alpha2);
+	float D = NDFTrowbridgeReitz(NdotH * NdotH, alpha2);
 
     // Geometric term
     float G = G2SmithGGX(NdotL, NdotV, alpha2);
@@ -292,28 +291,63 @@ float DiffuseBurley(in float LdotH, in float NdotV, in float NdotL, in float rou
 	return NdotL * rPI * FresnelSchlick(NdotL, roughness, f90) * FresnelSchlick(NdotV, roughness, f90);
 }
 
-// From https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
-vec3 TurquinBRDF(in float NdotV, in float NdotL, in float NdotH, in float VdotH, in float f0, in float metallic, in float roughness, in vec3 albedo) {
-    vec3 F0 = mix(vec3(f0), albedo, metallic);
-    float alpha2 = roughness * roughness;
+float GetNoHSquared(float radius, float NoL, float NoV, float VoL) {
+	float radiusCos = cos(radius);
+	float radiusTan = tan(radius);
+
+	// Early out if R falls within the disc​
+    float RoL = 2.0 * NoL * NoV - VoL;
+    if (RoL >= radiusCos) return 1.0;
+
+    float rOverLengthT = radiusCos * radiusTan * inversesqrt(1.0 - RoL * RoL);
+    float NoTr = rOverLengthT * (NoV - RoL * NoL);
+    float VoTr = rOverLengthT * (2.0 * NoV * NoV - 1.0 - RoL * VoL);
+
+	// Calculate dot(cross(N, L), V). This could already be calculated and available.​
+    float triple = sqrt(saturate(1.0 - NoL * NoL - NoV * NoV - VoL * VoL + 2.0 * NoL * NoV * VoL));
+
+	// Do one Newton iteration to improve the bent light Direction​
+    float NoBr = rOverLengthT * triple, VoBr = rOverLengthT * (2.0 * triple * NoV);
+    float NoLVTr = NoL * radiusCos + NoV + NoTr, VoLVTr = VoL * radiusCos + 1.0 + VoTr;
+    float p = NoBr * VoLVTr, q = NoLVTr * VoLVTr, s = VoBr * NoLVTr;
+    float xNum = q * (-0.5 * p + 0.25 * VoBr * NoLVTr);
+    float xDenom = p * p + s * (s - 2.0 * p) + NoLVTr * ((NoL * radiusCos + NoV) * VoLVTr * VoLVTr +
+                   q * (-0.5 * (VoLVTr + VoL * radiusCos) - 0.5));
+    float twoX1 = 2.0 * xNum / (xDenom * xDenom + xNum * xNum);
+    float sinTheta = twoX1 * xDenom;
+    float cosTheta = 1.0 - twoX1 * xNum;
+    NoTr = cosTheta * NoTr + sinTheta * NoBr;
+    VoTr = cosTheta * VoTr + sinTheta * VoBr;
+
+	// Calculate (N.H)^2 based on the bent light direction​
+    float newNol = NoL * radiusCos + NoTr;
+    float newVol = VoL * radiusCos + VoTr;
+    float NoH = NoV + newNol;
+    float HoH = 2.0 * newVol + 2.0;
+
+    return max0(NoH * NoH / HoH);
+}
+
+vec3 SphericalAreaGGX(in float LdotH, in float NdotV, in float NdotL, in float LdotV, in float alpha, in vec3 f0) {
+    float radius = atmosphereModel.sun_angular_radius * SUN_RADIUS_MULT;
+
+    // alpha = max(alpha, 1e-2);
+    float alpha2 = alpha * alpha;
 
     // Fresnel term
-    vec3 F = FresnelSchlickMS(VdotH, F0, roughness);
+    vec3 F = FresnelSchlick(LdotH, f0);
 
     // Distribution term
-    float D = NDFTrowbridgeReitz(NdotH, alpha2);
+	float NdotH2 = GetNoHSquared(radius, NdotL, NdotV, LdotV);
+	float D = NDFTrowbridgeReitz(NdotH2, alpha2);
 
     // Geometric term
-    float G = G2SchlickGGX(NdotL, NdotV, alpha2);
+    float G = G2SmithGGX(NdotL, NdotV, alpha2);
 
-    // Diffuse contribution with energy compensation
-    vec3 kD = oms(F) * oms(metallic);
-    vec3 diffuse = kD * albedo * rPI;
+    // Both Karis’ approach and our approach are not truely energy conserving as their normalization is only approximate.
+    // We’re experimenting with different formulas for the normalization to try to improve its accuracy, of which this is one:
+    float alphaSquaredLdotH = alpha2 * (LdotH + 0.001);
+    float normalization = alphaSquaredLdotH / (alphaSquaredLdotH + 0.25 * radius * (3.0 * alpha + radius));
 
-    // Specular contribution
-    vec3 numerator = D * G * F;
-    float denominator = 4.0 * NdotV * NdotL;
-    vec3 specular = numerator / maxEps(denominator);
-
-    return (diffuse + specular) * NdotL;
+	return min(F * D * G / (4.0 * NdotV) * normalization, 64.0);
 }

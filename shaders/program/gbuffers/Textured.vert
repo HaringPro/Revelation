@@ -20,13 +20,11 @@ out vec2 lightmap;
 in vec3 vaPosition;
 in vec4 vaColor;
 in vec2 vaUV0;
-in vec3 vaNormal;
 
 //======// Uniform //=============================================================================//
 
 uniform vec3 chunkOffset;
 
-uniform mat3 normalMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 

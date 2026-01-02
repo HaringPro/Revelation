@@ -74,20 +74,19 @@ void main() {
 
 	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
+	#if defined LOD_MOD
+		bool lodTerrainMask = screenPos.z > 1.0 - EPS;
+		if (lodTerrainMask) {
+			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(texelPos)));
+		}
+	#endif
+
 	// Hand-depth correction
 	if (screenPos.z < 0.56) {
 		screenPos.z = screenPos.z * rcp(MC_HAND_DEPTH) + (0.5 - 0.5 / MC_HAND_DEPTH);
 	}
 
 	vec3 viewPos = ScreenToViewSpace(screenPos);
-
-	#if defined LOD_MOD
-		bool lodTerrainMask = screenPos.z > 1.0 - EPS;
-		if (lodTerrainMask) {
-			screenPos.z = loadDepth0Lod(texelPos);
-			viewPos = ScreenToViewSpaceLod(screenPos);
-		}
-	#endif
 
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
@@ -101,9 +100,10 @@ void main() {
 
 	sceneOut = vec3(0.0);
 
-	if (screenPos.z > 1.0 - EPS + float(materialID)) {
+	if (materialID == 0u) { // Sky
 		vec3 transmittance;
 		sceneOut = GetSkyRadiance(worldDir, worldSunVector, transmittance) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+		sceneOut = colorSaturation(sceneOut, 1.0 - wetness * 0.5); // Post-process
 
 		if (dot(transmittance, vec3(1.0)) > EPS) {
 			vec3 celestial = RenderSun(worldDir, worldSunVector);
@@ -268,7 +268,7 @@ void main() {
 						const vec3 f0 = vec3(DEFAULT_DIELECTRIC_F0);
 					#endif
 
-					specularDirect = shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, material.roughness, f0);
+					specularDirect = shadow * SphericalAreaGGX(LdotH, NdotV, NdotL, LdotV, material.roughness, f0);
 				}
 			}
 		}
@@ -294,13 +294,8 @@ void main() {
 		// Skylight and bounced sunlight
 		#ifndef SSILVB_ENABLED
 			if (lightmap.y > EPS) {
-				// Skylight
-				vec3 skylight = lightningShading;
-				skylight *= 0.02 * (worldNormal.y * 0.5 + 0.5);
-
 				// Spherical harmonics skylight
-				skylight += ConvolvedReconstructSH3(global.light.skySH, worldNormal);
-
+				vec3 skylight = ConvolvedReconstructSH3(global.light.skySH, worldNormal);
 				sceneOut += skylight * cube(lightmap.y) * ao;
 
 				// Fake bounced light
@@ -340,6 +335,9 @@ void main() {
 				sceneOut += irradiance * attenuation * blocklightColor;
 			}
 		#endif
+
+		// Lightning
+		sceneOut += LightningContribution(worldPos, worldNormal);
 
 		// Indirect diffuse lighting
 		#ifdef SSILVB_ENABLED

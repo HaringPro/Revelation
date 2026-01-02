@@ -53,15 +53,7 @@ uniform sampler2D tex;
 
 //======// Function //============================================================================//
 
-// Interleaved Gradient Noise
-// https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
-// https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
-float InterleavedGradientNoiseTemporal(in vec2 coord) {
-	#ifdef TAA_ENABLED
-        coord += 5.588238 * float(frameCounter % 64);
-	#endif
-    return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
-}
+#include "/lib/universal/Random.glsl"
 
 #ifdef PARALLAX
 	#include "/lib/universal/Transform.glsl"
@@ -101,7 +93,7 @@ float InterleavedGradientNoiseTemporal(in vec2 coord) {
 
 //======// Main //================================================================================//
 void main() {
-	float dither = InterleavedGradientNoiseTemporal(gl_FragCoord.xy);
+	float dither = BlueNoise(ivec2(gl_FragCoord.xy), frameCounter);
 
 	#ifdef PARALLAX
 		#define ReadTexture(tex) textureGrad(tex, parallaxCoord, texGrad[0], texGrad[1])
@@ -116,38 +108,38 @@ void main() {
 			gl_FragDepth = gl_FragCoord.z;
 		#endif
 
-		if (normalTex.w < 0.999) {
-			float parallaxFade = exp2(-0.1 * max0(length(tangentViewPos) - 2.0));
+		if (normalTex.w < (1.0 - r255)) {
+			float tangentViewLength = length(tangentViewPos);
+			float parallaxFade = smoothstep(64.0, 32.0, tangentViewLength);
 
-			vec3 offsetCoord = CalculateParallax(normalize(tangentViewPos), dither);
+			vec3 offsetCoord = CalculateParallax(tangentViewPos / tangentViewLength, dither, parallaxFade);
 			parallaxCoord = atlasCoord(offsetCoord.xy);
 
 			normalTex = ReadTexture(normals);
 
 			DecodeNormalTex(normalTex.xyz);
 
-			if (offsetCoord.z < 0.999 && parallaxFade > EPS) {
+			if (offsetCoord.z < (1.0 - r255) && parallaxFade > EPS) {
 				#ifdef PARALLAX_DEPTH_WRITE
 					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(offsetCoord.z) * PARALLAX_DEPTH);
 				#elif defined PARALLAX_SHADOW
 					if (dot(tbnMatrix[2], worldLightVector) > 1e-3) {
-						parallaxShadowOut = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, dither) * parallaxFade;
+						parallaxShadowOut = CalculateParallaxShadow(worldLightVector * tbnMatrix, offsetCoord, dither, parallaxFade);
 					}
 				#endif
 				#ifdef PARALLAX_BASED_NORMAL
 					#define sampleHeight(uv) textureGrad(normals, atlasCoord(uv), texGrad[0], texGrad[1]).w
 
-					vec2 bias = 1e-2 * tileScale;
+					vec2 bias = 1e-2 / (tileScale * vec2(atlasSize));
 					float heightR = sampleHeight(offsetCoord.xy + vec2(bias.x, 0.0));
 					float heightL = sampleHeight(offsetCoord.xy - vec2(bias.x, 0.0));
 					float heightU = sampleHeight(offsetCoord.xy + vec2(0.0, bias.y));
 					float heightD = sampleHeight(offsetCoord.xy - vec2(0.0, bias.y));
 
-					float deltaX = (heightL - heightR) * 2.0;
-					float deltaY = (heightD - heightU) * 2.0;
+					float deltaX = heightL - heightR;
+					float deltaY = heightD - heightU;
 
-					vec3 pbN = vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-3));
-					normalTex.xyz = mix(normalTex.xyz, pbN, parallaxFade * oms(pbN.z));
+					normalTex.xyz = normalize(vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-3)));
 				#endif
 			}
 		} else {

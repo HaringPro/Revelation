@@ -45,7 +45,4 @@ void main() {
 
 	// Irradiance to illuminance
 	global.light.directIlluminance = SUN_SPECTRAL_RADIANCE_TO_LUMINANCE * (sunIrradiance + moonIrradiance);
-
-	// Lightning shading
-	global.light.skyIlluminance += lightningShading * 0.05;
 }

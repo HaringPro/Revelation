@@ -74,7 +74,7 @@ void main() {
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(modelViewMatrix, vaPosition + chunkOffset));
 
-	materialID = uint(max0(mc_Entity.x - 1e4));
+	materialID = uint(max(mc_Entity.x - 1e4, 1));
 
 	#if defined NORMAL_MAPPING
 		tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(normalMatrix * vaNormal);

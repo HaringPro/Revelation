@@ -133,11 +133,11 @@ void main() {
 
 	if (depth < 1.0) {
 		vec4 translucent = ExtractSpecularTex(materialPack);
+		vec3 albedo = sRGBtoLinear(translucent.rgb);
 
 		// Particle translucent
 		if (materialID == 500u) {
 			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
-			vec3 albedo = sRGBtoLinear(translucent.rgb);
 			sceneOut = mix(sceneOut, albedo * diffuseLight, translucent.a);
 		}
 
@@ -145,12 +145,10 @@ void main() {
 		if (glassMask || waterMask) {
 			if (glassMask) {
 				// Absorption
-				vec3 absorption = log2(translucent.rgb);
-				absorption *= 2.0 * sqrt2(translucent.a);
-				sceneOut *= exp2(absorption);
+				sceneOut *= exp(log2(albedo) * approxSqrt(translucent.a));
 
 				// Emissive
-				sceneOut += (2.0 * EMISSIVE_BRIGHTNESS) * Unpack2x8UX(materialPack.x) * cube(translucent.rgb * translucent.a);
+				sceneOut += (2.0 * EMISSIVE_BRIGHTNESS) * Unpack2x8UX(materialPack.x) * mean(albedo) * albedo;
 			}
 
 			// Apply specular lighting
@@ -168,7 +166,8 @@ void main() {
 				float density = saturate(1.0 - exp2(-pow8(sdot(worldPos.xz) * rcp(far * far)) * BORDER_FOG_FALLOFF));
 				density *= exp2(-4.0 * curve(saturate(worldDir.y * 3.0)));
 
-				vec3 skyRadiance = GetSkyRadiance(worldDir, worldSunVector);
+				vec3 skyRadiance = GetSkyRadiance(worldDir, worldSunVector) * SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+				skyRadiance = colorSaturation(skyRadiance, 1.0 - wetness * 0.5); // Post-process
 				sceneOut = mix(sceneOut, skyRadiance, density);
 			}
 		#endif
@@ -180,7 +179,7 @@ void main() {
 	// Volumetric fog
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			mat2x3 volFogData = VolumetricFogSpatialUpscale(texelPos >> 1, -viewPos.z);
+			mat2x3 volFogData = VolumetricFogSpatialUpscale(texelPos, -viewPos.z);
 			sceneOut = ApplyFog(sceneOut, volFogData);
 			bloomyFogMask = mean(volFogData[1]);
 		}
@@ -192,7 +191,7 @@ void main() {
 	// Underwater fog
 	if (isEyeInWater == 1) {
 		#ifdef UW_VOLUMETRIC_FOG
-			mat2x3 waterFog = VolumetricFogSpatialUpscale(texelPos >> 1, -viewPos.z);
+			mat2x3 waterFog = VolumetricFogSpatialUpscale(texelPos, -viewPos.z);
 		#else
 			mat2x3 waterFog = AnalyticWaterFog(eyeSkylightSmooth, viewDistance, LdotV);
 		#endif

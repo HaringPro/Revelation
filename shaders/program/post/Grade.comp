@@ -26,7 +26,7 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 #define BLOOMY_FOG_INTENSITY 1.0 // Intensity of bloomy fog. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.75 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 #define PURKINJE_SHIFT // Enables purkinje shift effect
-#define PURKINJE_SHIFT_STRENGTH 0.5 // Strength of purkinje shift effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
+#define PURKINJE_SHIFT_STRENGTH 1.0 // Strength of purkinje shift effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
 
 // #define VIGNETTE_ENABLED // Enables vignetting effect
 #define VIGNETTE_STRENGTH 1.0 // Strength of vignetting effect. [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
@@ -36,18 +36,7 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 writeonly uniform image2D colorimg8; // LDR output
 
-uniform sampler2D colortex0; // Motion blur output
-uniform sampler2D colortex1; // TAA output
-uniform sampler2D colortex4; // Bloom tiles
-uniform sampler2D colortex6; // Rain alpha
-uniform sampler2D colortex12; // Bloomy fog mask
-
-uniform sampler2D skyMapTex;
-
-uniform float aspectRatio;
-uniform float rainStrength;
-
-uniform vec2 viewPixelSize;
+#include "/lib/universal/Uniform.glsl"
 
 //======// SSBO //================================================================================//
 
@@ -55,14 +44,13 @@ uniform vec2 viewPixelSize;
 
 //======// Function //============================================================================//
 
-const vec2 bloomTileOffset[7] = vec2[7](
+const vec2 bloomTileOffset[6] = vec2[6](
 	vec2(0.0000, 0.0000),
 	vec2(0.0000, 0.5000),
 	vec2(0.2500, 0.5000),
 	vec2(0.2500, 0.6250),
 	vec2(0.3125, 0.6250),
-	vec2(0.3150, 0.6563),
-	vec2(0.3281, 0.6563)
+	vec2(0.3150, 0.6563)
 );
 
 void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
@@ -73,10 +61,10 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 	float sumWeight = 0.0;
 
 	vec2 upscalingCoord = screenCoord;
-	for (uint i = 0u; i < 7u; ++i) {
+	for (uint i = 0u; i < 6u; ++i) {
 		upscalingCoord *= 0.5;
     	vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
-		sampleCoord += viewPixelSize * float(i * 12);
+		sampleCoord += viewPixelSize * float(i * 8);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
@@ -86,10 +74,10 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 
 	bloomData *= rcp(sumWeight);
 
-	float bloomIntensity = BLOOM_INTENSITY * 0.1;
-	bloomIntensity /= exposure + 1.0;
+	float bloomIntensity = BLOOM_INTENSITY * 0.25;
+	bloomIntensity /= max(exposure, 1.0) + 1.0;
 
-	scene = mix(scene, bloomData, saturate(bloomIntensity));
+	scene = (scene + bloomData * bloomIntensity) / (1.0 + bloomIntensity * 0.5);
 
 	#ifdef BLOOMY_FOG
 		float mask = saturate(texelFetch(colortex12, texel, 0).x);
@@ -105,31 +93,19 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 
 //================================================================================================//
 
-const mat3 sRGBtoXYZ = mat3(
-	vec3(0.4124564, 0.3575761, 0.1804375),
-	vec3(0.2126729, 0.7151522, 0.0721750),
-	vec3(0.0193339, 0.1191920, 0.9503041)
-);
-
-const mat3 XYZtoSRGB = mat3(
-	vec3(3.2409699419, 	-1.5373831776, -0.4986107603),
-	vec3(-0.9692436363,  1.8759675015,  0.0415550574),
-	vec3(0.0556300797, 	-0.2039769589,  1.0569715142)
-);
-
 // See section 3.4 of http://www.diva-portal.org/smash/get/diva2:24136/FULLTEXT01.pdf
 vec3 PurkinjeShift(in vec3 image) {
 	const vec3 rodResponse = vec3(0.05, 0.55, 0.60);
 
-	vec3 xyz = image * sRGBtoXYZ;
+	vec3 xyz = image * sRGB_2_XYZ;
 	vec3 scotopic = xyz * max0(1.33 * (1.0 + (xyz.y + xyz.z) / xyz.x) - 1.68);
 
-	float rodLuminance = dot(scotopic * XYZtoSRGB, rodResponse);
-	return mix(image, rodLuminance * vec3(0.56, 0.72, 1.0), exp2(-(16.0 / PURKINJE_SHIFT_STRENGTH) * rodLuminance));
+	float rodLuminance = dot(scotopic * XYZ_2_sRGB, rodResponse);
+	return mix(image, rodLuminance * vec3(0.56, 0.78, 1.0), exp2(-(16.0 / PURKINJE_SHIFT_STRENGTH) * rodLuminance));
 }
 
 vec3 None(in vec3 x) {
-	return linearToSRGB(x);
+	return x;
 }
 
 // Uchimura 2017, "HDR theory and practice"
@@ -161,7 +137,7 @@ vec3 Uchimura(in vec3 x) {
 
     x = T * w0 + L * w1 + S * w2;
 
-	return linearToSRGB(x);
+	return x;
 }
 
 // Lottes 2016, "Advanced Techniques and Optimization of HDR Color Pipelines"
@@ -181,7 +157,7 @@ vec3 Lottes(in vec3 x) {
 	const vec3 b = -curvedMidIn + curvedHdrMax * midOut;
 	const vec3 c = pow(hdrMax, ad) * curvedMidIn - curvedHdrMax * pow(midIn, ad) * midOut;
 
-	return pow(x, a) * (pow(hdrMax, ad) - pow(midIn, ad)) * midOut / (pow(x, ad) * b + c);
+	return sRGBtoLinear(pow(x, a) * (pow(hdrMax, ad) - pow(midIn, ad)) * midOut / (pow(x, ad) * b + c));
 }
 
 #include "/lib/post/ACES.glsl"
@@ -205,7 +181,7 @@ void main() {
 	#endif
 
 	// Bloom and fog
-	#ifdef BLOOM_ENABLED
+	#ifdef BLOOM
 		CombineBloomAndFog(color, texelPos, exposure);
 	#endif
 
@@ -226,23 +202,24 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-		vec2 clipCoord = texelToUv(texelPos) * 2.0 - 1.0;
-		clipCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
-		color *= exp2(-0.5 * sdot(clipCoord) * VIGNETTE_STRENGTH);
+		vec2 ndcCoord = texelToUv(texelPos) * 2.0 - 1.0;
+		ndcCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
+		color *= exp2(-0.5 * VIGNETTE_STRENGTH * sdot(ndcCoord));
 	#endif
+
+	// Silly white balance (divide by sun color in sRGB space)
+	color *= 1.0 / vec3(1.0, 0.949, 0.937);
 
 	// Apply DRT
 	{
 		// Working to DRT space
-		color = LINEAR_SRGB_TO_LINEAR_REC2020 * color;
+		color *= sRGB_2_Rec2020;
 
 		// Tone mapping
 		color = TONE_MAPPER(color);
-		// Gamma correction
-		color = sRGBtoLinear(color);
 
 		// DRT to working space
-		color = LINEAR_REC2020_TO_LINEAR_SRGB * color;
+		color *= Rec2020_2_sRGB;
 
 		// Working to display space
 		color = saturate(linearToSRGB(color));

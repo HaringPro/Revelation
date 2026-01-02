@@ -1,3 +1,4 @@
+// https://en.wikipedia.org/wiki/SRGB
 // https://github.com/tobspr/GLSL-Color-Spaces/blob/master/ColorSpaces.inc.glsl
 vec3 linearToSRGB(in vec3 color) {
 	return mix(color * 12.92, 1.055 * pow(color, vec3(0.41666666)) - 0.055, lessThan(vec3(0.0031308), color));
@@ -21,10 +22,7 @@ vec3 sRGBtoLinearApprox(in vec3 color) {
 }
 
 float luminance(in vec3 color) {
-    // https://en.wikipedia.org/wiki/Luma_(video)
-    // const vec3 coeff = vec3(0.2722287168, 0.6740817658, 0.0536895174);
-    const vec3 coeff = vec3(0.2126, 0.7152, 0.0722);
-    return dot(color, coeff);
+    return dot(color, vec3(0.2126729, 0.7151522, 0.0721750));
 }
 
 vec3 colorSaturation(in vec3 color, in float saturation) {
@@ -48,7 +46,7 @@ vec3 blackbody(in float t) {
 }
 
 float karisAverage(in vec3 color) {
-    return rcp(1.0 + 1e-3 * luminance(color));
+    return rcp(1.0 + luminance(color));
 }
 
 vec3 reinhard(in vec3 hdr) {
@@ -57,6 +55,8 @@ vec3 reinhard(in vec3 hdr) {
 vec3 invReinhard(in vec3 sdr) {
     return sdr * rcp(1.0 - luminance(sdr));
 }
+
+//================================================================================================//
 
 // https://en.wikipedia.org/wiki/YCoCg
 vec3 sRGBToYCoCg(in vec3 rgb) {
@@ -74,18 +74,43 @@ vec3 YCoCgToSRGB(in vec3 YCoCg) {
     ) * YCoCg;
 }
 
-// Matrices for rec 2020 <> rec 709 color space conversion
-// matrix provided in row-major order so it has been transposed
-// https://www.itu.int/pub/R-REP-BT.2407-2017
-const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
-	vec3(  1.660491, -0.124550, -0.018151 ),
-	vec3( -0.587641,  1.132900, -0.100579 ),
-	vec3( -0.072850, -0.008349,  1.118730 ));
+const mat3 Rec2020_2_sRGB = mat3(
+     1.6603034854, -0.5875701425, -0.0728900602,
+    -0.1243755953,  1.1328344814, -0.0083597372,
+    -0.0181122800, -0.1005836085,  1.1187703262
+);
 
-const mat3 LINEAR_SRGB_TO_LINEAR_REC2020 = mat3(
-	vec3( 0.627404, 0.069097, 0.016391 ),
-	vec3( 0.329283, 0.919540, 0.088013 ),
-	vec3( 0.043313, 0.011362, 0.895595 ));
+const mat3 sRGB_2_Rec2020 = mat3(
+    0.6274413721, 0.3292974595, 0.0433514584,
+    0.0690276171, 0.9195806669, 0.0113614226,
+    0.0163642351, 0.0880171625, 0.8955649727
+);
+
+const mat3 sRGB_2_XYZ = mat3(
+	0.4124564, 0.3575761, 0.1804375,
+	0.2126729, 0.7151522, 0.0721750,
+	0.0193339, 0.1191920, 0.9503041
+);
+
+const mat3 XYZ_2_sRGB = mat3(
+	 3.2409699419, -1.5373831776, -0.4986107603,
+	-0.9692436363,  1.8759675015,  0.0415550574,
+	 0.0556300797, -0.2039769589,  1.0569715142
+);
+
+const mat3 XYZ_2_Rec2020 = mat3(
+     1.716651188,  -0.3556707838, -0.2533662814,
+    -0.6666843518,  1.6164812366,  0.0157685458,
+     0.0176398574, -0.0427706133,  0.9421031212
+);
+
+const mat3 Rec2020_2_XYZ = mat3(
+    0.6369580483, 0.1446169036, 0.1688809752,
+    0.2627002120, 0.6779980715, 0.0593017165,
+    0.0000000000, 0.0280726930, 1.0609850577
+);
+
+//================================================================================================//
 
 // Adapted from https://github.com/zubetto/BlackBodyRadiation
 // MIT License

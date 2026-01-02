@@ -6,7 +6,7 @@ out vec4 albedoOut;
 
 //======// Input //===============================================================================//
 
-in vec4 vertColor;
+flat in vec4 vertColor;
 in vec2 texCoord;
 
 //======// Uniform //=============================================================================//
@@ -15,5 +15,9 @@ uniform sampler2D tex;
 
 //======// Main //================================================================================//
 void main() {
-	albedoOut = texture(tex, texCoord) * vertColor;
+	vec4 albedo = texture(tex, texCoord) * vertColor;
+
+	if (albedo.a < 0.1) { discard; return; }
+
+	albedoOut = albedo;
 }
