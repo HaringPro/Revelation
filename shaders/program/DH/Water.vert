@@ -50,7 +50,8 @@ uniform vec2 taaJitter;
 
 //======// Main //================================================================================//
 void main() {
-	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
+	lightmap = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.xy + gl_TextureMatrix[1][3].xy;
+	lightmap = saturate((lightmap - 0.03125) * 1.06667);
 	lightmap.x = 0.0;
 
 	vertColor = gl_Color;
