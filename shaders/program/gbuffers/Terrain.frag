@@ -200,5 +200,7 @@ void main() {
 		vec4 specularTex = ReadTexture(specular);
 		materialOut.z = Packup2x8U(specularTex.xy);
 		materialOut.w = Packup2x8U(specularTex.zw);
+	#else
+		materialOut.zw = uvec2(0);
 	#endif
 }
