@@ -84,6 +84,6 @@ void voxy_emitFragment(in VoxyFragmentParameters parameters) {
 		waterOut = vec4(waterDepth * rcp255, Packup2x8(encodedWaterNormal), 0.0, 1.0);
 	} else {
 		materialOut.z = Packup2x8U(baseColor.xy);
-		materialOut.w = Packup2x8U(baseColor.zw);
+		materialOut.w = Packup2x8U(vec2(baseColor.z, 0.0));
 	}
 }
