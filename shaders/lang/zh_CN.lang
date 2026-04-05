@@ -307,8 +307,8 @@ option.SUBSURFACE_SCATTERING_STRENGTH=次表面散射强度
 option.SUBSURFACE_SCATTERING_BRIGHTNESS=次表面散射亮度
 option.SUBSURFACE_SCATTERING_RADIUS=次表面散射半径
 
-option.SSRT_MAX_SAMPLES=光线追踪采样数
-option.SSRT_REFINEMENT=光线追踪重采样
+option.SSRT_MAX_SAMPLES=反射采样数
+option.SSRT_REFINEMENT=反射重采样
 option.SSRT_REFINEMENT_STEPS=重采样精度
 option.SSRT_SKY_TRACING=追踪天空
 
@@ -321,6 +321,20 @@ option.REFLECTION_FILTER=反射过滤
 option.RAYTRACED_REFRACTION=光线追踪折射
 option.REFRACTION_STRENGTH=折射强度
 
+option.REFLECTION_SCREEN_SPACE=屏幕空间反射
+option.REFLECTION_SCREEN_SPACE.comment=方块的屏幕空间反射开关，关闭可以在保留质感的情况下提升性能
+option.REFLECTION_SKY=天空反射
+option.REFLECTION_SKY.comment=控制方块是否反射天空，以防有的人不喜欢
+option.LIGHT_REFLECTION_SAMPLES=反射最高采样数
+option.LIGHT_REFLECTION_SAMPLES.comment=屏幕空间反射和光线追踪反射的采样数都不会高于本选项的数值
+option.FRESNEL_EXPONENT=菲涅尔透镜亮度
+option.FRESNEL_EXPONENT.comment=关闭屏幕空间反射时的金属反光效果亮度
+option.FRESNEL_STRENGTH=菲涅尔透镜强度
+option.FRESNEL_STRENGTH.comment=关闭屏幕空间反射时的金属反光效果强度
+option.REF_MIN=菲涅尔透镜最小亮度
+option.REF_MIN.comment=关闭屏幕空间反射时的金属反光效果最小亮度
+option.REF_MAX=菲涅尔透镜最大亮度
+option.REF_MAX.comment=关闭屏幕空间反射时的金属反光效果亮度
 # Transparent
 option.WATER_PARALLAX=水体视差
 option.WATER_CAUSTICS=水体焦散
