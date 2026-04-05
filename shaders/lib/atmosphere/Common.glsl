@@ -19,9 +19,9 @@
 
 #define ATMOSPHERE_TURBIDITY 1.0 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
 
-#define ATMOSPHERE_SKY_SAMPLES 32 // [16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
-#define ATMOSPHERE_TLUT_SAMPLES 64 // [16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
-#define ATMOSPHERE_MSLUT_SAMPLES 24 // [16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_SKY_SAMPLES 32 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_TLUT_SAMPLES 64 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_MSLUT_SAMPLES 24 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
 
 #define ProjectSky      OctEncodeUnorm
 #define UnprojectSky    OctDecodeUnorm
@@ -59,7 +59,7 @@ const AtmosphereParameters atmosphere = AtmosphereParameters(
     mieCoeffBase * 0.9,
     mieCoeffBase,
     vec3(8.304280072e-7, 1.314911970e-6, 5.440679729e-8),
-    vec3(0.2, 0.25, 0.45)
+    vec3(0.1, 0.12, 0.2)
 );
 
 const mat3 atmosphereExtinction = mat3(
