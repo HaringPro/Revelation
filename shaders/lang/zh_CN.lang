@@ -228,10 +228,22 @@ suffix.sunPathRotation=°
 option.PCSS_SEARCH_SAMPLES=PCSS检索采样数
 option.PCSS_FILTER_SAMPLES=PCSS过滤采样数
 option.COLORED_SHADOWS=彩色阴影
+option.SHADOW_SOFT_TYPE=阴影过滤
+value.SHADOW_SOFT_TYPE.0=不过滤
+value.SHADOW_SOFT_TYPE.1=PCF过滤（较慢）
+value.SHADOW_SOFT_TYPE.2=PCSS过滤（慢）
+option.PCF_SOFT_RADIUS=PCF模糊半径
+option.SHADOW_BIAS_STRENGTH=阴影偏移
+option.SHADOW_BIAS_STRENGTH.comment=如果表面出现阴影错误请提高此数值
+option.SHADOW_CONTRAST_STRENGTH=PCF的次表面散射补偿
+
+
+
+
 
 option.SHADOW_BACKFACE_CULLING=阴影背面剔除
 option.SHADOW_DISTORTION_STRENGTH=阴影形变强度
-
+option.SHADOW_DISTORTION=阴影扭曲开关
 option.SCREEN_SPACE_SHADOWS=屏幕空间阴影
 option.SCREEN_SPACE_SHADOWS_SAMPLES=屏幕空间阴影采样数
 
@@ -307,8 +319,8 @@ option.SUBSURFACE_SCATTERING_STRENGTH=次表面散射强度
 option.SUBSURFACE_SCATTERING_BRIGHTNESS=次表面散射亮度
 option.SUBSURFACE_SCATTERING_RADIUS=次表面散射半径
 
-option.SSRT_MAX_SAMPLES=光线追踪采样数
-option.SSRT_REFINEMENT=光线追踪重采样
+option.SSRT_MAX_SAMPLES=反射采样数
+option.SSRT_REFINEMENT=反射重采样
 option.SSRT_REFINEMENT_STEPS=重采样精度
 option.SSRT_SKY_TRACING=追踪天空
 
