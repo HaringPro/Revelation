@@ -226,7 +226,7 @@ suffix.shadowMapResolution=²
 suffix.sunPathRotation=°
 
 option.PCSS_SEARCH_SAMPLES=PCSS检索采样数
-option.PCSS_FILTER_SAMPLES=PCSS过滤采样数
+option.PCSS_FILTER_SAMPLES=PCF/PCSS过滤采样数
 option.COLORED_SHADOWS=彩色阴影
 option.SHADOW_SOFT_TYPE=阴影过滤
 value.SHADOW_SOFT_TYPE.0=不过滤
