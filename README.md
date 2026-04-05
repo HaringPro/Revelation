@@ -18,3 +18,4 @@
 ## License
 This shaderpack is licensed under the *Apache License 2.0*.
 Please see the `LICENSE` file for more information.
+这个分支旨在为低端设备（首先是我自己的设备）提供一些更加低配的选项
