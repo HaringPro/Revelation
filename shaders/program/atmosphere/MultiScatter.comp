@@ -60,7 +60,7 @@ mat2x3 RaymarchMultiScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
         fms += scatteringIntegral * transmittance * earthShadow;
 
         vec3 sunTransmittance = AtmosphereTransmittanceToSun(rayPos, sunDir);
-        scatteringIntegral *= uniformPhase * sunTransmittance;
+        scatteringIntegral *= uniformPhase * sunIrradiance * sunTransmittance;
 
         lum += scatteringIntegral * transmittance;
         transmittance *= sampleTransmittance;
@@ -74,7 +74,7 @@ mat2x3 RaymarchMultiScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
         float sunZenithCos = dot(upVector, sunDir);
         vec3 transmittanceToSun = AtmosphereTransmittanceToSun(planetHeight, sunZenithCos);
 
-        lum += atmosphere.groundAlbedo * rPI * saturate(sunZenithCos) * transmittance * transmittanceToSun;
+        lum += sunIrradiance * atmosphere.groundAlbedo * rPI * saturate(sunZenithCos) * transmittance * transmittanceToSun;
     }
 
     return mat2x3(lum, fms);

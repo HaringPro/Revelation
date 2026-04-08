@@ -101,7 +101,7 @@ void TemporalFilter(in ivec2 texelPos, in vec3 screenPos, in vec3 worldNormal) {
 
             integratedDiffuse.a = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
 
-            float mipLevel = 3.0 * saturate(1.0 - integratedDiffuse.a * rcp(8.0));
+            float mipLevel = 3.0 * saturate(1.0 - integratedDiffuse.a * rcp(12.0));
             integratedDiffuse.rgb = textureLod(colortex3, currCoord, mipLevel).rgb;
 
             float alpha = rcp(integratedDiffuse.a);

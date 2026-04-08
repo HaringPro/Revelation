@@ -126,7 +126,7 @@ vec3 RenderSkyView(vec2 uv) {
         lum += RaymarchScattering(atmosphereViewPos, rayDir, -sunDir) * moonlightMult;
 
     lum = desaturate(lum, wetness * 0.5); // Post-process
-    return lum;
+    return lum * 128.0;
 }
 
 //======// Main //================================================================================//

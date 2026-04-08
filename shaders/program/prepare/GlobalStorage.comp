@@ -39,7 +39,7 @@ void main() {
 	// Compute illuminance
 	vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, worldSunDir);
 	vec3 moonIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, -worldSunDir) * moonlightMult;
-	global.directIlluminance = sunIlluminance + moonIlluminance;
+	global.directIlluminance = 128.0 * (sunIlluminance + moonIlluminance);
 
 	// Avoid the misalignment at sunrise and sunset
 	global.directIlluminance *= smoothstep(0.0, 0.01, worldLightDir.y);

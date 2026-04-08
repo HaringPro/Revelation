@@ -7,8 +7,19 @@
 
 #define SSILVB_SLICE_COUNT 1 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16]
 #define SSILVB_SAMPLE_COUNT 32 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64]
-#define SSILVB_SECTOR_COUNT 32 // [4 8 16 32 64 128]
+#define SSILVB_SECTOR_COUNT 32 // [4 8 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 64 128]
 #define SSILVB_HIT_THICKNESS 1.0 // [0.25 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0]
+
+// ====== 调节 GI 亮度的选项 ======
+#ifndef SSILVB_GI_BRIGHTNESS
+    #define SSILVB_GI_BRIGHTNESS 1.3 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#endif
+// =================================
+
+// 手部排除阈值（深度小于此值的像素不参与间接光照贡献）
+#ifndef SSILVB_HAND_DEPTH_THRESHOLD
+    #define SSILVB_HAND_DEPTH_THRESHOLD 0.56 // [0.0 0.1 0.2 0.3 0.4 0.5 0.56 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
+#endif
 
 //================================================================================================//
 
@@ -240,6 +251,10 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
 
                 if (sampleDepth > 1.0 - EPS) continue;
 
+                // ========== 排除手部：深度小于手部阈值的像素不参与间接光照 ==========
+                if (sampleDepth < SSILVB_HAND_DEPTH_THRESHOLD) continue;
+                // ====================================================================
+
                 vec3 samplePos = ScreenToViewPos(vec3(sampleUV, sampleDepth));
 
                 vec3 sampleDirFront = samplePos - viewPos;
@@ -284,5 +299,9 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
 
     vec3 skyIrradiance = ConvolvedReconstructSH3(global.skySH, worldNormal);
     irradiance.rgb += skyIrradiance * irradiance.a * cube(skylight);
+    
+    // 应用亮度调节
+    irradiance.rgb *= SSILVB_GI_BRIGHTNESS;
+    
     return irradiance;
 }

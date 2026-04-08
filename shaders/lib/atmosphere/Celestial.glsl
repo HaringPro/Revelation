@@ -10,7 +10,8 @@
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
     const float cosRadius = cos(sunAngularRadius);
-    const vec3 sunRadiance = sunIrradiance / (TAU * oms(cosRadius));
+	const vec3 sunIlluminance = sunIrradiance * 128.0;
+    const vec3 sunRadiance = sunIlluminance / (TAU * oms(cosRadius));
 
     float cosTheta = dot(worldDir, sunVector);
     if (cosTheta >= cosRadius) {

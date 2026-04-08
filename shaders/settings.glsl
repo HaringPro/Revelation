@@ -19,7 +19,7 @@
 #define AUTHOR 0 // [0]
 
 const int shadowMapResolution = 2048;  // [512 768 1024 2048 4096 8192 16384 32768]
-const float	shadowDistance 	  = 128.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
+const float	shadowDistance 	  = 128.0; // [32.0 48.0 64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
 
 const float shadowDistanceRenderMul = 1.0; // [-1.0 1.0]
 const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
@@ -28,7 +28,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 #define SUN_RADIUS_MULT 2.0 // Multiplier of the sun radius (1.0 = real sun radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0 33.0 34.0 35.0 36.0 37.0 38.0 39.0 40.0]
 
-const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937) * 126.0; // kW/m^2
+const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937);
 const float sunAngularRadius = 0.004675 * SUN_RADIUS_MULT;
 
 /* Clouds */
@@ -136,15 +136,15 @@ const float sunAngularRadius = 0.004675 * SUN_RADIUS_MULT;
 	#define SSILVB_ENABLED
 	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
 
-	// #define SSPT_ENABLED // Enables screen-space path tracing
-	// #define RSM_ENABLED // Enables reflective shadow maps
+	#define SSPT_ENABLED // Enables screen-space path tracing
+	#define RSM_ENABLED // Enables reflective shadow maps
 
 	#define SSILVB_BLENDED_LIGHTMAP 0.25 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
-	// #define SSPT_BLENDED_LIGHTMAP 0.25 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
+	#define SSPT_BLENDED_LIGHTMAP 0.25 // [0.0 0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.6 0.7 0.8 0.9 1.0]
 
-	#define SSILVB_MAX_ACCUM_FRAMES 64.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
-	// #define SSPT_MAX_ACCUM_FRAMES 72.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
-	// #define RSM_MAX_ACCUM_FRAMES  64.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+	#define SSILVB_MAX_ACCUM_FRAMES 64.0 // [5.0 10.0 15.0 20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+	#define SSPT_MAX_ACCUM_FRAMES 72.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
+	#define RSM_MAX_ACCUM_FRAMES  64.0 // [20.0 24.0 28.0 32.0 36.0 40.0 48.0 56.0 64.0 72.0 80.0 96.0 112.0 128.0 144.0 160.0 192.0 224.0 256.0 320.0 384.0 448.0 512.0 640.0 768.0 896.0 1024.0]
 
 /* Ambient Occlusion */
 	#define OFF 0
@@ -159,7 +159,7 @@ const float sunAngularRadius = 0.004675 * SUN_RADIUS_MULT;
 	#define SCREEN_SPACE_SHADOWS // Enables screen space shadows
 	#define SCREEN_SPACE_SHADOWS_SAMPLES 16 // Sample count of screen space shadows. [2 4 6 8 9 10 12 14 15 16 18 20 22 24 26 28 30 40 50 70 100 150 200 300 500]
 
-	// #define SHADOW_BACKFACE_CULLING // Enables backface culling for shadows
+	#define SHADOW_BACKFACE_CULLING // Enables backface culling for shadows
 
 //======// Materials //===========================================================================//
 

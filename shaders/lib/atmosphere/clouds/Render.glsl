@@ -341,14 +341,14 @@ void CompositeClouds(inout vec3 skyRadiance, in vec4 cloudData, in vec3 rayDir) 
 		// Compute illumination to clouds
         vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldSunDir);
         vec3 moonIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, -worldSunDir) * moonlightMult;
-		vec3 directIlluminance = sunIlluminance + moonIlluminance;
+		vec3 directIlluminance = 128.0 * (sunIlluminance + moonIlluminance);
 
 		// Normalized height in clouds
 		float heightFraction = saturate((length(cloudPos) - cumulusBottomRadius) * rcp(cumulusThickness));
 		vec3 skyIlluminance = mix(ReconstructSH3(global.skySH, vec3(0.0, -1.0, 0.0)), global.skyUpIlluminance, heightFraction);
 
 		vec3 scattering = cloudData.x * directIlluminance;
-		scattering += cloudData.y * skyIlluminance;
+		scattering += cloudData.y * rPI * skyIlluminance;
 
 		scattering += LightningContribution(cloudPos - atmosphereViewPos) * sqr(cloudData.y);
 
