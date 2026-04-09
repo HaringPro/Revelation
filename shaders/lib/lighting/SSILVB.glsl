@@ -180,6 +180,12 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
 	const float rSliceCount = 1.0 / float(sliceCount);
 	const float rSampleCount = 1.0 / float(sampleCount);
 
+    #if defined LOD_MOD
+        float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
+    #else
+        #define screenDepthSky 1.0
+    #endif
+
     float dither = SampleStbnVec1(ivec2(gl_GlobalInvocationID.xy), frameCounter);
 
     vec3 viewDir = normalize(-viewPos);
@@ -238,7 +244,7 @@ vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in
                 if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(sampleTexel)));
             #endif
 
-                if (sampleDepth > 1.0 - EPS) continue;
+                if (sampleDepth > screenDepthSky - EPS) continue;
 
                 vec3 samplePos = ScreenToViewPos(vec3(sampleUV, sampleDepth));
 

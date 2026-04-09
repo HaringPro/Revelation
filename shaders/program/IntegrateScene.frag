@@ -112,6 +112,12 @@ void main() {
 		}
 	#endif
 
+	#if defined LOD_MOD
+    	float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
+	#else
+    	#define screenDepthSky 1.0
+	#endif
+
 	uvec4 materialPack = loadMaterialPack(texelPos);
 
 	uint materialID = materialPack.y;
@@ -129,7 +135,7 @@ void main() {
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 	vec3 worldDir = normalize(worldPos);
 
-	if (depth < 1.0) {
+	if (depth < screenDepthSky) {
 		vec4 translucent = ExtractSpecularTex(materialPack);
 		vec3 albedo = sRGBToLinear(translucent.rgb);
 

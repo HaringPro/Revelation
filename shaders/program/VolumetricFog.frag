@@ -60,6 +60,13 @@ void main() {
 	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
 	vec3 viewPos = ScreenToViewPosRaw(screenPos);
+
+	#if defined LOD_MOD
+        float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
+    #else
+        #define screenDepthSky 1.0
+    #endif
+
 	#if defined LOD_MOD
 		if (screenPos.z > 1.0 - EPS) {
 			screenPos.z = loadDepth0Lod(texelPos);
@@ -75,7 +82,7 @@ void main() {
 
 	#ifdef VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
-			volFogData = RaymarchAtmosphericFog(gbufferModelViewInverse[3].xyz, worldPos, dither, screenPos.z > 1.0 - EPS, VF_MAX_SAMPLES);
+			volFogData = RaymarchAtmosphericFog(gbufferModelViewInverse[3].xyz, worldPos, dither, screenPos.z > screenDepthSky - EPS, VF_MAX_SAMPLES);
 		}
 	#endif
 	#ifdef UW_VOLUMETRIC_FOG

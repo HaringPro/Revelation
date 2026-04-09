@@ -134,11 +134,18 @@ void main() {
 
     float depth = loadDepth0(renderTexel);
     bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
+    
+    #if defined LOD_MOD
+        float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
+    #else
+        #define screenDepthSky 1.0
+    #endif
+
     #if defined LOD_MOD
         bool lodMask = !terrainCheck;
         if (lodMask) {
             depth = loadDepth0Lod(renderTexel);
-            terrainCheck = depth < 1.0;
+            terrainCheck = depth < screenDepthSky;
         }
     #endif
 
