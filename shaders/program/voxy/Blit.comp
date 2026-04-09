@@ -28,11 +28,19 @@ writeonly uniform image2D colorimg8;
 uniform usampler2D colortex16;
 uniform sampler2D colortex17;
 
+#include "/lib/universal/Uniform.glsl"
+
+//======// Functions //================================================================================//
+
+#include "/lib/universal/Transform.glsl"
+
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
 
 	uvec4 materialData = texelFetch(colortex16, texelPos, 0);
+
+	if (loadDepth0(texelPos) < 1.0 - EPS && loadDepth0(texelPos) < ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(texelPos)))) return;
 
     if (materialData.y > 0u) {
 		imageStore(colorimg7, texelPos, materialData);
