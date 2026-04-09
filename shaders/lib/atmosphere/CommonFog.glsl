@@ -1,4 +1,4 @@
-void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, in float viewDistance) {
+void RenderVanillaFog(inout vec3 scene, inout float fogTransmittance, float viewDistance) {
     // Lava fog
 	#ifdef LAVA_FOG
 		if (isEyeInWater == 2) {

@@ -161,7 +161,7 @@ vec2 SliceRelCDF_Cos(vec2 x, float angN, float cosN) {
 
 // https://cdrinmatane.github.io/posts/ssaovb-code/
 const uint sectorCount = SSILVB_SECTOR_COUNT;
-uint updateSectors(in vec2 horizon) {
+uint updateSectors(vec2 horizon) {
     uint startBit = uint(horizon.x * float(sectorCount));
 
     uint horizonAngle = uint(ceil((horizon.y - horizon.x) * float(sectorCount)));
@@ -172,7 +172,7 @@ uint updateSectors(in vec2 horizon) {
 
 //================================================================================================//
 
-vec4 CalculateSSILVB(in vec2 fragCoord, in vec3 viewPos, in vec3 worldNormal, in float skylight) {
+vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skylight) {
 	const int sliceCount = SSILVB_SLICE_COUNT;
 	const int sampleCount = SSILVB_SAMPLE_COUNT;
 	const float hitThickness = SSILVB_HIT_THICKNESS * 0.1;

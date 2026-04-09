@@ -10,7 +10,7 @@
 //================================================================================================//
 
 // PDF = D * NoH / (4 * VoH)
-vec3 SampleGGX(in vec2 xy, in float alpha, in vec3 normal) {
+vec3 SampleGGX(vec2 xy, float alpha, vec3 normal) {
     float phi = TAU * xy.x;
     float cosTheta = sqrt((1.0 - xy.y) / (1.0 + (alpha * alpha - 1.0) * xy.y));
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -21,7 +21,7 @@ vec3 SampleGGX(in vec2 xy, in float alpha, in vec3 normal) {
 
 // Sampling Visible GGX Normals with Spherical Caps
 // https://arxiv.org/pdf/2306.05044
-vec3 SampleGGXVNDF(in vec3 viewDir, in float alpha, in vec2 xy) {
+vec3 SampleGGXVNDF(vec3 viewDir, float alpha, vec2 xy) {
     // Importance sampling bias
     xy.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
 
@@ -41,7 +41,7 @@ vec3 SampleGGXVNDF(in vec3 viewDir, in float alpha, in vec2 xy) {
 // - no need for moving to tangent space
 // - it avoids the need for an orthonormal basis
 // - it's (slightly) faster than the general version
-vec3 SampleGGXVNDF(in vec2 u, in vec3 wi, in float alpha, in vec3 n) {
+vec3 SampleGGXVNDF(vec2 u, vec3 wi, float alpha, vec3 n) {
     // Importance sampling bias
     u.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
 
@@ -75,37 +75,37 @@ vec3 SampleGGXVNDF(in vec2 u, in vec3 wi, in float alpha, in vec3 n) {
 //================================================================================================//
 
 // Schlick approximation
-float FresnelSchlick(in float cosTheta, in float f0) {
+float FresnelSchlick(float cosTheta, float f0) {
     return saturate(f0 + oms(f0) * pow5(1.0 - cosTheta));
 }
 
-vec3 FresnelSchlick(in float cosTheta, in vec3 f0) {
+vec3 FresnelSchlick(float cosTheta, vec3 f0) {
     return saturate(f0 + oms(f0) * pow5(1.0 - cosTheta));
 }
 
-float FresnelSchlick(in float cosTheta, in float f0, in float f90) {
+float FresnelSchlick(float cosTheta, float f0, float f90) {
     return saturate(f0 + (f90 - f0) * pow5(1.0 - cosTheta));
 }
 
-vec3 FresnelSchlickMS(in float cosTheta, in vec3 f0, float roughness) {
+vec3 FresnelSchlickMS(float cosTheta, vec3 f0, float roughness) {
     float weight = rcp(1.0 + 5.0 * roughness * roughness); // Empirical compensation factor
     vec3 fresnel = f0 + oms(f0) * pow5(1.0 - cosTheta);
     return mix(fresnel, vec3(1.0), weight); // Add energy compensation
 }
 
 // Lazanyi approximation correction
-vec3 FresnelLazanyi2019(in float cosTheta, in vec3 f0, in vec3 f82) {
+vec3 FresnelLazanyi2019(float cosTheta, vec3 f0, vec3 f82) {
     vec3 a = 17.6513846 * (f0 - f82) + 8.16666667 * oms(f0);
     float invMu5 = pow5(1.0 - cosTheta);
     return saturate(f0 + oms(f0) * invMu5 - a * cosTheta * invMu5 * oms(cosTheta));
 }
 
-float FresnelSchlickGaussian(in float cosTheta, in float f0) {
+float FresnelSchlickGaussian(float cosTheta, float f0) {
     return saturate(f0 + oms(f0) * exp2(-9.60232 * pow8(cosTheta) - 8.58092 * cosTheta));
 }
 
 // Based on the F0 (Fresnel reflectance at 0 degrees incidence)
-float FresnelDielectric(in float cosTheta, in float f0) {
+float FresnelDielectric(float cosTheta, float f0) {
     f0 = min(sqrt(f0), 0.99999);
     f0 = (1.0 + f0) * rcp(1.0 - f0);
 
@@ -121,7 +121,7 @@ float FresnelDielectric(in float cosTheta, in float f0) {
 }
 
 // Based on the refractive index N
-float FresnelDielectricN(in float cosTheta, in float n) {
+float FresnelDielectricN(float cosTheta, float n) {
     float cosR = sqr(n) + sqr(cosTheta) - 1.0;
     if (cosR < 0.0) return 1.0;
 
@@ -134,7 +134,7 @@ float FresnelDielectricN(in float cosTheta, in float n) {
 }
 
 // Based on the refractive index N and the attenuation coefficient K
-vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
+vec3 FresnelConductor(float cosTheta, vec3 n, vec3 k) {
     vec3 n2k2 = n * n + k * k;
     n *= 2.0 * cosTheta;
 
@@ -148,51 +148,51 @@ vec3 FresnelConductor(in float cosTheta, in vec3 n, in vec3 k) {
 
 //================================================================================================//
 
-float NDFBeckmann(in float NdotH2, in float alpha2) {
+float NDFBeckmann(float NdotH2, float alpha2) {
     return maxEps(rcp(PI * alpha2 * NdotH2 * NdotH2) * exp((NdotH2 - 1.0) / (alpha2 * NdotH2)));
 }
 
-float NDFGaussian(in float NdotH, in float alpha2) {
+float NDFGaussian(float NdotH, float alpha2) {
 	float thetaH = fastAcos(NdotH);
     return exp(-thetaH * thetaH / alpha2);
 }
 
-float NDFTrowbridgeReitz(in float NdotH2, in float alpha2) {
+float NDFTrowbridgeReitz(float NdotH2, float alpha2) {
 	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH2);
 }
 
 //================================================================================================//
 
 // Smith-based
-float G1SmithGGX(in float cosTheta, in float alpha2) {
+float G1SmithGGX(float cosTheta, float alpha2) {
     return 2.0 * cosTheta * rcp(sqrt(alpha2 + oms(alpha2) * cosTheta * cosTheta) + cosTheta);
 }
 
-float G2SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
+float G2SmithGGX(float NdotL, float NdotV, float alpha2) {
     return 2.0 * NdotL * NdotV * rcp(NdotL * sqrt(alpha2 + oms(alpha2) * NdotV * NdotV) + NdotV * sqrt(alpha2 + oms(alpha2) * NdotL * NdotL));
 }
 
-float G2withG1SmithGGX(in float NdotL, in float NdotV, in float alpha2) {
+float G2withG1SmithGGX(float NdotL, float NdotV, float alpha2) {
 	float lt = sqrt(alpha2 + oms(alpha2) * sqr(NdotL));
 	float vt = sqrt(alpha2 + oms(alpha2) * sqr(NdotV));
 	return saturate(NdotL * (NdotV + vt) / (lt * NdotV + vt * NdotL));
 }
 
 // Schlick-based
-float G1Schlick(in float cosTheta, in float k) {
+float G1Schlick(float cosTheta, float k) {
     return cosTheta / (cosTheta * oms(k) + k);
 }
 
-float G2Schlick(in float NdotL, in float NdotV, in float alpha2) {
+float G2Schlick(float NdotL, float NdotV, float alpha2) {
     return G1Schlick(NdotL, alpha2) * G1Schlick(NdotV, alpha2);
 }
 
-float G2SchlickBeckman(in float NdotL, in float NdotV, in float alpha2) {
+float G2SchlickBeckman(float NdotL, float NdotV, float alpha2) {
     float k = alpha2 * 0.797884560802865;
     return G1Schlick(NdotL, k) * G1Schlick(NdotV, k);
 }
 
-float G2SchlickGGX(in float NdotL, in float NdotV, in float alpha) {
+float G2SchlickGGX(float NdotL, float NdotV, float alpha) {
     // float k = sqr(alpha + 1.0) * 0.125;
     float k = alpha * 0.5;
     return G1Schlick(NdotL, k) * G1Schlick(NdotV, k);
@@ -201,7 +201,7 @@ float G2SchlickGGX(in float NdotL, in float NdotV, in float alpha) {
 //================================================================================================//
 
 // Cook-Torrance model
-vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 f0) {
+vec3 SpecularGGX(float LdotH, float NdotV, float NdotL, float NdotH, float roughness, vec3 f0) {
     float alpha2 = maxEps(roughness * roughness);
 
     // Fresnel term
@@ -217,7 +217,7 @@ vec3 SpecularGGX(in float LdotH, in float NdotV, in float NdotL, in float NdotH,
 }
 
 // From https://www.gdcvault.com/play/1024478/PBR-Diffuse-Lighting-for-GGX
-vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float NdotH, in float roughness, in vec3 albedo) {
+vec3 DiffuseHammon(float LdotV, float NdotV, float NdotL, float NdotH, float roughness, vec3 albedo) {
     float facing = saturate(LdotV) * 0.5 + 0.5;
 
     float singleSmooth = 1.05 * oms(pow5(1.0 - NdotL)) * oms(pow5(1.0 - NdotV));
@@ -230,7 +230,7 @@ vec3 DiffuseHammon(in float LdotV, in float NdotV, in float NdotL, in float Ndot
 }
 
 // From https://disneyanimation.com/publications/physically-based-shading-at-disney/
-float DiffuseBurley(in float LdotH, in float NdotV, in float NdotL, in float roughness) {
+float DiffuseBurley(float LdotH, float NdotV, float NdotL, float roughness) {
 	float f90 = 0.5 + 2.0 * roughness * LdotH * LdotH;
 
 	return NdotL * rPI * FresnelSchlick(NdotL, 1.0, f90) * FresnelSchlick(NdotV, 1.0, f90);
@@ -273,7 +273,7 @@ float GetNoHSquared(float radius, float NoL, float NoV, float VoL) {
     return max0(NoH * NoH / HoH);
 }
 
-vec3 SphericalAreaGGX(in float LdotH, in float NdotV, in float NdotL, in float LdotV, in float alpha, in vec3 f0, in float radius) {
+vec3 SphericalAreaGGX(float LdotH, float NdotV, float NdotL, float LdotV, float alpha, vec3 f0, float radius) {
     // alpha = max(alpha, 1e-2);
     float alpha2 = alpha * alpha;
 
@@ -295,7 +295,7 @@ vec3 SphericalAreaGGX(in float LdotH, in float NdotV, in float NdotL, in float L
 	return F * D * G / (4.0 * NdotV) * normalization;
 }
 
-float SpecularThroughputGGX(in float NdotV, in float NdotL, in float alpha) {
+float SpecularThroughputGGX(float NdotV, float NdotL, float alpha) {
     float alpha2 = alpha * alpha;
 	float G1 = G1SmithGGX(NdotV, alpha2);
 	float G2 = G2SmithGGX(NdotL, NdotV, alpha2);

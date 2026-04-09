@@ -6,14 +6,14 @@
 
 #include "Common.glsl"
 
-vec3 WorldToShadowScreenSpace(in vec3 worldPos) {
+vec3 WorldToShadowScreenSpace(vec3 worldPos) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
 	return DistortShadowSpace(shadowClipPos) * 0.5 + 0.5;
 }
 
-vec3 WorldToShadowScreenSpace(in vec3 worldPos, out float distortionFactor) {
+vec3 WorldToShadowScreenSpace(vec3 worldPos, out float distortionFactor) {
 	vec3 shadowClipPos = transMAD(shadowModelView, worldPos);
 	shadowClipPos = projMAD(shadowProjection, shadowClipPos);
 
@@ -28,7 +28,7 @@ uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 uniform sampler2D shadowcolor1;
 
-float BlockerSearch(in vec3 shadowScreenPos, in float dither, in float searchScale) {
+float BlockerSearch(vec3 shadowScreenPos, float dither, float searchScale) {
 	float blockerDepth = 0.0;
 
 	vec2 searchRadius = searchScale * diagonal2(shadowProjection);
@@ -44,7 +44,7 @@ float BlockerSearch(in vec3 shadowScreenPos, in float dither, in float searchSca
 	return blockerDepth * shadowProjectionInverse[2].z;
 }
 
-vec3 CalculateWaterCaustics(in vec3 worldPos, in float waterDepth, in float dither) {
+vec3 CalculateWaterCaustics(vec3 worldPos, float waterDepth, float dither) {
 	vec3 surfacePos = worldPos - vec3(0.0, 1.0, 0.0);
 
 	float caustics = 0.0;
@@ -64,7 +64,7 @@ vec3 CalculateWaterCaustics(in vec3 worldPos, in float waterDepth, in float dith
 	return -smin(-caustics, -0.1, 0.15) * saturate(exp2(-rLOG2 * waterExtinction * waterDepth));
 }
 
-vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float dither, in float blockerDepth) {
+vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, float blockerDepth) {
 	const float rSteps = 1.0 / float(PCSS_FILTER_SAMPLES);
 
 	vec2 penumbraRadius = min(sunAngularRadius * 2.0 * blockerDepth, 0.25) * diagonal2(shadowProjection);
@@ -114,7 +114,7 @@ vec3 PercentageCloserFilter(in vec3 shadowScreenPos, in vec3 worldPos, in float 
 	return result;
 }
 
-vec3 CalculatePCSS(in vec3 worldPos, in vec3 normalOffset, in float dither, out float blockerDepth) {
+vec3 CalculatePCSS(vec3 worldPos, vec3 normalOffset, float dither, out float blockerDepth) {
 	blockerDepth = 0.0;
 
 	float distortionFactor;
@@ -137,7 +137,7 @@ vec3 CalculatePCSS(in vec3 worldPos, in vec3 normalOffset, in float dither, out 
 
 //================================================================================================//
 
-float ScreenSpaceShadow(in vec3 rayPos, in vec3 viewPos, in float dither, in float sssAmount) {
+float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount) {
 	vec3 rayDir = ViewToScreenPos(viewLightDir * abs(viewPos.z) + viewPos) - rayPos;
 	rayDir *= minOf((step(0.0, rayDir) - rayPos) / rayDir);
 	rayDir *= inversesqrt(sdot(rayDir.xy));

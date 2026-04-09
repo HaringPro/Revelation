@@ -29,7 +29,7 @@
 
 //================================================================================================//
 
-float CloudVolumeOpticalDepth(in vec3 rayPos, in vec3 rayDir, in float noise, in uint steps) {
+float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise, uint steps) {
 	float rSteps = 1.0 / float(steps);
 	const float rayLength = cumulusThickness * 1.0;
 
@@ -57,7 +57,7 @@ float CloudVolumeOpticalDepth(in vec3 rayPos, in vec3 rayDir, in float noise, in
 }
 
 // [Wrenninge et al., 2013]
-float CloudMultiScatteringApproxOz(in float opticalDepth, in float phase) {
+float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
 	float scatteringFalloff = cloudMsFalloffA;
 	float extinctionFalloff = cloudMsFalloffB;
 
@@ -77,7 +77,7 @@ float CloudMultiScatteringApproxOz(in float opticalDepth, in float phase) {
 	return single + multiple;
 }
 
-float CloudMultiScatteringApproxHaringPro(in float opticalDepth, in float phase, in float extinction, in float albedo) {
+float CloudMultiScatteringApproxHaringPro(float opticalDepth, float phase, float extinction, float albedo) {
 	// https://zhuanlan.zhihu.com/p/457997155
 	float msV = albedo * oms(approxExp(-8.0 * extinction));
 	float msEnergy = msV / (1.0 - msV) * exp2(-0.25 * opticalDepth);
@@ -88,13 +88,13 @@ float CloudMultiScatteringApproxHaringPro(in float opticalDepth, in float phase,
 
 //================================================================================================//
 
-vec3 RenderCloudMid(in vec2 rayPos, in vec3 rayDir, in float noise, in float phase) {
+vec3 RenderCloudMid(vec2 rayPos, vec3 rayDir, float noise, float phase) {
 	return vec3(0.0, 0.0, 1.0);
 }
 
 //================================================================================================//
 
-vec3 RenderCloudHigh(in vec2 rayPos, in vec3 lightDir, in float noise, in float phase) {
+vec3 RenderCloudHigh(vec2 rayPos, vec3 lightDir, float noise, float phase) {
 	float density = CloudHighDensity(rayPos);
 	if (density > EPS) {
 		float opticalDepth = density * cloudHighThickness/*  / abs(rayDir.y) */;
@@ -142,7 +142,7 @@ vec3 RenderCloudHigh(in vec2 rayPos, in vec3 lightDir, in float noise, in float 
 //================================================================================================//
 
 // Referring to Unreal Engine
-float[cloudMsCount] SetupParticipatingMediaPhases(in float primaryPhase, in float falloff) {
+float[cloudMsCount] SetupParticipatingMediaPhases(float primaryPhase, float falloff) {
 	float phases[cloudMsCount];
 	phases[0] = primaryPhase;
 
@@ -154,7 +154,7 @@ float[cloudMsCount] SetupParticipatingMediaPhases(in float primaryPhase, in floa
 	return phases;
 }
 
-vec4 RenderClouds(in vec3 rayDir, in vec2 noise) {
+vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	vec4 cloudData = vec4(0.0, 0.0, 1e6, 1.0);
 
@@ -333,7 +333,7 @@ vec4 RenderClouds(in vec3 rayDir, in vec2 noise) {
     return cloudData;
 }
 
-void CompositeClouds(inout vec3 skyRadiance, in vec4 cloudData, in vec3 rayDir) {
+void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	if (cloudData.w < 1.0) {
 		vec3 cloudPos = atmosphereViewPos + rayDir * cloudData.z;

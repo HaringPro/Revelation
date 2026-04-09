@@ -51,7 +51,7 @@ shared uint sharedPrefix[HISTOGRAM_BIN_COUNT];
 const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
 
-void ParallelSum(in uint index) {
+void ParallelSum(uint index) {
     #ifdef SUBGROUP_OPS
         uint sum = subgroupAdd(sharedBinIndex[index]);
 
@@ -71,7 +71,7 @@ void ParallelSum(in uint index) {
     #endif
 }
 
-void ParallelPrefixSum(in uint index) {
+void ParallelPrefixSum(uint index) {
     #ifdef SUBGROUP_OPS
         uint prefix = subgroupInclusiveAdd(exposure.histogram[index]);
         if (gl_SubgroupInvocationID == gl_SubgroupSize - 1u) {

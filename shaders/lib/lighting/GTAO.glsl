@@ -8,7 +8,7 @@
 
 //================================================================================================//
 
-void SampleHorizonCos(in vec2 coord, in vec2 offset, in vec3 viewPos, in vec3 viewDir, in vec2 falloff, inout float cHorizonCos) {
+void SampleHorizonCos(vec2 coord, vec2 offset, vec3 viewPos, vec3 viewDir, vec2 falloff, inout float cHorizonCos) {
 	vec2 sTexCoord = coord + offset;
 	float sDepth = loadDepth0(uvToTexel(sTexCoord));
 	if (sDepth < 0.56) return;
@@ -33,7 +33,7 @@ void SampleHorizonCos(in vec2 coord, in vec2 offset, in vec3 viewPos, in vec3 vi
 	cHorizonCos = max(sHorizonCos, cHorizonCos);
 }
 
-float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in vec2 dither) {
+float CalculateGTAO(vec2 coord, vec3 viewPos, vec3 normal, vec2 dither) {
 	float viewDistance = sdot(viewPos);
 	float norm = inversesqrt(viewDistance);
 	viewDistance *= norm;
@@ -87,7 +87,7 @@ float CalculateGTAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in vec2 dith
 	return 0.25 * rSliceCount * visibility;
 }
 
-vec3 ApproxMultiBounce(in float ao, in vec3 albedo) {
+vec3 ApproxMultiBounce(float ao, vec3 albedo) {
 	vec3 a = 2.0404 * albedo - 0.3324;
 	vec3 b = 4.7951 * albedo - 0.6417;
 	vec3 c = 2.7552 * albedo + 0.6903;

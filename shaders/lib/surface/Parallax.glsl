@@ -3,7 +3,7 @@
 
 const float rSteps = 1.0 / float(PARALLAX_SAMPLES);
 
-vec3 CalculateParallax(in vec3 tangentDir, in float dither, in float parallaxFade) {
+vec3 CalculateParallax(vec3 tangentDir, float dither, float parallaxFade) {
     vec3 rayStep = vec3(tangentDir.xy, 1.0) * -rSteps;
     rayStep.xy *= PARALLAX_DEPTH * parallaxFade / tangentDir.z;
 
@@ -33,7 +33,7 @@ vec3 CalculateParallax(in vec3 tangentDir, in float dither, in float parallaxFad
     return rayPos;
 }
 
-float CalculateParallaxShadow(in vec3 tangentDir, in vec3 rayPos, in float dither, in float parallaxFade) {
+float CalculateParallaxShadow(vec3 tangentDir, vec3 rayPos, float dither, float parallaxFade) {
     vec3 rayStep = vec3(tangentDir.xy, 1.0) * rayPos.z * rSteps;
     rayStep.xy *= PARALLAX_DEPTH * parallaxFade / tangentDir.z;
     rayPos += rayStep * dither;

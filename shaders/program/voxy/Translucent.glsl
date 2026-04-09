@@ -8,7 +8,7 @@ layout(location = 0) out uvec4 materialOut;
 layout(location = 1) out vec4 normalOut;
 layout(location = 2) out vec4 waterOut;
 
-vec3 VoxyFaceNormal(in uint face) {
+vec3 VoxyFaceNormal(uint face) {
 	return vec3(
 		uint((face >> 1u) == 2u),
 		uint((face >> 1u) == 0u),
@@ -16,12 +16,12 @@ vec3 VoxyFaceNormal(in uint face) {
 	) * uintBitsToFloat((face << 31u) ^ 0xBF800000u);
 }
 
-vec3 ScreenToViewPos(in vec3 screenPos) {
+vec3 ScreenToViewPos(vec3 screenPos) {
 	vec3 ndcPos = screenPos * 2.0 - 1.0;
 	return ProjectDivide(ndcPos, vxProjInv);
 }
 
-float BlueNoise(in ivec2 texel, in int frame) {
+float BlueNoise(ivec2 texel, int frame) {
 	float base = texelFetch(noisetex, texel & 255, 0).a;
 	#ifdef TAA_ENABLED
 		return fract(base + float(frame) * PHI);
@@ -30,7 +30,7 @@ float BlueNoise(in ivec2 texel, in int frame) {
 	#endif
 }
 
-void voxy_emitFragment(in VoxyFragmentParameters parameters) {
+void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
 	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 

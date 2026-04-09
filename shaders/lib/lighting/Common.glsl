@@ -3,82 +3,82 @@
 
 //================================================================================================//
 
-float CalculateFakeBouncedLight(in vec3 normal) {
+float CalculateFakeBouncedLight(vec3 normal) {
 	float bounce = saturate(dot(worldLightDir, vec3(0.01, 0.025, 0.01)));
 
 	return approxSqrt(bounce * oms(0.75 * normal.y)) * uniformPhase;
 }
 
-float CalculateBlocklightFalloff(in float blocklight) {
+float CalculateBlocklightFalloff(float blocklight) {
 	blocklight = mix(blocklight, sqr(blocklight), 0.75);
 	return blocklight * blocklight * blocklight;
 }
 
-vec4 HardCodeEmissive(in uint materialID, in vec3 albedo, in vec3 worldPos, in vec3 blocklightColor) {
-    float albedoLuminance = length(albedo);
+vec3 HardCodeEmissive(uint materialID, vec3 albedo, vec3 worldPos) {
+    float albedoLuminance = luminance(albedo);
 
     switch (materialID) {
-        // Total glowing
+        // Total emissive
         case 20u:
-            return vec4(vec3(albedoLuminance), 0.1);
+            return vec3(albedoLuminance);
         // Torch like
         case 21u:
-            return vec4(blocklightColor * (4.0 * float(albedo.r > 0.6 || albedo.r > albedo.g * 2.0)), 0.2);
+            return approxSqrt(albedo) * 4.0 * step(min(0.6, albedo.b * 5.0), albedo.r);
         // Fire
         case 7u: case 22u:
-            return vec4(blocklightColor * (2.0 * albedoLuminance), 0.1);
+            return approxSqrt(albedo) * 4.0;
         // Glowstone like
         case 23u:
-            return vec4(blocklightColor * (3.0 * cube(albedoLuminance)), 0.1);
+            return vec3(4.0 * sdot(albedo));
         // Sea lantern like
         case 24u:
-            return vec4(vec3(4.0 * cube(albedoLuminance)), 0.0);
+            return vec3(4.0 * albedoLuminance * albedoLuminance);
         // Redstone
         case 25u: {
             float mcPosFractY = fract(worldPos.y + cameraPosition.y);
-            if (mcPosFractY > 0.18) return vec4(vec3(2.1, 0.9, 0.9) * step(0.4, albedo.r), 1.0);
-            else return vec4(vec3(2.1, 0.9, 0.9) * step(1.25, albedo.r / (albedo.g + albedo.b)) * step(0.2, albedo.r), 1.0);
+            if (mcPosFractY > 0.18) return vec3(2.1, 0.9, 0.9) * step(0.4, albedo.r);
+            else return vec3(2.1, 0.9, 0.9) * step(1.25, albedo.r / (albedo.g + albedo.b)) * step(0.2, albedo.r);
         }
         // Soul fire
         case 26u:
-            return vec4(vec3((albedoLuminance + 0.5) * step(0.2, albedo.b)), 0.5);
+            return vec3(albedoLuminance * step(0.2, albedo.b) * 2.0);
         // Amethyst
         case 27u:
-            return vec4(vec3(albedoLuminance * 0.1), 1.0);
+            return vec3((albedoLuminance + 0.4) * 0.5);
         // Glowberry
         case 28u:
-            return vec4(saturate(dot(saturate(albedo - 0.1), vec3(1.0, -0.6, -0.99))) * vec3(28.0, 25.0, 21.0), 0.4);
+            return vec3(saturate(dot(albedo, vec3(1.0, -0.6, -0.9)) - 0.1) * 16.0);
         // Rails
         case 29u:
-            return vec4(vec3(2.1, 0.9, 0.9) * (albedoLuminance * step(albedo.g * 4.0, albedo.r)), 1.0);
+            return vec3(2.1, 0.9, 0.9) * (albedoLuminance * step(albedo.g * 4.0, albedo.r));
         // Beacon core
         case 30u: {
             vec3 midBlockPos = abs(fract(worldPos + cameraPosition) - 0.5);
-            if (maxOf(midBlockPos) < 0.4 && albedo.b > 0.5) return vec4(vec3(6.0 * albedoLuminance), 0.0);
-            else return vec4(vec3(0.0), 1.0);
+            if (maxOf(midBlockPos) < 0.4) return vec3(5.0 * albedoLuminance);
+            else return vec3(0.0);
         }
         // Sculk
         case 31u:
-            return vec4(vec3(0.05 * sqr(albedoLuminance) * float((albedo.b * 2.0 > albedo.r + albedo.g) && albedo.b > 0.25)), 1.0);
+            return vec3(0.05 * albedoLuminance * float((albedo.b * 2.0 > albedo.r + albedo.g) && albedo.b > 0.25));
         // Glow lichen
         case 32u:
-            return vec4(albedo.r > albedo.b * 1.25 ? vec3(3.0) : vec3(albedoLuminance * 0.1), 1.0);
-        // Partial glowing
+            return vec3(albedoLuminance * 0.25 + step(albedo.b * 1.25, albedo.r) * 4.0);
+        // Partial emissive
         case 33u:
-            return vec4(32.0 * albedoLuminance * cube(saturate(albedo - 0.5)), 0.5);
-        // Middle glowing
+            return 16.0 * sqr(saturate(albedo - 0.5));
+        // Middle emissive
         case 34u: {
             vec2 midBlockPosXZ = abs(fract(worldPos.xz + cameraPosition.xz) - 0.5);
-            return vec4(vec3(step(maxOf(midBlockPosXZ), 0.063) * albedoLuminance), 1.0);
+            return vec3(step(maxOf(midBlockPosXZ), 0.063) * albedoLuminance);
         }
-        // End glowing
+        // End emissive
         case 46u:
-            return vec4(vec3(1e2 * albedoLuminance), 0.0);
+            return vec3(64.0 * albedoLuminance);
         // Lightning bolt
         case 2000u:
-            return vec4(vec3(16.0), 0.0);
+            return vec3(16.0);
         // Default
         default:
-            return vec4(vec3(0.0), 1.0);
+            return vec3(0.0);
     }
 }

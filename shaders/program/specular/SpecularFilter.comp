@@ -46,7 +46,7 @@ vec3 GetSpecularDominantDir(vec3 N, vec3 V, float roughness) {
     return normalize(mix(N, R, f));
 }
 
-float LobeWeightFast(in vec3 CN, in vec3 SN, in float CR, in float SR) {
+float LobeWeightFast(vec3 CN, vec3 SN, float CR, float SR) {
     const float factor = 4.0;
     float lambdaC = 2.0 / CR, lambdaS = 2.0 / SR;
     float product = lambdaC * lambdaS, summa = lambdaC + lambdaS;
@@ -56,7 +56,7 @@ float LobeWeightFast(in vec3 CN, in vec3 SN, in float CR, in float SR) {
     return exp2(weightN + weightR);
 }
 
-void SpecularFilter(inout vec4 specularData, in ivec2 texel, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
+void SpecularFilter(inout vec4 specularData, ivec2 texel, float roughness, vec3 worldNormal, vec3 worldDir, float filterSize, vec2 randOffset) {
     float offsetScale = filterSize * saturate(20.0 * roughness);
     offsetScale *= saturate(0.25 + specularData.a * 0.25);
 

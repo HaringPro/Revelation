@@ -40,7 +40,7 @@ out vec3 finalOut;
 // Reference: Lou Kramer, FidelityFX CAS, AMD Developer Day 2019,
 // https://gpuopen.com/wp-content/uploads/2019/07/FidelityFX-CAS.pptx
 // https://github.com/GPUOpen-Effects/FidelityFX-CAS
-vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
+vec3 FFXCasFilter(ivec2 texel, float sharpness) {
 	#define CasLoad(offset) texelFetchOffset(colortex0, texel, 0, offset).rgb
 
 	#ifndef CAS_ENABLED
@@ -82,7 +82,7 @@ vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
 
 #include "/lib/universal/TextRenderer.glsl"
 
-void HistogramDisplay(inout vec3 color, in ivec2 texel) {
+void HistogramDisplay(inout vec3 color, ivec2 texel) {
     const int binWidth = 2;
 
     if (all(lessThan(texel, ivec2(HISTOGRAM_BIN_COUNT * binWidth, 256)))) {

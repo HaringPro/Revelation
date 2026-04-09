@@ -1,5 +1,5 @@
 // From https://iquilezles.org/www/articles/texture/texture.htm
-vec4 textureSmoothFilter(in sampler2D tex, in vec2 coord) {
+vec4 textureSmoothFilter(sampler2D tex, vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res + 0.5;
@@ -13,7 +13,7 @@ vec4 textureSmoothFilter(in sampler2D tex, in vec2 coord) {
 }
 
 // From https://jvm-gaming.org/t/glsl-simple-fast-bicubic-filtering-shader-function/52549
-vec4 cubic(in float v) {
+vec4 cubic(float v) {
     vec4 n = vec4(1.0, 2.0, 3.0, 4.0) - v;
     vec4 s = n * n * n;
     float x = s.x;
@@ -23,7 +23,7 @@ vec4 cubic(in float v) {
     return vec4(x, y, z, w) * rcp(6.0);
 }
 
-vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
+vec4 textureBicubic(sampler2D tex, vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res - 0.5;
@@ -51,7 +51,7 @@ vec4 textureBicubic(in sampler2D tex, in vec2 coord) {
     return mix(mix(sample3, sample2, sx), mix(sample1, sample0, sx), sy);
 }
 
-vec4 textureBicubicLod(in sampler2D tex, in vec2 coord, in float lod) {
+vec4 textureBicubicLod(sampler2D tex, vec2 coord, float lod) {
 	vec2 res = vec2(textureSize(tex, 0));
 
 	coord = coord * res - 0.5;
@@ -79,24 +79,7 @@ vec4 textureBicubicLod(in sampler2D tex, in vec2 coord, in float lod) {
     return mix(mix(sample3, sample2, sx), mix(sample1, sample0, sx), sy);
 }
 
-vec4 textureSmooth(in sampler2D tex, in vec2 coord) {
-	vec2 res = vec2(textureSize(tex, 0));
-
-	coord = coord * res - 0.5;
-
-    vec2 p = floor(coord);
-    vec2 f = curve(coord - p);
-
-	p *= rcp(res);
-    vec4 sample0 = texture(tex, p);
-    vec4 sample1 = textureOffset(tex, p, ivec2(1, 0));
-    vec4 sample2 = textureOffset(tex, p, ivec2(0, 1));
-    vec4 sample3 = textureOffset(tex, p, ivec2(1, 1));
-
-    return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);
-}
-
-vec4 catmullRom(in float f) {
+vec4 catmullRom(float f) {
     return vec4(
         f * (-0.5 + f * (1.0 - 0.5 * f)),
         1.0 + f * f * (-2.5 + 1.5 * f),
@@ -110,7 +93,7 @@ vec4 catmullRom(in float f) {
 
 // Samples a texture with Catmull-Rom filtering, using 9 texture fetches instead of 16.
 // See http://vec3.ca/bicubic-filtering-in-fewer-taps/ for more details
-vec4 textureCatmullRom(in sampler2D tex, in vec2 uv) {
+vec4 textureCatmullRom(sampler2D tex, vec2 uv) {
 	vec2 res = vec2(textureSize(tex, 0));
     vec2 pixelSize = 1.0 / res;
 
@@ -151,7 +134,7 @@ vec4 textureCatmullRom(in sampler2D tex, in vec2 uv) {
 }
 
 // Approximation from SMAA presentation [Jimenez 2016]
-vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord) {
+vec4 textureCatmullRomFast(sampler2D tex, vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
     vec2 pixelSize = 1.0 / res;
 
@@ -194,7 +177,7 @@ vec4 textureCatmullRomFast(in sampler2D tex, in vec2 coord) {
     return color;
 }
 
-vec4 textureCatmullRomFastAntiRing(in sampler2D tex, in vec2 coord) {
+vec4 textureCatmullRomFastAntiRing(sampler2D tex, vec2 coord) {
 	vec2 res = vec2(textureSize(tex, 0));
     vec2 pixelSize = 1.0 / res;
 
@@ -242,17 +225,17 @@ vec4 textureCatmullRomFastAntiRing(in sampler2D tex, in vec2 coord) {
     return clamp(color, minColor, maxColor);
 }
 
-float sinc(in float x) {
+float sinc(float x) {
     return sin(PI * x) / (PI * x);
 }
 
-float lanczos2(in float x) {
+float lanczos2(float x) {
     x = clamp(x, -2.0, 2.0);
     if (abs(x) < EPS) return 1.0;
     else return sinc(x) * sinc(x * 0.5);
 }
 
-vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
+vec4 textureLanczos(sampler2D tex, vec2 coord) {
 	const int radius = 2;
 
 	vec2 res = vec2(textureSize(tex, 0));
@@ -282,7 +265,22 @@ vec4 textureLanczos(in sampler2D tex, in vec2 coord) {
     return sum * rcp(sumWeight);
 }
 
-vec4 textureTiling(in sampler2D tex, in vec2 coord) {
+vec3 textureRGBE8(sampler2D tex, vec2 coord) {
+	vec2 res = vec2(textureSize(tex, 0));
+	coord = coord * res - 0.5;
+
+    ivec2 i = ivec2(floor(coord));
+    vec2 f = coord - i;
+
+    vec3 sample0 = DecodeRGBE8(texelFetch(tex, i, 0));
+    vec3 sample1 = DecodeRGBE8(texelFetch(tex, i + ivec2(1, 0), 0));
+    vec3 sample2 = DecodeRGBE8(texelFetch(tex, i + ivec2(0, 1), 0));
+    vec3 sample3 = DecodeRGBE8(texelFetch(tex, i + ivec2(1, 1), 0));
+
+    return mix(mix(sample0, sample1, f.x), mix(sample2, sample3, f.x), f.y);
+}
+
+vec4 textureTiling(sampler2D tex, vec2 coord) {
 	vec2 p = coord - 0.5;
 
     vec2 weight0 = curve(abs(fract(p) * 2.0 - 1.0));

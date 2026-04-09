@@ -41,7 +41,7 @@ uniform sampler2D cloudOriginTex;
 #include "/lib/atmosphere/Common.glsl"
 #include "/lib/atmosphere/clouds/Common.glsl"
 
-vec3 ReprojectClouds(in vec2 coord, in float depth) {
+vec3 ReprojectClouds(vec2 coord, float depth) {
 	vec3 cloudPos = ScreenToViewDirRaw(coord) * depth;
 	cloudPos = transMAD(gbufferModelViewInverse, cloudPos); // To world space
 

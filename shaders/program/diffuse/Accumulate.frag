@@ -35,7 +35,7 @@ layout (location = 1) out vec3 encodedNormalDepth;
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
 
-void TemporalFilter(in ivec2 texelPos, in vec3 screenPos, in vec3 worldNormal) {
+void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	vec3 viewPos = ScreenToViewPos(screenPos);
     vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
@@ -113,7 +113,7 @@ void TemporalFilter(in ivec2 texelPos, in vec3 screenPos, in vec3 worldNormal) {
     integratedDiffuse.rgb = textureLod(colortex3, currCoord, 3.0).rgb;
 }
 
-float GetClosestDepthN(in ivec2 texel) {
+float GetClosestDepthN(ivec2 texel) {
     float depth = 1.0;
 
     for (uint i = 0u; i < 8u; ++i) {

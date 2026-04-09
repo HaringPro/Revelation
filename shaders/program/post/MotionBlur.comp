@@ -28,7 +28,7 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 
 #include "/lib/universal/Random.glsl"
 
-vec3 MotionBlur(in ivec2 texelPos) {
+vec3 MotionBlur(ivec2 texelPos) {
 	vec2 motionVector = texelFetch(colortex3, texelPos, 0).xy;
 	float motionNorm = inversesqrt(sdot(motionVector));
 

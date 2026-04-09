@@ -53,7 +53,7 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/surface/SSRT.glsl"
 
-vec4 CalculateSpecularReflections(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec3 worldDir, in float dither, in float skylight, in bool waterMask) {
+vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal, vec3 worldDir, float dither, float skylight, bool waterMask) {
 	float NdotV = abs(dot(worldNormal, worldDir));
 	vec3 rayDir = worldDir + worldNormal * NdotV * 2.0;
 

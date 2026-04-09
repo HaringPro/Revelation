@@ -142,7 +142,7 @@ vec3 agxLook(vec3 val) {
     return luma + sat * (val - luma);
 }
 
-vec3 AgX_Minimal(in vec3 value) {
+vec3 AgX_Minimal(vec3 value) {
     value = agx(value);
     value = agxLook(value); // Optional
     return agxEotf(value);
@@ -257,7 +257,7 @@ float equation_full_curve(float x, float x_pivot, float y_pivot, float slope_piv
     return equation_curve(x, x_pivot, y_pivot, slope_pivot, toe_power, shoulder_power, scale);
 }
 
-vec3 AgXConfigurable(in vec3 rgb) {
+vec3 AgXConfigurable(vec3 rgb) {
     const float x_pivot = abs(min_ev) / (max_ev - min_ev);
     const float y_pivot = 0.5;
 
@@ -270,6 +270,6 @@ vec3 AgXConfigurable(in vec3 rgb) {
     return saturate(vec3(outputR, outputG, outputB));
 }
 
-vec3 AgX_Full(in vec3 rgb) {
+vec3 AgX_Full(vec3 rgb) {
     return sRGBToLinear(AgXConfigurable(rgb));
 }

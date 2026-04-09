@@ -3,7 +3,7 @@
 // Uchimura 2017, "HDR theory and practice"
 // Math: https://www.desmos.com/calculator/gslcdxvipg
 // Source: https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp
-vec3 GT(in vec3 x) {
+vec3 GT(vec3 x) {
     const float maxDisplayBrightness = 1.0;
     const float contrast			 = 1.0;
     const float linearStart			 = 0.2;
@@ -427,7 +427,7 @@ void applyToneMapping(inout vec3 rgb, GT7ToneMapping tm)
     rgb = tm.sdrCorrectionFactor_ * min(blended, tm.framebufferLuminanceTarget_);
 }
 
-vec3 GT7(in vec3 color) {
+vec3 GT7(vec3 color) {
     color *= 2.0;
 
     GT7ToneMapping tm;

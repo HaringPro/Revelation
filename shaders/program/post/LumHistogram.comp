@@ -40,7 +40,7 @@ shared uint sharedHistogram[HISTOGRAM_BIN_COUNT];
 const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
 
-uint histogramLumToBin(in float lum) {
+uint histogramLumToBin(float lum) {
     float bin = log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv);
 	return uint(saturate(bin) * float(HISTOGRAM_BIN_COUNT - 1u));
 }

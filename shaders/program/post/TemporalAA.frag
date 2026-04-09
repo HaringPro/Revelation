@@ -40,7 +40,7 @@ layout (location = 2) out vec2 motionVectorOut;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 
-vec3 CrossClosestFragment(in ivec2 texelPos, in float depth) {
+vec3 CrossClosestFragment(ivec2 texelPos, float depth) {
     vec3 closest = vec3(vec2(texelPos), depth);
 
     ivec2 t1 = texelPos + ivec2( 1,  1);
@@ -71,7 +71,7 @@ vec3 perceptualWeightInv(vec3 colorYCoCg) {
     return colorYCoCg * rcp(1.0 - colorYCoCg.x);
 }
 
-vec3 historyClipAABB(in vec3 history, in vec3 center, in vec3 extent) {
+vec3 historyClipAABB(vec3 history, vec3 center, vec3 extent) {
     vec3 delta = history - center;
     float maxUnit = maxOf(abs(delta / extent));
 
@@ -82,7 +82,7 @@ vec3 historyClipAABB(in vec3 history, in vec3 center, in vec3 extent) {
     return history;
 }
 
-vec4 TemporalReprojection(in vec2 screenCoord, in vec2 motionVector) {
+vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
     ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
 
     vec3 currData = loadSceneMain(texel);

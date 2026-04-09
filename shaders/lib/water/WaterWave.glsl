@@ -3,17 +3,17 @@
 
 const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
-float FetchNoise(in vec2 coord, in float t) {
+float FetchNoise(vec2 coord, float t) {
 	coord.y = coord.y * 2.0 + t;
 	return sqr(1.0 - texture(noisetex, coord).z);
 }
 
-float FetchNoiseSmooth(in vec2 coord, in float t) {
+float FetchNoiseSmooth(vec2 coord, float t) {
 	coord.y = coord.y * 2.0 + t;
 	return sqr(1.0 - textureBicubic(noisetex, coord).z);
 }
 
-float CalculateWaterHeight(in vec2 position) {
+float CalculateWaterHeight(vec2 position) {
 	#if RENDER_MODE == 1
 		float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
 	#else
@@ -44,7 +44,7 @@ float CalculateWaterHeight(in vec2 position) {
 	return waveHeight * waves;
 }
 
-float CalculateWaterHeightFull(in vec2 position) {
+float CalculateWaterHeightFull(vec2 position) {
 	#if RENDER_MODE == 1
 		float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
 	#else
@@ -80,7 +80,7 @@ float CalculateWaterHeightFull(in vec2 position) {
 
 //================================================================================================//
 
-vec3 CalculateWaterNormal(in vec2 position) {
+vec3 CalculateWaterNormal(vec2 position) {
 	const float delta = 0.05;
 
 	float height0 = CalculateWaterHeightFull(position);
@@ -91,7 +91,7 @@ vec3 CalculateWaterNormal(in vec2 position) {
 	return normalize(vec3(waveNormal, delta * (1.0 + dot(fwidth(position), vec2(0.2)))));
 }
 
-vec3 CalculateWaterNormal(in vec3 rayPos, in vec3 rayDir) {
+vec3 CalculateWaterNormal(vec3 rayPos, vec3 rayDir) {
 	const uint steps = WATER_PARALLAX_SAMPLES;
 
 	vec3 rayStep = vec3(rayDir.xy / rayDir.z, 1.0) * inversesqrt(steps);

@@ -37,35 +37,35 @@ const mat3 Rec2020_2_XYZ = mat3(
 
 // https://en.wikipedia.org/wiki/SRGB
 // https://github.com/tobspr/GLSL-Color-Spaces/blob/master/ColorSpaces.inc.glsl
-vec3 linearToSRGB(in vec3 color) {
+vec3 linearToSRGB(vec3 color) {
 	return mix(color * 12.92, 1.055 * pow(color, vec3(0.41666666)) - 0.055, step(vec3(0.0031308), color));
 }
 
-vec3 sRGBToLinear(in vec3 color) {
+vec3 sRGBToLinear(vec3 color) {
 	return mix(color * 0.07739938, pow((color + 0.055) * 0.94786729, vec3(2.4)), step(vec3(0.04045), color));
 }
 
 // https://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
-vec3 linearToSRGBApprox(in vec3 color) {
+vec3 linearToSRGBApprox(vec3 color) {
     vec3 S1 = color * inversesqrt(color);
     vec3 S2 = S1 * inversesqrt(S1);
     vec3 S3 = S2 * inversesqrt(S2);
     return 0.585122381 * S1 + 0.783140355 * S2 - 0.368262736 * S3;
 }
 
-vec3 sRGBToLinearApprox(in vec3 color) {
+vec3 sRGBToLinearApprox(vec3 color) {
     return color * (color * (color * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
 // https://en.wikipedia.org/wiki/YCoCg
-vec3 RGBToYCoCg(in vec3 rgb) {
+vec3 RGBToYCoCg(vec3 rgb) {
     return mat3(
         0.25,  0.50, -0.25,
         0.50,  0.00,  0.50,
         0.25, -0.50, -0.25
     ) * rgb;
 }
-vec3 YCoCgToRGB(in vec3 YCoCg) {
+vec3 YCoCgToRGB(vec3 YCoCg) {
     return mat3(
          1.0,  1.0,  1.0,
          1.0,  0.0, -1.0,
@@ -73,30 +73,30 @@ vec3 YCoCgToRGB(in vec3 YCoCg) {
     ) * YCoCg;
 }
 
-float luminance(in vec3 color) {
+float luminance(vec3 color) {
     return dot(color, vec3(0.2126729, 0.7151522, 0.0721750));
 }
 
-vec3 desaturate(in vec3 color, in float amount) {
+vec3 desaturate(vec3 color, float amount) {
     return mix(color, vec3(luminance(color)), amount);
 }
 
-float karisAverage(in vec3 color) {
+float karisAverage(vec3 color) {
     return rcp(1.0 + luminance(color));
 }
 
-vec3 reinhard(in vec3 hdr) {
+vec3 reinhard(vec3 hdr) {
     return hdr * rcp(1.0 + luminance(hdr));
 }
-vec3 invReinhard(in vec3 sdr) {
+vec3 invReinhard(vec3 sdr) {
     return sdr * rcp(1.0 - luminance(sdr));
 }
 
 // Inspired by GPU Zen 4
-vec3 TonemapRadiance(in vec3 v, in float e) {
+vec3 TonemapRadiance(vec3 v, float e) {
     return v * pow(luminance(v) + EPS, e - 1.0);
 }
-vec3 InverseTonemapRadiance(in vec3 v, in float e) {
+vec3 InverseTonemapRadiance(vec3 v, float e) {
     return v * pow(luminance(v) + EPS, rcp(e) - 1.0);
 }
 
@@ -136,7 +136,7 @@ vec3 InverseTonemapRadiance(in vec3 v, in float e) {
 
     returns: vec4 ChromaRadiance = {chroma_r, chroma_g, chroma_b, effRadiance}
 */
-vec4 BlackBodyRadiation(in float T) {
+vec4 BlackBodyRadiation(float T) {
     if (T <= 0.0) return vec4(0.0);
 
     vec4 ChromaRadiance;

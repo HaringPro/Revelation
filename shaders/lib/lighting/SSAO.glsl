@@ -5,7 +5,7 @@
 
 //================================================================================================//
 
-float CalculateSSAO(in vec2 coord, in vec3 viewPos, in vec3 normal, in vec2 dir) {
+float CalculateSSAO(vec2 coord, vec3 viewPos, vec3 normal, vec2 dir) {
 	const float rSteps = 1.0 / float(SSAO_SAMPLES);
 	float maxSqLen = sqr(viewPos.z) * 0.25;
 	float rMaxSqLen = 1.0 / maxSqLen;

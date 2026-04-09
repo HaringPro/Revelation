@@ -77,7 +77,7 @@ const ivec2 sampleOffsets[13] = ivec2[13](
 	ivec2( 1,  1)
 );
 
-vec3 CalculateBloomTile(in vec2 uv) {
+vec3 CalculateBloomTile(vec2 uv) {
 	// Custom hand-crafted 36-texel downsample (13 bilinear fetches)
     vec3 b00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[0]).rgb;
     vec3 b01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[1]).rgb;

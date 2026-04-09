@@ -2,15 +2,15 @@
 // Morgan McGuire, Michael Mara. "Efficient GPU Screen-Space Ray Tracing". JCGT, 2014.
 // https://jcgt.org/published/0003/04/04/paper.pdf
 
-#define SSRT_MAX_SAMPLES 20 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
+#define SSRT_MAX_SAMPLES 16 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
 #define SSRT_SKY_TRACING
 
-// #define SSRT_REFINEMENT
+#define SSRT_REFINEMENT
 #define SSRT_REFINEMENT_STEPS 4 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
 
 //================================================================================================//
 
-bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in uint steps, inout vec3 screenPos) {
+bool ScreenSpaceRaytrace(vec3 viewPos, vec3 viewDir, float dither, uint steps, inout vec3 screenPos) {
     vec3 origin = screenPos;
 
     float fixZ = step(viewDir.z, 0.0) * 1e23 - (viewPos.z + near) / viewDir.z;
@@ -54,14 +54,14 @@ bool ScreenSpaceRaytrace(in vec3 viewPos, in vec3 viewDir, in float dither, in u
             float sampleViewZ = ScreenToViewDepth(sampleDepth);
             float stepViewZ = ScreenToViewDepth(rayPos.z);
 
-            if (distance(sampleViewZ, stepViewZ) < -0.2 * stepViewZ) {
+            if (distance(sampleViewZ, stepViewZ) < -0.1 * stepViewZ) {
                 screenPos = rayPos;
                 hit = true;
                 break;
             }
-        } else {
-            t += clamp((sampleDepth - rayPos.z) * invDirZ, rSteps * 0.01, rSteps * 1.25);
         }
+
+        t += clamp((sampleDepth - rayPos.z) * invDirZ, rSteps * 0.01, rSteps * 1.1);
     }
 
     #ifdef SSRT_REFINEMENT

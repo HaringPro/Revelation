@@ -55,7 +55,7 @@
 --------------------------------------------------------------------------------
 */
 
-float rgbToSaturation(in vec3 rgb) {
+float rgbToSaturation(vec3 rgb) {
 	float minC = min(min(rgb.r, rgb.g), rgb.b);
 	float maxC = max(max(rgb.r, rgb.g), rgb.b);
 
@@ -65,7 +65,7 @@ float rgbToSaturation(in vec3 rgb) {
 // Returns a geometric hue angle in degrees (0-360) based on RGB values
 // For neutral colors, hue is undefined and the function will return zero (The reference
 // implementation returns NaN but I think that's silly)
-float rgbToHue(in vec3 rgb) {
+float rgbToHue(vec3 rgb) {
 	if (rgb.r == rgb.g && rgb.g == rgb.b) return 0.0;
 
 	float hue = (360.0 / TAU) * atan(2.0 * rgb.r - rgb.g - rgb.b, sqrt(3.0) * (rgb.g - rgb.b));
@@ -77,7 +77,7 @@ float rgbToHue(in vec3 rgb) {
 
 // Converts RGB to a luminance proxy, here called YC
 // YC is ~ Y + K * Chroma
-float rgbToYc(in vec3 rgb) {
+float rgbToYc(vec3 rgb) {
 	const float yc_radius_weight = 1.75;
 
 	float chroma = sqrt(rgb.b * (rgb.b - rgb.g) + rgb.g * (rgb.g - rgb.r) + rgb.r * (rgb.r - rgb.b));
@@ -163,7 +163,7 @@ const float rrtSatFactor = 0.96; 	// Default: 0.96
 const float odtSatFactor = 0.93; 	// Default: 0.93
 
 // ------- Glow module functions
-float GlowFwd(in float yc_in, in float glow_gain_in, in const float glow_mid) {
+float GlowFwd(float yc_in, float glow_gain_in, const float glow_mid) {
 	float glow_gain_out;
 
 	if (yc_in <= 2.0 / 3.0 * glow_mid) {
@@ -177,7 +177,7 @@ float GlowFwd(in float yc_in, in float glow_gain_in, in const float glow_mid) {
 	return glow_gain_out;
 }
 
-float SigmoidShaper(in float x) {
+float SigmoidShaper(float x) {
 	// Sigmoid function in the range 0 to 1 spanning -2 to +2
 	float t = max0(1.0 - abs(0.5 * x));
 	float y = 1.0 + signMul(oms(t * t), x);
@@ -186,7 +186,7 @@ float SigmoidShaper(in float x) {
 }
 
 // ------- Red modifier functions
-float CubicBasisShaper(in float x, in float w) {
+float CubicBasisShaper(float x, float w) {
     const mat4 M = mat4(
         -1.0 / 6.0,  3.0 / 6.0, -3.0 / 6.0,  1.0 / 6.0,
          3.0 / 6.0, -6.0 / 6.0,  3.0 / 6.0,  0.0 / 6.0,
@@ -223,12 +223,12 @@ float CubicBasisShaper(in float x, in float w) {
 }
 
 // https://github.com/sixthsurge/photon/blob/main/shaders/include/aces/aces.glsl
-float CubicBasisShaperFit(in float x, in const float width) {
+float CubicBasisShaperFit(float x, const float width) {
 	float radius = 0.5 * width;
 	return abs(x) < radius ? sqr(curve(1.0 - abs(x) / radius)) : 0.0;
 }
 
-float CenterHue(in float hue, in float centerH) {
+float CenterHue(float hue, float centerH) {
 	float hueCentered = hue - centerH;
 	if (hueCentered < -180.0) hueCentered += 360.0;
 	else if (hueCentered > 180.0) hueCentered -= 360.0;
@@ -237,7 +237,7 @@ float CenterHue(in float hue, in float centerH) {
 
 //======// ACES Fit //============================================================================//
 
-vec3 RRTSweeteners(in vec3 aces) {
+vec3 RRTSweeteners(vec3 aces) {
 	// --- Glow module --- //
 	float saturation = rgbToSaturation(aces);
 	float ycIn = rgbToYc(aces);
@@ -388,14 +388,14 @@ float segmented_spline_c9_fwd(float x, SegmentedSplineParams_c9 params) { // par
 }
 
 // https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
-vec3 RRTAndODTFit(in vec3 rgb) {
+vec3 RRTAndODTFit(vec3 rgb) {
 	vec3 a = rgb * (rgb + 0.0245786) - 0.000090537;
 	vec3 b = rgb * (0.983729 * rgb + 0.4329510) + 0.238081;
 
 	return a / b;
 }
 
-vec3 AcademyFit(in vec3 rgb) {
+vec3 AcademyFit(vec3 rgb) {
 	rgb *= Rec2020_2_AP0;
 
 	// Apply RRT sweeteners
@@ -412,7 +412,7 @@ vec3 AcademyFit(in vec3 rgb) {
 
 //======// ACES Full //===========================================================================//
 
-vec3 RRT(in vec3 aces) {
+vec3 RRT(vec3 aces) {
 	// --- Glow module --- //
 	float saturation = rgbToSaturation(aces);
 	float ycIn = rgbToYc(aces);
@@ -443,7 +443,7 @@ vec3 RRT(in vec3 aces) {
 	return rgbPost;
 }
 
-vec3 XYZ_to_xyY(in vec3 XYZ) {
+vec3 XYZ_to_xyY(vec3 XYZ) {
 	float mul = 1.0 / max(XYZ.x + XYZ.y + XYZ.z, 1e-10);
 
 	return vec3(
@@ -452,7 +452,7 @@ vec3 XYZ_to_xyY(in vec3 XYZ) {
 		XYZ.y
 	);
 }
-vec3 xyY_to_XYZ(in vec3 xyY) {
+vec3 xyY_to_XYZ(vec3 xyY) {
 	float mul = xyY.z / max(xyY.y, 1e-10);
 
 	return vec3(
@@ -462,7 +462,7 @@ vec3 xyY_to_XYZ(in vec3 xyY) {
 	);
 }
 
-vec3 dark_surround_to_dim_surround(in vec3 linearCV) {
+vec3 dark_surround_to_dim_surround(vec3 linearCV) {
 	const float dimSurroundGamma = 0.9811;
 
 	vec3 XYZ = linearCV * AP1_2_XYZ;
@@ -485,7 +485,7 @@ float moncurve_r(float y, const float gamma, const float offs) {
     return y >= yb ? (1.0 + offs) * pow(y, 1.0 / gamma) - offs : y * rs;
 }
 
-vec3 ODT_sRGB_100nits_dim(in vec3 rgbPre) {
+vec3 ODT_sRGB_100nits_dim(vec3 rgbPre) {
     SegmentedSplineParams_c9 params = ODT_48nits;
 
     params.minPoint.x = segmented_spline_c5_fwd(params.minPoint.x, RRT_PARAMS);
@@ -544,7 +544,7 @@ vec3 bt1886_r(vec3 L, const float gamma, const float Lw, const float Lb) {
     return pow(max(L / a, 0.0), vec3(rGamma)) - b;
 }
 
-vec3 ODT_Rec2020_P3D65limited_100nits_dim(in vec3 rgbPre) {
+vec3 ODT_Rec2020_P3D65limited_100nits_dim(vec3 rgbPre) {
     SegmentedSplineParams_c9 params = ODT_48nits;
 
     params.minPoint.x = segmented_spline_c5_fwd(params.minPoint.x, RRT_PARAMS);
@@ -591,7 +591,7 @@ vec3 ODT_Rec2020_P3D65limited_100nits_dim(in vec3 rgbPre) {
 	return bt1886_r(linearCV, dispGamma, lW, lB);
 }
 
-vec3 AcademyFull(in vec3 rgb) {
+vec3 AcademyFull(vec3 rgb) {
 	rgb *= Rec2020_2_AP0;
 
 	// Apply RRT

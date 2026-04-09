@@ -304,22 +304,18 @@ void main() {
 
 		// Emissive & Blocklight
 		#if EMISSIVE_MODE > 0 && defined MC_SPECULAR_MAP
-			sceneOut += material.emissiveness * dot(albedo, vec3(0.75));
+			sceneOut += material.emissiveness * 4.0 * sdot(albedo);
 		#endif
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
-			vec4 emissive = HardCodeEmissive(materialID, albedo, worldPos, blocklightColor);
-			#ifndef SSILVB_ENABLED
-				if (emissive.a * lightmap.x > EPS) {
-					lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-					sceneOut += lightmap.x * emissive.a * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor;
-				}
-			#endif
+			sceneOut += HardCodeEmissive(materialID, albedo, worldPos) * EMISSIVE_BRIGHTNESS;
+		#endif
 
-			sceneOut += emissive.rgb * EMISSIVE_BRIGHTNESS;
-		#elif !defined SSILVB_ENABLED
-			lightmap.x = CalculateBlocklightFalloff(lightmap.x);
-			sceneOut += lightmap.x * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor;
+		#ifndef SSILVB_ENABLED
+			if (lightmap.x > EPS) {
+				lightmap.x = CalculateBlocklightFalloff(lightmap.x);
+				sceneOut += lightmap.x * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor;
+			}
 		#endif
 
 		// Handheld light

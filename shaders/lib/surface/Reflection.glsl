@@ -1,6 +1,6 @@
 #include "/lib/surface/SSRT.glsl"
 
-vec4 CalculateSpecularReflections(Material material, in vec3 worldNormal, in vec3 screenPos, in vec3 worldDir, in vec3 viewPos, in float skylight, in float dither) {
+vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 screenPos, vec3 worldDir, vec3 viewPos, float skylight, float dither) {
 	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
 
 	vec3 halfway = worldNormal;

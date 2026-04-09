@@ -48,7 +48,7 @@ uniform sampler2D shadowcolor1;
 
 #include "/lib/water/WaterFog.glsl"
 
-mat2x3 UnpackFogData(in uvec2 data) {
+mat2x3 UnpackFogData(uvec2 data) {
 	return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
 }
 

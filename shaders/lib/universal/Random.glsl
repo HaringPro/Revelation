@@ -1,7 +1,7 @@
 const int noiseTextureResolution = 256;
 const float noiseTexturePixelSize = 1.0 / noiseTextureResolution;
 
-float Pseudo3DNoise(in vec3 pos) {
+float Pseudo3DNoise(vec3 pos) {
     vec3 p = floor(pos);
 	vec3 b = curve(pos - p);
 
@@ -88,43 +88,43 @@ uint triple32(uint x) {
 //================================================================================================//
 
 // Rn sequence from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-float R1(in int n) {
+float R1(int n) {
     const float g = 1.6180339887498948482;
     const float a = 1.0 / g;
 	return fract(0.5 + n * a);
 }
 
-float R1(in int n, in float seed) {
+float R1(int n, float seed) {
     const float g = 1.6180339887498948482;
     const float a = 1.0 / g;
 	return fract(seed + n * a);
 }
 
-vec2 R2(in int n) {
+vec2 R2(int n) {
     const float g = 1.32471795724474602596;
     const vec2 a = 1.0 / vec2(g, g * g);
 	return fract(0.5 + n * a);
 }
 
-vec2 R2(in int n, in vec2 seed) {
+vec2 R2(int n, vec2 seed) {
     const float g = 1.32471795724474602596;
     const vec2 a = 1.0 / vec2(g, g * g);
 	return fract(seed + n * a);
 }
 
-vec3 R3(in int n) {
+vec3 R3(int n) {
     const float g = 1.22074408460575947536;
     const vec3 a = 1.0 / vec3(g, g * g, g * g * g);
 	return fract(0.5 + n * a);
 }
 
-vec3 R3(in int n, in vec3 seed) {
+vec3 R3(int n, vec3 seed) {
     const float g = 1.22074408460575947536;
     const vec3 a = 1.0 / vec3(g, g * g, g * g * g);
 	return fract(seed + n * a);
 }
 
-vec2 R2(in float n) {
+vec2 R2(float n) {
     const float g = 1.32471795724474602596;
     const vec2 a = 1.0 / vec2(g, g * g);
 	return fract(0.5 + n * a);
@@ -133,11 +133,11 @@ vec2 R2(in float n) {
 //================================================================================================//
 
 // Blue Noise
-float BlueNoise(in ivec2 texel) {
+float BlueNoise(ivec2 texel) {
 	return texelFetch(noisetex, texel & 255, 0).a;
 }
 
-float BlueNoise(in ivec2 texel, in int frame) {
+float BlueNoise(ivec2 texel, int frame) {
 	#ifdef TAA_ENABLED
 		return R1(frame, texelFetch(noisetex, texel & 255, 0).a);
 	#else
@@ -146,15 +146,15 @@ float BlueNoise(in ivec2 texel, in int frame) {
 }
 
 // Spatiotemporal Blue Noise
-float SampleStbnVec1(in ivec2 texel, in int frame) {
+float SampleStbnVec1(ivec2 texel, int frame) {
     return texelFetch(stbnVec1Tex, ivec3(texel, frame) & ivec3(127, 127, 63), 0).x;
 }
 
-vec2 SampleStbnVec2(in ivec2 texel, in int frame) {
+vec2 SampleStbnVec2(ivec2 texel, int frame) {
     return texelFetch(stbnVec2Tex, ivec3(texel, frame) & ivec3(127, 127, 63), 0).xy;
 }
 
-vec2 SampleStbnUnitvec2(in ivec2 texel, in int frame) {
+vec2 SampleStbnUnitvec2(ivec2 texel, int frame) {
     return texelFetch(stbnUnitvec2Tex, ivec3(texel, frame) & ivec3(127, 127, 63), 0).xy;
 }
 
@@ -178,11 +178,11 @@ float bayer128(vec2 a) { return bayer64(0.5 * a) * 0.25 + bayer2(a); }
 // Interleaved Gradient Noise
 // https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
 // https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
-float InterleavedGradientNoise(in vec2 coord) {
+float InterleavedGradientNoise(vec2 coord) {
 	return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
 }
 
-float InterleavedGradientNoise(in vec2 coord, in int frame) {
+float InterleavedGradientNoise(vec2 coord, int frame) {
 	#ifdef TAA_ENABLED
         coord += 5.588238 * float(frame % 64);
 	#endif
@@ -192,11 +192,11 @@ float InterleavedGradientNoise(in vec2 coord, in int frame) {
 //================================================================================================//
 
 // From Peter Shirley's 'Realistic Ray Tracing (2nd Edition)' book, pg. 60
-float TentFilter(in float x) {
+float TentFilter(float x) {
 	return (x < 0.5) ? sqrt(2.0 * x) - 1.0 : 1.0 - sqrt(2.0 - (2.0 * x));
 }
 
-vec2 TentFilter(in vec2 x) {
+vec2 TentFilter(vec2 x) {
 	return vec2(TentFilter(x.x), TentFilter(x.y));
 }
 
@@ -387,7 +387,7 @@ uint OwenScramble(uint p, uint seed) {
 //================================================================================================//
 
 // PDF = 1 / (4 * PI)
-vec3 SampleUniformSphere(in vec2 xy) {
+vec3 SampleUniformSphere(vec2 xy) {
     float phi = TAU * xy.x;
     float cosTheta = 1.0 - xy.y * 2.0;
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -400,7 +400,7 @@ vec3 SampleUniformSphere(in vec2 xy) {
 }
 
 // PDF = 1 / (2 * PI)
-vec3 SampleUniformHemisphere(in vec2 xy) {
+vec3 SampleUniformHemisphere(vec2 xy) {
     float phi = TAU * xy.x;
     float cosTheta = xy.y;
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -413,7 +413,7 @@ vec3 SampleUniformHemisphere(in vec2 xy) {
 }
 
 // PDF = NoL / PI
-vec3 SampleCosineHemisphere(in vec2 xy) {
+vec3 SampleCosineHemisphere(vec2 xy) {
     float phi = TAU * xy.x;
     float cosTheta = sqrt(xy.y);
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
@@ -426,14 +426,14 @@ vec3 SampleCosineHemisphere(in vec2 xy) {
 }
 
 // PDF = NoL / PI
-vec3 SampleCosineHemisphere(in vec3 vector, in vec2 xy) {
+vec3 SampleCosineHemisphere(vec3 vector, vec2 xy) {
     vec3 hemisphere = SampleUniformSphere(xy);
 	hemisphere = normalize(vector + hemisphere);
 	return signMul(hemisphere, dot(hemisphere, vector));
 }
 
 // PDF = 1 / (2 * PI * (1 - cosThetaMax));
-vec3 SampleConeVector(in vec3 vector, in vec2 xy, in float cosThetaMax) {
+vec3 SampleConeVector(vec3 vector, vec2 xy, float cosThetaMax) {
     float phi = TAU * xy.x;
     float cosTheta = mix(cosThetaMax, 1.0, xy.y);
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);

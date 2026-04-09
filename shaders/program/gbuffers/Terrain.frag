@@ -67,7 +67,7 @@ uniform sampler2D tex;
 #endif
 
 #ifdef AUTO_GENERATED_NORMAL
-	vec2 serializeCoord(in vec2 uv) {
+	vec2 serializeCoord(vec2 uv) {
 		return mix(1.0 - fract(uv), fract(uv), mod(floor(uv), 2.0));
 	}
 

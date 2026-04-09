@@ -33,13 +33,13 @@
 
 //================================================================================================//
 
-vec3 SetupCloudShadowPos(in vec2 coord) {
+vec3 SetupCloudShadowPos(vec2 coord) {
 	vec3 shadowPos = vec3(coord * 2.0 - 1.0, 0.0);
     shadowPos.xy *= rcp(2.0 - length(shadowPos.xy));
 	return transMAD(cloud.shadowViewProjInv, shadowPos);
 }
 
-vec3 PlanetToCloudShadowScreenPos(in vec3 planetPos) {
+vec3 PlanetToCloudShadowScreenPos(vec3 planetPos) {
 	planetPos.y -= planetRadius;
 
 	vec3 shadowPos = transMAD(cloud.shadowViewProj, planetPos);
@@ -47,7 +47,7 @@ vec3 PlanetToCloudShadowScreenPos(in vec3 planetPos) {
 	return shadowPos * 0.5 + 0.5;
 }
 
-vec3 WorldToCloudShadowScreenPos(in vec3 worldPos) {
+vec3 WorldToCloudShadowScreenPos(vec3 worldPos) {
 	worldPos.y += eyeAltitude;
 
 	vec3 shadowPos = transMAD(cloud.shadowViewProj, worldPos);
@@ -57,7 +57,7 @@ vec3 WorldToCloudShadowScreenPos(in vec3 worldPos) {
 
 //================================================================================================//
 
-float CalculateCloudShadows(in vec3 rayPos, in float dither) {
+float CalculateCloudShadows(vec3 rayPos, float dither) {
 	float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - worldLightDir.y);
 
 	rayPos.y += planetRadius; // To planet space

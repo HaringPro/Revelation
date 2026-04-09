@@ -134,5 +134,5 @@ void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 	vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyViewImg));
 
-	imageStore(skyViewImg, tid, vec4(RenderSkyView(uv), 1.0));
+	imageStore(skyViewImg, tid, EncodeRGBE8(RenderSkyView(uv)));
 }

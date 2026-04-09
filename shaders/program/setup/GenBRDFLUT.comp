@@ -34,7 +34,7 @@ writeonly uniform image2D brdfLutImg;
 
 const uint samples = 2048u;
 
-vec2 IntegrateBRDF(in float roughness, in float NdotV) {
+vec2 IntegrateBRDF(float roughness, float NdotV) {
     vec3 V; // View direction
     V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta)
     V.y = 0.0;

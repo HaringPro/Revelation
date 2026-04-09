@@ -48,7 +48,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 #include "/lib/universal/Random.glsl"
 #include "/lib/atmosphere/Common.glsl"
 
-void ParallelReduceSum(in uint index, in uint samples) {
+void ParallelReduceSum(uint index, uint samples) {
 	for (uint stride = samples >> 1u; stride > 0u; stride >>= 1u) {
 		if (index < stride) {
 			for (uint band = 0u; band < 9u; ++band) {

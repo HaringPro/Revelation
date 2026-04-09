@@ -52,7 +52,7 @@ layout (location = 0) out vec4 sceneOut;
 #include "/lib/surface/BRDF.glsl"
 #include "/lib/surface/SSRT.glsl"
 
-vec2 CalculateRefractedCoord(in ivec2 texelPos, in vec3 viewPos, in vec3 screenPos, in bool waterMask) {
+vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool waterMask) {
 	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
 	float viewLengthInv = inversesqrt(sdot(viewPos));
 	vec3 viewDir = viewPos * viewLengthInv;

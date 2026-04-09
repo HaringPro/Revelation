@@ -78,7 +78,7 @@ vec3 atmosphereViewPos = vec3(0.0, atmosphereViewHeight, 0.0);
 
 //================================================================================================//
 
-vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {
+vec2 RaySphereIntersection(vec3 pos, vec3 dir, float rad) {
 	float PdotD = dot(pos, dir);
 	float delta = sqr(PdotD) - sdot(pos) + sqr(rad);
 
@@ -90,7 +90,7 @@ vec2 RaySphereIntersection(in vec3 pos, in vec3 dir, in float rad) {
 	}
 }
 
-vec2 RaySphereIntersection(in float r, in float mu, in float rad) {
+vec2 RaySphereIntersection(float r, float mu, float rad) {
 	float delta = sqr(r) * (sqr(mu) - 1.0) + sqr(rad);
 
 	if (delta >= 0.0) {
@@ -101,7 +101,7 @@ vec2 RaySphereIntersection(in float r, in float mu, in float rad) {
 	}
 }
 
-vec2 RaySphericalShellIntersection(in vec3 pos, in vec3 dir, in float bottomRad, in float topRad) {
+vec2 RaySphericalShellIntersection(vec3 pos, vec3 dir, float bottomRad, float topRad) {
     vec2 bottomIntersection = RaySphereIntersection(pos, dir, bottomRad);
     vec2 topIntersection = RaySphereIntersection(pos, dir, topRad);
 
@@ -124,7 +124,7 @@ vec2 RaySphericalShellIntersection(in vec3 pos, in vec3 dir, in float bottomRad,
 	}
 }
 
-vec2 RaySphericalShellIntersection(in float r, in float mu, in float bottomRad, in float topRad) {
+vec2 RaySphericalShellIntersection(float r, float mu, float bottomRad, float topRad) {
     vec2 bottomIntersection = RaySphereIntersection(r, mu, bottomRad);
     vec2 topIntersection = RaySphereIntersection(r, mu, topRad);
 
@@ -175,12 +175,12 @@ float RaySphereIntersectNearest(vec3 ro, vec3 rd, float sr) {
 }
 
 // https://doi.org/10.1364/JOSA.47.000176
-float AirPhase(in float mu) {
+float AirPhase(float mu) {
 	return uniformPhase * 0.7629 * (1.0 + 0.932 * mu * mu);
 }
 
 // HG-Draine for aerosols
-float AerosolPhase(in float mu) {
+float AerosolPhase(float mu) {
     const float ld = log(aerosol_d);
 
     const float gHG = 0.0604931 * log(ld) + 0.940256;
@@ -191,18 +191,18 @@ float AerosolPhase(in float mu) {
 	return mix(HenyeyGreensteinPhase(mu, gHG), DrainePhase(mu, gD, a), wD);
 }
 
-vec2 AtmospherePhase(in float mu) {
+vec2 AtmospherePhase(float mu) {
 	return vec2(RayleighPhase(mu), AerosolPhase(mu));
 }
 
-vec3 LightningContribution(in vec3 pos) {
+vec3 LightningContribution(vec3 pos) {
 	if (lightningBoltPosition.w < 0.5) return vec3(0.0);
 
     float distSq = sdot(lightningBoltPosition.xyz - pos);
 	return vec3(0.32, 0.3, 1.0) * 5e5 / (1.0 + distSq);
 }
 
-vec3 LightningContribution(in vec3 pos, in vec3 normal) {
+vec3 LightningContribution(vec3 pos, vec3 normal) {
 	if (lightningBoltPosition.w < 0.5) return vec3(0.0);
 
     vec3 vector = lightningBoltPosition.xyz - pos;
@@ -214,6 +214,10 @@ vec3 LightningContribution(in vec3 pos, in vec3 normal) {
 }
 
 //================================================================================================//
+
+vec2 UnitToSubUv(vec2 uv, vec2 res) {
+	return uv * (1.0 - 1.0 / res) + 0.5 / res;
+}
 
 // Transmittance LUT function parameterisation from Bruneton 2017 https://github.com/ebruneton/precomputed_atmospheric_scattering
 // uv in [0, 1]
@@ -321,7 +325,8 @@ vec3 AtmosphereSkyView(vec3 viewPos, vec3 rayDir, vec3 sunDir) {
 		uv.y = (1.0 - coord) * 0.5;
 	}
 
-    return texture(skyViewTex, uv).rgb;
+	uv = UnitToSubUv(uv, textureSize(skyViewTex, 0));
+    return textureRGBE8(skyViewTex, saturate(uv));
 }
 
 bool AtmosphereSetupRay(inout vec3 rayPos, vec3 rayDir, out float tMax, out bool groundHit) {

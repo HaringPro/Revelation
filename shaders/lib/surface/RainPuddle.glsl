@@ -1,5 +1,5 @@
 
-void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specTex, in vec3 worldPos, in vec3 geoNormal, in float skylight) {
+void CalculateRainPuddles(inout vec3 albedo, inout vec3 normal, inout vec3 specTex, vec3 worldPos, vec3 geoNormal, float skylight) {
     vec3 minecraftPos = worldPos + cameraPosition;
     vec2 puddlePos = minecraftPos.xz - minecraftPos.y;
 	puddlePos -= worldTimeCounter * vec2(0.016, 0.01);

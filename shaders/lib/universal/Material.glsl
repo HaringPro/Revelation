@@ -1,20 +1,20 @@
 #if !defined INCLUDE_UNIVERSAL_MATERIAL
 #define INCLUDE_UNIVERSAL_MATERIAL
 
-float IORFromF0(in float f0) {
+float IORFromF0(float f0) {
 	float sqrtF0 = f0 * inversesqrt(f0);
 	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
 }
-vec3 IORFromF0(in vec3 f0) {
+vec3 IORFromF0(vec3 f0) {
 	vec3 sqrtF0 = f0 * inversesqrt(f0);
 	return (1.0 + sqrtF0) / (1.00001 - sqrtF0);
 }
 
-float F0FromIOR(in float ior) {
+float F0FromIOR(float ior) {
 	float ratio = (ior - 1.0) / (ior + 1.0);
 	return ratio * ratio;
 }
-vec3 F0FromIOR(in vec3 ior) {
+vec3 F0FromIOR(vec3 ior) {
 	vec3 ratio = (ior - 1.0) / (ior + 1.0);
 	return ratio * ratio;
 }
@@ -51,7 +51,7 @@ const vec3 HardcodedMetalF0[8] = vec3[8](
 	vec3(0.999, 0.998, 0.986)  // 银 - Silver
 );
 
-vec3 GetMaterialF0(in float metalness, in vec3 albedo) {
+vec3 GetMaterialF0(float metalness, vec3 albedo) {
 	#if TEXTURE_FORMAT == 0
 		vec3 f0;
 		uint metalIndex = uint(metalness * 255.0);
@@ -74,7 +74,7 @@ vec3 GetMaterialF0(in float metalness, in vec3 albedo) {
 	#endif
 }
 
-Material GetMaterialData(in vec4 specTex) {
+Material GetMaterialData(vec4 specTex) {
 	Material material;
 
 	material.roughness = sqr(1.0 - specTex.r);
@@ -93,7 +93,7 @@ Material GetMaterialData(in vec4 specTex) {
 	return material;
 }
 
-Material GetMaterialData(in vec2 specTex) {
+Material GetMaterialData(vec2 specTex) {
 	Material material;
 
 	material.roughness = sqr(1.0 - specTex.r);

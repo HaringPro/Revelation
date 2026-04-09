@@ -60,7 +60,7 @@ const vec2 bloomTileOffset[6] = vec2[6](
 	vec2(0.3150, 0.6563)
 );
 
-void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
+void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
 	vec3 bloomData = vec3(0.0);
 	vec2 screenCoord = texelToUv(texel);
 
@@ -107,7 +107,7 @@ void CombineBloomAndFog(inout vec3 scene, in ivec2 texel, in float exposure) {
 }
 
 // See section 3.4 of http://www.diva-portal.org/smash/get/diva2:24136/FULLTEXT01.pdf
-vec3 ScotopicVision(in vec3 color, in float exposure) {
+vec3 ScotopicVision(vec3 color, float exposure) {
 	const vec3 rodResponse = vec3(0.05, 0.55, 0.60);
 	const vec3 tint = vec3(PURKINJE_SHIFT_R, PURKINJE_SHIFT_G, PURKINJE_SHIFT_B);
 
@@ -124,13 +124,13 @@ vec3 ScotopicVision(in vec3 color, in float exposure) {
 	return mix(color, rodLuminance * tint, PURKINJE_SHIFT_STRENGTH * mesopicFactor);
 }
 
-vec3 None(in vec3 x) {
+vec3 None(vec3 x) {
 	return x;
 }
 
 // Lottes 2016, "Advanced Techniques and Optimization of HDR Color Pipelines"
 // https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf
-vec3 Lottes(in vec3 x) {
+vec3 Lottes(vec3 x) {
 	x *= 2.0;
 
 	const vec3 a      = vec3(1.35);
@@ -183,7 +183,7 @@ void main() {
 	#ifdef DEBUG_ATMOSPHERE_LUTS
 		ivec2 tempTexel = texelPos;
 		if (all(lessThan(tempTexel, textureSize(skyViewTex, 0)))) {
-			color = texelFetch(skyViewTex, tempTexel, 0).rgb;
+			color = DecodeRGBE8(texelFetch(skyViewTex, tempTexel, 0));
 		}
 		tempTexel.x -= textureSize(skyViewTex, 0).x;
 		if (clamp(tempTexel, ivec2(0), textureSize(tLutTex, 0) - 1) == tempTexel) {

@@ -8,7 +8,7 @@
 
 //================================================================================================//
 
-vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
+vec3 RenderSun(vec3 worldDir, vec3 sunVector) {
     const float cosRadius = cos(sunAngularRadius);
     const vec3 sunRadiance = sunIrradiance / (TAU * oms(cosRadius));
 
@@ -29,14 +29,14 @@ vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
 //================================================================================================//
 
 // Source: https://www.shadertoy.com/view/XtGGRt
-vec3 nmzHash33(in vec3 q) {
+vec3 nmzHash33(vec3 q) {
     uvec3 p = uvec3(ivec3(q));
     p = p * uvec3(374761393U, 1103515245U, 668265263U) + p.zxy + p.yzx;
     p = p.yzx * (p.zxy ^ (p >> 3U));
     return vec3(p ^ (p >> 16U)) * rcp(vec3(0xffffffffU));
 }
 
-vec3 RenderStars(in vec3 worldDir) {
+vec3 RenderStars(vec3 worldDir) {
 	// vec3 p = rotate(worldDir, worldSunDir, vec3(0.0, 0.0, 1.0));
     vec3 p = worldDir * mat3(shadowModelViewInverse);
 
@@ -70,19 +70,19 @@ uniform sampler2D starmapNASA;
 // solarLon: longitude of the Sun in radians, 0.0 PI = Spring Equinox, 0.5 PI = Summer Solstice, 1.0 PI = Autumn Equinox, 1.5 PI = Winter Solstice
 // hourAngle: hour angle of the observer in radians, 0.0 = 0h, 0.5 PI = 6h, 1.0 PI = 12h, 1.5 PI = 18h
 // observerLat: latitude of the observer in radians
-vec3 EquatorialObserverRotation(in vec3 equatorial, in float solarLon, in float hourAngle, in float observerLat) {
+vec3 EquatorialObserverRotation(vec3 equatorial, float solarLon, float hourAngle, float observerLat) {
     mat3 latRotation = rotateMatY(observerLat);
     mat3 solarRotation = rotateMatZ(PI - solarLon - hourAngle);
     return solarRotation * latRotation * equatorial;
 }
 
-vec2 EquatorialRectangularToSpherical(in vec3 equatorial) {
+vec2 EquatorialRectangularToSpherical(vec3 equatorial) {
     float dec = fastAsin(equatorial.z); // Declination
     float ra = atan(equatorial.y, equatorial.x); // Right Ascension
     return vec2(ra, dec);
 }
 
-vec3 RenderGalaxy(in vec3 worldDir) {
+vec3 RenderGalaxy(vec3 worldDir) {
     // Rotate the world direction to equatorial coordinates
     vec3 starmapDir = vec3(worldDir.y, worldDir.x, -worldDir.z);
 

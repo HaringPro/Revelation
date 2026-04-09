@@ -1,6 +1,6 @@
 //================================================================================================//
 
-mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) {
+mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 	vec3 sunTransmittance = exp2(-rLOG2 * waterExtinction * mix(4.0, 1.0, worldLightDir.y));
 
 	#if 0
@@ -24,7 +24,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 
 #if defined PASS_VOLUMETRIC_FOG
 	#include "/lib/water/WaterWave.glsl"
-	vec3 CalculateWaterCaustics(in ivec2 shadowTexel, in float waterDepth) {
+	vec3 CalculateWaterCaustics(ivec2 shadowTexel, float waterDepth) {
 		vec3 waveNormal = OctDecodeUnorm(texelFetch(shadowcolor1, shadowTexel, 0).xy);
 		vec3 refractDir = refract(vec3(0.0, 1.0, 0.0), waveNormal, 1.0 / WATER_IOR);
 
@@ -32,7 +32,7 @@ mat2x3 AnalyticWaterFog(in float skylight, in float waterDepth, in float LdotV) 
 		return saturate(1.0 - 8.0 * length(projectPos)) * exp2(-rLOG2 * waterExtinction * waterDepth);
 	}
 
-	mat2x3 RaymarchWaterFog(in vec3 worldPos, in float dither) {
+	mat2x3 RaymarchWaterFog(vec3 worldPos, float dither) {
 		float rayLength = sdot(worldPos);
 		float norm = inversesqrt(rayLength);
 		rayLength = min(rayLength * norm, lodRenderDist);

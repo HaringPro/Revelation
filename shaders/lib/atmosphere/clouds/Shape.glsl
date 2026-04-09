@@ -33,16 +33,16 @@
 //================================================================================================//
 
 // [Schneider, 2023]
-float ValueErosion(in float value, in float oldMin) {
+float ValueErosion(float value, float oldMin) {
     return saturate((value - oldMin) / (1.0 - oldMin));
 }
 
-float CloudMidDensity(in vec2 rayPos) {
+float CloudMidDensity(vec2 rayPos) {
 	return 0.0;
 }
 
 // Adapted from [Schneider, 2022]
-float CloudHighDensity(in vec2 rayPos) {
+float CloudHighDensity(vec2 rayPos) {
 	// Wind field
 	const float windAngle = radians(CLOUD_HIGH_WIND_ANGLE);
 	const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_HIGH_WIND_SPEED;
@@ -94,11 +94,11 @@ float CloudHighDensity(in vec2 rayPos) {
 //================================================================================================//
 
 #if 0
-	float GetVerticalProfile(in float heightFraction, in float cloudType) {
+	float GetVerticalProfile(float heightFraction, float cloudType) {
 		return texture(verticalLut, vec2(cloudType, heightFraction)).x;
 	}
 #else
-	float GetVerticalProfile(in float h, in float t) {
+	float GetVerticalProfile(float h, float t) {
 		float stratus = saturate(h * 16.0) * linearstep(0.2, 0.1, h);
 		float stratocumulus = saturate(h * 6.0) * linearstep(0.6, 0.2, h);
 		float cumulus = saturate(h * 8.0) * linearstep(1.0, 0.7, h);
@@ -108,7 +108,7 @@ float CloudHighDensity(in vec2 rayPos) {
 	}
 #endif
 
-float CloudVolumeDensity(in vec3 rayPos, in float heightFraction, out float dimensionalProfile, in bool detail) {
+float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensionalProfile, bool detail) {
 	// Wind field
 	const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
 	const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));

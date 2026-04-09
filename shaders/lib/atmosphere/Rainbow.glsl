@@ -5,11 +5,11 @@
 
 //================================================================================================//
 
-vec3 RainbowPhase(in float angle, in vec3 angleDev) {
+vec3 RainbowPhase(float angle, vec3 angleDev) {
 	return curve(saturate(1.0 - abs((angleDev - angle) / (angleDev.b - angleDev.r))));
 }
 
-vec3 RenderRainbows(in float mu) {
+vec3 RenderRainbows(float mu) {
     float theta = fastAcos(saturate(-mu));
 
 	// Primary Rainbow

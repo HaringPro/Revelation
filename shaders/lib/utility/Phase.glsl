@@ -1,6 +1,6 @@
 const float uniformPhase = 0.25 * rPI;
 
-float RayleighPhase(in float mu) {
+float RayleighPhase(float mu) {
     const float k = uniformPhase * 0.75;
 	return mu * mu * k + k;
 }
@@ -8,19 +8,19 @@ float RayleighPhase(in float mu) {
 // Ad hoc Rayleigh phase function
 // From https://old.cescg.org/CESCG-2009/papers/PragueCUNI-Elek-Oskar.pdf
 // See section 4.1.2
-float AdhocRayleighPhase(in float mu) {
+float AdhocRayleighPhase(float mu) {
 	return uniformPhase * 0.4 * mu + uniformPhase * 1.12;
 }
 
 // Henyey-Greenstein phase function (HG)
-float HenyeyGreensteinPhase(in float mu, in float g) {
+float HenyeyGreensteinPhase(float mu, float g) {
 	float gg = g * g;
 	float t = inversesqrt(1.0 + gg - 2.0 * g * mu);
     return uniformPhase * oms(gg) * cube(t);
 }
 
 // Cornette-Shanks phase function (CS)
-float CornetteShanksPhase(in float mu, in float g) {
+float CornetteShanksPhase(float mu, float g) {
 	float gg = g * g;
 	float t = inversesqrt(1.0 + gg - 2.0 * g * mu);
 	float p1 = oms(gg) * cube(t);
@@ -32,7 +32,7 @@ float CornetteShanksPhase(in float mu, in float g) {
 // [1] https://research.nvidia.com/labs/rtr/approximate-mie/publications/approximate-mie-supplemental.pdf
 
 // Draine’s phase function
-float DrainePhase(in float mu, in float g, in float a) {
+float DrainePhase(float mu, float g, float a) {
 	float gg = g * g;
 	float t = inversesqrt(1.0 + gg - 2.0 * g * mu);
 	float p1 = oms(gg) * cube(t);
@@ -41,8 +41,8 @@ float DrainePhase(in float mu, in float g, in float a) {
 }
 
 // Mix between HG and Draine’s phase function
-// d is the water droplet diameters in µm
-float HgDrainePhase(in float mu, in float d) {
+// d is the water droplet diameters µm
+float HgDrainePhase(float mu, float d) {
 	// Parametric fit, see section 3 of [1]
     float gHG, gD, a, wD;
 	if (d <= 0.1) { // Small particles, Diameter 𝑑 <= 0.1 µm
@@ -75,12 +75,12 @@ float HgDrainePhase(in float mu, in float d) {
 }
 
 // Klein-Nishina phase function
-float KleinNishinaPhase(in float mu, in float e) {
+float KleinNishinaPhase(float mu, float e) {
 	return e / (TAU * (e * oms(mu) + 1.0) * log(2.0 * e + 1.0));
 }
 
 // https://www.oceanopticsbook.info/view/scattering/the-fournier-forand-phase-function
-float FournierForandPhase(in float cosTheta, in float n, in float mu) {
+float FournierForandPhase(float cosTheta, float n, float mu) {
 	float v = (3.0 - mu) * 0.5;
     float u2 = oms(cosTheta) * 0.5; // = sqr(sin(acos(cosTheta) * 0.5))
 	float delta180 = 4.0 / (3.0 * sqr(n - 1.0));
@@ -98,14 +98,14 @@ float FournierForandPhase(in float cosTheta, in float n, in float mu) {
 // Dual-Lobe HG phase function
 // g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
 // m: mixing parameter
-float DualLobePhase(in float mu, in float g0, in float g1, in float m) {
+float DualLobePhase(float mu, float g0, float g1, float m) {
     return mix(HenyeyGreensteinPhase(mu, g0), HenyeyGreensteinPhase(mu, g1), m);
 }
 
 // Triple-Lobe HG phase function
 // g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
 // m: mixing parameter, g2: peak anisotropy parameter, i: peak intensity
-float TripleLobePhase(in float mu, in float g0, in float g1, in float m, in float g2, in float i) {
+float TripleLobePhase(float mu, float g0, float g1, float m, float g2, float i) {
     return max(DualLobePhase(mu, g0, g1, m), CornetteShanksPhase(mu, g2) * i);
 }
 

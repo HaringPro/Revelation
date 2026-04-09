@@ -74,11 +74,11 @@ const vec3[] COLORS = vec3[](
     vec3(0.080955, 0.314821, 0.661491)
 );
 
-mat2 mat2RotateZ(in float radian) {
+mat2 mat2RotateZ(float radian) {
 	return mat2(cos(radian), -sin(radian), sin(radian), cos(radian));
 }
 
-vec2 endPortalLayer(in vec2 coord, in float layer) {
+vec2 endPortalLayer(vec2 coord, float layer) {
 	vec2 offset = vec2(8.5 / layer, (1.0 + layer / 3.0) * (frameTimeCounter * 0.0015)) + 0.25;
 
 	mat2 rotate = mat2RotateZ(radians(layer * layer * 8642.0 + layer * 18.0));

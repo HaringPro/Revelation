@@ -10,7 +10,7 @@ uniform float biomeGreenVapor;
 // x: Rayleigh y: Mie
 const vec2 falloffScale = -1.0 / vec2(32.0, 12.0);
 
-vec2 CalculateFogDensity(in vec3 rayPos, in float uniformFog) {
+vec2 CalculateFogDensity(vec3 rayPos, float uniformFog) {
 	rayPos += cameraPosition;
 
 	// float rayLength = length(rayPos + vec3(0.0, planetRadius, 0.0));
@@ -42,7 +42,7 @@ vec2 CalculateFogDensity(in vec3 rayPos, in float uniformFog) {
 	#undef VF_CLOUD_SHADOWS
 #endif
 
-mat2x3 RaymarchAtmosphericFog(in vec3 startPos, in vec3 endPos, in float dither, in bool skyMask, in uint steps) {
+mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, bool skyMask, uint steps) {
 	float rayLength = sdot(endPos - startPos);
 	float norm = inversesqrt(rayLength);
 	rayLength *= norm;
