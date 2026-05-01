@@ -50,6 +50,7 @@ layout (location = 0) out vec4 sceneOut;
 #include "/lib/surface/BRDF.glsl"
 #include "/lib/surface/SSRT.glsl"
 
+// texelPos - scaled,viewPos/screenPos - unscaled
 vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool waterMask) {
 	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
 	float viewLengthInv = inversesqrt(sdot(viewPos));
@@ -87,7 +88,8 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		vec2 refractedCoord = ViewToScreenPos(viewPos + refractedDir).xy;
 	#endif
 
-	float refractedDepth = loadDepth1(uvToTexel(refractedCoord));
+    // uvToTexel is using unscaled view size
+	float refractedDepth = loadDepth1(scaleTexelPos(uvToTexel(refractedCoord)));
 	refractedCoord = mix(refractedCoord, screenPos.xy, step(refractedDepth, screenPos.z));
 
 	vec2 edgeFade = smoothstep(0.8, 1.0, abs(refractedCoord * 2.0 - 1.0));
@@ -99,6 +101,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
 	}
 
+    //texelPos - scaled
 	mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
 		ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
 		float sigmaZ = -32.0 / linearDepth;
@@ -125,7 +128,9 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 //======// Main //================================================================================//
 void main() {
     ivec2 texelPos = ivec2(gl_FragCoord.xy);
-    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+    // this pass is work in scaled view space
+    // so we need to unscale the texel position to calculate the correct screen position
+    vec2 screenCoord = unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize;
 
 	float depth = loadDepth0(texelPos);
 
@@ -147,7 +152,7 @@ void main() {
 	// Process refraction
 	ivec2 refractedTexel = texelPos;
 	if (glassMask || waterMask) {
-		refractedTexel = uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask));
+		refractedTexel = scaleTexelPos(uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask)));
 	}
 
     vec3 sceneColor = loadSceneMain(refractedTexel);

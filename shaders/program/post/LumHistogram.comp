@@ -44,12 +44,11 @@ uint histogramLumToBin(float lum) {
     float bin = log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv);
 	return uint(saturate(bin) * float(HISTOGRAM_BIN_COUNT - 1u));
 }
-
 //======// Main //================================================================================//
 void main() {
 	uint index = gl_LocalInvocationIndex;
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-
+    texelPos = scaleTexelPos(texelPos);
 	// Initialize
 	sharedHistogram[index] = 0u;
 	barrier();

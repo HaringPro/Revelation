@@ -66,7 +66,7 @@ const vec2 bloomTileOffset[6] = vec2[6](
 
 void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
 	vec3 bloomData = vec3(0.0);
-	vec2 screenCoord = texelToUv(texel);
+	vec2 screenCoord = texelToUv(unscaleTexelPos(texel));
 
 	float weight = 1.0;
 	float sumWeight = 0.0;
@@ -183,7 +183,6 @@ vec3 Lottes(vec3 x) {
 //======// Main //================================================================================//
 void main() {
     ivec2 texelPos = ivec2(gl_FragCoord.xy);
-
  	#if EXPOSURE_MODE == MANUAL
 		float exposure = exp2(-MANUAL_EV);
 	#else
@@ -233,7 +232,7 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-		vec2 ndcCoord = texelToUv(texelPos) * 2.0 - 1.0;
+		vec2 ndcCoord = texelToUv(unscaleTexelPos(texelPos)) * 2.0 - 1.0;
 		ndcCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
 		color *= exp2(-0.5 * VIGNETTE_STRENGTH * sdot(ndcCoord));
 	#endif
@@ -256,7 +255,7 @@ void main() {
 	#ifdef DEBUG_TONE_MAPPING_PLOT
 		const float scale = 1.5;
 
-		vec2 uv = texelToUv(texelPos) * vec2(aspectRatio, 1.0) * scale;
+		vec2 uv = texelToUv(unscaleTexelPos(texelPos)) * vec2(aspectRatio, 1.0) * scale;
 		float plot = smoothstep(0.0, scale * viewPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
 
 		// Show LDR range

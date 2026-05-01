@@ -10,13 +10,13 @@
 
 void SampleHorizonCos(vec2 coord, vec2 offset, vec3 viewPos, vec3 viewDir, vec2 falloff, inout float cHorizonCos) {
 	vec2 sTexCoord = coord + offset;
-	float sDepth = loadDepth0(uvToTexel(sTexCoord));
+	float sDepth = loadDepth0(scaleTexelPos(uvToTexel(sTexCoord)));
 	if (sDepth < 0.56) return;
 
 	#if defined LOD_MOD
 		vec3 sHorizonV;
 		if (sDepth > 1.0 - EPS) {
-			sDepth = loadDepth0Lod(uvToTexel(sTexCoord));
+			sDepth = loadDepth0Lod(scaleTexelPos(uvToTexel(sTexCoord)));
 			sHorizonV = ScreenToViewPosLod(vec3(sTexCoord, sDepth)) - viewPos;
 		} else {
 			sHorizonV = ScreenToViewPos(vec3(sTexCoord, sDepth)) - viewPos;

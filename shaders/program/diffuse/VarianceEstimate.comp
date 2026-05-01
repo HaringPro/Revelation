@@ -51,7 +51,7 @@ void SharedPreload() {
 
     ivec2 loadTexel = groupBase + localID;
     loadTexel = clamp(loadTexel, ivec2(1), ivec2(halfViewSize) - 2);
-
+    loadTexel = scaleTexelPos(loadTexel); // to scaled texel position(half)
     float luma = texelFetch(colortex2, loadTexel, 0).r; // We use YCoCg color space
     sharedMoments[localID.y][localID.x] = packHalf2x16(vec2(luma, luma * luma));
 
@@ -87,13 +87,16 @@ void main() {
     moments *= rcp(9.0);
 
     ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
+    texelPos = scaleTexelPos(texelPos); // to scaled texel position(half)
+    //colortex2 is half resolution(unscaled)
     vec4 integratedDiffuse = texelFetch(colortex2, texelPos, 0);
 
     // Vanilla lightmap blending
-    float blocklight = Unpack2x8UX(loadMaterialPack(texelPos << 1).x);
+    float blocklight = Unpack2x8UX(loadMaterialPack(texelPos << 1 /* half resolution (scaled)*/).x);
     blocklight = pow5(blocklight) * exp2(-16.0 * integratedDiffuse.x * exposure.value);
     integratedDiffuse.rgb += RGBToYCoCg(blocklightColor) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;
 
     float variance = 16.0 * max0(moments.y - moments.x * moments.x);
+    // valid data will be strored in scaled texel position(half resolution)
     imageStore(colorimg3, texelPos, vec4(integratedDiffuse.rgb, variance));
 }

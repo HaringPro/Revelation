@@ -83,6 +83,7 @@ void main() {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	vec4 cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 
+    // SkyCheck4x4() must be work in scaled space,but cloud rendering must be work in origin space
 	if (SkyCheck4x4(renderCoord)) {
 		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
 

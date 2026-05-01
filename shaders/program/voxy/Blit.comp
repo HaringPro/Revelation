@@ -33,7 +33,7 @@ uniform sampler2D colortex17;
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-
+    scaleTexelPos(texelPos);
 	uvec4 materialData = texelFetch(colortex16, texelPos, 0);
 
     if (materialData.y > 0u && loadDepth1(texelPos) > 1.0 - EPS) {

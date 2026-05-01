@@ -35,7 +35,6 @@ writeonly restrict uniform image2D colorimg3;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
-
 #include "/lib/atmosphere/Common.glsl"
 
 #include "/lib/surface/BRDF.glsl"
@@ -57,8 +56,8 @@ float GetClosestDepthN(ivec2 texel) {
 void main() {
     uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
-
     ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
+    renderTexel = scaleTexelPos(renderTexel);
 	float depth = loadDepth0(renderTexel);
 	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
 	#if defined LOD_MOD
@@ -74,7 +73,7 @@ void main() {
 			if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
 
-    	vec2 screenCoord = texelToUv(renderTexel);
+    	vec2 screenCoord = texelToUv(unscaleTexelPos(renderTexel));
 		vec3 viewPos = ScreenToViewPos(vec3(screenCoord, depth));
 
 		vec3 worldNormal = FetchSurfaceNormal(renderTexel);

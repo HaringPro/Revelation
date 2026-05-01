@@ -82,7 +82,7 @@ void main() {
 	cloudOut = vec4(0.0, 0.0, 1e6, 1.0);
 	frameOut = 0u;
 
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+	vec2 screenCoord = unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize;
 	vec2 currCoord = screenCoord - taaJitter * (0.5 * float(CLOUD_TAAU_SCALE));
 
 	// Fetch closest cloud depth

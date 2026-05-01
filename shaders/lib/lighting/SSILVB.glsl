@@ -237,7 +237,8 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
             stepLength *= stepScale;
 
 			if (saturate(sampleUV) == sampleUV) {
-                ivec2 sampleTexel = uvToTexel(sampleUV);
+
+                ivec2 sampleTexel = scaleTexelPos(uvToTexel(sampleUV));
                 float sampleDepth = loadDepth0(sampleTexel);
 
             #if defined LOD_MOD

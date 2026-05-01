@@ -15,6 +15,10 @@
 
 const vec2 workGroupsRender = vec2(0.5, 1.0);
 
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
 //======// Uniform //=============================================================================//
 
 layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
@@ -25,12 +29,12 @@ shared vec3 sharedData[128 + 8];
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 texel = scaleTexelPos(ivec2(gl_GlobalInvocationID.xy));
 	uint index = gl_LocalInvocationIndex;
 
-	sharedData[index] = imageLoad(colorimg4, texel - (OFFSET << 2)).rgb;
+	sharedData[index] = imageLoad(colorimg4, (texel) - (OFFSET << 2)).rgb;
 	if (index < 8) {
-		sharedData[index + 128] = imageLoad(colorimg4, texel + OFFSET * (128 - 4)).rgb;
+		sharedData[index + 128] = imageLoad(colorimg4, (texel) + OFFSET * (128 - 4)).rgb;
 	}
 	barrier();
 
@@ -41,5 +45,5 @@ void main() {
 		bloomTiles += sharedData[index + i].rgb * kernel[abs(i - 4)];
 	}
 
-    imageStore(colorimg4, texel, vec4(bloomTiles, 1.0));
+    imageStore(colorimg4, (texel), vec4(bloomTiles, 1.0));
 }
