@@ -27,9 +27,11 @@ void main() {
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
     gl_Position = project(gl_ProjectionMatrix, viewPos);
 
-	#ifdef TAA_ENABLED
-		gl_Position.xy += taaJitter * gl_Position.w;
-	#endif
+	transformVertexPosition(
+        gl_Position,
+        taaJitter,
+        MC_RENDER_SCALE_FACTOR
+    );
 
 	vertColor = gl_Color;
     texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

@@ -42,7 +42,9 @@ void main() {
     gl_Position = project(gl_ProjectionMatrix, viewPos);
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-	#ifdef TAA_ENABLED
-		gl_Position.xy += taaJitter * gl_Position.w;
-	#endif
+	transformVertexPosition(
+        gl_Position,
+        taaJitter,
+        MC_RENDER_SCALE_FACTOR
+    );
 }
