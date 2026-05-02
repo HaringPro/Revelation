@@ -1,3 +1,5 @@
 #version 460 compatibility
 
-#include "/program/gbuffers/Spidereyes.frag"
+#define GBUFFER_SPIDEREYES 1
+
+#include "/program/gbuffers/Entities.frag"

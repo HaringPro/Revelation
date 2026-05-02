@@ -78,7 +78,11 @@ void main() {
 	albedoOut = albedo;
 
 	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
-	materialOut.y = materialID;
+    #if GBUFFER_SPIDEREYES
+		materialOut.y = 20u;
+	#else
+	    materialOut.y = materialID;
+    #endif
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
