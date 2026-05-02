@@ -17,7 +17,6 @@
 
 #define INFO   0 // [0 1 2]
 #define AUTHOR 0 // [0]
-#define MC_RENDER_SCALE_FACTOR 0.75
 
 const int shadowMapResolution = 2048;  // [1024 2048 4096 8192 16384 32768]
 const float	shadowDistance 	  = 128.0; // [64.0 80.0 96.0 112.0 128.0 160.0 192.0 224.0 256.0 320.0 384.0 512.0 768.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0]
@@ -231,6 +230,8 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#endif
 
 //======// Post-Processing //=====================================================================//
+
+    #define MC_RENDER_SCALE_FACTOR 1.0 // [0.10 0.15 0.20 0.25 0.30 0.40 0.45 0.50 0.55 0.588 0.60 0.65 0.667 0.70 0.75 0.80 0.85 0.90 0.95 1.00]
 
 /* Depth of Field */
 	// #define DEPTH_OF_FIELD
