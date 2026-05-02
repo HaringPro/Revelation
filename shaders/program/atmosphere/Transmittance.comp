@@ -8,9 +8,9 @@
 
 	References:
 		Sébastien Hillaire. "A Scalable and Production Ready Sky and Atmosphere Rendering Technique". EGSR 2020.
-            https://sebh.github.io/publications/egsr2020.pdf
+			https://sebh.github.io/publications/egsr2020.pdf
 		Epic Games, Inc. "Unreal Engine Sky Atmosphere Rendering Technique". 2020.
-            https://github.com/sebh/UnrealEngineSkyAtmosphere
+			https://github.com/sebh/UnrealEngineSkyAtmosphere
 
 --------------------------------------------------------------------------------
 */
@@ -35,22 +35,22 @@ writeonly uniform image2D tLutImg;
 #include "/lib/atmosphere/Common.glsl"
 
 vec3 RaymarchSunTransmittance(vec3 rayPos, vec3 rayDir) {
-    // Intersect ground
-    if (RaySphereIntersectNearest(rayPos, rayDir, atmosphere.bottomRadius) > 0.0) {
-        return vec3(0.0);
-    }
+	// Intersect ground
+	if (RaySphereIntersectNearest(rayPos, rayDir, atmosphere.bottomRadius) > 0.0) {
+		return vec3(0.0);
+	}
 
-    const float rcpStepSize = 1.0 / float(ATMOSPHERE_TLUT_SAMPLES);
-    float stepSize = RaySphereIntersectNearest(rayPos, rayDir, atmosphere.topRadius) * rcpStepSize;
-    vec3 rayStep = stepSize * rayDir;
-    rayPos += 0.5 * rayStep;
+	const float rcpStepSize = 1.0 / float(ATMOSPHERE_TLUT_SAMPLES);
+	float stepSize = RaySphereIntersectNearest(rayPos, rayDir, atmosphere.topRadius) * rcpStepSize;
+	vec3 rayStep = stepSize * rayDir;
+	rayPos += 0.5 * rayStep;
 
-    vec3 od = vec3(0.0);
-    for (uint i = 0u; i < ATMOSPHERE_TLUT_SAMPLES; ++i, rayPos += rayStep) {
-        vec3 density = AtmosphereDensity(rayPos);
-        od += atmosphereExtinctionCoeff * density;
-    }
-    return exp(-stepSize * od);
+	vec3 od = vec3(0.0);
+	for (uint i = 0u; i < ATMOSPHERE_TLUT_SAMPLES; ++i, rayPos += rayStep) {
+		vec3 density = AtmosphereDensity(rayPos);
+		od += atmosphereExtinctionCoeff * density;
+	}
+	return exp(-stepSize * od);
 }
 
 //======// Main //================================================================================//
@@ -58,11 +58,11 @@ void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 	vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(tLutImg));
 
-    float viewHeight, viewZenithCos;
-    UvToLutTransmittanceParams(viewHeight, viewZenithCos, uv);
+	float viewHeight, viewZenithCos;
+	UvToLutTransmittanceParams(viewHeight, viewZenithCos, uv);
 
-    vec3 rayPos = vec3(0.0, viewHeight, 0.0);
-    vec3 sunDir = vec3(0.0, viewZenithCos, sqrt(1.0 - viewZenithCos * viewZenithCos));
+	vec3 rayPos = vec3(0.0, viewHeight, 0.0);
+	vec3 sunDir = vec3(0.0, viewZenithCos, sqrt(1.0 - viewZenithCos * viewZenithCos));
 
 	imageStore(tLutImg, tid, vec4(RaymarchSunTransmittance(rayPos, sunDir), 1.0));
 }

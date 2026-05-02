@@ -103,58 +103,58 @@ vec3 linearstep(vec3 a, vec3 b, vec3 x) {
 
 // https://iquilezles.org/articles/functions/
 float almostIdentity(float x, float m, float n) {
-    if (x > m) return x;
-    float a = 2.0 * n - m;
-    float b = 2.0 * m - 3.0 * n;
-    float t = x / m;
-    return (a * t + b) * t * t + n;
+	if (x > m) return x;
+	float a = 2.0 * n - m;
+	float b = 2.0 * m - 3.0 * n;
+	float t = x / m;
+	return (a * t + b) * t * t + n;
 }
 
 float almostUnitIdentity(float x) {
-    return x * x * (2.0 - x);
+	return x * x * (2.0 - x);
 }
 
 // Quadratic polynomial smooth-min function from https://www.iquilezles.org/www/articles/smin/smin.htm
 float smin(float a, float b, float k) {
-    k *= 4.0;
-    float h = max0(k - abs(a - b)) / k;
-    return min(a, b) - h * h * k * 0.25;
+	k *= 4.0;
+	float h = max0(k - abs(a - b)) / k;
+	return min(a, b) - h * h * k * 0.25;
 }
 
 //================================================================================================//
 
 // Fast sign functions from GeForceLegend
 float signI(float x) {
-    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+	return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
 }
 
 vec2 signI(vec2 x) {
-    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+	return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
 }
 
 vec3 signI(vec3 x) {
-    return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
+	return uintBitsToFloat((floatBitsToUint(x) & 0x80000000u) | 0x3F800000u);
 }
 
 // = x * sign(y)
 float signMul(float x, float y) {
-    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+	return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 vec2 signMul(vec2 x, float y) {
-    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+	return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 vec2 signMul(vec2 x, vec2 y) {
-    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+	return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 vec3 signMul(vec3 x, float y) {
-    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+	return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 vec3 signMul(vec3 x, vec3 y) {
-    return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
+	return uintBitsToFloat(floatBitsToUint(x) ^ (floatBitsToUint(y) & 0x80000000u));
 }
 
 // https://www.shadertoy.com/view/wlyXRt
@@ -166,22 +166,22 @@ vec2 approxSqrt(vec2 x) { return vec2(approxSqrt(x.x), approxSqrt(x.y)); }
 vec3 approxSqrt(vec3 x) { return vec3(approxSqrt(x.x), approxSqrt(x.y), approxSqrt(x.z)); }
 
 float fastAcos(float x) {
-    float a = abs(x);
+	float a = abs(x);
 	float r = (hPI - 0.175394 * a) * sqrt(1.0 - a);
 
 	return x < 0.0 ? PI - r : r;
 }
 
 float fastAsin(float x) {
-    return hPI - fastAcos(x);
+	return hPI - fastAcos(x);
 }
 
 vec2 fastAcos(vec2 x) {
-    return vec2(fastAcos(x.x), fastAcos(x.y));
+	return vec2(fastAcos(x.x), fastAcos(x.y));
 }
 
 vec2 fastAsin(vec2 x) {
-    return vec2(fastAsin(x.x), fastAsin(x.y));
+	return vec2(fastAsin(x.x), fastAsin(x.y));
 }
 
 // https://www.desmos.com/calculator/cd3mvg1gfo
@@ -190,8 +190,8 @@ float approxExp(float x) { return rcp(x * x - x + 1.0); }
 //================================================================================================//
 
 float cubicLength(vec2 v) {
-    vec2 t = abs(cube(v));
-    return pow(t.x + t.y, 1.0 / 3.0);
+	vec2 t = abs(cube(v));
+	return pow(t.x + t.y, 1.0 / 3.0);
 }
 
 float quarticLength(vec2 v) {
@@ -201,7 +201,7 @@ float quarticLength(vec2 v) {
 //================================================================================================//
 
 vec4 project(mat4 m, vec3 v) {
-    return diagonal4(m) * v.xyzz + m[3];
+	return diagonal4(m) * v.xyzz + m[3];
 }
 
 vec3 projectAndDivide(mat4 m, vec3 v) {
@@ -218,15 +218,15 @@ vec3 rotate(vec3 v, vec3 a, vec3 b) {
 }
 
 vec2 sampleVogelDisk(uint idx, uint num, float phi) {
-    float r = approxSqrt((float(idx) + 0.5) / float(num));
-    return cossin(idx * goldenAngle + phi) * r;
+	float r = approxSqrt((float(idx) + 0.5) / float(num));
+	return cossin(idx * goldenAngle + phi) * r;
 }
 
 // https://developer.download.nvidia.cn/cg/refract.html
 vec3 refract(vec3 i, vec3 n, float eta) {
-    float cosi = -dot(i, n);
-    float cost2 = 1.0 - eta * eta * oms(cosi * cosi);
-    if (cost2 < 0.0) return vec3(0.0);
+	float cosi = -dot(i, n);
+	float cost2 = 1.0 - eta * eta * oms(cosi * cosi);
+	if (cost2 < 0.0) return vec3(0.0);
 
-    return eta * i + (eta * cosi - sqrt(abs(cost2))) * n;
+	return eta * i + (eta * cosi - sqrt(abs(cost2))) * n;
 }

@@ -15,12 +15,12 @@
 		[Hillaire, 2016] Sebastien Hillaire. “Physically based Sky, Atmosphere and Cloud Rendering”. SIGGRAPH 2016.
 			https://blog.selfshadow.com/publications/s2016-shading-course/
 			https://www.ea.com/frostbite/news/physically-based-sky-atmosphere-and-cloud-rendering
-        [Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
-            https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
+		[Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
+			https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
 		[Bauer, 2019] Fabian Bauer. "Creating the Atmospheric World of Red Dead Redemption 2: A Complete and Integrated Solution". SIGGRAPH 2019.
 			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
-        [Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
-            https://dl.acm.org/doi/10.1145/2504459.2504518
+		[Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
+			https://dl.acm.org/doi/10.1145/2504459.2504518
 
 --------------------------------------------------------------------------------
 */
@@ -39,10 +39,10 @@ float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise, uint steps)
 	// Early exit if transmittance is too small (optimization)
 	float threshold = -log(0.005) / (cumulusExtinction * stepLength);
 
-    float sumDensity = 0.0;
+	float sumDensity = 0.0;
 	for (uint i = 0u; i < steps && sumDensity < threshold; ++i) {
 		float fi = float(i) + noise;
-        vec3 samplePos = rayPos + rayStep * sqr(fi);
+		vec3 samplePos = rayPos + rayStep * sqr(fi);
 
 		// Normalized height in clouds
 		float heightFraction = fma(length(samplePos), rcp(cumulusThickness), -cumulusBottomRadius / cumulusThickness);
@@ -50,10 +50,10 @@ float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise, uint steps)
 
 		float temp;
 		float density = CloudVolumeDensity(samplePos, heightFraction, temp, i < 3u);
-        sumDensity += density * fi;
-    }
+		sumDensity += density * fi;
+	}
 
-    return cumulusExtinction * 2.0 * stepLength * sumDensity;
+	return cumulusExtinction * 2.0 * stepLength * sumDensity;
 }
 
 // [Wrenninge et al., 2013]
@@ -159,7 +159,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 	vec4 cloudData = vec4(0.0, 0.0, 1e6, 1.0);
 
 	float moonlightFactor = smoothstep(-0.03, -0.05, worldSunDir.y);
-    vec3 lightDir = normalize(worldSunDir * oms(2.0 * moonlightFactor));
+	vec3 lightDir = normalize(worldSunDir * oms(2.0 * moonlightFactor));
 
 	float LdotV = dot(lightDir, rayDir);
 
@@ -330,7 +330,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 		}
 	#endif
 
-    return cloudData;
+	return cloudData;
 }
 
 void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
@@ -339,8 +339,8 @@ void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 		vec3 cloudPos = atmosphereViewPos + rayDir * cloudData.z;
 
 		// Compute illumination to clouds
-        vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldSunDir);
-        vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldMoonDir);
+		vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldSunDir);
+		vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldMoonDir);
 		vec3 directIlluminance = sunIlluminance + moonIlluminance;
 
 		// Normalized height in clouds

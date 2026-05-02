@@ -1,7 +1,7 @@
 const float uniformPhase = 0.25 * rPI;
 
 float RayleighPhase(float cosTheta) {
-    const float k = uniformPhase * 0.75;
+	const float k = uniformPhase * 0.75;
 	return cosTheta * cosTheta * k + k;
 }
 
@@ -16,7 +16,7 @@ float AdhocRayleighPhase(float cosTheta) {
 float HenyeyGreensteinPhase(float cosTheta, float g) {
 	float gg = g * g;
 	float t = inversesqrt(1.0 + gg - 2.0 * g * cosTheta);
-    return uniformPhase * oms(gg) * cube(t);
+	return uniformPhase * oms(gg) * cube(t);
 }
 
 // Cornette-Shanks phase function (CS)
@@ -25,7 +25,7 @@ float CornetteShanksPhase(float cosTheta, float g) {
 	float t = inversesqrt(1.0 + gg - 2.0 * g * cosTheta);
 	float p1 = oms(gg) * cube(t);
 	float p2 = (1.0 + cosTheta * cosTheta) * (1.5 / (2.0 + gg));
-  	return uniformPhase * p1 * p2;
+	return uniformPhase * p1 * p2;
 }
 
 // [0] https://research.nvidia.com/labs/rtr/approximate-mie/publications/approximate-mie.pdf
@@ -44,7 +44,7 @@ float DrainePhase(float cosTheta, float g, float a) {
 // d is the water droplet diameters µm
 float HgDrainePhase(float cosTheta, float d) {
 	// Parametric fit, see section 3 of [1]
-    float gHG, gD, a, wD;
+	float gHG, gD, a, wD;
 	if (d <= 0.1) { // Small particles, Diameter 𝑑 <= 0.1 µm
 		gHG = 13.8 * d * d;
 		gD 	= 1.1456 * d * sin(9.29044 * d);
@@ -83,12 +83,12 @@ float KleinNishinaPhase(float cosTheta, float e) {
 // https://www.oceanopticsbook.info/view/scattering/the-fournier-forand-phase-function
 float FournierForandPhase(float cosTheta, float n, float mu) {
 	float v = (3.0 - mu) * 0.5;
-    float u2 = oms(cosTheta) * 0.5; // = sqr(sin(acos(cosTheta) * 0.5))
+	float u2 = oms(cosTheta) * 0.5; // = sqr(sin(acos(cosTheta) * 0.5))
 	float delta180 = 4.0 / (3.0 * sqr(n - 1.0));
 	float delta = delta180 * u2;
 
-    float deltaV = pow(delta, v);
-    float delta180V = pow(delta180, v);
+	float deltaV = pow(delta, v);
+	float delta180V = pow(delta180, v);
 
 	float p1 = uniformPhase / (sqr(1.0 - delta) * deltaV);
 	float p2 = v * oms(delta) - oms(deltaV) + (delta * oms(deltaV) - v * oms(delta)) / u2;
@@ -100,35 +100,35 @@ float FournierForandPhase(float cosTheta, float n, float mu) {
 // g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
 // m: mixing parameter
 float DualLobePhase(float cosTheta, float g0, float g1, float m) {
-    return mix(HenyeyGreensteinPhase(cosTheta, g0), HenyeyGreensteinPhase(cosTheta, g1), m);
+	return mix(HenyeyGreensteinPhase(cosTheta, g0), HenyeyGreensteinPhase(cosTheta, g1), m);
 }
 
 // Triple-Lobe HG phase function
 // g0: forward lobe anisotropy parameter, g1: backward lobe anisotropy parameter
 // m: mixing parameter, g2: peak anisotropy parameter, i: peak intensity
 float TripleLobePhase(float cosTheta, float g0, float g1, float m, float g2, float i) {
-    return max(DualLobePhase(cosTheta, g0, g1, m), CornetteShanksPhase(cosTheta, g2) * i);
+	return max(DualLobePhase(cosTheta, g0, g1, m), CornetteShanksPhase(cosTheta, g2) * i);
 }
 
 // From https://www.shadertoy.com/view/4sjBDG
 float NumericalMieFit(float cosTheta) {
-    // This function was optimized to minimize (delta*delta)/reference in order to capture
-    // the low intensity behavior.
-    const float bestParams[] = float[](
-    	 9.805233e-06,
-    	-6.500000e+01,
-    	-5.500000e+01,
-    	 8.194068e-01,
-    	 1.388198e-01,
-    	-8.370334e+01,
-    	 7.810083e+00,
-    	 2.054747e-03,
-    	 2.600563e-02,
-    	-4.552125e-12
+	// This function was optimized to minimize (delta*delta)/reference in order to capture
+	// the low intensity behavior.
+	const float bestParams[] = float[](
+		9.805233e-06,
+		-6.500000e+01,
+		-5.500000e+01,
+		8.194068e-01,
+		1.388198e-01,
+		-8.370334e+01,
+		7.810083e+00,
+		2.054747e-03,
+		2.600563e-02,
+		-4.552125e-12
 	);
 
-    float p1 = cosTheta + bestParams[3];
-    vec4 expValues = exp(vec4(bestParams[1] * cosTheta + bestParams[2], bestParams[5] * p1 * p1, bestParams[6] * cosTheta, bestParams[9] * cosTheta));
-    vec4 expValWeight= vec4(bestParams[0], bestParams[4], bestParams[7], bestParams[8]);
-    return dot(expValues, expValWeight) * 0.25;
+	float p1 = cosTheta + bestParams[3];
+	vec4 expValues = exp(vec4(bestParams[1] * cosTheta + bestParams[2], bestParams[5] * p1 * p1, bestParams[6] * cosTheta, bestParams[9] * cosTheta));
+	vec4 expValWeight= vec4(bestParams[0], bestParams[4], bestParams[7], bestParams[8]);
+	return dot(expValues, expValWeight) * 0.25;
 }

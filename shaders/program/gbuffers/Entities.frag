@@ -34,7 +34,7 @@ uniform sampler2D tex;
 #endif
 
 #if defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
+	uniform sampler2D specular;
 #endif
 
 // uniform vec3 skyColor;
@@ -78,11 +78,11 @@ void main() {
 	albedoOut = albedo;
 
 	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
-    #if GBUFFER_SPIDEREYES
+	#if GBUFFER_SPIDEREYES
 		materialOut.y = 20u;
 	#else
-	    materialOut.y = materialID;
-    #endif
+		materialOut.y = materialID;
+	#endif
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
@@ -95,8 +95,8 @@ void main() {
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 
 	#if defined MC_NORMAL_MAP
-        vec3 normalTex = texture(normals, texCoord).rgb;
-        DecodeNormalTex(normalTex);
+		vec3 normalTex = texture(normals, texCoord).rgb;
+		DecodeNormalTex(normalTex);
 		normalOut.zw = OctEncodeSnorm(tbnMatrix * normalTex);
 	#else
 		normalOut.zw = normalOut.xy;

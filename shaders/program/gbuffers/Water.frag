@@ -29,7 +29,7 @@ uniform sampler2D tex;
 #endif
 
 #if defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
+	uniform sampler2D specular;
 #endif
 
 #include "/lib/universal/Uniform.glsl"

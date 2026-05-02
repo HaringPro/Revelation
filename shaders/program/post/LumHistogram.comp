@@ -7,8 +7,8 @@
 	Apache License 2.0
 
 	Pass: Build luminance histogram for auto exposure
-    Reference:  https://knarkowicz.wordpress.com/2016/01/09/automatic-exposure/
-                https://bruop.github.io/exposure/
+	Reference:  https://knarkowicz.wordpress.com/2016/01/09/automatic-exposure/
+				https://bruop.github.io/exposure/
 
 --------------------------------------------------------------------------------
 */
@@ -41,7 +41,7 @@ const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
 
 uint histogramLumToBin(float lum) {
-    float bin = log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv);
+	float bin = log2(lum) * autoEvRangeInv - (AUTO_EV_MIN * autoEvRangeInv);
 	return uint(saturate(bin) * float(HISTOGRAM_BIN_COUNT - 1u));
 }
 //======// Main //================================================================================//
@@ -65,6 +65,6 @@ void main() {
 
 	// Store histogram
 	if (index < HISTOGRAM_BIN_COUNT) {
-    	atomicAdd(exposure.histogram[index], sharedHistogram[index]);
+		atomicAdd(exposure.histogram[index], sharedHistogram[index]);
 	}
 }

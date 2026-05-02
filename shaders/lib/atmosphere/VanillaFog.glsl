@@ -1,5 +1,5 @@
 void RenderVanillaFog(inout vec3 color, inout float fogTransmittance, float viewDistance) {
-    // Lava fog
+	// Lava fog
 	#ifdef LAVA_FOG
 		if (isEyeInWater == 2) {
 			fogTransmittance = exp2(-4.0 * viewDistance);
@@ -7,7 +7,7 @@ void RenderVanillaFog(inout vec3 color, inout float fogTransmittance, float view
 		}
 	#endif
 
-    // Powdered snow fog
+	// Powdered snow fog
 	#ifdef POWDERED_SNOW_FOG
 		if (isEyeInWater == 3) {
 			fogTransmittance = exp(-viewDistance);
@@ -17,9 +17,9 @@ void RenderVanillaFog(inout vec3 color, inout float fogTransmittance, float view
 		}
 	#endif
 
-    // Blindness and darkness fog
+	// Blindness and darkness fog
 	#ifdef BLINDNESS_DARKNESS_FOG
-	    color *= exp(-viewDistance * blindness);
-	    color *= smoothstep(12.0, 2.0, darknessFactor * viewDistance);
+		color *= exp(-viewDistance * blindness);
+		color *= smoothstep(12.0, 2.0, darknessFactor * viewDistance);
 	#endif
 }

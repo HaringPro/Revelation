@@ -61,13 +61,13 @@ vec3 ScreenToViewDir(vec2 screenPos) {
 
 vec3 ReprojectScreenPos(vec3 screenPos) {
 	vec3 position = ScreenToViewPosRaw(screenPos); // To view
-    position = transMAD(gbufferModelViewInverse, position); // To world
+	position = transMAD(gbufferModelViewInverse, position); // To world
 
 	position += cameraMovement * step(0.56, screenPos.z); // To previous world
-    position = transMAD(gbufferPreviousModelView, position); // To previous view
+	position = transMAD(gbufferPreviousModelView, position); // To previous view
 	position = projMAD(gbufferPreviousProjection, position) * rcp(-position.z); // To previous NDC
 
-    return position * 0.5 + 0.5;
+	return position * 0.5 + 0.5;
 }
 
 float ScreenToViewDepth(float depth) {

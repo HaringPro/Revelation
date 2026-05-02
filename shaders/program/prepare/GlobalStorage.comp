@@ -45,8 +45,8 @@ void main() {
 	global.directIlluminance *= smoothstep(0.0, 0.01, worldLightDir.y);
 
 	// Reset history if time has changed rapidly
-    int worldTimeDiff = worldTime - global.prevWorldTime;
-    worldTimeDiff = min(abs(worldTimeDiff + 24000), abs(worldTimeDiff));
+	int worldTimeDiff = worldTime - global.prevWorldTime;
+	worldTimeDiff = min(abs(worldTimeDiff + 24000), abs(worldTimeDiff));
 	global.historyReset = worldTimeDiff > 64;
 
 	#ifdef CLOUD_SHADOWS

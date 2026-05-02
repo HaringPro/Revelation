@@ -43,7 +43,7 @@ uniform sampler2D tex;
 #endif
 
 #if defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
+	uniform sampler2D specular;
 #endif
 
 #include "/lib/universal/Uniform.glsl"
@@ -54,22 +54,22 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 #define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
 
 const vec3[] COLORS = vec3[](
-    vec3(0.022087, 0.098399, 0.110818),
-    vec3(0.011892, 0.095924, 0.089485),
-    vec3(0.027636, 0.101689, 0.100326),
-    vec3(0.046564, 0.109883, 0.114838),
-    vec3(0.064901, 0.117696, 0.097189),
-    vec3(0.063761, 0.086895, 0.123646),
-    vec3(0.084817, 0.111994, 0.166380),
-    vec3(0.097489, 0.154120, 0.091064),
-    vec3(0.106152, 0.131144, 0.195191),
-    vec3(0.097721, 0.110188, 0.187229),
-    vec3(0.133516, 0.138278, 0.148582),
-    vec3(0.070006, 0.243332, 0.235792),
-    vec3(0.196766, 0.142899, 0.214696),
-    vec3(0.047281, 0.315338, 0.321970),
-    vec3(0.204675, 0.390010, 0.302066),
-    vec3(0.080955, 0.314821, 0.661491)
+	vec3(0.022087, 0.098399, 0.110818),
+	vec3(0.011892, 0.095924, 0.089485),
+	vec3(0.027636, 0.101689, 0.100326),
+	vec3(0.046564, 0.109883, 0.114838),
+	vec3(0.064901, 0.117696, 0.097189),
+	vec3(0.063761, 0.086895, 0.123646),
+	vec3(0.084817, 0.111994, 0.166380),
+	vec3(0.097489, 0.154120, 0.091064),
+	vec3(0.106152, 0.131144, 0.195191),
+	vec3(0.097721, 0.110188, 0.187229),
+	vec3(0.133516, 0.138278, 0.148582),
+	vec3(0.070006, 0.243332, 0.235792),
+	vec3(0.196766, 0.142899, 0.214696),
+	vec3(0.047281, 0.315338, 0.321970),
+	vec3(0.204675, 0.390010, 0.302066),
+	vec3(0.080955, 0.314821, 0.661491)
 );
 
 vec2 endPortalLayer(vec2 coord, float layer) {
@@ -86,33 +86,33 @@ vec2 endPortalLayer(vec2 coord, float layer) {
 
 //======// Main //================================================================================//
 void main() {
-    vec3 deltaPos1 = dFdx(worldPos);
-    vec3 deltaPos2 = dFdy(worldPos);
+	vec3 deltaPos1 = dFdx(worldPos);
+	vec3 deltaPos2 = dFdy(worldPos);
 
 	vec3 geoNormal = normalize(cross(deltaPos1, deltaPos2));
 
 	// Construct TBN matrix
 	#ifdef MC_NORMAL_MAP
-        vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
-        vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
+		vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
+		vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
 
-        vec2 deltaUv1 = dFdx(texCoord);
-        vec2 deltaUv2 = dFdy(texCoord);
+		vec2 deltaUv1 = dFdx(texCoord);
+		vec2 deltaUv2 = dFdy(texCoord);
 
-        vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
-        vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
+		vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
+		vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
 
-        float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
+		float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
 
-        mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
-    #endif
+		mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
+	#endif
 
-    // Compute mipmap level
-    #if RENDER_MODE == 1
-        float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
-    #else
-        const float mipLevel = 0.0;
-    #endif
+	// Compute mipmap level
+	#if RENDER_MODE == 1
+		float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
+	#else
+		const float mipLevel = 0.0;
+	#endif
 
 	vec4 albedo = textureLod(tex, texCoord, mipLevel) * vertColor;
 
@@ -146,8 +146,8 @@ void main() {
 	materialOut.y = materialID;
 
 	#if defined MC_NORMAL_MAP
-        vec3 normalTex = textureLod(normals, texCoord, mipLevel).rgb;
-        DecodeNormalTex(normalTex);
+		vec3 normalTex = textureLod(normals, texCoord, mipLevel).rgb;
+		DecodeNormalTex(normalTex);
 		vec3 normal = tbnMatrix * normalTex;
 	#else
 		vec3 normal = geoNormal;

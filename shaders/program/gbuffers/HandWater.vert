@@ -15,18 +15,11 @@
 
 //======// Output //==============================================================================//
 
-flat out uint normalPack;
-#if defined MC_NORMAL_MAP
-flat out uvec2 tangentPack;
-#endif
+out vec3 worldPos;
 
 out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
-
-//======// Attribute //===========================================================================//
-
-in vec4 at_tangent;
 
 //======// Uniform //=============================================================================//
 
@@ -37,26 +30,17 @@ uniform vec2 taaJitter;
 //======// Main //================================================================================//
 void main() {
 	vertColor = gl_Color;
-    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	// worldPos = transMAD(gbufferModelViewInverse, viewPos);
-    gl_Position = project(gl_ProjectionMatrix, viewPos);
+	gl_Position = project(gl_ProjectionMatrix, viewPos);
+	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	transformVertexPosition(
         gl_Position,
         taaJitter,
         MC_RENDER_SCALE_FACTOR
     );
-
-	// Encode normal and tangent
-	vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
-	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
-	#if defined MC_NORMAL_MAP
-		vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-		tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-		tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
-	#endif
 }

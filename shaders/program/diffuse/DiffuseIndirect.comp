@@ -41,21 +41,21 @@ writeonly restrict uniform image2D colorimg3;
 #include "/lib/lighting/SSILVB.glsl"
 
 float GetClosestDepthN(ivec2 texel) {
-    float depth = 1.0;
+	float depth = 1.0;
 
-    for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = offset3x3N[i] + texel;
-        float sampleDepth = loadDepth0(sampleTexel);
-        depth = min(depth, sampleDepth);
-    }
+	for (uint i = 0u; i < 8u; ++i) {
+		ivec2 sampleTexel = offset3x3N[i] + texel;
+		float sampleDepth = loadDepth0(sampleTexel);
+		depth = min(depth, sampleDepth);
+	}
 
-    return depth;
+	return depth;
 }
 
 //======// Main //================================================================================//
 void main() {
-    uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
-    ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
+	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
+	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
     ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
     renderTexel = scaleTexelPos(renderTexel);
@@ -69,7 +69,7 @@ void main() {
     //true
 	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
 	#if defined LOD_MOD
-        bool lodMask = !terrainCheck;
+		bool lodMask = !terrainCheck;
 		if (lodMask) {
             //true
 			depth = loadDepth0Lod(renderTexel);

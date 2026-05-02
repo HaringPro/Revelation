@@ -53,13 +53,18 @@ in vec4 at_tangent;
 //======// Main //================================================================================//
 void main() {
 	vertColor = gl_Color.rgb;
-    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(gl_ModelViewMatrix, gl_Vertex.xyz));
 
 	materialID = uint(max(mc_Entity.x - 1e4, 1));
+
+	// Unlabelled foilage detection
+	#ifdef UNLABELLED_FOILAGE_DETECTION
+		if (materialID < 1u && maxOf(abs(gl_Normal)) < 0.99) materialID = 1003u;
+	#endif
 
 	// Encode normal and tangent
 	vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
@@ -106,11 +111,6 @@ void main() {
 		}
 	#endif
 
-	// Unlabelled foilage detection
-	#ifdef UNLABELLED_FOILAGE_DETECTION
-		if (materialID < 1u && maxOf(abs(gl_Normal)) < 0.99) materialID = 1003u;
-	#endif
-
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
 		vec2 minMidCoord = texCoord - mc_midTexCoord;
 		tileBase = signI(minMidCoord) * 0.5 + 0.5;
@@ -119,7 +119,7 @@ void main() {
 	#endif
 
 	vec3 viewPos = transMAD(gbufferModelView, worldPos);
-    gl_Position = project(gl_ProjectionMatrix, viewPos);
+	gl_Position = project(gl_ProjectionMatrix, viewPos);
 
 	transformVertexPosition(
         gl_Position,

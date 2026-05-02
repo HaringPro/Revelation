@@ -57,13 +57,13 @@ in vec3 worldPos;
 //======// Main //================================================================================//
 void main() {
 	ivec2 texel = ivec2(gl_FragCoord.xy);
-    float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
+	float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
 	float dither = BlueNoise(texel, frameCounter);
 
-    if (alpha < dither || loadDepth0(texel) < 1.0) {
-        discard;
-        return;
-    }
+	if (alpha < dither || loadDepth0(texel) < 1.0) {
+		discard;
+		return;
+	}
 
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 

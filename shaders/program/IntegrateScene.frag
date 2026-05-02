@@ -155,7 +155,7 @@ void main() {
 		refractedTexel = scaleTexelPos(uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask)));
 	}
 
-    vec3 sceneColor = loadSceneMain(refractedTexel);
+	vec3 sceneColor = loadSceneMain(refractedTexel);
 
 	float viewDist = length(viewPos);
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;

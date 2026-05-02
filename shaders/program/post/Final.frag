@@ -74,13 +74,13 @@ vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
 	vec3 maxCol = max(max(max(d, e), max(f, b)), h);
 		maxCol += max(max(max(a, c), max(g, i)), maxCol);
 
-    vec3 amp = approxSqrt(saturate(min(minCol, 2.0 - maxCol) / maxCol));
+	vec3 amp = approxSqrt(saturate(min(minCol, 2.0 - maxCol) / maxCol));
 
 	// Filter shape.
 	//  0 w 0
 	//  w 1 w
 	//  0 w 0
-    vec3 w = amp * -rcp(mix(8.0, 5.0, sharpness));
+	vec3 w = amp * -rcp(mix(8.0, 5.0, sharpness));
 	vec3 result = saturate(((b + d + f + h) * w + e) / (1.0 + 4.0 * w));
 	#ifdef HDR_ENABLED
 		return invReinhard(result);
@@ -92,9 +92,9 @@ vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
 #include "/lib/universal/TextRenderer.glsl"
 
 void HistogramDisplay(inout vec3 color, ivec2 texel) {
-    const int binWidth = 2;
+	const int binWidth = 2;
 
-    if (all(lessThan(texel, ivec2(HISTOGRAM_BIN_COUNT * binWidth, 256)))) {
+	if (all(lessThan(texel, ivec2(HISTOGRAM_BIN_COUNT * binWidth, 256)))) {
 		int binIndex = texel.x / binWidth;
 		uint binValue = exposure.histogram[binIndex];
 
@@ -105,7 +105,7 @@ void HistogramDisplay(inout vec3 color, ivec2 texel) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy);
+	ivec2 texelPos = ivec2(gl_FragCoord.xy);
 
 	// Update SSBO
 	global.prevWorldTime = worldTime;

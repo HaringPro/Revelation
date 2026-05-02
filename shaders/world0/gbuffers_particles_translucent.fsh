@@ -1,3 +1,5 @@
 #version 460 compatibility
 
-#include "/program/gbuffers/ParticlesTranslucent.frag"
+#define GBUFFER_PARTICLES_TRANSLUCENT 1
+
+#include "/program/gbuffers/HandWater.frag"

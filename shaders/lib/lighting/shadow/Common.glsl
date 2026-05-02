@@ -6,7 +6,7 @@
 float CalcDistortionFactor(vec2 shadowClipPos) {
 	float invClipLength = inversesqrt(sdot(shadowClipPos));
 	float distortionCurve = log((exp(SHADOW_DISTORTION_STRENGTH) - 1.0) / invClipLength + 1.0);
-    return distortionCurve * invClipLength * rcp(SHADOW_DISTORTION_STRENGTH);
+	return distortionCurve * invClipLength * rcp(SHADOW_DISTORTION_STRENGTH);
 }
 
 vec3 DistortShadowSpace(vec3 shadowClipPos, float distortionFactor) {

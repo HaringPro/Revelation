@@ -12,15 +12,15 @@ const vec3 compression = vec3(0.1, 0.1, 0.15);
 const vec3 rotation = vec3(2.0, -1.0, -3.0);
 
 const mat3 agx_inset_matrix = mat3(
-    0.856627153315983, 0.137318972929847, 0.11189821299995,
-    0.0951212405381588, 0.761241990602591, 0.0767994186031903,
-    0.0482516061458583, 0.101439036467562, 0.811302368396859
+	0.856627153315983, 0.137318972929847, 0.11189821299995,
+	0.0951212405381588, 0.761241990602591, 0.0767994186031903,
+	0.0482516061458583, 0.101439036467562, 0.811302368396859
 );
 
 const mat3 agx_inverse_outset_matrix = mat3(
-    1.1271005818144366432, -0.14132976349843826565, -0.14132976349843824772,
-    -0.1106066430966032116, 1.1578237022162717623, -0.11060664309660291788,
-    -0.016493938717834568157, -0.01649393871783425265, 1.2519364065950402828
+	1.1271005818144366432, -0.14132976349843826565, -0.14132976349843824772,
+	-0.1106066430966032116, 1.1578237022162717623, -0.11060664309660291788,
+	-0.016493938717834568157, -0.01649393871783425265, 1.2519364065950402828
 );
 
 //======// AgX Minimal //=========================================================================//
@@ -57,130 +57,130 @@ const mat3 agx_inverse_outset_matrix = mat3(
 
 // Mean error^2: 3.6705141e-06
 vec3 agxDefaultContrastApprox_6th(vec3 x) {
-    vec3 x2 = x * x;
-    vec3 x4 = x2 * x2;
+	vec3 x2 = x * x;
+	vec3 x4 = x2 * x2;
 
-    return  + 15.5     * x4 * x2
-            - 40.14    * x4 * x
-            + 31.96    * x4
-            - 6.868    * x2 * x
-            + 0.4298   * x2
-            + 0.1191   * x
-            - 0.00232;
+	return  + 15.5     * x4 * x2
+			- 40.14    * x4 * x
+			+ 31.96    * x4
+			- 6.868    * x2 * x
+			+ 0.4298   * x2
+			+ 0.1191   * x
+			- 0.00232;
 }
 
 // Mean error^2: 1.85907662e-06
 vec3 agxDefaultContrastApprox_7th(vec3 x) {
-    vec3 x2 = x * x;
-    vec3 x4 = x2 * x2;
+	vec3 x2 = x * x;
+	vec3 x4 = x2 * x2;
 
-    return - 17.86     * x4 * x2 * x
-           + 78.01     * x4 * x2
-           - 126.7     * x4 * x
-           + 92.06     * x4
-           - 28.72     * x2 * x
-           + 4.361     * x2
-           - 0.1718    * x
-           + 0.002857;
+	return - 17.86     * x4 * x2 * x
+		+ 78.01     * x4 * x2
+		- 126.7     * x4 * x
+		+ 92.06     * x4
+		- 28.72     * x2 * x
+		+ 4.361     * x2
+		- 0.1718    * x
+		+ 0.002857;
 }
 
 vec3 agx(vec3 val) {
-    // const float min_ev = -12.47393f;
-    // const float max_ev = 4.026069f;
+	// const float min_ev = -12.47393f;
+	// const float max_ev = 4.026069f;
 
-    // Input transform (inset)
-    val = agx_inset_matrix * val;
+	// Input transform (inset)
+	val = agx_inset_matrix * val;
 
-    // Log2 space encoding
-    val = clamp(log2(val * rcp(middle_grey)), min_ev, max_ev);
-    val = (val - min_ev) * rcp(max_ev - min_ev);
+	// Log2 space encoding
+	val = clamp(log2(val * rcp(middle_grey)), min_ev, max_ev);
+	val = (val - min_ev) * rcp(max_ev - min_ev);
 
-    // Apply sigmoid function approximation
-    val = agxDefaultContrastApprox_7th(val);
+	// Apply sigmoid function approximation
+	val = agxDefaultContrastApprox_7th(val);
 
-    return val;
+	return val;
 }
 
 vec3 agxEotf(vec3 val) {
-    // Inverse input transform (outset)
-    val = agx_inverse_outset_matrix * val;
+	// Inverse input transform (outset)
+	val = agx_inverse_outset_matrix * val;
 
-    // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
-    // NOTE: We're linearizing the output here. Comment/adjust when
-    // *not* using a sRGB render target
-    val = pow(val, vec3(2.2));
+	// sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
+	// NOTE: We're linearizing the output here. Comment/adjust when
+	// *not* using a sRGB render target
+	val = pow(val, vec3(2.2));
 
-    return val;
+	return val;
 }
 
 vec3 agxLook(vec3 val) {
-    const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
-    float luma = dot(val, lw);
+	const vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+	float luma = dot(val, lw);
 
-    #if AGX_LOOK == 0
-        // Default
-        const vec3 slope = vec3(1.0);
-        const vec3 power = vec3(1.0);
-        const float sat = 1.0;
-    #elif AGX_LOOK == 1
-        // Golden
-        const vec3 slope = vec3(1.0, 0.9, 0.5);
-        const vec3 power = vec3(0.8);
-        const float sat = 0.8;
-    #elif AGX_LOOK == 2
-        // Punchy
-        const vec3 slope = vec3(1.0);
-        const vec3 power = vec3(1.35);
-        const float sat = 1.4;
-    #else
-        // Custom
-        const vec3 slope = vec3(1.0);
-        const vec3 power = vec3(1.2);
-        const float sat = 1.2;
-    #endif
+	#if AGX_LOOK == 0
+		// Default
+		const vec3 slope = vec3(1.0);
+		const vec3 power = vec3(1.0);
+		const float sat = 1.0;
+	#elif AGX_LOOK == 1
+		// Golden
+		const vec3 slope = vec3(1.0, 0.9, 0.5);
+		const vec3 power = vec3(0.8);
+		const float sat = 0.8;
+	#elif AGX_LOOK == 2
+		// Punchy
+		const vec3 slope = vec3(1.0);
+		const vec3 power = vec3(1.35);
+		const float sat = 1.4;
+	#else
+		// Custom
+		const vec3 slope = vec3(1.0);
+		const vec3 power = vec3(1.2);
+		const float sat = 1.2;
+	#endif
 
-    // ASC CDL
-    val = pow(val * slope, power);
-    return luma + sat * (val - luma);
+	// ASC CDL
+	val = pow(val * slope, power);
+	return luma + sat * (val - luma);
 }
 
 vec3 AgX_Minimal(vec3 value) {
-    value = agx(value);
-    value = agxLook(value); // Optional
-    return agxEotf(value);
+	value = agx(value);
+	value = agxLook(value); // Optional
+	return agxEotf(value);
 }
 
 //======// AgX Full //============================================================================//
 
 vec3 unproject(vec2 xy) {
-    if (xy.y == 0.0) return vec3(0.0);
+	if (xy.y == 0.0) return vec3(0.0);
 
-    float Y = 1.0;
-    float X = xy.x / xy.y;
-    float Z = (1.0 - xy.x - xy.y) / xy.y;
+	float Y = 1.0;
+	float X = xy.x / xy.y;
+	float Z = (1.0 - xy.x - xy.y) / xy.y;
 
-    return vec3(X, Y, Z);
+	return vec3(X, Y, Z);
 }
 
 mat3 primaries_to_matrix(vec2 xy_red, vec2 xy_green, vec2 xy_blue, vec2 xy_white) {
-    vec3 XYZ_red = unproject(xy_red);
-    vec3 XYZ_green = unproject(xy_green);
-    vec3 XYZ_blue = unproject(xy_blue);
+	vec3 XYZ_red = unproject(xy_red);
+	vec3 XYZ_green = unproject(xy_green);
+	vec3 XYZ_blue = unproject(xy_blue);
 
-    vec3 XYZ_white = unproject(xy_white);
+	vec3 XYZ_white = unproject(xy_white);
 
-    mat3 temp = mat3(
-                XYZ_red.x,	XYZ_green.x,	XYZ_blue.x,
-                1.0,        1.0,            1.0,
-                XYZ_red.z,	XYZ_green.z,	XYZ_blue.z);
+	mat3 temp = mat3(
+				XYZ_red.x,	XYZ_green.x,	XYZ_blue.x,
+				1.0,        1.0,            1.0,
+				XYZ_red.z,	XYZ_green.z,	XYZ_blue.z);
 
-    mat3 inv = inverse(temp);
-    vec3 scale = XYZ_white * inv;
+	mat3 inv = inverse(temp);
+	vec3 scale = XYZ_white * inv;
 
-    return mat3(
-        scale.x * XYZ_red.x, scale.y * XYZ_green.x,	scale.z * XYZ_blue.x,
-        scale.x * XYZ_red.y, scale.y * XYZ_green.y,	scale.z * XYZ_blue.y,
-        scale.x * XYZ_red.z, scale.y * XYZ_green.z,	scale.z * XYZ_blue.z);
+	return mat3(
+		scale.x * XYZ_red.x, scale.y * XYZ_green.x,	scale.z * XYZ_blue.x,
+		scale.x * XYZ_red.y, scale.y * XYZ_green.y,	scale.z * XYZ_blue.y,
+		scale.x * XYZ_red.z, scale.y * XYZ_green.z,	scale.z * XYZ_blue.z);
 }
 
 float RotationToSlide(vec2 primary, vec2 neighborA, vec2 neighborB, float angle) {
@@ -219,61 +219,61 @@ mat3 ComputeCompressionMatrix(vec2 xyR, vec2 xyG, vec2 xyB, vec2 xyW) {
 }
 
 vec3 open_domain_to_normalized_log2(vec3 in_od, float minimum_ev, float maximum_ev) {
-    float total_exposure = maximum_ev - minimum_ev;
+	float total_exposure = maximum_ev - minimum_ev;
 
-    vec3 output_log = clamp(log2(in_od * rcp(middle_grey)), minimum_ev, maximum_ev);
+	vec3 output_log = clamp(log2(in_od * rcp(middle_grey)), minimum_ev, maximum_ev);
 
-    return (output_log - minimum_ev) * rcp(total_exposure);
+	return (output_log - minimum_ev) * rcp(total_exposure);
 }
 
 float equation_scale(float x_pivot, float y_pivot, float slope_pivot, float power) {
-    return pow(pow((slope_pivot * x_pivot), -power) * (pow((slope_pivot * (x_pivot / y_pivot)), power) - 1.0), -1.0 / power);
+	return pow(pow((slope_pivot * x_pivot), -power) * (pow((slope_pivot * (x_pivot / y_pivot)), power) - 1.0), -1.0 / power);
 }
 
 float equation_hyperbolic(float x, float power) {
-    return x * pow(1.0 + pow(x, power), -1.0 / power);
+	return x * pow(1.0 + pow(x, power), -1.0 / power);
 }
 
 float equation_term(float x, float x_pivot, float slope_pivot, float scale) {
-    return (slope_pivot * (x - x_pivot)) / scale;
+	return (slope_pivot * (x - x_pivot)) / scale;
 }
 
 float equation_curve(float x, float x_pivot, float y_pivot, float slope_pivot, float toe_power, float shoulder_power, float scale) {
-    if (scale < 0.0) {
-        return scale * equation_hyperbolic(equation_term(x, x_pivot, slope_pivot, scale), toe_power) + y_pivot;
-    } else {
-        return scale * equation_hyperbolic(equation_term(x,x_pivot,slope_pivot,scale), shoulder_power) + y_pivot;
-    }
+	if (scale < 0.0) {
+		return scale * equation_hyperbolic(equation_term(x, x_pivot, slope_pivot, scale), toe_power) + y_pivot;
+	} else {
+		return scale * equation_hyperbolic(equation_term(x,x_pivot,slope_pivot,scale), shoulder_power) + y_pivot;
+	}
 }
 
 float equation_full_curve(float x, float x_pivot, float y_pivot, float slope_pivot, float toe_power, float shoulder_power) {
-    bool bpivot = x >= x_pivot;
-    float scale_x_pivot = mix(x_pivot, 1.0 - x_pivot, bpivot);
-    float scale_y_pivot = mix(y_pivot, 1.0 - y_pivot, bpivot);
+	bool bpivot = x >= x_pivot;
+	float scale_x_pivot = mix(x_pivot, 1.0 - x_pivot, bpivot);
+	float scale_y_pivot = mix(y_pivot, 1.0 - y_pivot, bpivot);
 
-    float toe_scale = equation_scale(scale_x_pivot, scale_y_pivot, slope_pivot, toe_power);
-    float shoulder_scale = equation_scale(scale_x_pivot, scale_y_pivot, slope_pivot, shoulder_power);
+	float toe_scale = equation_scale(scale_x_pivot, scale_y_pivot, slope_pivot, toe_power);
+	float shoulder_scale = equation_scale(scale_x_pivot, scale_y_pivot, slope_pivot, shoulder_power);
 
-    float scale = mix(-toe_scale, shoulder_scale, bpivot);
+	float scale = mix(-toe_scale, shoulder_scale, bpivot);
 
-    return equation_curve(x, x_pivot, y_pivot, slope_pivot, toe_power, shoulder_power, scale);
+	return equation_curve(x, x_pivot, y_pivot, slope_pivot, toe_power, shoulder_power, scale);
 }
 
 vec3 AgXConfigurable(vec3 rgb) {
-    const float x_pivot = abs(min_ev) / (max_ev - min_ev);
-    const float y_pivot = 0.5;
+	const float x_pivot = abs(min_ev) / (max_ev - min_ev);
+	const float y_pivot = 0.5;
 
-    vec3 logRGB = open_domain_to_normalized_log2(rgb, min_ev, max_ev);
+	vec3 logRGB = open_domain_to_normalized_log2(rgb, min_ev, max_ev);
 
-    float outputR = equation_full_curve(logRGB.r, x_pivot, y_pivot, slope, toe_power, shoulder_power);
-    float outputG = equation_full_curve(logRGB.g, x_pivot, y_pivot, slope, toe_power, shoulder_power);
-    float outputB = equation_full_curve(logRGB.b, x_pivot, y_pivot, slope, toe_power, shoulder_power);
+	float outputR = equation_full_curve(logRGB.r, x_pivot, y_pivot, slope, toe_power, shoulder_power);
+	float outputG = equation_full_curve(logRGB.g, x_pivot, y_pivot, slope, toe_power, shoulder_power);
+	float outputB = equation_full_curve(logRGB.b, x_pivot, y_pivot, slope, toe_power, shoulder_power);
 
-    return saturate(vec3(outputR, outputG, outputB));
+	return saturate(vec3(outputR, outputG, outputB));
 }
 
 vec3 AgX_Full(vec3 rgb) {
-    return sRGBToLinear(AgXConfigurable(rgb));
+	return sRGBToLinear(AgXConfigurable(rgb));
 }
 
 //======// AgX AllenWp, for HDR/SDR use //============================================================================//
@@ -282,20 +282,20 @@ vec3 AgX_Full(vec3 rgb) {
 // Source and details: https://allenwp.com/blog/2025/05/29/allenwp-tonemapping-curve/
 // Input must be a non-negative linear scene value.
 vec3 allenwp_curve(vec3 x) {
-    #ifdef HDR_ENABLED
-        float output_max_value = HdrGamePeakBrightness / HdrGamePaperWhiteBrightness;
-    #else
-        const float output_max_value = 1.0;
-    #endif
+	#ifdef HDR_ENABLED
+		float output_max_value = HdrGamePeakBrightness / HdrGamePaperWhiteBrightness;
+	#else
+		const float output_max_value = 1.0;
+	#endif
 	// These constants must match the those in the C++ code that calculates the parameters.
 	// 18% "middle gray" is perceptually 50% of the brightness of reference white.
 	const float awp_crossover_point = 0.1841865;
 	const float awp_shoulder_max = output_max_value - awp_crossover_point;
-    float awp_high_clip = 12.0;
-    awp_high_clip = max(awp_high_clip, output_max_value);
+	float awp_high_clip = 12.0;
+	awp_high_clip = max(awp_high_clip, output_max_value);
 	const float awp_contrast = 1.5;
 	float awp_toe_a = ((1.0 / awp_crossover_point) - 1.0) * pow(awp_crossover_point, awp_contrast);
-    float awp_slope_denom = pow(awp_crossover_point, awp_contrast) + awp_toe_a;
+	float awp_slope_denom = pow(awp_crossover_point, awp_contrast) + awp_toe_a;
 	float awp_slope = (awp_contrast * pow(awp_crossover_point, awp_contrast - 1.0) * awp_toe_a) / (awp_slope_denom * awp_slope_denom);
 	float awp_w = awp_high_clip - awp_crossover_point;
 	awp_w = awp_w * awp_w;
@@ -338,13 +338,13 @@ vec3 AgX_AllenWp(vec3 color) {
 	// See this comment from the author on the decisions made to create the matrices:
 	// https://github.com/godotengine/godot-proposals/issues/12317#issuecomment-2835824250
 
-    #ifdef HDR_ENABLED
-	    float output_max_value = HdrGamePeakBrightness / HdrGamePaperWhiteBrightness;
-    #else
-        const float output_max_value = 1.0;
-    #endif
+	#ifdef HDR_ENABLED
+		float output_max_value = HdrGamePeakBrightness / HdrGamePaperWhiteBrightness;
+	#else
+		const float output_max_value = 1.0;
+	#endif
 
-    // Apply inset matrix.
+	// Apply inset matrix.
 	color = agx_inset_matrix * color;
 
 	// Use the allenwp tonemapping curve to match the Blender AgX curve while
@@ -361,5 +361,5 @@ vec3 AgX_AllenWp(vec3 color) {
 	// Blender's lusRGB.compensate_low_side is too complex for this shader, so
 	// simply return the color, even if it has negative components. These negative
 	// components may be useful for subsequent color adjustments.
-    return color;
+	return color;
 }

@@ -44,10 +44,10 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 		float stepLength = min(rayLength, 32.0) * rSteps;
 
 		vec3 shadowStep = mat3(shadowModelView) * worldDir * stepLength;
-			 shadowStep = diagonal3(shadowProjection) * shadowStep;
+			shadowStep = diagonal3(shadowProjection) * shadowStep;
 
 		vec3 shadowStart = transMAD(shadowModelView, gbufferModelViewInverse[3].xyz);
-			 shadowStart = projMAD(shadowProjection, shadowStart);
+			shadowStart = projMAD(shadowProjection, shadowStart);
 		vec3 shadowPos = shadowStart + shadowStep * dither;
 
 		// vec3 lightVector = refract(worldLightDir, vec3(0.0, -1.0, 0.0), 1.0 / WATER_IOR);

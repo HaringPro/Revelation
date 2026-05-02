@@ -41,14 +41,14 @@ writeonly uniform image2D cloudShadowImg;
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 
-    // Checkerboard render cloud shadow map
+	// Checkerboard render cloud shadow map
 	ivec2 offset = checkerboardOffset4x4[frameCounter & 15];
 	if ((tid & 3) == offset || global.historyReset) {
 		float dither = BlueNoise(tid, frameCounter);
 
 		vec2 uv = (vec2(tid) + dither) * rcp(textureSize(cloudShadowTex, 0));
-        vec3 rayPos = SetupCloudShadowPos(uv);
-        float cloudShadow = CalculateCloudShadows(rayPos, dither);
+		vec3 rayPos = SetupCloudShadowPos(uv);
+		float cloudShadow = CalculateCloudShadows(rayPos, dither);
 
 		// Accumulate
 		float weight = rcp(min(frameCounter, 64) * float(!global.historyReset) + 1.0);

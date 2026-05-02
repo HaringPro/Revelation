@@ -73,7 +73,7 @@ void main() {
 	#endif
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-    gl_Position = project(dhProjection, viewPos);
+	gl_Position = project(dhProjection, viewPos);
 	#ifdef TAA_ENABLED
 		gl_Position.xy += taaJitter * gl_Position.w;
 	#endif

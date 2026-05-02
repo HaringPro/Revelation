@@ -7,7 +7,7 @@
 	Apache License 2.0
 
 	References:
-        https://github.com/aces-aswf/aces-core/blob/main/lib/Lib.Academy.OutputTransform.ctl
+		https://github.com/aces-aswf/aces-core/blob/main/lib/Lib.Academy.OutputTransform.ctl
 
 --------------------------------------------------------------------------------
 */
@@ -38,329 +38,329 @@ shared vec3 aces_sharedRGBCorners[aces_totalCornerCount];
 shared vec3 aces_sharedJMhCorners[aces_totalCornerCount];
 
 float aces_midpoint(float low, float high) {
-    return 0.5 * (low + high);
+	return 0.5 * (low + high);
 }
 
 float aces_wrap_to_360(float hue) {
-    float y = mod(hue, 360.0);
-    return (y < 0.0) ? (y + 360.0) : y;
+	float y = mod(hue, 360.0);
+	return (y < 0.0) ? (y + 360.0) : y;
 }
 
 vec3 generateUnitCubeCuspCorner(int corner) {
-    vec3 result;
-    result.r = (((corner + 1) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
-    result.g = (((corner + 5) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
-    result.b = (((corner + 3) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
-    return result;
+	vec3 result;
+	result.r = (((corner + 1) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
+	result.g = (((corner + 5) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
+	result.b = (((corner + 3) % aces_cuspCornerCount) < 3) ? 1.0 : 0.0;
+	return result;
 }
 
 void buildLimitingCuspCornersTables(out vec3 RGB_corners[aces_totalCornerCount],
-                                    out vec3 JMh_corners[aces_totalCornerCount]) {
-    vec3 temp_RGB_corners[aces_cuspCornerCount];
-    vec3 temp_JMh_corners[aces_cuspCornerCount];
+									out vec3 JMh_corners[aces_totalCornerCount]) {
+	vec3 temp_RGB_corners[aces_cuspCornerCount];
+	vec3 temp_JMh_corners[aces_cuspCornerCount];
 
-    int min_index = 0;
-    for (int i = 0; i < aces_cuspCornerCount; ++i) {
-        temp_RGB_corners[i] = generateUnitCubeCuspCorner(i);
-        temp_JMh_corners[i] = RGB_to_JMh(temp_RGB_corners[i]);
-        if (temp_JMh_corners[i].b < temp_JMh_corners[min_index].b) {
-            min_index = i;
-        }
-    }
+	int min_index = 0;
+	for (int i = 0; i < aces_cuspCornerCount; ++i) {
+		temp_RGB_corners[i] = generateUnitCubeCuspCorner(i);
+		temp_JMh_corners[i] = RGB_to_JMh(temp_RGB_corners[i]);
+		if (temp_JMh_corners[i].b < temp_JMh_corners[min_index].b) {
+			min_index = i;
+		}
+	}
 
-    for (int i = 0; i < aces_cuspCornerCount; ++i) {
-        int src = (i + min_index) % aces_cuspCornerCount;
-        RGB_corners[i + 1] = temp_RGB_corners[src];
-        JMh_corners[i + 1] = temp_JMh_corners[src];
-    }
+	for (int i = 0; i < aces_cuspCornerCount; ++i) {
+		int src = (i + min_index) % aces_cuspCornerCount;
+		RGB_corners[i + 1] = temp_RGB_corners[src];
+		JMh_corners[i + 1] = temp_JMh_corners[src];
+	}
 
-    RGB_corners[0] = RGB_corners[aces_cuspCornerCount];
-    RGB_corners[aces_cuspCornerCount + 1] = RGB_corners[1];
+	RGB_corners[0] = RGB_corners[aces_cuspCornerCount];
+	RGB_corners[aces_cuspCornerCount + 1] = RGB_corners[1];
 
-    JMh_corners[0] = JMh_corners[aces_cuspCornerCount];
-    JMh_corners[aces_cuspCornerCount + 1] = JMh_corners[1];
+	JMh_corners[0] = JMh_corners[aces_cuspCornerCount];
+	JMh_corners[aces_cuspCornerCount + 1] = JMh_corners[1];
 
-    JMh_corners[0].b -= aces_hue_limit;
-    JMh_corners[aces_cuspCornerCount + 1].b += aces_hue_limit;
+	JMh_corners[0].b -= aces_hue_limit;
+	JMh_corners[aces_cuspCornerCount + 1].b += aces_hue_limit;
 }
 
 vec2 findDisplayCuspForHue(float hue,
-                           vec3 RGB_corners[aces_totalCornerCount],
-                           vec3 JMh_corners[aces_totalCornerCount],
-                           inout vec2 previous) {
-    int upper_corner = 1;
-    for (int i = upper_corner; i < aces_totalCornerCount; ++i) {
-        if (JMh_corners[i].b > hue) {
-            upper_corner = i;
-            break;
-        }
-    }
+						vec3 RGB_corners[aces_totalCornerCount],
+						vec3 JMh_corners[aces_totalCornerCount],
+						inout vec2 previous) {
+	int upper_corner = 1;
+	for (int i = upper_corner; i < aces_totalCornerCount; ++i) {
+		if (JMh_corners[i].b > hue) {
+			upper_corner = i;
+			break;
+		}
+	}
 
-    int lower_corner = upper_corner - 1;
+	int lower_corner = upper_corner - 1;
 
-    if (JMh_corners[lower_corner].b == hue) {
-        return JMh_corners[lower_corner].rg;
-    }
+	if (JMh_corners[lower_corner].b == hue) {
+		return JMh_corners[lower_corner].rg;
+	}
 
-    vec3 cusp_lower = RGB_corners[lower_corner];
-    vec3 cusp_upper = RGB_corners[upper_corner];
+	vec3 cusp_lower = RGB_corners[lower_corner];
+	vec3 cusp_upper = RGB_corners[upper_corner];
 
-    float lower_t = (upper_corner == int(previous.x)) ? previous.y : 0.0;
-    float upper_t = 1.0;
+	float lower_t = (upper_corner == int(previous.x)) ? previous.y : 0.0;
+	float upper_t = 1.0;
 
-    while ((upper_t - lower_t) > aces_display_cusp_tolerance) {
-        float sample_t = aces_midpoint(lower_t, upper_t);
-        vec3 sample_ = mix(cusp_lower, cusp_upper, sample_t);
-        vec3 JMh = RGB_to_JMh(sample_);
+	while ((upper_t - lower_t) > aces_display_cusp_tolerance) {
+		float sample_t = aces_midpoint(lower_t, upper_t);
+		vec3 sample_ = mix(cusp_lower, cusp_upper, sample_t);
+		vec3 JMh = RGB_to_JMh(sample_);
 
-        if (JMh.b < JMh_corners[lower_corner].b) {
-            upper_t = sample_t;
-        } else if (JMh.b >= JMh_corners[upper_corner].b) {
-            lower_t = sample_t;
-        } else if (JMh.b > hue) {
-            upper_t = sample_t;
-        } else {
-            lower_t = sample_t;
-        }
-    }
+		if (JMh.b < JMh_corners[lower_corner].b) {
+			upper_t = sample_t;
+		} else if (JMh.b >= JMh_corners[upper_corner].b) {
+			lower_t = sample_t;
+		} else if (JMh.b > hue) {
+			upper_t = sample_t;
+		} else {
+			lower_t = sample_t;
+		}
+	}
 
-    float sample_t = aces_midpoint(lower_t, upper_t);
-    vec3 sample_ = mix(cusp_lower, cusp_upper, sample_t);
-    vec3 JMh = RGB_to_JMh(sample_);
+	float sample_t = aces_midpoint(lower_t, upper_t);
+	vec3 sample_ = mix(cusp_lower, cusp_upper, sample_t);
+	vec3 JMh = RGB_to_JMh(sample_);
 
-    previous.x = float(upper_corner);
-    previous.y = sample_t;
-    return JMh.rg;
+	previous.x = float(upper_corner);
+	previous.y = sample_t;
+	return JMh.rg;
 }
 
 float aces_get_focus_gain(float J, float cuspJ) {
-    float thr = mix(cuspJ, aces_limit_J_max, aces_focus_gain_blend);
-    if (J > thr) {
-        float gain = (aces_limit_J_max - thr) / max(0.0001, aces_limit_J_max - J);
-        gain = log(gain) / log(10.0);
-        return gain * gain + 1.0;
-    }
-    return 1.0;
+	float thr = mix(cuspJ, aces_limit_J_max, aces_focus_gain_blend);
+	if (J > thr) {
+		float gain = (aces_limit_J_max - thr) / max(0.0001, aces_limit_J_max - J);
+		gain = log(gain) / log(10.0);
+		return gain * gain + 1.0;
+	}
+	return 1.0;
 }
 
 float aces_solve_J_intersect(float J, float M, float focusJ, float slope_gain) {
-    float M_scaled = M / slope_gain;
-    float a = M_scaled / focusJ;
-    if (J < focusJ) {
-        float b = 1.0 - M_scaled;
-        float c = -J;
-        float det = b * b - 4.0 * a * c;
-        float root = sqrt(det);
-        return -2.0 * c / (b + root);
-    } else {
-        float b = -(1.0 + M_scaled + aces_limit_J_max * a);
-        float c = aces_limit_J_max * M_scaled + J;
-        float det = b * b - 4.0 * a * c;
-        float root = sqrt(det);
-        return -2.0 * c / (b - root);
-    }
+	float M_scaled = M / slope_gain;
+	float a = M_scaled / focusJ;
+	if (J < focusJ) {
+		float b = 1.0 - M_scaled;
+		float c = -J;
+		float det = b * b - 4.0 * a * c;
+		float root = sqrt(det);
+		return -2.0 * c / (b + root);
+	} else {
+		float b = -(1.0 + M_scaled + aces_limit_J_max * a);
+		float c = aces_limit_J_max * M_scaled + J;
+		float det = b * b - 4.0 * a * c;
+		float root = sqrt(det);
+		return -2.0 * c / (b - root);
+	}
 }
 
 float aces_find_gamut_boundary_intersection(vec2 JM_cusp,
-                                            float gamma_top_inv,
-                                            float gamma_bottom_inv,
-                                            float J_intersect_source,
-                                            float J_intersect_cusp,
-                                            float slope) {
-    float M_boundary_lower = J_intersect_cusp
-        * pow(abs(J_intersect_source / J_intersect_cusp), gamma_bottom_inv)
-        / (JM_cusp.r / JM_cusp.g - slope);
+											float gamma_top_inv,
+											float gamma_bottom_inv,
+											float J_intersect_source,
+											float J_intersect_cusp,
+											float slope) {
+	float M_boundary_lower = J_intersect_cusp
+		* pow(abs(J_intersect_source / J_intersect_cusp), gamma_bottom_inv)
+		/ (JM_cusp.r / JM_cusp.g - slope);
 
-    float M_boundary_upper = JM_cusp.g
-        * (aces_limit_J_max - J_intersect_cusp)
-        * pow(abs((aces_limit_J_max - J_intersect_source) / (aces_limit_J_max - J_intersect_cusp)), gamma_top_inv)
-        / (slope * JM_cusp.g + aces_limit_J_max - JM_cusp.r);
+	float M_boundary_upper = JM_cusp.g
+		* (aces_limit_J_max - J_intersect_cusp)
+		* pow(abs((aces_limit_J_max - J_intersect_source) / (aces_limit_J_max - J_intersect_cusp)), gamma_top_inv)
+		/ (slope * JM_cusp.g + aces_limit_J_max - JM_cusp.r);
 
-    float a = M_boundary_lower > 0.0 ? M_boundary_lower : 10000.0;
-    float b = M_boundary_upper > 0.0 ? M_boundary_upper : 10000.0;
+	float a = M_boundary_lower > 0.0 ? M_boundary_lower : 10000.0;
+	float b = M_boundary_upper > 0.0 ? M_boundary_upper : 10000.0;
 
-    float s = aces_smooth_cusps * JM_cusp.g;
-    float h = max(s - abs(a - b), 0.0) / s;
-    return min(a, b) - h * h * h * s * (1.0 / 6.0);
+	float s = aces_smooth_cusps * JM_cusp.g;
+	float h = max(s - abs(a - b), 0.0) / s;
+	return min(a, b) - h * h * h * s * (1.0 / 6.0);
 }
 
 bool aces_outside_hull(vec3 rgb, float maxRGBtestVal) {
-    return rgb.r > maxRGBtestVal || rgb.g > maxRGBtestVal || rgb.b > maxRGBtestVal;
+	return rgb.r > maxRGBtestVal || rgb.g > maxRGBtestVal || rgb.b > maxRGBtestVal;
 }
 
 bool aces_evaluate_gamma_fit(vec2 JMcusp, float hue, float top_gamma_inv) {
-    float focusJ = mix(JMcusp.r, aces_mid_J, min(1.0, 1.3 - (JMcusp.r / aces_limit_J_max)));
-    #ifndef HDR_ENABLED
-        float luminance_limit = 1.0;
-    #else
-        float luminance_limit = 40.0; // Hardcoded for 4000 nits
-    #endif
+	float focusJ = mix(JMcusp.r, aces_mid_J, min(1.0, 1.3 - (JMcusp.r / aces_limit_J_max)));
+	#ifndef HDR_ENABLED
+		float luminance_limit = 1.0;
+	#else
+		float luminance_limit = 40.0; // Hardcoded for 4000 nits
+	#endif
 
-    for (int testIndex = 0; testIndex < aces_test_count; ++testIndex) {
-        float test_J = mix(JMcusp.r, aces_limit_J_max, aces_test_positions[testIndex]);
-        float slope_gain = aces_focus_dist_scaled * aces_get_focus_gain(test_J, JMcusp.r);
+	for (int testIndex = 0; testIndex < aces_test_count; ++testIndex) {
+		float test_J = mix(JMcusp.r, aces_limit_J_max, aces_test_positions[testIndex]);
+		float slope_gain = aces_focus_dist_scaled * aces_get_focus_gain(test_J, JMcusp.r);
 
-        float J_intersect_source = aces_solve_J_intersect(test_J, JMcusp.g, focusJ, slope_gain);
-        float slope = (J_intersect_source < focusJ) ? J_intersect_source : (aces_limit_J_max - J_intersect_source);
-        slope = slope * (J_intersect_source - focusJ) / (focusJ * slope_gain);
+		float J_intersect_source = aces_solve_J_intersect(test_J, JMcusp.g, focusJ, slope_gain);
+		float slope = (J_intersect_source < focusJ) ? J_intersect_source : (aces_limit_J_max - J_intersect_source);
+		slope = slope * (J_intersect_source - focusJ) / (focusJ * slope_gain);
 
-        float J_intersect_cusp = aces_solve_J_intersect(JMcusp.r, JMcusp.g, focusJ, slope_gain);
-        float approxLimit_M = aces_find_gamut_boundary_intersection(
-            JMcusp,
-            top_gamma_inv,
-            aces_gamma_bottom_inv,
-            J_intersect_source,
-            J_intersect_cusp,
-            slope
-        );
-        float approxLimit_J = J_intersect_source + slope * approxLimit_M;
+		float J_intersect_cusp = aces_solve_J_intersect(JMcusp.r, JMcusp.g, focusJ, slope_gain);
+		float approxLimit_M = aces_find_gamut_boundary_intersection(
+			JMcusp,
+			top_gamma_inv,
+			aces_gamma_bottom_inv,
+			J_intersect_source,
+			J_intersect_cusp,
+			slope
+		);
+		float approxLimit_J = J_intersect_source + slope * approxLimit_M;
 
-        vec3 approximate_JMh = vec3(approxLimit_J, approxLimit_M, hue);
-        vec3 newLimitRGB = JMh_to_RGB(approximate_JMh);
-        if (!aces_outside_hull(newLimitRGB, luminance_limit)) {
-            return false;
-        }
-    }
+		vec3 approximate_JMh = vec3(approxLimit_J, approxLimit_M, hue);
+		vec3 newLimitRGB = JMh_to_RGB(approximate_JMh);
+		if (!aces_outside_hull(newLimitRGB, luminance_limit)) {
+			return false;
+		}
+	}
 
-    return true;
+	return true;
 }
 
 float computeUpperHullGammaInv(vec2 JMcusp, float hue) {
-    float low = aces_gamma_minimum;
-    float high = low + aces_gamma_search_step;
-    bool outside = false;
+	float low = aces_gamma_minimum;
+	float high = low + aces_gamma_search_step;
+	bool outside = false;
 
-    while (!outside && high < aces_gamma_maximum) {
-        bool gammaFound = aces_evaluate_gamma_fit(JMcusp, hue, 1.0 / high);
-        if (!gammaFound) {
-            low = high;
-            high += aces_gamma_search_step;
-        } else {
-            outside = true;
-        }
-    }
+	while (!outside && high < aces_gamma_maximum) {
+		bool gammaFound = aces_evaluate_gamma_fit(JMcusp, hue, 1.0 / high);
+		if (!gammaFound) {
+			low = high;
+			high += aces_gamma_search_step;
+		} else {
+			outside = true;
+		}
+	}
 
-    while ((high - low) > aces_gamma_accuracy) {
-        float testGamma = aces_midpoint(high, low);
-        bool gammaFound = aces_evaluate_gamma_fit(JMcusp, hue, 1.0 / testGamma);
-        if (gammaFound) {
-            high = testGamma;
-        } else {
-            low = testGamma;
-        }
-    }
+	while ((high - low) > aces_gamma_accuracy) {
+		float testGamma = aces_midpoint(high, low);
+		bool gammaFound = aces_evaluate_gamma_fit(JMcusp, hue, 1.0 / testGamma);
+		if (gammaFound) {
+			high = testGamma;
+		} else {
+			low = testGamma;
+		}
+	}
 
-    return 1.0 / high;
+	return 1.0 / high;
 }
 
 float hueFromTableIndex(int idx) {
-    int clamped = clamp(idx, 0, aces_totalTableSize - 1);
-    return aces_gamut_cusp_table_hues_array[clamped];
+	int clamped = clamp(idx, 0, aces_totalTableSize - 1);
+	return aces_gamut_cusp_table_hues_array[clamped];
 }
 
 vec3 computeCuspTableValue(int idx,
-                           vec3 RGB_corners[aces_totalCornerCount],
-                           vec3 JMh_corners[aces_totalCornerCount],
-                           inout vec2 previous) {
-    float searchHue = 0.0;
-    float outputHue = hueFromTableIndex(idx);
-    vec2 JM;
+						vec3 RGB_corners[aces_totalCornerCount],
+						vec3 JMh_corners[aces_totalCornerCount],
+						inout vec2 previous) {
+	float searchHue = 0.0;
+	float outputHue = hueFromTableIndex(idx);
+	vec2 JM;
 
-    searchHue = outputHue;
-    JM = findDisplayCuspForHue(searchHue, RGB_corners, JMh_corners, previous);
+	searchHue = outputHue;
+	JM = findDisplayCuspForHue(searchHue, RGB_corners, JMh_corners, previous);
 
-    float smoothedM = JM.y * (1.0 + aces_smooth_m * aces_smooth_cusps);
-    float gammaTopInv = computeUpperHullGammaInv(vec2(JM.x, smoothedM), aces_wrap_to_360(searchHue));
-    return vec3(JM.x, smoothedM, gammaTopInv);
+	float smoothedM = JM.y * (1.0 + aces_smooth_m * aces_smooth_cusps);
+	float gammaTopInv = computeUpperHullGammaInv(vec2(JM.x, smoothedM), aces_wrap_to_360(searchHue));
+	return vec3(JM.x, smoothedM, gammaTopInv);
 }
 
 float computeReachMValue(int idx) {
-    float i_float = float(idx);
-    float hue = i_float;
+	float i_float = float(idx);
+	float hue = i_float;
 
-    const float search_range = 50.;
-    const float search_maximum = 1300.;
-    float low = 0.;
-    float high = low + search_range;
-    bool outside = false;
+	const float search_range = 50.;
+	const float search_maximum = 1300.;
+	float low = 0.;
+	float high = low + search_range;
+	bool outside = false;
 
-    while ((outside != true) && (high < search_maximum)) {
-        vec3 searchJMh = vec3(aces_limit_J_max, high, hue);
-        vec3 newLimitRGB = JMh_to_RGB(searchJMh);
-        outside = any(lessThan(newLimitRGB, vec3(0.0)));
-        if (outside == false) {
-            low = high;
-            high = high + search_range;
-        }
-    }
+	while ((outside != true) && (high < search_maximum)) {
+		vec3 searchJMh = vec3(aces_limit_J_max, high, hue);
+		vec3 newLimitRGB = JMh_to_RGB(searchJMh);
+		outside = any(lessThan(newLimitRGB, vec3(0.0)));
+		if (outside == false) {
+			low = high;
+			high = high + search_range;
+		}
+	}
 
-    while (high - low > 1e-2) {
-        float sampleM = (high + low) / 2.;
-        vec3 searchJMh = vec3(aces_limit_J_max, sampleM, hue);
-        vec3 newLimitRGB = JMh_to_RGB(searchJMh);
-        outside = any(lessThan(newLimitRGB, vec3(0.0)));
-        if (outside) {
-            high = sampleM;
-        } else {
-            low = sampleM;
-        }
-    }
+	while (high - low > 1e-2) {
+		float sampleM = (high + low) / 2.;
+		vec3 searchJMh = vec3(aces_limit_J_max, sampleM, hue);
+		vec3 newLimitRGB = JMh_to_RGB(searchJMh);
+		outside = any(lessThan(newLimitRGB, vec3(0.0)));
+		if (outside) {
+			high = sampleM;
+		} else {
+			low = sampleM;
+		}
+	}
 
-    return high;
+	return high;
 }
 
 //======// Main //================================================================================//
 void main() {
-    if (gl_WorkGroupID.x == 0) {
-        // Generate reach M table
-        int idx = int(gl_LocalInvocationID.x);
-        if (idx < 360) {
-            float reachMValue = computeReachMValue(idx);
-            imageStore(acesReachMTable, idx + 1, vec4(reachMValue, vec3(0.0)));
-            // Wrap the hues
-            if (idx == 0) {
-                imageStore(acesReachMTable, 361, vec4(reachMValue, vec3(0.0)));
-            }
-            if (idx == 1) {
-                imageStore(acesReachMTable, 362, vec4(reachMValue, vec3(0.0)));
-            }
-            if (idx == 359) {
-                imageStore(acesReachMTable, 0, vec4(reachMValue, vec3(0.0)));
-            }
-        }
+	if (gl_WorkGroupID.x == 0) {
+		// Generate reach M table
+		int idx = int(gl_LocalInvocationID.x);
+		if (idx < 360) {
+			float reachMValue = computeReachMValue(idx);
+			imageStore(acesReachMTable, idx + 1, vec4(reachMValue, vec3(0.0)));
+			// Wrap the hues
+			if (idx == 0) {
+				imageStore(acesReachMTable, 361, vec4(reachMValue, vec3(0.0)));
+			}
+			if (idx == 1) {
+				imageStore(acesReachMTable, 362, vec4(reachMValue, vec3(0.0)));
+			}
+			if (idx == 359) {
+				imageStore(acesReachMTable, 0, vec4(reachMValue, vec3(0.0)));
+			}
+		}
 
-    } else {
-        // Generate gamut cusp table
-        int idx = int(gl_LocalInvocationID.x);
+	} else {
+		// Generate gamut cusp table
+		int idx = int(gl_LocalInvocationID.x);
 
-        if (idx == 0) {
-            buildLimitingCuspCornersTables(aces_sharedRGBCorners, aces_sharedJMhCorners);
-        }
-        barrier();
+		if (idx == 0) {
+			buildLimitingCuspCornersTables(aces_sharedRGBCorners, aces_sharedJMhCorners);
+		}
+		barrier();
 
-        if (idx == 0) {
-            vec2 previous = vec2(0.0);
-            vec3 firstNominalCusp = vec3(0.0);
-            vec3 secondNominalCusp = vec3(0.0);
-            vec3 lastNominalCusp = vec3(0.0);
+		if (idx == 0) {
+			vec2 previous = vec2(0.0);
+			vec3 firstNominalCusp = vec3(0.0);
+			vec3 secondNominalCusp = vec3(0.0);
+			vec3 lastNominalCusp = vec3(0.0);
 
-            for (int i = aces_baseIndex; i <= aces_lastNominalIndex; ++i) {
-                vec3 cusp = computeCuspTableValue(i, aces_sharedRGBCorners, aces_sharedJMhCorners, previous);
-                imageStore(acesGamutCuspTable, i, vec4(cusp, 0.0));
+			for (int i = aces_baseIndex; i <= aces_lastNominalIndex; ++i) {
+				vec3 cusp = computeCuspTableValue(i, aces_sharedRGBCorners, aces_sharedJMhCorners, previous);
+				imageStore(acesGamutCuspTable, i, vec4(cusp, 0.0));
 
-                if (i == aces_baseIndex) {
-                    firstNominalCusp = cusp;
-                } else if (i == aces_baseIndex + 1) {
-                    secondNominalCusp = cusp;
-                } else if (i == aces_lastNominalIndex) {
-                    lastNominalCusp = cusp;
-                }
-            }
+				if (i == aces_baseIndex) {
+					firstNominalCusp = cusp;
+				} else if (i == aces_baseIndex + 1) {
+					secondNominalCusp = cusp;
+				} else if (i == aces_lastNominalIndex) {
+					lastNominalCusp = cusp;
+				}
+			}
 
-            // Copy wrap entries from nominal entries to preserve continuity.
-            imageStore(acesGamutCuspTable, aces_lowerWrapIndex, vec4(lastNominalCusp, 0.0));
-            imageStore(acesGamutCuspTable, aces_upperWrapIndex, vec4(firstNominalCusp, 0.0));
-            imageStore(acesGamutCuspTable, aces_upperWrapPlusOneIndex, vec4(secondNominalCusp, 0.0));
-        }
-    }
+			// Copy wrap entries from nominal entries to preserve continuity.
+			imageStore(acesGamutCuspTable, aces_lowerWrapIndex, vec4(lastNominalCusp, 0.0));
+			imageStore(acesGamutCuspTable, aces_upperWrapIndex, vec4(firstNominalCusp, 0.0));
+			imageStore(acesGamutCuspTable, aces_upperWrapPlusOneIndex, vec4(secondNominalCusp, 0.0));
+		}
+	}
 }

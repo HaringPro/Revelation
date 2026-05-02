@@ -152,61 +152,61 @@ uniform vec3 viewLightDir;
 //================================================================================================//
 
 #if defined VOXY
-    uniform sampler2D vxDepthTexOpaque;
-    uniform sampler2D vxDepthTexTrans;
+	uniform sampler2D vxDepthTexOpaque;
+	uniform sampler2D vxDepthTexTrans;
 
-    uniform int vxRenderDistance;
+	uniform int vxRenderDistance;
 
-    uniform mat4 vxProj;
-    uniform mat4 vxProjInv;
-    uniform mat4 vxProjPrev;
+	uniform mat4 vxProj;
+	uniform mat4 vxProjInv;
+	uniform mat4 vxProjPrev;
 
-    #define lodDepthTex0 vxDepthTexTrans
-    #define lodDepthTex1 vxDepthTexOpaque
+	#define lodDepthTex0 vxDepthTexTrans
+	#define lodDepthTex1 vxDepthTexOpaque
 
-    #define lodRenderDist float(vxRenderDistance * 16)
+	#define lodRenderDist float(vxRenderDistance * 16)
 
-    #define lodProjection vxProj
-    #define lodProjectionInv vxProjInv
-    #define lodPrevProjection vxProjPrev
+	#define lodProjection vxProj
+	#define lodProjectionInv vxProjInv
+	#define lodPrevProjection vxProjPrev
 
 #elif defined DISTANT_HORIZONS
 
-    uniform sampler2D dhDepthTex0;
-    uniform sampler2D dhDepthTex1;
+	uniform sampler2D dhDepthTex0;
+	uniform sampler2D dhDepthTex1;
 
-    uniform int dhRenderDistance;
+	uniform int dhRenderDistance;
 
-    uniform float dhNearPlane;
-    uniform float dhFarPlane;
+	uniform float dhNearPlane;
+	uniform float dhFarPlane;
 
-    uniform mat4 dhProjection;
-    uniform mat4 dhProjectionInverse;
-    uniform mat4 dhPreviousProjection;
+	uniform mat4 dhProjection;
+	uniform mat4 dhProjectionInverse;
+	uniform mat4 dhPreviousProjection;
 
-    #define lodDepthTex0 dhDepthTex0
-    #define lodDepthTex1 dhDepthTex1
+	#define lodDepthTex0 dhDepthTex0
+	#define lodDepthTex1 dhDepthTex1
 
-    #define lodRenderDist float(dhRenderDistance)
+	#define lodRenderDist float(dhRenderDistance)
 
-    #define lodProjection dhProjection
-    #define lodProjectionInv dhProjectionInverse
-    #define lodPrevProjection dhPreviousProjection
+	#define lodProjection dhProjection
+	#define lodProjectionInv dhProjectionInverse
+	#define lodPrevProjection dhPreviousProjection
 
 #else // Fallback
 
-    #define lodDepthTex0 depthtex0
-    #define lodDepthTex1 depthtex1
+	#define lodDepthTex0 depthtex0
+	#define lodDepthTex1 depthtex1
 
-    #define lodRenderDist far
+	#define lodRenderDist far
 
-    #define lodProjection gbufferProjection
-    #define lodProjectionInv gbufferProjectionInverse
-    #define lodPrevProjection gbufferPreviousProjection
+	#define lodProjection gbufferProjection
+	#define lodProjectionInv gbufferProjectionInverse
+	#define lodPrevProjection gbufferPreviousProjection
 #endif
 
 #ifdef HDR_ENABLED
-    uniform float HdrGamePeakBrightness;
-    uniform float HdrGamePaperWhiteBrightness;
-    uniform float HdrUIBrightness;
+	uniform float HdrGamePeakBrightness;
+	uniform float HdrGamePaperWhiteBrightness;
+	uniform float HdrUIBrightness;
 #endif

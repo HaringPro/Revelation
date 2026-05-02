@@ -74,7 +74,7 @@ void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
 	vec2 upscalingCoord = screenCoord;
 	for (uint i = 0u; i < 6u; ++i) {
 		upscalingCoord *= 0.5;
-    	vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
+		vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
 		sampleCoord += viewPixelSize * float(i * 8);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
@@ -182,8 +182,9 @@ vec3 Lottes(vec3 x) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy);
- 	#if EXPOSURE_MODE == MANUAL
+	ivec2 texelPos = ivec2(gl_FragCoord.xy);
+
+	#if EXPOSURE_MODE == MANUAL
 		float exposure = exp2(-MANUAL_EV);
 	#else
 		float exposure = exposure.value;

@@ -6,7 +6,7 @@
 	Copyright (C) 2026 HaringPro
 	Apache License 2.0
 
-    Pass: Reproject scene history
+	Pass: Reproject scene history
 
 --------------------------------------------------------------------------------
 */
@@ -38,8 +38,8 @@ void main() {
 	float depth = loadDepth0(texelPos);
     vec2 previousCoord = ReprojectScreenPos(vec3(texelToUv(unscaleTexelPos(texelPos)), depth)).xy;
 
-    if (saturate(previousCoord) == previousCoord && depth > 0.56) {
-        vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
-        imageStore(colorimg4, texelPos, vec4(reprojectedHistory, 1.0));
-    }
+	if (saturate(previousCoord) == previousCoord && depth > 0.56) {
+		vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;
+		imageStore(colorimg4, texelPos, vec4(reprojectedHistory, 1.0));
+	}
 }

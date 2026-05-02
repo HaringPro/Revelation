@@ -7,7 +7,7 @@
 	Apache License 2.0
 
 	Reference: https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
-               https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
+			https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 
 --------------------------------------------------------------------------------
 */
@@ -35,37 +35,37 @@ writeonly uniform image2D brdfLutImg;
 const uint samples = 2048u;
 
 vec2 IntegrateBRDF(float roughness, float NdotV) {
-    vec3 V; // View direction
-    V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta)
-    V.y = 0.0;
-    V.z = NdotV; // cos(theta)
+	vec3 V; // View direction
+	V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta)
+	V.y = 0.0;
+	V.z = NdotV; // cos(theta)
 
-    float A = 0.0; // Scale factor
-    float B = 0.0; // Offset factor
-    const vec3 N = vec3(0.0, 0.0, 1.0); // Normal
+	float A = 0.0; // Scale factor
+	float B = 0.0; // Offset factor
+	const vec3 N = vec3(0.0, 0.0, 1.0); // Normal
 
-    for (uint i = 0u; i < samples; ++i) {
-        vec2 Xi = Hammersley(i, samples);
-        vec3 H = SampleGGXVNDF(Xi, V, roughness, N);
-        vec3 L = 2.0 * dot(V, H) * H - V;
+	for (uint i = 0u; i < samples; ++i) {
+		vec2 Xi = Hammersley(i, samples);
+		vec3 H = SampleGGXVNDF(Xi, V, roughness, N);
+		vec3 L = 2.0 * dot(V, H) * H - V;
 
-        float NdotL = L.z;
-        if (NdotL > 0.0) {
+		float NdotL = L.z;
+		if (NdotL > 0.0) {
 			float VdotH = saturate(dot(V, H));
 
-            // Geometric occlusion term
-            float G_Vis = SpecularThroughputGGX(NdotL, NdotV, roughness);
+			// Geometric occlusion term
+			float G_Vis = SpecularThroughputGGX(NdotL, NdotV, roughness);
 
-            // Fresnel term approximation
-            float Fc = pow5(1.0 - VdotH);
+			// Fresnel term approximation
+			float Fc = pow5(1.0 - VdotH);
 
-            // Split-sum approximation
-            A += (1.0 - Fc) * G_Vis;
-            B += Fc * G_Vis;
-        }
-    }
+			// Split-sum approximation
+			A += (1.0 - Fc) * G_Vis;
+			B += Fc * G_Vis;
+		}
+	}
 
-    return vec2(A, B) * rcp(float(samples));
+	return vec2(A, B) * rcp(float(samples));
 }
 
 //======// Main //================================================================================//
@@ -73,6 +73,6 @@ void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 	vec2 uv = (vec2(tid) + 0.5) / vec2(imageSize(brdfLutImg));
 
-    vec2 brdf = IntegrateBRDF(uv.x, uv.y);
+	vec2 brdf = IntegrateBRDF(uv.x, uv.y);
 	imageStore(brdfLutImg, tid, vec4(brdf, 0.0, 1.0));
 }

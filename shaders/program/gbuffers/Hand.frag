@@ -45,7 +45,7 @@ uniform sampler2D tex;
 #endif
 
 #if defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
+	uniform sampler2D specular;
 #endif
 
 //======// Function //============================================================================//
@@ -85,8 +85,8 @@ void main() {
 		vec3 bitangent = cross(tangent, normal) * uintBitsToFloat(tangentPack.y);
 		mat3 tbnMatrix = mat3(tangent, bitangent, normal);
 
-        vec3 normalTex = texture(normals, texCoord).rgb;
-        DecodeNormalTex(normalTex);
+		vec3 normalTex = texture(normals, texCoord).rgb;
+		DecodeNormalTex(normalTex);
 		normalOut.zw = OctEncodeSnorm(tbnMatrix * normalTex);
 	#else
 		normalOut.zw = normalOut.xy;

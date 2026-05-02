@@ -100,14 +100,14 @@ mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, uint ste
 	for (uint i = 0u; i < steps; ++i) {
 		// Squared step distribution
 		float fi = float(i) + dither;
-        vec3 rayPos = startPos + rayStep * sqr(fi);
+		vec3 rayPos = startPos + rayStep * sqr(fi);
 		vec3 shadowPos = shadowStart + shadowStep * sqr(fi);
 
 		vec2 stepDensity = CalculateFogDensity(rayPos, uniformFog);
 
 		if (dot(stepDensity, vec2(1.0)) < EPS) continue; // Faster than maxOf()
 
-    #if defined PASS_VOLUMETRIC_FOG
+	#if defined PASS_VOLUMETRIC_FOG
 		vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 		#ifdef COLORED_VOLUMETRIC_FOG
 			vec3 sampleShadow = vec3(1.0);
@@ -128,9 +128,9 @@ mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, uint ste
 				sampleShadow = step(shadowScreenPos.z, texelFetch(shadowtex1, shadowTexel, 0).x);
 			}
 		#endif
-    #else
-        float sampleShadow = 1.0;
-    #endif
+	#else
+		float sampleShadow = 1.0;
+	#endif
 
 		#ifdef VF_CLOUD_SHADOWS
 			vec2 cloudShadowCoord = WorldToCloudShadowScreenPos(rayPos).xy;

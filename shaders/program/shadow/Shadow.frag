@@ -51,7 +51,7 @@ void main() {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
 
-        if (albedo.a > oms(rcp255)) {
+		if (albedo.a > oms(rcp255)) {
 			shadowcolor0Out = albedo.rgb * vectorData;
 		} else {
 			albedo.a = approxSqrt(approxSqrt(albedo.a));

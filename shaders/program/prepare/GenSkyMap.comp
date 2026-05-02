@@ -43,7 +43,7 @@ writeonly uniform image2D skyEnvMapImg;
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 
-    // Checkerboard render
+	// Checkerboard render
 	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
 	if ((tid & 1) == offset || global.historyReset) {
 		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyEnvMapImg));

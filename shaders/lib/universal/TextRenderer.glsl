@@ -1,68 +1,68 @@
 /*
 =============================================================================
 
-    Description: This is a character renderer
-    Reference: https://github.com/moyongxin/mc-shaders-helpers
+	Description: This is a character renderer
+	Reference: https://github.com/moyongxin/mc-shaders-helpers
 
-    Copyright © 2024 Mo Yongxin "qwertyuiop", Factorization, HaringPro 
+	Copyright © 2024 Mo Yongxin "qwertyuiop", Factorization, HaringPro
 
 =============================================================================
 
-    How to use?
-    1. Copy this file to your shaderpacks
-    2. Include this file in your fragment shader
-    3. Put your sentence in the follwing array
-    4. Call the function renderText()
+	How to use?
+	1. Copy this file to your shaderpacks
+	2. Include this file in your fragment shader
+	3. Put your sentence in the follwing array
+	4. Call the function renderText()
 
-    Encoding
-    uvec3(x:lower part,y:upper part,z:vertical offset)
+	Encoding
+	uvec3(x:lower part,y:upper part,z:vertical offset)
 
-    It use a 8*8(4*8*2) dot matrix
+	It use a 8*8(4*8*2) dot matrix
 
-    eg:A
+	eg:A
 
-    original
-    0 0 0 1 1 0 0 0
-    0 0 1 0 0 1 0 0
-    0 0 1 0 0 1 0 0
-    0 1 0 0 0 0 1 0
-    0 1 1 1 1 1 1 0
-    0 1 0 0 0 0 1 0
-    0 1 0 0 0 0 1 0
-    0 1 0 0 0 0 1 0
+	original
+	0 0 0 1 1 0 0 0
+	0 0 1 0 0 1 0 0
+	0 0 1 0 0 1 0 0
+	0 1 0 0 0 0 1 0
+	0 1 1 1 1 1 1 0
+	0 1 0 0 0 0 1 0
+	0 1 0 0 0 0 1 0
+	0 1 0 0 0 0 1 0
 
-    upper part
-    <-<-<-<-<-<-<-
-    0 0 0 1 1 0 0 0 (1)
-    0 0 1 0 0 1 0 0 (2)
-    0 0 1 0 0 1 0 0 (3)
-    0 1 0 0 0 0 1 0 (4)
-    lower part
-    <-<-<-<-<-<-<-
-    0 1 1 1 1 1 1 0 (1)
-    0 1 0 0 0 0 1 0 (2)
-    0 1 0 0 0 0 1 0 (3)
-    0 1 0 0 0 0 1 0 (4)
+	upper part
+	<-<-<-<-<-<-<-
+	0 0 0 1 1 0 0 0 (1)
+	0 0 1 0 0 1 0 0 (2)
+	0 0 1 0 0 1 0 0 (3)
+	0 1 0 0 0 0 1 0 (4)
+	lower part
+	<-<-<-<-<-<-<-
+	0 1 1 1 1 1 1 0 (1)
+	0 1 0 0 0 0 1 0 (2)
+	0 1 0 0 0 0 1 0 (3)
+	0 1 0 0 0 0 1 0 (4)
 
-    Read it form right to left, form from top to bottom
-    lower part (1)01111110 (2)01000010 (3)01000010 (4)01000010
-    upper part (1)00011000 (2)00100100 (3)00100100 (4)01000010
+	Read it form right to left, form from top to bottom
+	lower part (1)01111110 (2)01000010 (3)01000010 (4)01000010
+	upper part (1)00011000 (2)00100100 (3)00100100 (4)01000010
 
-    Combine 0 and 1 together and convert to an unsigned 16-bit integer in hexadecimal format.
+	Combine 0 and 1 together and convert to an unsigned 16-bit integer in hexadecimal format.
 
-    lower part (1)01111110 (2)01000010 (3)01000010 (4)01000010 -> 0x7e424242u
-    upper part (1)00011000 (2)00100100 (3)00100100 (4)01000010 -> 0x18242442u
+	lower part (1)01111110 (2)01000010 (3)01000010 (4)01000010 -> 0x7e424242u
+	upper part (1)00011000 (2)00100100 (3)00100100 (4)01000010 -> 0x18242442u
 
-    Place it into the XY components of a uvec3 (x is the lower half, y is the upper half).
-    const uvec3 _A_ = uvec3(0x7e424242u,0x18242442u,0);
+	Place it into the XY components of a uvec3 (x is the lower half, y is the upper half).
+	const uvec3 _A_ = uvec3(0x7e424242u,0x18242442u,0);
 
-    When you need vertical offset,please change Z components of a uvec3
+	When you need vertical offset,please change Z components of a uvec3
 
-    If you don't like the style of characters,you can edit it by yourself.
+	If you don't like the style of characters,you can edit it by yourself.
 
-    If you don't understand how it works,dont' edit the character code.
+	If you don't understand how it works,dont' edit the character code.
 
-    It is strange that we can't use "char" as name of variable or constant on NVGPU.
+	It is strange that we can't use "char" as name of variable or constant on NVGPU.
 
 =============================================================================
 */
@@ -184,46 +184,46 @@ bool isChar(uint text, uint index) {
 }
 
 bool isText(ivec2 texel, ivec2 pos, uvec3 text, int size) {
-    pos.y -= int(text.z) * size; // Vertical offset
+	pos.y -= int(text.z) * size; // Vertical offset
 
-    ivec2 relPos = (texel - pos) / size;
+	ivec2 relPos = (texel - pos) / size;
 
-    // Calculate the index for the lower part
-    // 8 is the number of columns in the character grid
-    uint index = uint(relPos.x + relPos.y * 8); 
+	// Calculate the index for the lower part
+	// 8 is the number of columns in the character grid
+	uint index = uint(relPos.x + relPos.y * 8);
 
-    // Lower part
-    bool result = isChar(text.x, index);
+	// Lower part
+	bool result = isChar(text.x, index);
 
-    // Upper part
-    result = result || isChar(text.y, index - 32u);
+	// Upper part
+	result = result || isChar(text.y, index - 32u);
 
-    return result;
+	return result;
 }
 
 vec3 renderText(ivec2 pos, int size, vec3 color) {
 	vec3 result = vec3(0.0);
-    ivec2 screenTexel = ivec2(gl_FragCoord.st);
+	ivec2 screenTexel = ivec2(gl_FragCoord.st);
 
-    if (max(screenTexel, ivec2(pos.x, pos.y - size * 6)) == screenTexel) {
-        int lastText = text_advances[text_encodings.length() - 1];
-        if (min(screenTexel, ivec2(pos.x + size * (lastText + 6), pos.y + size * 6 + 12)) == screenTexel) {
-            int relPos = screenTexel.x - pos.x;
-            relPos /= size;
+	if (max(screenTexel, ivec2(pos.x, pos.y - size * 6)) == screenTexel) {
+		int lastText = text_advances[text_encodings.length() - 1];
+		if (min(screenTexel, ivec2(pos.x + size * (lastText + 6), pos.y + size * 6 + 12)) == screenTexel) {
+			int relPos = screenTexel.x - pos.x;
+			relPos /= size;
 
-            // Binary search for the character index
-            int left = 0, right = text_advances.length();
-            while (left < right) {
-                int middle = (left + right) >> 1;
-                if (relPos >= text_advances[middle]) left = middle + 1;
-                else right = middle;
-            }
+			// Binary search for the character index
+			int left = 0, right = text_advances.length();
+			while (left < right) {
+				int middle = (left + right) >> 1;
+				if (relPos >= text_advances[middle]) left = middle + 1;
+				else right = middle;
+			}
 
-            int index = left - 1;
-            pos += ivec2(size * text_advances[index], 0);
-            result = float(isText(screenTexel, pos, text_encodings[index], size)) * color;
-        }
-    }
+			int index = left - 1;
+			pos += ivec2(size * text_advances[index], 0);
+			result = float(isText(screenTexel, pos, text_encodings[index], size)) * color;
+		}
+	}
 
 	return result;
 }

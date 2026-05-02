@@ -45,5 +45,5 @@ void main() {
 		bloomTiles += sharedData[index + i].rgb * kernel[abs(i - 4)];
 	}
 
-    imageStore(colorimg4, (texel), vec4(bloomTiles, 1.0));
+	imageStore(colorimg4, texel, vec4(bloomTiles, 1.0));
 }

@@ -7,8 +7,8 @@
 	Apache License 2.0
 
 	Pass: Compute auto exposure
-    Reference:  https://knarkowicz.wordpress.com/2016/01/09/automatic-exposure/
-                https://bruop.github.io/exposure/
+	Reference:  https://knarkowicz.wordpress.com/2016/01/09/automatic-exposure/
+				https://bruop.github.io/exposure/
 
 --------------------------------------------------------------------------------
 */
@@ -37,13 +37,13 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 shared uint sharedPrefix[HISTOGRAM_BIN_COUNT];
 #ifdef SUBGROUP_OPS
-    #if defined MC_GL_VENDOR_NVIDIA
-        shared uint sharedBinIndex[gl_NumSubgroups];
-    #else
-        shared uint sharedBinIndex[16];
-    #endif
+	#if defined MC_GL_VENDOR_NVIDIA
+		shared uint sharedBinIndex[gl_NumSubgroups];
+	#else
+		shared uint sharedBinIndex[16];
+	#endif
 #else
-    shared uint sharedBinIndex[HISTOGRAM_BIN_COUNT];
+	shared uint sharedBinIndex[HISTOGRAM_BIN_COUNT];
 #endif
 
 //======// Function //============================================================================//
@@ -52,91 +52,91 @@ const float autoEvRange = AUTO_EV_MAX - AUTO_EV_MIN;
 const float autoEvRangeInv = 1.0 / autoEvRange;
 
 void ParallelSum(uint index) {
-    #ifdef SUBGROUP_OPS
-        uint sum = subgroupAdd(sharedBinIndex[index]);
+	#ifdef SUBGROUP_OPS
+		uint sum = subgroupAdd(sharedBinIndex[index]);
 
-        SCALARIZED_LOAD(sharedBinIndex[gl_SubgroupID], sum);
-        barrier();
+		SCALARIZED_LOAD(sharedBinIndex[gl_SubgroupID], sum);
+		barrier();
 
-        if (index < gl_NumSubgroups) {
-            sharedBinIndex[0] = subgroupAdd(sharedBinIndex[index]);
-        }
-    #else
-        for (uint stride = HISTOGRAM_BIN_COUNT >> 1u; stride > 0u; stride >>= 1u) {
-            if (index < stride) {
-                sharedBinIndex[index] += sharedBinIndex[index + stride];
-            }
-            barrier();
-        }
-    #endif
+		if (index < gl_NumSubgroups) {
+			sharedBinIndex[0] = subgroupAdd(sharedBinIndex[index]);
+		}
+	#else
+		for (uint stride = HISTOGRAM_BIN_COUNT >> 1u; stride > 0u; stride >>= 1u) {
+			if (index < stride) {
+				sharedBinIndex[index] += sharedBinIndex[index + stride];
+			}
+			barrier();
+		}
+	#endif
 }
 
 void ParallelPrefixSum(uint index) {
-    #ifdef SUBGROUP_OPS
-        uint prefix = subgroupInclusiveAdd(exposure.histogram[index]);
-        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1u) {
-            sharedPrefix[gl_SubgroupID] = prefix;
-        }
-        barrier();
+	#ifdef SUBGROUP_OPS
+		uint prefix = subgroupInclusiveAdd(exposure.histogram[index]);
+		if (gl_SubgroupInvocationID == gl_SubgroupSize - 1u) {
+			sharedPrefix[gl_SubgroupID] = prefix;
+		}
+		barrier();
 
-        if (gl_SubgroupID == 0u) {
-            sharedPrefix[index] = subgroupInclusiveAdd(sharedPrefix[index]);
-        }
-        barrier();
+		if (gl_SubgroupID == 0u) {
+			sharedPrefix[index] = subgroupInclusiveAdd(sharedPrefix[index]);
+		}
+		barrier();
 
-        prefix += gl_SubgroupID > 0u ? sharedPrefix[gl_SubgroupID - 1u] : 0u;
-        sharedPrefix[index] = prefix;
-        barrier();
-    #else
-        sharedPrefix[index] = exposure.histogram[index];
-        for (uint stride = 1u; stride < HISTOGRAM_BIN_COUNT; stride <<= 1u) {
-            uint dstIndex = index + stride;
-            if (dstIndex < HISTOGRAM_BIN_COUNT) {
-                sharedPrefix[dstIndex] += sharedPrefix[index];
-            }
-            barrier();
-        }
-    #endif
+		prefix += gl_SubgroupID > 0u ? sharedPrefix[gl_SubgroupID - 1u] : 0u;
+		sharedPrefix[index] = prefix;
+		barrier();
+	#else
+		sharedPrefix[index] = exposure.histogram[index];
+		for (uint stride = 1u; stride < HISTOGRAM_BIN_COUNT; stride <<= 1u) {
+			uint dstIndex = index + stride;
+			if (dstIndex < HISTOGRAM_BIN_COUNT) {
+				sharedPrefix[dstIndex] += sharedPrefix[index];
+			}
+			barrier();
+		}
+	#endif
 }
 
 //======// Main //================================================================================//
 void main() {
 	uint index = gl_LocalInvocationIndex;
 
-    // Get cumulative histogram
+	// Get cumulative histogram
 	ParallelPrefixSum(index);
 
-    float sumBin = float(sharedPrefix[HISTOGRAM_BIN_COUNT - 1u]);
-    uint lowerBound = uint(round(HISTOGRAM_LOWER_BOUND * sumBin));
-    uint upperBound = uint(round(HISTOGRAM_UPPER_BOUND * sumBin));
+	float sumBin = float(sharedPrefix[HISTOGRAM_BIN_COUNT - 1u]);
+	uint lowerBound = uint(round(HISTOGRAM_LOWER_BOUND * sumBin));
+	uint upperBound = uint(round(HISTOGRAM_UPPER_BOUND * sumBin));
 
 	sharedPrefix[index] = clamp(sharedPrefix[index], lowerBound, upperBound);
 	barrier();
 
-    // Get weighted bin index
+	// Get weighted bin index
 	sharedPrefix[index] -= index > 0u ? sharedPrefix[index - 1u] : 0u;
-    sharedBinIndex[index] = sharedPrefix[index] * index;
+	sharedBinIndex[index] = sharedPrefix[index] * index;
 
 	ParallelSum(index);
 
-    // Compute exposure value in thread 0
-    if (index == 0u) {
+	// Compute exposure value in thread 0
+	if (index == 0u) {
 		float avgLuminance = float(sharedBinIndex[0]) / float(upperBound - lowerBound);
-        avgLuminance = avgLuminance * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN;
+		avgLuminance = avgLuminance * (autoEvRange / float(HISTOGRAM_BIN_COUNT - 1u)) + AUTO_EV_MIN;
 
-        // Exposure compensation curve
-        // #define log10(x) (log2(x) * rcp(log2(10.0)))
-        // float keyValue = 1.03 - 2.0 / (log10(avgLuminance + 1.0) + 2.0);
-        // keyValue = mix(keyValue, 0.5, nightVision);
-        float exposureCurve = mix(0.65, 1.0, nightVision);
+		// Exposure compensation curve
+		// #define log10(x) (log2(x) * rcp(log2(10.0)))
+		// float keyValue = 1.03 - 2.0 / (log10(avgLuminance + 1.0) + 2.0);
+		// keyValue = mix(keyValue, 0.5, nightVision);
+		float exposureCurve = mix(0.65, 1.0, nightVision);
 
-        float targetExposure = exp2(AUTO_EV_BIAS - exposureCurve * avgLuminance) * 0.18;
-        float prevExposure = exposure.value;
+		float targetExposure = exp2(AUTO_EV_BIAS - exposureCurve * avgLuminance) * 0.18;
+		float prevExposure = exposure.value;
 
-        float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
-        exposure.value = mix(targetExposure, prevExposure, exp2(-exposureRate * frameTime));
+		float exposureRate = targetExposure > prevExposure ? EXPOSURE_SPEED_DOWN : EXPOSURE_SPEED_UP;
+		exposure.value = mix(targetExposure, prevExposure, exp2(-exposureRate * frameTime));
 	}
 
-    // Clear histogram bin
-    exposure.histogram[index] = 0u;
+	// Clear histogram bin
+	exposure.histogram[index] = 0u;
 }

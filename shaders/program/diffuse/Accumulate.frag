@@ -6,9 +6,9 @@
 	Copyright (C) 2026 HaringPro
 	Apache License 2.0
 
-    Pass: Accumulation and variance estimation
+	Pass: Accumulation and variance estimation
 	Reference:  https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering://svgf_preprint.pdf
-                https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
+				https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
 
 --------------------------------------------------------------------------------
 */
@@ -42,16 +42,16 @@ layout (location = 1) out vec3 encodedNormalDepth;
 // texelPos is unscaled (half resolution), screenPos is unscaled (full resolution)
 void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	vec3 viewPos = ScreenToViewPos(screenPos);
-    vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
+	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	vec3 prevWorldPos = worldPos + (cameraPosition - previousCameraPosition) * step(0.56, screenPos.z); // To previous frame's world space
-    vec3 prevViewPos = transMAD(gbufferPreviousModelView, prevWorldPos); // To previous frame's view space
+	vec3 prevViewPos = transMAD(gbufferPreviousModelView, prevWorldPos); // To previous frame's view space
 	vec3 prevNDCPos = projMAD(gbufferPreviousProjection, prevViewPos) * rcp(-prevViewPos.z); // To previous frame's NDC space
 
-    #ifdef TAA_ENABLED
-        prevNDCPos.xy += taaJitterPrev;
-    #endif
-    vec2 prevCoord = prevNDCPos.xy * 0.5 + 0.5;
+	#ifdef TAA_ENABLED
+		prevNDCPos.xy += taaJitterPrev;
+	#endif
+	vec2 prevCoord = prevNDCPos.xy * 0.5 + 0.5;
 
     //texelPos is half resolution(unscaled)
     vec2 currCoord = texelToUv(texelPos) / MC_RENDER_SCALE_FACTOR;
@@ -73,17 +73,17 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
         ivec2 floorTexel = ivec2(floor(prevTexel));
         vec2 fractTexel = prevTexel - vec2(floorTexel);
 
-        float bilinearWeight[4] = {
-            oms(fractTexel.x) * oms(fractTexel.y),
-            fractTexel.x      * oms(fractTexel.y),
-            oms(fractTexel.x) * fractTexel.y,
-            fractTexel.x      * fractTexel.y
-        };
+		float bilinearWeight[4] = {
+			oms(fractTexel.x) * oms(fractTexel.y),
+			fractTexel.x      * oms(fractTexel.y),
+			oms(fractTexel.x) * fractTexel.y,
+			fractTexel.x      * fractTexel.y
+		};
 
         // Restrict sampling to the valid half‑resolution area
         ivec2 texelEnd = ivec2(halfViewSize * MC_RENDER_SCALE_FACTOR) - 1;
 
-        vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
+		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 		float NdotV = abs(dot(worldNormal, worldDir));
 
         for (uint i = 0u; i < 4u; ++i) {
@@ -92,20 +92,20 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 			    vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).xyz;
                 vec4 sampleIrradiance = vec4(0);//texelFetch(colortex2, sampleTexel, 0);
 
-                float weight = exp2(-8.0 * distance(encodedNormalDepth.z, sampleAux.z) * NdotV);
-                weight *= linearstep(0.5, 0.8, saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
+				float weight = exp2(-8.0 * distance(encodedNormalDepth.z, sampleAux.z) * NdotV);
+				weight *= linearstep(0.5, 0.8, saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
 
-                confidence = max(confidence, weight);
-                weight *= bilinearWeight[i];
+				confidence = max(confidence, weight);
+				weight *= bilinearWeight[i];
 
-                prevDiffuse += sampleIrradiance * weight;
-                sumWeight += weight;
-            }
-        }
+				prevDiffuse += sampleIrradiance * weight;
+				sumWeight += weight;
+			}
+		}
 
-        if (sumWeight > EPS) {
-            sumWeight = 1.0 / sumWeight;
-            prevDiffuse *= sumWeight;
+		if (sumWeight > EPS) {
+			sumWeight = 1.0 / sumWeight;
+			prevDiffuse *= sumWeight;
 
             integratedDiffuse.a = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
             //colortex3`data is half resolution
@@ -116,25 +116,25 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
                 integratedDiffuse.rgb = texelFetch(colortex3, scaleTexelPos(texelPos), 0).rgb;
             }
 
-            float alpha = rcp(integratedDiffuse.a);
-            integratedDiffuse.rgb = mix(min(prevDiffuse.rgb, FP16_MAX), integratedDiffuse.rgb, alpha);
-            return;
-        }
-    }
+			float alpha = rcp(integratedDiffuse.a);
+			integratedDiffuse.rgb = mix(min(prevDiffuse.rgb, FP16_MAX), integratedDiffuse.rgb, alpha);
+			return;
+		}
+	}
 
-    integratedDiffuse.rgb = textureLod(colortex3, currCoord, 3.0).rgb;
+	integratedDiffuse.rgb = textureLod(colortex3, currCoord, 3.0).rgb;
 }
 
 float GetClosestDepthN(ivec2 texel) {
-    float depth = 1.0;
+	float depth = 1.0;
 
-    for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = offset3x3N[i] + texel;
-        float sampleDepth = loadDepth0(sampleTexel);
-        depth = min(depth, sampleDepth);
-    }
+	for (uint i = 0u; i < 8u; ++i) {
+		ivec2 sampleTexel = offset3x3N[i] + texel;
+		float sampleDepth = loadDepth0(sampleTexel);
+		depth = min(depth, sampleDepth);
+	}
 
-    return depth;
+	return depth;
 }
 
 //======// Main //================================================================================//
@@ -161,17 +161,17 @@ void main() {
         }
     #endif
 
-    integratedDiffuse = vec4(0.0);
-    encodedNormalDepth = vec3(0.0);
+	integratedDiffuse = vec4(0.0);
+	encodedNormalDepth = vec3(0.0);
 
-    if (terrainCheck) {
-        #if defined LOD_MOD
-            if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
-        #endif
+	if (terrainCheck) {
+		#if defined LOD_MOD
+			if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
+		#endif
 
-        vec3 screenPos = vec3(renderCoord, depth);
-        vec3 worldNormal = FetchSurfaceNormal(renderTexel);
+		vec3 screenPos = vec3(renderCoord, depth);
+		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 
-        TemporalFilter(texelPos, screenPos, worldNormal);
-    }
+		TemporalFilter(texelPos, screenPos, worldNormal);
+	}
 }

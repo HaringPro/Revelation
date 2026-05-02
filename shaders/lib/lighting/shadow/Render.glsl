@@ -74,7 +74,7 @@ vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, f
 	blockerDepth = clamp(blockerDepth, minRadius, 0.25);
 	vec2 penumbraRadius = blockerDepth * distortionFactor * diagonal2(shadowProjection);
 
-    float shadow = 0.0;
+	float shadow = 0.0;
 	vec3 color = vec3(0.0);
 	vec2 waterData = vec2(0.0); // (depth, count)
 
@@ -86,21 +86,21 @@ vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, f
 		shadow += sampleDepth1;
 
 	#ifdef COLORED_SHADOWS
-        if (floatBitsToUint(sampleDepth1) > 0u) {
-            ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
-            float sampleDepth0 = texelFetch(shadowtex0, sampleTexel, 0).x;
+		if (floatBitsToUint(sampleDepth1) > 0u) {
+			ivec2 sampleTexel = ivec2(sampleCoord * realShadowMapRes);
+			float sampleDepth0 = texelFetch(shadowtex0, sampleTexel, 0).x;
 
-            if (shadowScreenPos.z > sampleDepth0) {
-                float waterMask = texelFetch(shadowcolor1, sampleTexel, 0).w;
-                if (waterMask > 0.5) {
-                    waterData += vec2(sampleDepth0 - shadowScreenPos.z, 1.0);
-                } else {
-                    color += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
-                }
-            } else {
-                color += 1.0;
-            }
-        }
+			if (shadowScreenPos.z > sampleDepth0) {
+				float waterMask = texelFetch(shadowcolor1, sampleTexel, 0).w;
+				if (waterMask > 0.5) {
+					waterData += vec2(sampleDepth0 - shadowScreenPos.z, 1.0);
+				} else {
+					color += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
+				}
+			} else {
+				color += 1.0;
+			}
+		}
 	#endif
 	}
 
@@ -159,7 +159,7 @@ float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount
 
 	float viewDistInv = inversesqrt(sdot(viewPos));
 	float diffTolerance = 5e-4 * viewDistInv;
-    float absorption = exp2(-0.125 / (viewDistInv * sssAmount));
+	float absorption = exp2(-0.125 / (viewDistInv * sssAmount));
 
 	float result = 1.0;
 

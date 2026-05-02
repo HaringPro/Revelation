@@ -12,6 +12,6 @@
 writeonly uniform image2D CLEAR_IMAGE;
 
 void main() {
-    ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
-    imageStore(CLEAR_IMAGE, tid, CLEAR_COLOR);
+	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
+	imageStore(CLEAR_IMAGE, tid, CLEAR_COLOR);
 }

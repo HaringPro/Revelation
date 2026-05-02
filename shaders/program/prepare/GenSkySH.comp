@@ -57,7 +57,7 @@ void ParallelReduceSum(uint index, uint samples) {
 			}
 		}
 
-    	memoryBarrierShared();
+		memoryBarrierShared();
 		barrier();
 	}
 }
@@ -66,7 +66,7 @@ void ParallelReduceSum(uint index, uint samples) {
 void main() {
 	const uint samples = gl_WorkGroupSize.x;
 
-    uint index = gl_LocalInvocationIndex;
+	uint index = gl_LocalInvocationIndex;
 
 	// Sample and compute SH coefficients
 	vec3 direction = SampleUniformSphere(R2(index));

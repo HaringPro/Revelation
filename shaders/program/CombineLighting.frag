@@ -69,12 +69,12 @@ uniform sampler2D cloudOriginTex;
         ivec2 floorTexel = ivec2(floor(coord));
         vec2 fractTexel = coord - vec2(floorTexel);
 
-        float bilinearWeight[4] = {
-            oms(fractTexel.x) * oms(fractTexel.y),
-            fractTexel.x      * oms(fractTexel.y),
-            oms(fractTexel.x) * fractTexel.y,
-            fractTexel.x      * fractTexel.y
-        };
+		float bilinearWeight[4] = {
+			oms(fractTexel.x) * oms(fractTexel.y),
+			fractTexel.x      * oms(fractTexel.y),
+			oms(fractTexel.x) * fractTexel.y,
+			fractTexel.x      * fractTexel.y
+		};
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = clamp(floorTexel + offset2x2[i], ivec2(1), texelEnd);
@@ -83,7 +83,7 @@ uniform sampler2D cloudOriginTex;
 
 			float weight = pow4(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
 			weight *= exp2(distance(sampleAux.z, viewDistance) * sigmaZ);
-            weight *= bilinearWeight[i];
+			weight *= bilinearWeight[i];
 
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
 
@@ -91,7 +91,7 @@ uniform sampler2D cloudOriginTex;
 			sumWeight += weight;
 		}
 
-        if (sumWeight < EPS) return vec3(0.0);
+		if (sumWeight < EPS) return vec3(0.0);
 
 		return sum * rcp(sumWeight);
 	}
@@ -241,14 +241,14 @@ void main() {
 		float NdotV = abs(dot(worldNormal, worldDir));
 
 		// Shadows and SSS
-        if (NdotL + sssAmount > EPS) {
+		if (NdotL + sssAmount > EPS) {
 			vec3 shadow = vec3(saturate(NdotL * FLT_MAX));
 			float surfaceDepth = 0.0;
 
 			float normalOffsetBase = (viewDist * 2e-3 + 2e-2) * (2.0 - NdotL);
 
 			// PCSS
-        	if (distanceFade < EPS) {
+			if (distanceFade < EPS) {
 				shadow *= CalculatePCSS(worldPos, geoNormal * normalOffsetBase, dither, surfaceDepth);
 			}
 
@@ -269,8 +269,8 @@ void main() {
 				float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
 				vec3 sss = sigmaS * phase * exp2(-rLOG2 * surfaceDepth * (sigmaS + sigmaA));
 
-				float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
-				sss *= mix(1.0, contactShadow, saturate(distanceFade + cutout * 0.5));
+				float cutout = step(maxOf(abs(geoNormal)), 0.99);
+				sss *= mix(1.0, contactShadow, saturate(distanceFade + cutout * 0.75));
 
 				diffuseRadiance += sunlightBase * sss * SUBSURFACE_SCATTERING_BRIGHTNESS;
 			}
@@ -284,10 +284,10 @@ void main() {
 					#endif
 				#endif
 
-                vec3 halfway = normalize(worldLightDir - worldDir);
-                float NdotH = saturate(dot(worldNormal, halfway));
-                float LdotH = saturate(dot(worldLightDir, halfway));
-                float VdotH = saturate(-dot(worldDir, halfway));
+				vec3 halfway = normalize(worldLightDir - worldDir);
+				float NdotH = saturate(dot(worldNormal, halfway));
+				float LdotH = saturate(dot(worldLightDir, halfway));
+				float VdotH = saturate(-dot(worldDir, halfway));
 
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
 				specularRadiance += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, material.roughness, f0) * NdotL;

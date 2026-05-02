@@ -1,7 +1,7 @@
 // This file is part of the FidelityFX SDK.
 //
 // Copyright (C) 2025 Advanced Micro Devices, Inc.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -171,7 +171,7 @@ typedef bool FfxBoolean;
 
 /// @defgroup HLSL62Types HLSL 6.2 And Above Types
 /// HLSL 6.2 and above type defines for all commonly used variables
-/// 
+///
 /// @ingroup HLSLTypes
 
 /// A typedef for a floating point value.
@@ -244,7 +244,7 @@ typedef int32_t4    FfxInt32x4;
 
 /// @defgroup HLSLBaseTypes HLSL 6.1 And Below Types
 /// HLSL 6.1 and below type defines for all commonly used variables
-/// 
+///
 /// @ingroup HLSLTypes
 
 #define FfxFloat32   float

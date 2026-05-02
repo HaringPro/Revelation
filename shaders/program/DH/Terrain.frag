@@ -39,13 +39,13 @@ flat in uint materialID;
 
 //======// Main //================================================================================//
 void main() {
-    float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
+	float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
 	float dither = BlueNoise(ivec2(gl_FragCoord.xy), frameCounter);
 
-    if (alpha < dither) {
-        discard;
-        return;
-    }
+	if (alpha < dither) {
+		discard;
+		return;
+	}
 
 	albedoOut = vec4(vertColor, 1.0);
 	/* Terrain noises */ {

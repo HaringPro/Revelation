@@ -36,7 +36,7 @@ void main() {
     texelPos = scaleTexelPos(texelPos);
 	uvec4 materialData = texelFetch(colortex16, texelPos, 0);
 
-    if (materialData.y > 0u && loadDepth1(texelPos) > 1.0 - EPS) {
+	if (materialData.y > 0u && loadDepth1(texelPos) > 1.0 - EPS) {
 		imageStore(colorimg7, texelPos, materialData);
 		imageStore(colorimg8, texelPos, texelFetch(colortex17, texelPos, 0));
 	}

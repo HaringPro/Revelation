@@ -52,7 +52,7 @@ uniform sampler2D tex;
 #endif
 
 #if defined MC_SPECULAR_MAP
-    uniform sampler2D specular;
+	uniform sampler2D specular;
 #endif
 
 #include "/lib/universal/Uniform.glsl"
@@ -114,12 +114,12 @@ void main() {
 	vec3 viewPos = ScreenToViewPos(vec3(gl_FragCoord.xy * viewPixelSize, gl_FragCoord.z));
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
-    // Compute mipmap level
-    #if RENDER_MODE == 1
-        float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
-    #else
-        const float mipLevel = 0.0;
-    #endif
+	// Compute mipmap level
+	#if RENDER_MODE == 1
+		float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
+	#else
+		const float mipLevel = 0.0;
+	#endif
 
 	vec2 realTexCoord = texCoord;
 
@@ -179,9 +179,9 @@ void main() {
 				DecodeNormalTex(normalTex);
 			#endif
 
-            vec3 normal = tbnMatrix * normalTex;
-        #else
-            vec3 normal = geoNormal;
+			vec3 normal = tbnMatrix * normalTex;
+		#else
+			vec3 normal = geoNormal;
 		#endif
 	#endif
 

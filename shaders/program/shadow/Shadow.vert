@@ -45,7 +45,7 @@ void main() {
 		return;
 	}
 
-    vec3 normal = normalize(gl_NormalMatrix * gl_Normal);
+	vec3 normal = normalize(gl_NormalMatrix * gl_Normal);
 	#ifdef SHADOW_BACKFACE_CULLING
 		if (normal.z < 0.0) {
 			gl_Position = vec4(-1.0);
@@ -53,7 +53,7 @@ void main() {
 		}
 	#endif
 
-    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 

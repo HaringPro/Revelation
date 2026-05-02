@@ -7,7 +7,7 @@
 	Apache License 2.0
 
 	Reference: https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
-			   https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
+			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
 
 --------------------------------------------------------------------------------
 */
@@ -70,10 +70,10 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 	motionVector += cameraMovement;
 
 	cloudPos += motionVector; // To previous frame's world space
-    cloudPos = transMAD(gbufferPreviousModelView, cloudPos); // To previous frame's view space
+	cloudPos = transMAD(gbufferPreviousModelView, cloudPos); // To previous frame's view space
 	cloudPos = projMAD(gbufferPreviousProjection, cloudPos) * rcp(-cloudPos.z); // To previous frame's NDC space
 
-    return cloudPos * 0.5 + 0.5;
+	return cloudPos * 0.5 + 0.5;
 }
 
 //======// Main //================================================================================//

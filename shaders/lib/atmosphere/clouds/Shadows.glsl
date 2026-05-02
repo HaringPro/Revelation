@@ -15,12 +15,12 @@
 		[Hillaire, 2016] Sebastien Hillaire. “Physically based Sky, Atmosphere and Cloud Rendering”. SIGGRAPH 2016.
 			https://blog.selfshadow.com/publications/s2016-shading-course/
 			https://www.ea.com/frostbite/news/physically-based-sky-atmosphere-and-cloud-rendering
-        [Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
-            https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
+		[Högfeldt, 2016] Rurik Högfeldt. "Convincing Cloud Rendering: An Implementation of Real-Time Dynamic Volumetric Clouds in Frostbite". Department of Computer Science and Engineering, Gothenburg, Sweden, 2016.
+			https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
 		[Bauer, 2019] Fabian Bauer. "Creating the Atmospheric World of Red Dead Redemption 2: A Complete and Integrated Solution". SIGGRAPH 2019.
 			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
-        [Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
-            https://dl.acm.org/doi/10.1145/2504459.2504518
+		[Wrenninge et al., 2013] Magnus Wrenninge, Chris Kulla, Viktor Lundqvist. “Oz: The Great and Volumetric”. SIGGRAPH 2013 Talks.
+			https://dl.acm.org/doi/10.1145/2504459.2504518
 
 --------------------------------------------------------------------------------
 */
@@ -35,7 +35,7 @@
 
 vec3 SetupCloudShadowPos(vec2 coord) {
 	vec3 shadowPos = vec3(coord * 2.0 - 1.0, 0.0);
-    shadowPos.xy *= rcp(2.0 - length(shadowPos.xy));
+	shadowPos.xy *= rcp(2.0 - length(shadowPos.xy));
 	return transMAD(cloud.shadowViewProjInv, shadowPos);
 }
 
@@ -43,7 +43,7 @@ vec3 PlanetToCloudShadowScreenPos(vec3 planetPos) {
 	planetPos.y -= planetRadius;
 
 	vec3 shadowPos = transMAD(cloud.shadowViewProj, planetPos);
-    shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
+	shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
 	return shadowPos * 0.5 + 0.5;
 }
 
@@ -51,7 +51,7 @@ vec3 WorldToCloudShadowScreenPos(vec3 worldPos) {
 	worldPos.y += eyeAltitude;
 
 	vec3 shadowPos = transMAD(cloud.shadowViewProj, worldPos);
-    shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
+	shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
 	return shadowPos * 0.5 + 0.5;
 }
 

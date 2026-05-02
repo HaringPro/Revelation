@@ -40,7 +40,7 @@ vec3 MotionBlur(ivec2 texelPos) {
 
 	float dither = BlueNoise(texelPos, frameCounter);
 
-    vec2 sampleCoord = vec2(texelPos) + 0.5 + motionVector * dither;
+	vec2 sampleCoord = vec2(texelPos) + 0.5 + motionVector * dither;
 	sampleCoord -= motionVector * MOTION_BLUR_SAMPLES * 0.5;
 
 	vec3 sum = vec3(0.0);

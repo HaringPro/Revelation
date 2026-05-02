@@ -6,9 +6,9 @@
 	Copyright (C) 2026 HaringPro
 	Apache License 2.0
 
-    Pass: Variance estimation for SVGF
+	Pass: Variance estimation for SVGF
 	Reference:  https://research.nvidia.com/sites/default/files/pubs/2017-07_Spatiotemporal-Variance-Guided-Filtering://svgf_preprint.pdf
-                https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
+				https://cescg.org/wp-content/uploads/2018/04/Dundr-Progressive-Spatiotemporal-Variance-Guided-Filtering-2.pdf
 
 --------------------------------------------------------------------------------
 */
@@ -40,59 +40,59 @@ const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 shared uint sharedMoments[sharedSize.y][sharedSize.x];
 
 void SharedPreload() {
-    ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
+	ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
 
-    const uint sharedArea = sharedSize.x * sharedSize.y;
-    const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
-    const uint stageNum = (sharedArea - 1) / groupArea + 1;
+	const uint sharedArea = sharedSize.x * sharedSize.y;
+	const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+	const uint stageNum = (sharedArea - 1) / groupArea + 1;
 
-    uint localIndex = gl_LocalInvocationIndex;
-    ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+	uint localIndex = gl_LocalInvocationIndex;
+	ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
 
     ivec2 loadTexel = groupBase + localID;
     loadTexel = clamp(loadTexel, ivec2(1), ivec2(halfViewSize * MC_RENDER_SCALE_FACTOR) - 2);
     float luma = texelFetch(colortex2, loadTexel, 0).r; // We use YCoCg color space
     sharedMoments[localID.y][localID.x] = packHalf2x16(vec2(luma, luma * luma));
 
-    for (uint stage = 1u; stage < stageNum; ++stage) {
-        localIndex = gl_LocalInvocationIndex + stage * groupArea;
+	for (uint stage = 1u; stage < stageNum; ++stage) {
+		localIndex = gl_LocalInvocationIndex + stage * groupArea;
 
-        if (localIndex < sharedArea) {
-            localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
+		if (localIndex < sharedArea) {
+			localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
 
-            loadTexel = groupBase + localID;
-            luma = texelFetch(colortex2, loadTexel, 0).r; // We use YCoCg color space
-            sharedMoments[localID.y][localID.x] = packHalf2x16(vec2(luma, luma * luma));
-        }
-    }
+			loadTexel = groupBase + localID;
+			luma = texelFetch(colortex2, loadTexel, 0).r; // We use YCoCg color space
+			sharedMoments[localID.y][localID.x] = packHalf2x16(vec2(luma, luma * luma));
+		}
+	}
 
-    memoryBarrierShared();
-    barrier();
+	memoryBarrierShared();
+	barrier();
 }
 
 //======// Main //================================================================================//
 void main() {
-    SharedPreload();
+	SharedPreload();
 
-    uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
-    vec2 moments = unpackHalf2x16(sharedMoments[sharedTexel.y][sharedTexel.x]);
+	uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
+	vec2 moments = unpackHalf2x16(sharedMoments[sharedTexel.y][sharedTexel.x]);
 
-    for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleOffset = offset3x3N[i];
-        uvec2 sampleTexel = sharedTexel + sampleOffset;
-        vec2 sampleMoments = unpackHalf2x16(sharedMoments[sampleTexel.y][sampleTexel.x]);
-        moments += sampleMoments;
-    }
-    moments *= rcp(9.0);
+	for (uint i = 0u; i < 8u; ++i) {
+		ivec2 sampleOffset = offset3x3N[i];
+		uvec2 sampleTexel = sharedTexel + sampleOffset;
+		vec2 sampleMoments = unpackHalf2x16(sharedMoments[sampleTexel.y][sampleTexel.x]);
+		moments += sampleMoments;
+	}
+	moments *= rcp(9.0);
 
-    ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-    vec4 integratedDiffuse = texelFetch(colortex2, texelPos, 0);
+	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
+	vec4 integratedDiffuse = texelFetch(colortex2, texelPos, 0);
 
     // Vanilla lightmap blending
     float blocklight = Unpack2x8UX(loadMaterialPack(scaleTexelPos(texelPos << 1)).x);
     blocklight = pow5(blocklight) * exp2(-16.0 * integratedDiffuse.x * exposure.value);
     integratedDiffuse.rgb += RGBToYCoCg(blocklightColor) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;
 
-    float variance = 16.0 * max0(moments.y - moments.x * moments.x);
-    imageStore(colorimg3, texelPos, vec4(integratedDiffuse.rgb, variance));
+	float variance = 16.0 * max0(moments.y - moments.x * moments.x);
+	imageStore(colorimg3, texelPos, vec4(integratedDiffuse.rgb, variance));
 }
