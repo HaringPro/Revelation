@@ -50,10 +50,10 @@ void main() {
 	specularOut = vec4(0.0);
 
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-    //texelPos = scaleTexelPos(texelPos);
+
 	Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
 	if (material.specularMask) {
-		vec3 screenPos = vec3(unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize, loadDepth0(texelPos));
+		vec3 screenPos = vec3(gl_FragCoord.xy * viewPixelSize, loadDepth0(texelPos));
 		if (screenPos.z > 1.0 - EPS) discard;
 
 		// Hand-depth correction

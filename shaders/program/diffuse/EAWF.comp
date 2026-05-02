@@ -94,7 +94,6 @@ void main() {
 
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
-    if (any(greaterThanEqual(texelPos, viewSize / 2))) return;
 
 	f16vec3 normalDepthData = f16vec3(texelFetch(colortex14, texelPos, 0).rgb);
 	// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
@@ -112,7 +111,7 @@ void main() {
 	float frameIndex = texelFetch(colortex2, texelPos, 0).a;
 	float historyFactor = saturate(frameIndex * 0.1 - 0.125);
 
-	vec3 viewDir  = ScreenToViewDirRaw(texelToUvScaled(texelPos));
+	vec3 viewDir  = ScreenToViewDirRaw(texelToUv(texelPos));
 	vec3 geoNormal = mat3(gbufferModelView) * FetchGeometryNormal(texelPos);
 
 	float NdotV = abs(dot(geoNormal, viewDir));

@@ -57,7 +57,7 @@ float GetClosestDepthN(ivec2 texel) {
 void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
-    if (any(greaterThanEqual(texelPos, viewSize / 2))) return;
+
 	ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
 	float depth = loadDepth0(renderTexel);
 	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
@@ -74,7 +74,7 @@ void main() {
 			if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
 
-		vec2 screenCoord = texelToUvScaled(renderTexel);
+		vec2 screenCoord = texelToUv(renderTexel);
 		vec3 viewPos = ScreenToViewPos(vec3(screenCoord, depth));
 
 		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
