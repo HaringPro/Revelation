@@ -46,6 +46,7 @@ writeonly uniform image2D cloudOriginImg;
 
 #include "/lib/atmosphere/clouds/Render.glsl"
 
+/*
 float SampleDepthMax4x4(sampler2D depthTex, vec2 coord) {
 	// 4x4 pixel neighborhood using textureGatherOffset
 	float LL = maxOf(textureGatherOffset(depthTex, coord, ivec2(-2, -2)));
@@ -54,7 +55,7 @@ float SampleDepthMax4x4(sampler2D depthTex, vec2 coord) {
 	float UR = maxOf(textureGatherOffset(depthTex, coord, ivec2( 2,  2)));
 
 	return max(max(LL, LR), max(UL, UR));
-}
+}*/
 
 bool SkyCheck4x4(vec2 coord) {
 	// 4x4 pixel neighborhood using textureGatherOffset
@@ -72,6 +73,7 @@ void main() {
     uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
+    //0~0.5(CLOUD_TAAU_SCALE)
 	vec2 coord = texelToUv(texelPos);
 
 	#ifdef CLOUD_TAAU_ENABLED

@@ -126,7 +126,7 @@ void main() {
 				vec4 cloudData = texture(cloudReconstructTex, screenCoord);
 			#else
 				// Dither offset
-				screenCoord += scaleViewPixelSize(viewPixelSize) * (dither - 0.5);
+				screenCoord += viewPixelSize * (dither - 0.5);
 				vec4 cloudData = textureBicubic(cloudOriginTex, screenCoord);
 			#endif
 

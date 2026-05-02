@@ -71,7 +71,7 @@ vec2 scaleViewSize(vec2 viewSize) {
 }
 
 vec2 scaleViewPixelSize(vec2 viewPixelSize, float renderScaleFactor) {
-    return viewPixelSize * renderScaleFactor;
+    return viewPixelSize * (1.0 / renderScaleFactor);
 }
 
 vec2 scaleViewPixelSize(vec2 viewPixelSize) {
@@ -83,7 +83,7 @@ vec2 unscaleViewSize(vec2 viewSize, float renderScaleFactor) {
 }
 
 vec2 unscaleViewPixelSize(vec2 viewPixelSize, float renderScaleFactor) {
-    return viewPixelSize * (1.0 / renderScaleFactor);
+    return viewPixelSize * renderScaleFactor;
 }
 
 vec2 unscaleViewSize(vec2 viewSize) {

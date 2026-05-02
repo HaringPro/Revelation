@@ -174,7 +174,7 @@ void main() {
         #ifdef TAA_ENABLED
             temporalOut = TemporalReprojection(screenCoord, motionVector);
         #else
-            temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
+            temporalOut = vec4(loadSceneMain(scaleTexelPos(screenTexel)), 1.0);
         #endif
     #else
         ivec2 srcTexel = scaleTexelPos(uvToTexel(screenCoord + taaJitter * 0.5));

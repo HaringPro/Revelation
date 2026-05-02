@@ -241,9 +241,9 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
                 ivec2 sampleTexel = scaleTexelPos(uvToTexel(sampleUV));
                 float sampleDepth = loadDepth0(sampleTexel);
 
-            #if defined LOD_MOD
-                if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(sampleTexel)));
-            #endif
+                #if defined LOD_MOD
+                    if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(sampleTexel)));
+                #endif
 
                 if (sampleDepth > screenDepthSky - EPS) continue;
 

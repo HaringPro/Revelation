@@ -56,13 +56,22 @@ float GetClosestDepthN(ivec2 texel) {
 void main() {
     uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
+
     ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
     renderTexel = scaleTexelPos(renderTexel);
+    texelPos = scaleTexelPos(texelPos);
+    if (texelPos.x >= halfViewSize.x * MC_RENDER_SCALE_FACTOR || texelPos.y >= halfViewSize.y * MC_RENDER_SCALE_FACTOR) {
+        imageStore(colorimg3, texelPos, vec4(0.0));
+        return;
+    }
+    //true
 	float depth = loadDepth0(renderTexel);
+    //true
 	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
 	#if defined LOD_MOD
         bool lodMask = !terrainCheck;
 		if (lodMask) {
+            //true
 			depth = loadDepth0Lod(renderTexel);
 			terrainCheck = depth < 1.0;
 		}
@@ -70,13 +79,15 @@ void main() {
 
 	if (terrainCheck) {
 		#if defined LOD_MOD
+        //true
 			if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
-
+        //true
     	vec2 screenCoord = texelToUv(unscaleTexelPos(renderTexel));
 		vec3 viewPos = ScreenToViewPos(vec3(screenCoord, depth));
-
+        //true
 		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
+        //true
 		float lightmapSky = Unpack2x8UY(loadMaterialPack(renderTexel).x);
 
 		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);
