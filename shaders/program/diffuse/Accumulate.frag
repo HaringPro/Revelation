@@ -61,7 +61,7 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 		float confidence = 0.0;
 
 		// Custom bilinear filter
-		vec2 prevTexel = (prevCoord * viewSize
+		vec2 prevTexel = (prevCoord * scaledViewSize
 		- checkerboardOffset2x2[(frameCounter - 1) & 3u]
 		- 0.5) * 0.5;
 
@@ -75,7 +75,7 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 			fractTexel.x      * fractTexel.y
 		};
 
-		ivec2 texelEnd = ivec2(halfViewSize) - 1;
+		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 1;
 
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 		float NdotV = abs(dot(worldNormal, worldDir));
