@@ -29,7 +29,7 @@ shared vec3 sharedData[128 + 8];
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texel = scaleTexelPos(ivec2(gl_GlobalInvocationID.xy));
+	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 	uint index = gl_LocalInvocationIndex;
 
 	sharedData[index] = imageLoad(colorimg4, (texel) - (OFFSET << 2)).rgb;
