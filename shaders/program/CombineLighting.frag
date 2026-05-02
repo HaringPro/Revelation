@@ -63,11 +63,11 @@ uniform sampler2D cloudOriginTex;
 
 		float sigmaZ = -4.0 * NdotV;
 
-        ivec2 texelEnd = scaleTexelPos(ivec2(halfViewEnd)) - 1;
-        coord = coord * viewSize * 0.5 - 0.5;
-        coord = scaleScreenCoord(coord);
-        ivec2 floorTexel = ivec2(floor(coord));
-        vec2 fractTexel = coord - vec2(floorTexel);
+		ivec2 texelEnd = ivec2(halfViewEnd) - 1;
+		coord = coord * viewSize * 0.5 - 0.5;
+
+		ivec2 floorTexel = ivec2(floor(coord));
+		vec2 fractTexel = coord - vec2(floorTexel);
 
 		float bilinearWeight[4] = {
 			oms(fractTexel.x) * oms(fractTexel.y),
@@ -100,7 +100,7 @@ uniform sampler2D cloudOriginTex;
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-    vec2 screenCoord = unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
 	uvec4 materialPack = loadMaterialPack(texelPos);
 	uint materialID = materialPack.y;

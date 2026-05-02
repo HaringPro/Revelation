@@ -25,7 +25,7 @@ vec3 ScreenToViewPos(vec2 screenPos, float viewDepth) {
 }
 
 vec3 ScreenToViewPos(vec2 screenPos) {
-	vec3 ndcPos = vec3(screenPos, loadDepth0(uvToTexel(screenPos))) * 2.0 - 1.0;
+	vec3 ndcPos = vec3(screenPos, loadDepth0(uvToTexelScaled(screenPos))) * 2.0 - 1.0;
 	#ifdef TAA_ENABLED
 		ndcPos.xy -= taaJitter;
 	#endif

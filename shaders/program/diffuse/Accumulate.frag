@@ -20,7 +20,7 @@ const bool colortex3MipmapEnabled = true;
 #include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
-// work in half resolution(unscaled)
+
 /* RENDERTARGETS: 2,14 */
 layout (location = 0) out vec4 integratedDiffuse;
 layout (location = 1) out vec3 encodedNormalDepth;
@@ -39,7 +39,6 @@ layout (location = 1) out vec3 encodedNormalDepth;
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
 
-// texelPos is unscaled (half resolution), screenPos is unscaled (full resolution)
 void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	vec3 viewPos = ScreenToViewPos(screenPos);
 	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
@@ -53,25 +52,21 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	#endif
 	vec2 prevCoord = prevNDCPos.xy * 0.5 + 0.5;
 
-    //texelPos is half resolution(unscaled)
-    vec2 currCoord = texelToUv(texelPos) / MC_RENDER_SCALE_FACTOR;
-    //currCoord ∈ [0,0.5], prevCoord ∈ [0,1]
-    encodedNormalDepth = vec3(OctEncodeSnorm(worldNormal), length(viewPos));
+	vec2 currCoord = texelToUvScaled(texelPos);
+	encodedNormalDepth = vec3(OctEncodeSnorm(worldNormal), length(viewPos));
 
-    // Only trust history if the reprojected coordinate lies within the valid rendered area
-    if (saturate(prevCoord) == prevCoord && !global.historyReset)
-    {
-        vec4 prevDiffuse = vec4(0.0);
-        float sumWeight = 0.0;
-        float confidence = 0.0;
+	if (saturate(prevCoord) == prevCoord && !global.historyReset) {
+		vec4 prevDiffuse = vec4(0.0);
+		float sumWeight = 0.0;
+		float confidence = 0.0;
 
-        // Custom bilinear filter
-        vec2 prevTexel = (prevCoord * viewSize
-         - checkerboardOffset2x2[(frameCounter - 1) & 3u]
-         - 0.5) * 0.5;
-        prevTexel = prevTexel * MC_RENDER_SCALE_FACTOR;
-        ivec2 floorTexel = ivec2(floor(prevTexel));
-        vec2 fractTexel = prevTexel - vec2(floorTexel);
+		// Custom bilinear filter
+		vec2 prevTexel = (prevCoord * scaledViewSize
+		- checkerboardOffset2x2[(frameCounter - 1) & 3u]
+		- 0.5) * 0.5;
+
+		ivec2 floorTexel = ivec2(floor(prevTexel));
+		vec2 fractTexel = prevTexel - vec2(floorTexel);
 
 		float bilinearWeight[4] = {
 			oms(fractTexel.x) * oms(fractTexel.y),
@@ -80,17 +75,16 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 			fractTexel.x      * fractTexel.y
 		};
 
-        // Restrict sampling to the valid half‑resolution area
-        ivec2 texelEnd = ivec2(halfViewSize * MC_RENDER_SCALE_FACTOR) - 1;
+		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 1;
 
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 		float NdotV = abs(dot(worldNormal, worldDir));
 
-        for (uint i = 0u; i < 4u; ++i) {
-            ivec2 sampleTexel = floorTexel + offset2x2[i];
-            if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
-			    vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).xyz;
-                vec4 sampleIrradiance = vec4(0);//texelFetch(colortex2, sampleTexel, 0);
+		for (uint i = 0u; i < 4u; ++i) {
+			ivec2 sampleTexel = floorTexel + offset2x2[i];
+			if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
+				vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).xyz;
+				vec4 sampleIrradiance = texelFetch(colortex2, sampleTexel, 0);
 
 				float weight = exp2(-8.0 * distance(encodedNormalDepth.z, sampleAux.z) * NdotV);
 				weight *= linearstep(0.5, 0.8, saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
@@ -107,14 +101,14 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 			sumWeight = 1.0 / sumWeight;
 			prevDiffuse *= sumWeight;
 
-            integratedDiffuse.a = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
-            //colortex3`data is half resolution
-            if (integratedDiffuse.a < 8.0) {
-                float mipLevel = 3.0 * saturate(1.0 - integratedDiffuse.a * rcp(8.0));
-                integratedDiffuse.rgb = textureLod(colortex3, currCoord, mipLevel).rgb;
-            } else {
-                integratedDiffuse.rgb = texelFetch(colortex3, scaleTexelPos(texelPos), 0).rgb;
-            }
+			integratedDiffuse.a = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
+
+			if (integratedDiffuse.a < 8.0) {
+				float mipLevel = 3.0 * saturate(1.0 - integratedDiffuse.a * rcp(8.0));
+				integratedDiffuse.rgb = textureLod(colortex3, currCoord, mipLevel).rgb;
+			} else {
+				integratedDiffuse.rgb = texelFetch(colortex3, texelPos, 0).rgb;
+			}
 
 			float alpha = rcp(integratedDiffuse.a);
 			integratedDiffuse.rgb = mix(min(prevDiffuse.rgb, FP16_MAX), integratedDiffuse.rgb, alpha);
@@ -139,27 +133,20 @@ float GetClosestDepthN(ivec2 texel) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy);
+	ivec2 texelPos = ivec2(gl_FragCoord.xy);
 
-    // Only process pixels inside the valid half‑resolution region
-    if (texelPos.x >= halfViewSize.x * MC_RENDER_SCALE_FACTOR || texelPos.y >= halfViewSize.y * MC_RENDER_SCALE_FACTOR) {
-        integratedDiffuse = vec4(0.0);
-        encodedNormalDepth = vec3(0.0);
-        return;
-    }
+	ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
+	vec2 renderCoord = texelToUvScaled(renderTexel);
 
-    ivec2 renderTexel = texelPos * 2 + checkerboardOffset2x2[frameCounter & 3u];
-    vec2 renderCoord = texelToUv(renderTexel) / MC_RENDER_SCALE_FACTOR;
-    //renderTexel = scaleTexelPos(renderTexel);
-    float depth = loadDepth0(renderTexel);
-    bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
-    #if defined LOD_MOD
-        bool lodMask = !terrainCheck;
-        if (lodMask) {
-            depth = loadDepth0Lod(renderTexel);
-            terrainCheck = depth < 1.0;
-        }
-    #endif
+	float depth = loadDepth0(renderTexel);
+	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
+	#if defined LOD_MOD
+		bool lodMask = !terrainCheck;
+		if (lodMask) {
+			depth = loadDepth0Lod(renderTexel);
+			terrainCheck = depth < 1.0;
+		}
+	#endif
 
 	integratedDiffuse = vec4(0.0);
 	encodedNormalDepth = vec3(0.0);

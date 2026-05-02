@@ -138,6 +138,12 @@ uniform float cameraVelocity;
 
 uniform vec2 viewSize;
 uniform vec2 viewPixelSize;
+uniform vec2 originViewSize;
+uniform vec2 originPixelSize;
+uniform vec2 scaledViewSize;
+uniform vec2 scaledPixelSize;
+uniform vec2 originHalfViewSize;
+uniform vec2 scaledHalfViewSize;
 uniform vec2 halfViewSize;
 uniform vec2 halfViewEnd;
 uniform vec2 taaJitter;

@@ -38,8 +38,10 @@ const float FP16_MAX        = 65504.0;
 #define diagonal4(m)	    vec4(diagonal3(m), (m)[2].w)
 #define projMAD(m, v)	    (diagonal3(m) * (v) + (m)[3].xyz)
 
-#define uvToTexel(coord)    ivec2((coord) * viewSize)
-#define texelToUv(texel)    ((vec2(texel) + 0.5) * viewPixelSize)
+#define uvToTexel(coord)    ivec2((coord) * originViewSize)
+#define texelToUv(texel)    ((vec2(texel) + 0.5) * originPixelSize)
+#define uvToTexelScaled(coord)    ivec2((coord) * scaledViewSize)
+#define texelToUvScaled(texel)    ((vec2(texel) + 0.5) * scaledPixelSize)
 
 //================================================================================================//
 
