@@ -109,10 +109,11 @@ void SpecularFilter(inout vec4 specularData, ivec2 texel, float roughness, vec3 
 void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
+	texelPos = scaleTexelPos(texelPos);
 
 	Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
 	if (material.specularMask) {
-		vec2 screenCoord = texelToUv(texelPos);
+		vec2 screenCoord = texelToUvScaled(texelPos);
 		vec3 viewDir = ScreenToViewDir(screenCoord);
 
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;

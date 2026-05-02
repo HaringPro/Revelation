@@ -40,7 +40,7 @@ const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1);
 shared uint sharedMoments[sharedSize.y][sharedSize.x];
 
 void SharedPreload() {
-	ivec2 groupBase = ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius);
+	ivec2 groupBase = scaleTexelPos(ivec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy - padRadius));
 
 	const uint sharedArea = sharedSize.x * sharedSize.y;
 	const uint groupArea = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
@@ -50,7 +50,7 @@ void SharedPreload() {
 	ivec2 localID = ivec2(localIndex % sharedSize.x, localIndex / sharedSize.x);
 
 	ivec2 loadTexel = groupBase + localID;
-	loadTexel = clamp(loadTexel, ivec2(1), ivec2(halfViewSize) - 2);
+	loadTexel = clamp(loadTexel, ivec2(1), ivec2(scaledHalfViewSize) - 2);
 
 	float luma = texelFetch(colortex2, loadTexel, 0).r; // We use YCoCg color space
 	sharedMoments[localID.y][localID.x] = packHalf2x16(vec2(luma, luma * luma));
@@ -86,7 +86,7 @@ void main() {
 	}
 	moments *= rcp(9.0);
 
-	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 texelPos = scaleTexelPos(ivec2(gl_GlobalInvocationID.xy));
 	vec4 integratedDiffuse = texelFetch(colortex2, texelPos, 0);
 
 	// Vanilla lightmap blending

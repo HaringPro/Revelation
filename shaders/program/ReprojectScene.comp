@@ -36,7 +36,7 @@ void main() {
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
     texelPos = scaleTexelPos(texelPos);
 	float depth = loadDepth0(texelPos);
-    vec2 previousCoord = ReprojectScreenPos(vec3(texelToUv(unscaleTexelPos(texelPos)), depth)).xy;
+    vec2 previousCoord = ReprojectScreenPos(vec3(texelToUvScaled(texelPos), depth)).xy;
 
 	if (saturate(previousCoord) == previousCoord && depth > 0.56) {
 		vec3 reprojectedHistory = texture(colortex1, previousCoord).rgb;

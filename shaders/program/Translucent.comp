@@ -92,8 +92,7 @@ void main() {
 	// Skip opaque fragments
 	if (clamp(materialID, 2u, 3u) != materialID && notParticle) return;
 
-    // texelToUv is using unscaled view size,so we need to unscale the texel position
-	vec3 screenPos = vec3(texelToUv(unscaleTexelPos(texelPos)), loadDepth0(texelPos));
+	vec3 screenPos = vec3(texelToUvScaled(texelPos), loadDepth0(texelPos));
 	#if defined LOD_MOD
 		if (screenPos.z > 1.0 - EPS) {
 			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(texelPos)));
