@@ -7,7 +7,11 @@
 * GPUs that support OpenGL 4.0+
 * Iris 1.7.0 or newer
 * OptiFine is **Incompatible**
-* Supported Mods: [Voxy](https://modrinth.com/mod/voxy) and [Distant Horizons](https://www.curseforge.com/minecraft/mc-mods/distant-horizons), [Physics Mod](https://www.patreon.com/Haubna?utm_source=campaign-search-results)
+* Supported Mods:
+  * [Voxy](https://modrinth.com/mod/voxy)
+  * [Distant Horizons](https://www.curseforge.com/minecraft/mc-mods/distant-horizons)
+  * [Physics Mod](https://www.patreon.com/Haubna?utm_source=campaign-search-results)
+  * [rrtt217's HDR Mod](https://modrinth.com/mod/rrtt217-s-hdr-mod)
 
 ## Credits
 * [Yong-Xin Mo](https://github.com/moyongxin) - Some code and guidance

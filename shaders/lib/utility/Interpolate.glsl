@@ -204,8 +204,8 @@ vec4 textureCatmullRomFastAntiRing(sampler2D tex, vec2 coord) {
 	vec4 s3 = texture(tex, vec2(tc3.x,  tc12.y));
 	vec4 s4 = texture(tex, vec2(tc12.x,  tc3.y));
 
-	vec4 minColor = min(min(min(s0, s1), min(s2, s3)), s4);
-	vec4 maxColor = max(max(max(s0, s1), max(s2, s3)), s4);
+	vec4 minColor = min3(min(s0, s1), min(s2, s3), s4);
+	vec4 maxColor = max3(max(s0, s1), max(s2, s3), s4);
 
 	float cw0 = w12.x * w0.y;
 	float cw1 = w0.x  * w12.y;

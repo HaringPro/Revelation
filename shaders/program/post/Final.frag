@@ -69,10 +69,10 @@ vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
 	//  d e f * 0.5  +  d e f * 0.5
 	//  g h i             h
 	// These are 2.0x bigger (factored out the extra multiply).
-	vec3 minCol = min(min(min(d, e), min(f, b)), h);
-		minCol += min(min(min(a, c), min(g, i)), minCol);
-	vec3 maxCol = max(max(max(d, e), max(f, b)), h);
-		maxCol += max(max(max(a, c), max(g, i)), maxCol);
+	vec3 minCol = min3(min(d, e), min(f, b), h);
+		minCol += min3(min(a, c), min(g, i), minCol);
+	vec3 maxCol = max3(max(d, e), max(f, b), h);
+		maxCol += max3(max(a, c), max(g, i), maxCol);
 
 	vec3 amp = approxSqrt(saturate(min(minCol, 2.0 - maxCol) / maxCol));
 

@@ -57,8 +57,8 @@ The following are the license terms for ACES 1
 */
 
 float rgbToSaturation(vec3 rgb) {
-	float minC = min(min(rgb.r, rgb.g), rgb.b);
-	float maxC = max(max(rgb.r, rgb.g), rgb.b);
+	float minC = min3(rgb.r, rgb.g, rgb.b);
+	float maxC = max3(rgb.r, rgb.g, rgb.b);
 
 	return (max(maxC, 1e-10) - max(minC, 1e-10)) / max(maxC, 1e-2);
 }

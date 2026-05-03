@@ -27,6 +27,14 @@
 	#define f16mat4x4 mat4x4
 #endif
 
+// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
+#ifdef MC_GL_AMD_shader_trinary_minmax
+	#extension GL_AMD_shader_trinary_minmax : require
+#else
+	#define min3(a, b, c) min(a, min(b, c))
+	#define max3(a, b, c) max(a, max(b, c))
+#endif
+
 #ifndef FORCE_DISABLE_SUBGROUP_OPS
 	#if defined GL_KHR_shader_subgroup || defined MC_GL_KHR_shader_subgroup
 		#define SUBGROUP_OPS
