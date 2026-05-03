@@ -33,23 +33,23 @@ vec3 ReconstructSH2(vec3[4] coeff, vec3 dir) {
 	float[4] basis = BasisSH2(dir);
 
 	return coeff[0] * basis[0]
-		+ coeff[1] * basis[1]
-		+ coeff[2] * basis[2]
-		+ coeff[3] * basis[3];
+		 + coeff[1] * basis[1]
+		 + coeff[2] * basis[2]
+		 + coeff[3] * basis[3];
 }
 
 vec3 ReconstructSH3(vec3[9] coeff, vec3 dir) {
 	float[9] basis = BasisSH3(dir);
 
 	return coeff[0] * basis[0]
-		+ coeff[1] * basis[1]
-		+ coeff[2] * basis[2]
-		+ coeff[3] * basis[3]
-		+ coeff[4] * basis[4]
-		+ coeff[5] * basis[5]
-		+ coeff[6] * basis[6]
-		+ coeff[7] * basis[7]
-		+ coeff[8] * basis[8];
+		 + coeff[1] * basis[1]
+		 + coeff[2] * basis[2]
+		 + coeff[3] * basis[3]
+		 + coeff[4] * basis[4]
+		 + coeff[5] * basis[5]
+		 + coeff[6] * basis[6]
+		 + coeff[7] * basis[7]
+		 + coeff[8] * basis[8];
 }
 
 vec3 ConvolvedReconstructSH3(vec3[9] coeff, vec3 dir) {
@@ -58,14 +58,14 @@ vec3 ConvolvedReconstructSH3(vec3[9] coeff, vec3 dir) {
 	const vec3 kernel = zh * sqrt(4.0 * PI / vec3(1.0, 3.0, 5.0)) / PI;
 
 	return coeff[0] * basis[0] * kernel.x
-		+ coeff[1] * basis[1] * kernel.y
-		+ coeff[2] * basis[2] * kernel.y
-		+ coeff[3] * basis[3] * kernel.y
-		+ coeff[4] * basis[4] * kernel.z
-		+ coeff[5] * basis[5] * kernel.z
-		+ coeff[6] * basis[6] * kernel.z
-		+ coeff[7] * basis[7] * kernel.z
-		+ coeff[8] * basis[8] * kernel.z;
+		 + coeff[1] * basis[1] * kernel.y
+		 + coeff[2] * basis[2] * kernel.y
+		 + coeff[3] * basis[3] * kernel.y
+		 + coeff[4] * basis[4] * kernel.z
+		 + coeff[5] * basis[5] * kernel.z
+		 + coeff[6] * basis[6] * kernel.z
+		 + coeff[7] * basis[7] * kernel.z
+		 + coeff[8] * basis[8] * kernel.z;
 }
 
 struct DiffuseSH {

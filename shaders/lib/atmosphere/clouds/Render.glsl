@@ -343,12 +343,13 @@ void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 		vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldMoonDir);
 		vec3 directIlluminance = sunIlluminance + moonIlluminance;
 
-		// Normalized height in clouds
+		// Lerp bottom and top sky illuminance based on normalized height
 		float heightFraction = saturate((length(cloudPos) - cumulusBottomRadius) * rcp(cumulusThickness));
-		vec3 skyIlluminance = mix(ReconstructSH3(global.skySH, vec3(0.0, -1.0, 0.0)), global.skyUpIlluminance, heightFraction);
+        vec3 skyBottomIlluminance = max0(ReconstructSH3(global.skySH, vec3(0.0, 1.0, 0.0)));
+		vec3 skyIlluminance = mix(skyBottomIlluminance, global.skyUpIlluminance, heightFraction);
 
 		vec3 scattering = cloudData.x * directIlluminance;
-		scattering += cloudData.y * skyIlluminance;
+		scattering += cloudData.y * rPI * skyIlluminance;
 
 		scattering += LightningContribution(cloudPos - atmosphereViewPos) * sqr(cloudData.y);
 

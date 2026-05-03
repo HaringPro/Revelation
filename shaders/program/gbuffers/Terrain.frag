@@ -151,7 +151,7 @@ void main() {
 					}
 				#endif
 				#ifdef PARALLAX_BASED_NORMAL
-					#define sampleHeight(uv) textureGrad(normals, atlasCoord(uv), texGrad[0], texGrad[1]).w
+					#define sampleHeight(uv) textureLod(normals, atlasCoord(uv), mipLevel).w
 
 					vec2 bias = 1e-2 / (tileScale * vec2(atlasSize));
 					float heightR = sampleHeight(offsetCoord.xy + vec2(bias.x, 0.0));

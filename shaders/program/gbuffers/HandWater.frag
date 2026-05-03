@@ -31,6 +31,10 @@ in vec2 lightmap;
 
 uniform sampler2D tex;
 
+#if defined MC_NORMAL_MAP
+	uniform sampler2D normals;
+#endif
+
 //======// Main //================================================================================//
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
