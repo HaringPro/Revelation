@@ -68,6 +68,7 @@ bool SkyCheck4x4(vec2 coord) {
 	return any(equal(LL & LR & UL & UR, uvec4(0u)));
 }
 
+// Work in (original view size * CLOUD_TAAU_SCALE)
 //======// Main //================================================================================//
 void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);

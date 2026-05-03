@@ -76,6 +76,7 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 	return cloudPos * 0.5 + 0.5;
 }
 
+// Work in (original view size * CLOUD_TAAU_SCALE)
 //======// Main //================================================================================//
 void main() {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
