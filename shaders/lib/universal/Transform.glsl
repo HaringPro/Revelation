@@ -12,7 +12,7 @@ vec3 ScreenToViewPos(vec3 screenPos) {
 }
 
 vec3 ScreenToViewPosRaw(vec2 screenPos, float viewDepth) {
-	vec2 ndcPos = (screenPos * 2.0 - 1.0);
+	vec2 ndcPos = screenPos * 2.0 - 1.0;
 	return vec3(diagonal2(gbufferProjectionInverse) * ndcPos * -viewDepth, viewDepth);
 }
 
@@ -21,7 +21,6 @@ vec3 ScreenToViewPos(vec2 screenPos, float viewDepth) {
 	#ifdef TAA_ENABLED
 		ndcPos -= taaJitter;
 	#endif
-	ndcPos = (ndcPos);
 	return vec3(diagonal2(gbufferProjectionInverse) * ndcPos * -viewDepth, viewDepth);
 }
 
@@ -30,19 +29,17 @@ vec3 ScreenToViewPos(vec2 screenPos) {
 	#ifdef TAA_ENABLED
 		ndcPos.xy -= taaJitter;
 	#endif
-	ndcPos.xy = (ndcPos.xy);
 	return projectAndDivide(gbufferProjectionInverse, ndcPos);
 }
 
 vec3 ViewToScreenPosRaw(vec3 viewPos) {
 	vec3 ndcPos = projMAD(gbufferProjection, viewPos) * rcp(-viewPos.z);
-	ndcPos.xy = (ndcPos.xy);
+
 	return ndcPos * 0.5 + 0.5;
 }
 
 vec3 ViewToScreenPos(vec3 viewPos) {
 	vec3 ndcPos = projMAD(gbufferProjection, viewPos) * rcp(-viewPos.z);
-	ndcPos.xy = (ndcPos.xy);
 	#ifdef TAA_ENABLED
 		ndcPos.xy += taaJitter;
 	#endif
@@ -50,7 +47,7 @@ vec3 ViewToScreenPos(vec3 viewPos) {
 }
 
 vec3 ScreenToViewDirRaw(vec2 screenPos) {
-	vec2 ndcPos = (screenPos * 2.0 - 1.0);
+	vec2 ndcPos = screenPos * 2.0 - 1.0;
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * ndcPos, gbufferProjectionInverse[3].z));
 }
 
@@ -59,7 +56,6 @@ vec3 ScreenToViewDir(vec2 screenPos) {
 	#ifdef TAA_ENABLED
 		ndcPos -= taaJitter;
 	#endif
-	ndcPos = (ndcPos);
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * ndcPos, gbufferProjectionInverse[3].z));
 }
 
@@ -71,7 +67,6 @@ vec3 ReprojectScreenPos(vec3 screenPos) {
 	position = transMAD(gbufferPreviousModelView, position); // To previous view
 	position = projMAD(gbufferPreviousProjection, position) * rcp(-position.z); // To previous NDC
 
-	position.xy = (position.xy); // Apply scalePositionVertex for prev frame
 	return position * 0.5 + 0.5;
 }
 
@@ -88,7 +83,6 @@ float ViewToScreenDepth(float depth) {
 #if defined LOD_MOD
 	vec3 ScreenToViewPosRawLod(vec3 screenPos) {
 		vec3 ndcPos = screenPos * 2.0 - 1.0;
-		ndcPos.xy = (ndcPos.xy);
 		return projectAndDivide(lodProjectionInv, ndcPos);
 	}
 
@@ -97,7 +91,6 @@ float ViewToScreenDepth(float depth) {
 		#ifdef TAA_ENABLED
 			ndcPos.xy -= taaJitter;
 		#endif
-		ndcPos.xy = (ndcPos.xy);
 		return projectAndDivide(lodProjectionInv, ndcPos);
 	}
 
@@ -106,19 +99,17 @@ float ViewToScreenDepth(float depth) {
 		#ifdef TAA_ENABLED
 			ndcPos.xy -= taaJitter;
 		#endif
-		ndcPos.xy = (ndcPos.xy);
 		return projectAndDivide(lodProjectionInv, ndcPos);
 	}
 
 	vec3 ViewToScreenPosRawLod(vec3 viewPos) {
 		vec3 ndcPos = projMAD(lodProjection, viewPos) * rcp(-viewPos.z);
-		ndcPos.xy = (ndcPos.xy);
+
 		return ndcPos * 0.5 + 0.5;
 	}
 
 	vec3 ViewToScreenPosLod(vec3 viewPos) {
 		vec3 ndcPos = projMAD(lodProjection, viewPos) * rcp(-viewPos.z);
-		ndcPos.xy = (ndcPos.xy);
 		#ifdef TAA_ENABLED
 			ndcPos.xy += taaJitter;
 		#endif
@@ -133,7 +124,6 @@ float ViewToScreenDepth(float depth) {
 		position = transMAD(gbufferPreviousModelView, position); // To previous view
 		position = projMAD(lodPrevProjection, position) * rcp(-position.z); // To previous NDC
 
-		position.xy = (position.xy); // Apply scalePositionVertex for prev frame
 		return position * 0.5 + 0.5;
 	}
 
