@@ -46,10 +46,10 @@ void main() {
 	gl_Position = project(gl_ProjectionMatrix, viewPos);
 
 	transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 
 	// Encode normal and tangent
 	vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);

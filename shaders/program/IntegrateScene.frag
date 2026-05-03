@@ -88,7 +88,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		vec2 refractedCoord = ViewToScreenPos(viewPos + refractedDir).xy;
 	#endif
 
-    // uvToTexel is using unscaled view size
+	// uvToTexel is using unscaled view size
 	float refractedDepth = loadDepth1(scaleTexelPos(uvToTexel(refractedCoord)));
 	refractedCoord = mix(refractedCoord, screenPos.xy, step(refractedDepth, screenPos.z));
 
@@ -101,7 +101,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
 	}
 
-    //texelPos - scaled
+	//texelPos - scaled
 	mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
 		ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
 		float sigmaZ = -32.0 / linearDepth;
@@ -127,10 +127,8 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy);
-    // this pass is work in scaled view space
-    // so we need to unscale the texel position to calculate the correct screen position
-    vec2 screenCoord = unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize;
+	ivec2 texelPos = ivec2(gl_FragCoord.xy);
+	vec2 screenCoord = (unscaleScreenCoord(gl_FragCoord.xy) + 0.5) * viewPixelSize;
 
 	float depth = loadDepth0(texelPos);
 

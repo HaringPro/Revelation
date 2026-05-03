@@ -58,10 +58,10 @@ void main() {
 	gl_Position = project(gl_ProjectionMatrix, viewPos);
 
 	transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 
 	#if defined MC_NORMAL_MAP
 		tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);

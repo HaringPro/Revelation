@@ -274,7 +274,7 @@ vec3 RRTAndODTFit(vec3 rgb) {
 
 #ifndef HDR_ENABLED
 	vec3 AcademyFit(vec3 rgb) {
-        rgb *= 1.5; // Match other tonemappers' exposure
+		rgb *= 1.5; // Match other tonemappers' exposure
 		rgb *= Rec2020_2_AP0;
 
 		// Apply RRT sweeteners
@@ -479,7 +479,7 @@ vec3 aces_gamut_compress0(vec3 JMh, float Jx, vec3 JMGcusp, float reachMaxM) {
 }
 
 vec3 ACES2(vec3 inPixel) {
-    inPixel *= 2.0; // Match other tonemappers' exposure
+	inPixel *= 2.0; // Match other tonemappers' exposure
 	vec3 outColor = inPixel * Rec2020_2_AP1;
 
 	outColor = RGB_to_JMh(outColor);

@@ -28,10 +28,10 @@ void main() {
 	gl_Position = project(gl_ProjectionMatrix, viewPos);
 
 	transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 
 	vertColor = gl_Color;
 	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

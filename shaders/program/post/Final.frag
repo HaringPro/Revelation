@@ -113,7 +113,7 @@ void main() {
 	#ifdef DEBUG_BLOOM_TILES
 		finalOut = texelFetch(colortex4, texelPos, 0).rgb;
 	#else
-        texelPos = scaleTexelPos(texelPos);
+		texelPos = scaleTexelPos(texelPos);
 		finalOut = FFXCasFilter(texelPos, CAS_STRENGTH);
 		#ifdef HDR_ENABLED
 			// sRGB encode after CAS

@@ -60,8 +60,8 @@ vec3 MotionBlur(ivec2 texelPos) {
 
 //======// Main //================================================================================//
 void main() {
-    uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
-    ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
-    texelPos = scaleTexelPos(texelPos);
-    imageStore(colorimg0, texelPos, vec4(MotionBlur(texelPos), texelFetch(colortex0, texelPos, 0).w));
+	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
+	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
+	texelPos = scaleTexelPos(texelPos);
+	imageStore(colorimg0, texelPos, vec4(MotionBlur(texelPos), texelFetch(colortex0, texelPos, 0).w));
 }

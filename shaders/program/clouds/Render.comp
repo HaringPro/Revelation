@@ -73,7 +73,7 @@ void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
-    //0~0.5(CLOUD_TAAU_SCALE)
+	//0~0.5(CLOUD_TAAU_SCALE)
 	vec2 coord = texelToUv(texelPos);
 
 	#ifdef CLOUD_TAAU_ENABLED
@@ -85,7 +85,7 @@ void main() {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	vec4 cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 
-    // SkyCheck4x4() must be work in scaled space,but cloud rendering must be work in origin space
+	// SkyCheck4x4() must be work in scaled space,but cloud rendering must be work in origin space
 	if (SkyCheck4x4(renderCoord)) {
 		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
 

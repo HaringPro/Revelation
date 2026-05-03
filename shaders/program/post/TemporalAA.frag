@@ -58,9 +58,9 @@ vec3 CrossClosestFragment(ivec2 texelPos, float depth) {
 	closest = closest.z > d3 ? vec3(vec2(t3), d3) : closest;
 	closest = closest.z > d4 ? vec3(vec2(t4), d4) : closest;
 
-    // [w,h] -> [0,1]
-    closest.xy *= scaleViewPixelSize(viewPixelSize);
-    return closest;
+	// [w,h] -> [0,1] with pixel center offset
+	closest.xy = (closest.xy / MC_RENDER_SCALE_FACTOR + 0.5) * viewPixelSize;
+	return closest;
 }
 
 // Lumiance aware perceptual weight
@@ -84,10 +84,10 @@ vec3 historyClipAABB(vec3 history, vec3 center, vec3 extent) {
 }
 
 vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
-    ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
-    texel = scaleTexelPos(texel);
-    vec3 currData = loadSceneMain(texel);
-    vec2 prevCoord = screenCoord - motionVector;
+	ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
+	texel = scaleTexelPos(texel);
+	vec3 currData = loadSceneMain(texel);
+	vec2 prevCoord = screenCoord - motionVector;
 
 	if (saturate(prevCoord) != prevCoord) return vec4(YCoCgToRGB(currData), 1.0);
 
@@ -128,7 +128,7 @@ vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
 		#endif
 	#endif
 
-    // Subpixel sharpening
+	// Subpixel sharpening
 	prevData = mix(prevData, currData, sdot(fract(prevCoord * scaleViewSize(viewSize)) - 0.5) * 0.5);
 
 	float blendWeight = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
@@ -144,8 +144,8 @@ void main() {
 
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
-    float depth = loadDepth0(screenTexel);
-	vec2 screenCoord = unscaleScreenCoord(gl_FragCoord.xy) * viewPixelSize;
+	float depth = loadDepth0(screenTexel);
+	vec2 screenCoord = (unscaleScreenCoord(gl_FragCoord.xy) + 0.5) * viewPixelSize;
 
 	#if RENDER_MODE == 1
 		vec2 motionVector;
@@ -171,19 +171,19 @@ void main() {
 			motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
 		#endif
 
-        #ifdef TAA_ENABLED
-            temporalOut = TemporalReprojection(screenCoord, motionVector);
-        #else
-            temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
-        #endif
-    #else
-        ivec2 srcTexel = scaleTexelPos(uvToTexel(screenCoord + taaJitter * 0.5));
-        temporalOut = vec4(loadSceneMain(srcTexel), 1.0);
+		#ifdef TAA_ENABLED
+			temporalOut = TemporalReprojection(screenCoord, motionVector);
+		#else
+			temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
+		#endif
+	#else
+		ivec2 srcTexel = scaleTexelPos(uvToTexel(screenCoord + taaJitter * 0.5));
+		temporalOut = vec4(loadSceneMain(srcTexel), 1.0);
 
-        vec2 prevCoord = ReprojectScreenPos(vec3(screenCoord, depth)).xy;
-        if (distance(prevCoord, screenCoord) < EPS) {
-            //due to the colortex1 is scaled,so we don't need to scale the prevCoord
-            vec4 prevData = texture(colortex1, prevCoord);
+		vec2 prevCoord = ReprojectScreenPos(vec3(screenCoord, depth)).xy;
+		if (distance(prevCoord, screenCoord) < EPS) {
+			//due to the colortex1 is scaled,so we don't need to scale the prevCoord
+			vec4 prevData = texture(colortex1, prevCoord);
 
 			temporalOut.rgb = mix(prevData.rgb, temporalOut.rgb, rcp(++prevData.a));
 			temporalOut.a = prevData.a;

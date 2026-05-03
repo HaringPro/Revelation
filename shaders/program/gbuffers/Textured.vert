@@ -43,8 +43,8 @@ void main() {
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 }

@@ -138,14 +138,14 @@ void main() {
 		srcUv += float(srcIndex * 8) * viewPixelSize + bloomTileOffset[srcIndex];
 	#endif
 
-    //CalculateBloomTile sample bloomTileTex at srcUv,so the srcUv is using unscaled view size,so we don't need to scale it
+	//CalculateBloomTile sample bloomTileTex at srcUv,so the srcUv is using unscaled view size,so we don't need to scale it
 	vec3 bloomTile = CalculateBloomTile(srcUv);
 
 	const int dstIndex = DOWNSAMPLE_LEVEL;
 	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + dstIndex * 8);
 	dstTexel += bloomTileOffset[dstIndex] * viewSize + 0.5;
-    //above bloomTileOffset is using unscaled view size,so we need to scale the dstTexel
-    //and colortex4 is scaled
+	//above bloomTileOffset is using unscaled view size,so we need to scale the dstTexel
+	//and colortex4 is scaled
 	imageStore(colorimg4, scaleTexelPos(ivec2(dstTexel)), vec4(bloomTile, 1.0));
 }
 

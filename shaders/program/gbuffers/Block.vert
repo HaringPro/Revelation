@@ -37,20 +37,20 @@ uniform vec2 taaJitter;
 
 //======// Main //================================================================================//
 void main() {
-    vertColor = gl_Color;
-    texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	vertColor = gl_Color;
+	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 
-    lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
+	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
-    materialID = uint(blockEntityId - 10000);
+	materialID = uint(blockEntityId - 10000);
 
-    vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-    gl_Position = project(gl_ProjectionMatrix, viewPos);
-    worldPos = transMAD(gbufferModelViewInverse, viewPos);
+	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
+	gl_Position = project(gl_ProjectionMatrix, viewPos);
+	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-    transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+	transformVertexPosition(
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 }

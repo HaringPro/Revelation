@@ -47,11 +47,11 @@ bool ScreenSpaceRaytrace(vec3 viewPos, vec3 viewDir, float dither, uint steps, i
 			break;
 		}
 
-        ivec2 sampleTexel = scaleTexelPos(uvToTexel(rayPos.xy));
-        float sampleDepth = loadDepth2(sampleTexel);
-        #if defined LOD_MOD
-            if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
-        #endif
+		ivec2 sampleTexel = scaleTexelPos(uvToTexel(rayPos.xy));
+		float sampleDepth = loadDepth2(sampleTexel);
+		#if defined LOD_MOD
+			if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
+		#endif
 
 		float depthDiff = sampleDepth - rayPos.z;
 		if (abs(depthDiff + compareTolerance) < compareTolerance) {
@@ -69,11 +69,11 @@ bool ScreenSpaceRaytrace(vec3 viewPos, vec3 viewDir, float dither, uint steps, i
 		for (uint i = 0u; i < SSRT_REFINEMENT_STEPS; ++i) {
 			rayStep *= 0.5;
 
-            ivec2 sampleTexel = scaleTexelPos(uvToTexel(screenPos.xy));
-            float sampleDepth = loadDepth2(sampleTexel);
-            #if defined LOD_MOD
-                if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
-            #endif
+			ivec2 sampleTexel = scaleTexelPos(uvToTexel(screenPos.xy));
+			float sampleDepth = loadDepth2(sampleTexel);
+			#if defined LOD_MOD
+				if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
+			#endif
 
 			float depthDiff = sampleDepth - screenPos.z;
 			if (abs(depthDiff + compareTolerance) < compareTolerance) {

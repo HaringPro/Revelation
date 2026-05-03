@@ -29,18 +29,18 @@ uniform vec2 taaJitter;
 
 //======// Main //================================================================================//
 void main() {
-    vertColor = gl_Color;
-    lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
+	vertColor = gl_Color;
+	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
-    if (renderStage == MC_RENDER_STAGE_OUTLINE) {
-        vertColor.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
-        lightmap = vec2(0.0);
-    }
-    vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-    gl_Position = project(gl_ProjectionMatrix, viewPos);
-    transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+	if (renderStage == MC_RENDER_STAGE_OUTLINE) {
+		vertColor.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
+		lightmap = vec2(0.0);
+	}
+	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
+	gl_Position = project(gl_ProjectionMatrix, viewPos);
+	transformVertexPosition(
+		gl_Position,
+		taaJitter,
+		MC_RENDER_SCALE_FACTOR
+	);
 }

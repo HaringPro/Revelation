@@ -54,12 +54,12 @@ mat2x3 UnpackFogData(uvec2 data) {
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy * 2.0);
-    if (gl_FragCoord.x >= viewSize.x * 0.5 * MC_RENDER_SCALE_FACTOR || gl_FragCoord.y >= viewSize.y * 0.5 * MC_RENDER_SCALE_FACTOR){
+	ivec2 texelPos = ivec2(gl_FragCoord.xy * 2.0);
+	if (gl_FragCoord.x >= viewSize.x * 0.5 * MC_RENDER_SCALE_FACTOR || gl_FragCoord.y >= viewSize.y * 0.5 * MC_RENDER_SCALE_FACTOR){
 		return;
 	}
-    //texelPos = scaleTexelPos(texelPos);
-    vec2 screenCoord = (gl_FragCoord.xy * viewPixelSize * 2.0) / MC_RENDER_SCALE_FACTOR;
+	//texelPos = scaleTexelPos(texelPos);
+	vec2 screenCoord = (gl_FragCoord.xy * viewPixelSize * 2.0) / MC_RENDER_SCALE_FACTOR;
 	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
 	vec3 viewPos = ScreenToViewPosRaw(screenPos);
@@ -90,8 +90,8 @@ void main() {
 	// Temporal reprojection
 	vec2 prevCoord = ReprojectScreenPos(screenPos).xy;
 
-    if (saturate(prevCoord) == prevCoord && !global.historyReset) {
-        uvec3 reprojectedData = texelFetch(colortex11, scaleTexelPos(uvToTexel(prevCoord)) >> 1, 0).xyz;
+	if (saturate(prevCoord) == prevCoord && !global.historyReset) {
+		uvec3 reprojectedData = texelFetch(colortex11, scaleTexelPos(uvToTexel(prevCoord)) >> 1, 0).xyz;
 		mat2x3 reprojectedFog = UnpackFogData(reprojectedData.xy);
 
 		float blendWeight = 0.9;
