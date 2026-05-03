@@ -1,0 +1,78 @@
+/*
+--------------------------------------------------------------------------------
+
+    Revelation Shaders
+
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
+
+    Pass: Upsample bloom tiles
+    Reference: https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
+
+--------------------------------------------------------------------------------
+*/
+
+//======// Input //===============================================================================//
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+#if UPSAMPLE_LEVEL == 0
+const vec2 workGroupsRender = vec2(0.5, 0.5);
+#elif UPSAMPLE_LEVEL == 1
+const vec2 workGroupsRender = vec2(0.25, 0.25);
+#elif UPSAMPLE_LEVEL == 2
+const vec2 workGroupsRender = vec2(0.125, 0.125);
+#elif UPSAMPLE_LEVEL == 3
+const vec2 workGroupsRender = vec2(0.0625, 0.0625);
+#elif UPSAMPLE_LEVEL == 4
+const vec2 workGroupsRender = vec2(0.03125, 0.03125);
+#endif
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Uniform //=============================================================================//
+
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
+
+uniform sampler2D colortex4; // Bloom tiles
+
+uniform vec2 viewSize;
+uniform vec2 viewPixelSize;
+
+//======// Function //============================================================================//
+
+const vec2 bloomTileOffset[6] = vec2[6](
+	vec2(0.0000, 0.0000),
+	vec2(0.0000, 0.5000),
+	vec2(0.2500, 0.5000),
+	vec2(0.2500, 0.6250),
+	vec2(0.3125, 0.6250),
+	vec2(0.3150, 0.6563)
+);
+
+//======// Main //================================================================================//
+void main() {
+	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
+
+	vec2 srcUv = texelToUv(texelPos) * 0.5 + bloomTileOffset[UPSAMPLE_LEVEL + 1];
+	srcUv += viewPixelSize * float((UPSAMPLE_LEVEL + 1) * 8);
+
+    vec3 b00 = textureOffset(colortex4, srcUv, ivec2(-1, -1)).rgb;
+    vec3 b01 = textureOffset(colortex4, srcUv, ivec2(-1,  1)).rgb;
+    vec3 b10 = textureOffset(colortex4, srcUv, ivec2( 1, -1)).rgb;
+    vec3 b11 = textureOffset(colortex4, srcUv, ivec2( 1,  1)).rgb;
+    vec3 srcSample = (b00 + b01 + b10 + b11) * 0.25;
+
+	#if UPSAMPLE_LEVEL == 0
+		// Finest level: write final bloom
+		imageStore(colorimg4, texelPos, vec4(srcSample, 1.0));
+	#else
+	    texelPos += ivec2(bloomTileOffset[UPSAMPLE_LEVEL] * viewSize) + UPSAMPLE_LEVEL * 8;
+
+        // Accumulate
+        vec3 dstSample = imageLoad(colorimg4, texelPos).rgb;
+		imageStore(colorimg4, texelPos, vec4(mix(dstSample, srcSample, 0.5), 1.0));
+	#endif
+}

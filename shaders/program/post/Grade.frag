@@ -55,35 +55,10 @@ out vec3 color; // Tonemapped output
 
 #include "/lib/universal/Random.glsl"
 
-const vec2 bloomTileOffset[6] = vec2[6](
-	vec2(0.0000, 0.0000),
-	vec2(0.0000, 0.5000),
-	vec2(0.2500, 0.5000),
-	vec2(0.2500, 0.6250),
-	vec2(0.3125, 0.6250),
-	vec2(0.3150, 0.6563)
-);
-
 void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
-	vec3 bloomData = vec3(0.0);
-	vec2 screenCoord = texelToUv(unscaleTexelPos(texel));
+	vec2 screenCoord = texelToUvScaled(texel);
 
-	float weight = 1.0;
-	float sumWeight = 0.0;
-
-	vec2 upscalingCoord = screenCoord;
-	for (uint i = 0u; i < 6u; ++i) {
-		upscalingCoord *= 0.5;
-		vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
-		sampleCoord += scaledPixelSize * float(i * 8);
-		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
-
-		bloomData += sampleTile * weight;
-		sumWeight += weight;
-		weight *= 0.9;
-	}
-
-	bloomData *= rcp(sumWeight);
+	vec3 bloomData = texture(colortex4, screenCoord * 0.5).rgb;
 
 	float bloomIntensity = BLOOM_INTENSITY * 0.1;
 

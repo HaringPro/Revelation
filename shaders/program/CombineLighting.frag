@@ -269,7 +269,7 @@ void main() {
 				float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
 				vec3 sss = sigmaS * phase * exp2(-rLOG2 * surfaceDepth * (sigmaS + sigmaA));
 
-				float cutout = step(maxOf(abs(geoNormal)), 0.99);
+				float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
 				sss *= mix(1.0, contactShadow, saturate(distanceFade + cutout * 0.75));
 
 				diffuseRadiance += sunlightBase * sss * SUBSURFACE_SCATTERING_BRIGHTNESS;

@@ -79,19 +79,19 @@ const ivec2 sampleOffsets[13] = ivec2[13](
 
 vec3 CalculateBloomTile(vec2 uv) {
 	// Custom hand-crafted 36-texel downsample (13 bilinear fetches)
-	vec3 b00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[0]).rgb;
-	vec3 b01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[1]).rgb;
-	vec3 b02 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[2]).rgb;
-	vec3 b10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[3]).rgb;
-	vec3 b11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[4]).rgb;
-	vec3 b12 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[5]).rgb;
-	vec3 b20 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[6]).rgb;
-	vec3 b21 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[7]).rgb;
-	vec3 b22 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[8]).rgb;
-	vec3 c00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[9]).rgb;
-	vec3 c01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[10]).rgb;
-	vec3 c10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[11]).rgb;
-	vec3 c11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[12]).rgb;
+	vec3 b00 = textureOffset(bloomTileTex, uv, sampleOffsets[0]).rgb;
+	vec3 b01 = textureOffset(bloomTileTex, uv, sampleOffsets[1]).rgb;
+	vec3 b02 = textureOffset(bloomTileTex, uv, sampleOffsets[2]).rgb;
+	vec3 b10 = textureOffset(bloomTileTex, uv, sampleOffsets[3]).rgb;
+	vec3 b11 = textureOffset(bloomTileTex, uv, sampleOffsets[4]).rgb;
+	vec3 b12 = textureOffset(bloomTileTex, uv, sampleOffsets[5]).rgb;
+	vec3 b20 = textureOffset(bloomTileTex, uv, sampleOffsets[6]).rgb;
+	vec3 b21 = textureOffset(bloomTileTex, uv, sampleOffsets[7]).rgb;
+	vec3 b22 = textureOffset(bloomTileTex, uv, sampleOffsets[8]).rgb;
+	vec3 c00 = textureOffset(bloomTileTex, uv, sampleOffsets[9]).rgb;
+	vec3 c01 = textureOffset(bloomTileTex, uv, sampleOffsets[10]).rgb;
+	vec3 c10 = textureOffset(bloomTileTex, uv, sampleOffsets[11]).rgb;
+	vec3 c11 = textureOffset(bloomTileTex, uv, sampleOffsets[12]).rgb;
 
 	vec3 B00 = (b00 + b01 + b10 + b11) * 0.25;
 	vec3 B01 = (b01 + b02 + b11 + b12) * 0.25;
@@ -118,7 +118,7 @@ vec3 CalculateBloomTile(vec2 uv) {
 		weight = karisAverage(B11) * 0.125;
 		bloomTile += vec4(B11 * weight, weight);
 
-		return bloomTile.rgb / bloomTile.a;
+		return bloomTile.rgb * rcp(bloomTile.a);
 	#else
 		return (B00 + B01 + B10 + B11) * 0.125 + C00 * 0.5;
 	#endif
@@ -141,11 +141,8 @@ void main() {
 	//CalculateBloomTile sample bloomTileTex at srcUv,so the srcUv is using unscaled view size,so we don't need to scale it
 	vec3 bloomTile = CalculateBloomTile(srcUv);
 
-	const int dstIndex = DOWNSAMPLE_LEVEL;
-	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + dstIndex * 8);
-	dstTexel += bloomTileOffset[dstIndex] * viewSize + 0.5;
-	//above bloomTileOffset is using unscaled view size,so we need to scale the dstTexel
-	//and colortex4 is scaled
+	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + DOWNSAMPLE_LEVEL * 8);
+	dstTexel += bloomTileOffset[DOWNSAMPLE_LEVEL] * viewSize + 0.5;
 	imageStore(colorimg4, scaleTexelPos(ivec2(dstTexel)), vec4(bloomTile, 1.0));
 }
 
