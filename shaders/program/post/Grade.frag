@@ -75,7 +75,7 @@ void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
 	for (uint i = 0u; i < 6u; ++i) {
 		upscalingCoord *= 0.5;
 		vec2 sampleCoord = upscalingCoord + bloomTileOffset[i];
-		sampleCoord += viewPixelSize * float(i * 8);
+		sampleCoord += scaledPixelSize * float(i * 8);
 		vec3 sampleTile = textureBicubic(colortex4, sampleCoord).rgb;
 
 		bloomData += sampleTile * weight;
@@ -257,7 +257,7 @@ void main() {
 		const float scale = 1.5;
 
 		vec2 uv = texelToUv(unscaleTexelPos(texelPos)) * vec2(aspectRatio, 1.0) * scale;
-		float plot = smoothstep(0.0, scale * viewPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
+		float plot = smoothstep(0.0, scale * scaledPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
 
 		// Show LDR range
 		color = vec3(0.25) * step(uv.x, 1.0);

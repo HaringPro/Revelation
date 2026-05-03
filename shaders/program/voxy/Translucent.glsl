@@ -32,7 +32,7 @@ float BlueNoise(ivec2 texel, int frame) {
 
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
 
 	vec4 baseColor = parameters.sampledColour * parameters.tinting;
 	vec2 lightmap = vec2(0.0, saturate((parameters.lightMap.y - 0.03125) * 1.06667));

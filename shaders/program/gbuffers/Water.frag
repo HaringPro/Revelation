@@ -94,7 +94,7 @@ void main() {
 		#endif
 
 		float depth1 = loadDepth1(texel);
-		vec3 viewPos1 = ScreenToViewPos(vec3(gl_FragCoord.xy * viewPixelSize, depth1));
+		vec3 viewPos1 = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledPixelSize, depth1));
 		vec3 worldPos1 = transMAD(gbufferModelViewInverse, viewPos1);
 
 		vec2 encodedNormal = OctEncodeSnorm(worldNormal);
