@@ -184,7 +184,7 @@ float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount
 			vec2 samplePosFloor = floor(samplePos);
 			vec2 samplePosFract = samplePos - samplePosFloor;
 
-			vec4 sh = textureGather(depthtex0, samplePosFloor * scaleViewPixelSize(viewPixelSize));
+			vec4 sh = textureGather(depthtex0, samplePosFloor * viewPixelSize);
 			vec2 temp = mix(sh.wx, sh.zy, vec2(samplePosFract.x));
 			sampleDepth = mix(temp.x, temp.y, samplePosFract.y);
 
