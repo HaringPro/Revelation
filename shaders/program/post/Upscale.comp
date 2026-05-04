@@ -35,10 +35,9 @@ restrict writeonly uniform image2D colorimg5; // Upscaled scene color
 #include "/lib/universal/Random.glsl"
 
 #if UPSCALE_FSR1 == 1
-#define FSR_EASU 1
 #define FSR1_EASU_IN colortex0
 #define FSR1_EASU_OUT colorimg5
-#include "/ffx/fsr1/fsr1_main.glsl"
+#include "/ffx/fsr1/ffx_fsr1.glsl"
 #endif
 
 
