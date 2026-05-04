@@ -350,5 +350,7 @@ vec3 SphericalAreaGGX(float LdotH, float NdotV, float NdotL, float LdotV, float 
 
 float SpecularThroughputGGX(float NdotV, float NdotL, float roughness) {
 	float alpha2 = roughness * roughness;
-	return VisSmithJoint(NdotL, NdotV, alpha2) / VisSmithGGX(NdotV, alpha2);
+	float lt = sqrt((NdotL - NdotL * alpha2) * NdotL + alpha2);
+	float vt = sqrt((NdotV - NdotV * alpha2) * NdotV + alpha2);
+	return saturate(NdotL * (NdotV + vt) / (lt * NdotV + vt * NdotL));
 }
