@@ -76,15 +76,14 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 	return cloudPos * 0.5 + 0.5;
 }
 
-// Work in (original view size * CLOUD_TAAU_SCALE)
 //======// Main //================================================================================//
 void main() {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	cloudOut = vec4(0.0, 0.0, 1e6, 1.0);
 	frameOut = 0u;
 
-	vec2 screenCoord = ((gl_FragCoord.xy) + 0.5) * scaledPixelSize;
-	vec2 currCoord = screenCoord - taaJitter * (0.5 * CLOUD_TAAU_SCALE);
+	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+	vec2 currCoord = screenCoord - taaJitter * (0.5 * float(CLOUD_TAAU_SCALE));
 
 	// Fetch closest cloud depth
 	float cloudDepth = minOf(textureGather(cloudOriginTex, currCoord, 2));
