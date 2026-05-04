@@ -1,0 +1,50 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2026 HaringPro
+	Apache License 2.0
+
+--------------------------------------------------------------------------------
+*/
+
+#define UPSCALE_FSR1 1
+
+//======// Input //===============================================================================//
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+const vec2 workGroupsRender = vec2(1.0, 1.0);
+
+//======// Utility //=============================================================================//
+
+#include "/lib/Utility.glsl"
+
+//======// Uniform //=============================================================================//
+
+restrict writeonly uniform image2D colorimg5; // Upscaled scene color
+
+#include "/lib/universal/Uniform.glsl"
+
+//======// Function //============================================================================//
+
+#include "/lib/universal/Random.glsl"
+
+#if UPSCALE_FSR1 == 1
+#define FSR_EASU 1
+#define FSR1_EASU_IN colortex0
+#define FSR1_EASU_OUT colorimg5
+#include "/ffx/fsr1/fsr1_main.glsl"
+#endif
+
+
+//======// Main //================================================================================//
+void main() {
+    #if UPSCALE_FSR1 == 1
+        fsr1Easu(
+            scaledViewSize,
+            scaledViewSize,
+            originViewSize
+        );
+    #endif
+}

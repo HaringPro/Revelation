@@ -43,9 +43,9 @@ out vec3 finalOut;
 
 vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
 	#ifdef HDR_ENABLED
-		#define CasLoad(offset) reinhard(texelFetchOffset(colortex0, texel, 0, offset).rgb)
+		#define CasLoad(offset) reinhard(texelFetchOffset(colortex5, texel, 0, offset).rgb)
 	#else
-		#define CasLoad(offset) texelFetchOffset(colortex0, texel, 0, offset).rgb
+		#define CasLoad(offset) texelFetchOffset(colortex5, texel, 0, offset).rgb
 	#endif
 	#ifndef CAS_ENABLED
 		return CasLoad(ivec2(0, 0));
@@ -113,7 +113,6 @@ void main() {
 	#ifdef DEBUG_BLOOM_TILES
 		finalOut = texelFetch(colortex4, texelPos, 0).rgb;
 	#else
-		texelPos = scaleTexelPos(texelPos);
 		finalOut = FFXCasFilter(texelPos, CAS_STRENGTH);
 		#ifdef HDR_ENABLED
 			// sRGB encode after CAS
