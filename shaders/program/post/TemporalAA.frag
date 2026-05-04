@@ -58,7 +58,7 @@ vec3 CrossClosestFragment(ivec2 texelPos, float depth) {
 	closest = closest.z > d3 ? vec3(vec2(t3), d3) : closest;
 	closest = closest.z > d4 ? vec3(vec2(t4), d4) : closest;
 
-	closest.xy *= viewPixelSize;
+	closest.xy *= scaledPixelSize;
 	return closest;
 }
 
@@ -83,7 +83,7 @@ vec3 historyClipAABB(vec3 history, vec3 center, vec3 extent) {
 }
 
 vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
-	ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
+	ivec2 texel = uvToTexelScaled(screenCoord + taaJitter * 0.5);
 
 	vec3 currData = loadSceneMain(texel);
 	vec2 prevCoord = screenCoord - motionVector;
@@ -128,7 +128,7 @@ vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
 	#endif
 
 	// Subpixel sharpening
-	prevData = mix(prevData, currData, sdot(fract(prevCoord * viewSize) - 0.5) * 0.5);
+	prevData = mix(prevData, currData, sdot(fract(prevCoord * scaledViewSize) - 0.5) * 0.5);
 
 	float blendWeight = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
 	blendWeight *= 1.0 + sqr(temporalContrast) * TAA_ANTIFLICKER;
@@ -144,7 +144,7 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	float depth = loadDepth0(screenTexel);
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
 
 	#if RENDER_MODE == 1
 		vec2 motionVector;
@@ -176,7 +176,7 @@ void main() {
 			temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
 		#endif
 	#else
-		ivec2 srcTexel = uvToTexel(screenCoord + taaJitter * 0.5);
+		ivec2 srcTexel = uvToTexelScaled(screenCoord + taaJitter * 0.5);
 		temporalOut = vec4(loadSceneMain(srcTexel), 1.0);
 
 		vec2 prevCoord = ReprojectScreenPos(vec3(screenCoord, depth)).xy;
