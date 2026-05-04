@@ -208,7 +208,7 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-		vec2 ndcCoord = texelToUv(unscaleTexelPos(texelPos)) * 2.0 - 1.0;
+		vec2 ndcCoord = texelToUvScaled(texelPos) * 2.0 - 1.0;
 		ndcCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
 		color *= exp2(-0.5 * VIGNETTE_STRENGTH * sdot(ndcCoord));
 	#endif
@@ -231,7 +231,7 @@ void main() {
 	#ifdef DEBUG_TONE_MAPPING_PLOT
 		const float scale = 1.5;
 
-		vec2 uv = texelToUv(unscaleTexelPos(texelPos)) * vec2(aspectRatio, 1.0) * scale;
+		vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
 		float plot = smoothstep(0.0, scale * scaledPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
 
 		// Show LDR range

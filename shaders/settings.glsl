@@ -231,11 +231,13 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //======// Post-Processing //=====================================================================//
 
-	#define MC_RENDER_SCALE_FACTOR_FUCK_IRIS 1000 // [500 588 667 750 850 900 1000]
+	#define MC_RENDER_SCALE_FACTOR_FUCK_IRIS 1000 // [500 588 600 667 750 850 900 1000]
 	#if MC_RENDER_SCALE_FACTOR_FUCK_IRIS == 500
 		#define MC_RENDER_SCALE_FACTOR 0.5
 	#elif MC_RENDER_SCALE_FACTOR_FUCK_IRIS == 588
 		#define MC_RENDER_SCALE_FACTOR 0.588
+	#elif MC_RENDER_SCALE_FACTOR_FUCK_IRIS == 600
+		#define MC_RENDER_SCALE_FACTOR 0.600
 	#elif MC_RENDER_SCALE_FACTOR_FUCK_IRIS == 667
 		#define MC_RENDER_SCALE_FACTOR 0.667
 	#elif MC_RENDER_SCALE_FACTOR_FUCK_IRIS == 750

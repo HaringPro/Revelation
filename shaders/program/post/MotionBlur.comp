@@ -36,7 +36,7 @@ vec3 MotionBlur(ivec2 texelPos) {
 	motionVector *= saturate(motionNorm);
 
 	const float strength = MOTION_BLUR_STRENGTH / float(MOTION_BLUR_SAMPLES) * 0.01;
-	motionVector *= strength / max(frameTime, 1e-3) * scaleViewSize(viewSize);
+	motionVector *= strength / max(frameTime, 1e-3) * scaledViewSize;
 
 	float dither = BlueNoise(texelPos, frameCounter);
 
@@ -47,7 +47,7 @@ vec3 MotionBlur(ivec2 texelPos) {
 	float sumWeight = 0.0;
 
 	for (uint i = 0u; i < MOTION_BLUR_SAMPLES; ++i, sampleCoord += motionVector) {
-		if (clamp(sampleCoord, vec2(0.0), scaleViewSize(viewSize) - 1.0) == sampleCoord) {
+		if (clamp(sampleCoord, vec2(0.0), scaledViewSize - 1.0) == sampleCoord) {
 			sum += texelFetch(colortex1, ivec2(sampleCoord), 0).rgb;
 			++sumWeight;
 		}
