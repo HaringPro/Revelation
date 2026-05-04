@@ -9,6 +9,7 @@
             "upscale": {
                 "enabled": true,
                 "internal_format": "rgba16f",
+                "hdr": true,
                 "trigger": {
                     "type": "BEFORE",
                     "pass": "composite31"
