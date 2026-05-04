@@ -80,9 +80,17 @@ void main() {
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
 	gl_Position = project(gl_ProjectionMatrix, viewPos);
-	transformVertexPosition(
-		gl_Position,
-		taaJitter,
-		MC_RENDER_SCALE_FACTOR
-	);
+    #ifdef SUPER_RESOLUTION
+        transformVertexPosition(
+            gl_Position,
+            taaJitter,
+            SR_RENDER_SCALE_FACTOR
+        );
+     #else
+        transformVertexPosition(
+            gl_Position,
+            taaJitter,
+            MC_RENDER_SCALE_FACTOR
+        );
+     #endif
 }

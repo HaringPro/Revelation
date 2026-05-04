@@ -138,7 +138,7 @@ float BlueNoise(ivec2 texel) {
 }
 
 float BlueNoise(ivec2 texel, int frame) {
-	#ifdef TAA_ENABLED
+	#if defined(TAA_ENABLED) || defined(SUPER_RESOLUTION)
 		return R1(frame, texelFetch(noisetex, texel & 255, 0).a);
 	#else
 		return texelFetch(noisetex, texel & 255, 0).a;
@@ -183,7 +183,7 @@ float InterleavedGradientNoise(vec2 coord) {
 }
 
 float InterleavedGradientNoise(vec2 coord, int frame) {
-	#ifdef TAA_ENABLED
+	#if defined(TAA_ENABLED) || defined(SUPER_RESOLUTION)
 		coord += 5.588238 * float(frame % 64);
 	#endif
 	return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));

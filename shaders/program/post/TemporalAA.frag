@@ -22,7 +22,7 @@
 layout (location = 0) out vec4 temporalOut;
 layout (location = 1) out vec3 clearOut;
 
-#ifdef MOTION_BLUR
+#if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
 /* RENDERTARGETS: 1,4,3 */
 layout (location = 2) out vec2 motionVectorOut;
 #endif
@@ -160,17 +160,21 @@ void main() {
 		{
 		#ifdef TAA_CLOSEST_FRAGMENT
 			vec3 closestFragment = CrossClosestFragment(screenTexel, depth);
-			motionVector = closestFragment.xy - ReprojectScreenPos(closestFragment).xy;
+			motionVector = (closestFragment.xy - ReprojectScreenPos(closestFragment).xy);
 		#else
 			motionVector = screenCoord - ReprojectScreenPos(vec3(screenCoord, depth)).xy;
 		#endif
 		}
 
-		#ifdef MOTION_BLUR
-			motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
+		#if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
+			//motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
+            motionVectorOut = motionVector;
+            #ifdef SUPER_RESOLUTION
+                motionVectorOut *= vec2(-1.0, -1.0);
+            #endif
 		#endif
 
-		#ifdef TAA_ENABLED
+		#if defined(TAA_ENABLED) && !defined(SUPER_RESOLUTION)
 			temporalOut = TemporalReprojection(screenCoord, motionVector);
 		#else
 			temporalOut = vec4(loadSceneMain(screenTexel), 1.0);

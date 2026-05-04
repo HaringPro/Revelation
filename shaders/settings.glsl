@@ -320,4 +320,5 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	// #define DEBUG_TONE_MAPPING_PLOT
 	// #define FORCE_DISABLE_SUBGROUP_OPS
 
+
 #endif

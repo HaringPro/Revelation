@@ -30,6 +30,9 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 
 vec3 MotionBlur(ivec2 texelPos) {
 	vec2 motionVector = texelFetch(colortex3, texelPos, 0).xy;
+    #ifdef SUPER_RESOLUTION
+        motionVector *= -1.0;
+    #endif
 	float motionNorm = inversesqrt(sdot(motionVector));
 
 	if (motionNorm > 1e6) return texelFetch(colortex1, texelPos, 0).rgb;

@@ -5,7 +5,7 @@ vec3 ScreenToViewPosRaw(vec3 screenPos) {
 
 vec3 ScreenToViewPos(vec3 screenPos) {
 	vec3 ndcPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		ndcPos.xy -= taaJitter;
 	#endif
 	return projectAndDivide(gbufferProjectionInverse, ndcPos);
@@ -18,7 +18,7 @@ vec3 ScreenToViewPosRaw(vec2 screenPos, float viewDepth) {
 
 vec3 ScreenToViewPos(vec2 screenPos, float viewDepth) {
 	vec2 ndcPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		ndcPos -= taaJitter;
 	#endif
 	return vec3(diagonal2(gbufferProjectionInverse) * ndcPos * -viewDepth, viewDepth);
@@ -26,7 +26,7 @@ vec3 ScreenToViewPos(vec2 screenPos, float viewDepth) {
 
 vec3 ScreenToViewPos(vec2 screenPos) {
 	vec3 ndcPos = vec3(screenPos, loadDepth0(uvToTexelScaled(screenPos))) * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		ndcPos.xy -= taaJitter;
 	#endif
 	return projectAndDivide(gbufferProjectionInverse, ndcPos);
@@ -40,7 +40,7 @@ vec3 ViewToScreenPosRaw(vec3 viewPos) {
 
 vec3 ViewToScreenPos(vec3 viewPos) {
 	vec3 ndcPos = projMAD(gbufferProjection, viewPos) * rcp(-viewPos.z);
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		ndcPos.xy += taaJitter;
 	#endif
 	return ndcPos * 0.5 + 0.5;
@@ -53,7 +53,7 @@ vec3 ScreenToViewDirRaw(vec2 screenPos) {
 
 vec3 ScreenToViewDir(vec2 screenPos) {
 	vec2 ndcPos = screenPos * 2.0 - 1.0;
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		ndcPos -= taaJitter;
 	#endif
 	return normalize(vec3(diagonal2(gbufferProjectionInverse) * ndcPos, gbufferProjectionInverse[3].z));
@@ -88,7 +88,7 @@ float ViewToScreenDepth(float depth) {
 
 	vec3 ScreenToViewPosLod(vec3 screenPos) {
 		vec3 ndcPos = screenPos * 2.0 - 1.0;
-		#ifdef TAA_ENABLED
+		#ifdef SHOULD_APPLY_JITTER
 			ndcPos.xy -= taaJitter;
 		#endif
 		return projectAndDivide(lodProjectionInv, ndcPos);
@@ -96,7 +96,7 @@ float ViewToScreenDepth(float depth) {
 
 	vec3 ScreenToViewPosLod(vec2 screenPos) {
 		vec3 ndcPos = vec3(screenPos, loadDepth0Lod(uvToTexel(screenPos))) * 2.0 - 1.0;
-		#ifdef TAA_ENABLED
+		#ifdef SHOULD_APPLY_JITTER
 			ndcPos.xy -= taaJitter;
 		#endif
 		return projectAndDivide(lodProjectionInv, ndcPos);
@@ -110,7 +110,7 @@ float ViewToScreenDepth(float depth) {
 
 	vec3 ViewToScreenPosLod(vec3 viewPos) {
 		vec3 ndcPos = projMAD(lodProjection, viewPos) * rcp(-viewPos.z);
-		#ifdef TAA_ENABLED
+		#ifdef SHOULD_APPLY_JITTER
 			ndcPos.xy += taaJitter;
 		#endif
 		return ndcPos * 0.5 + 0.5;

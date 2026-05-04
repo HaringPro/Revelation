@@ -23,7 +23,7 @@ vec3 ScreenToViewPos(vec3 screenPos) {
 
 float BlueNoise(ivec2 texel, int frame) {
 	float base = texelFetch(noisetex, texel & 255, 0).a;
-	#ifdef TAA_ENABLED
+	#if defined(TAA_ENABLED) || defined(SUPER_RESOLUTION)
 		return fract(base + float(frame) * PHI);
 	#else
 		return base;

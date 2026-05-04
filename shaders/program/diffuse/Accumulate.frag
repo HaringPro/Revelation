@@ -47,7 +47,7 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	vec3 prevViewPos = transMAD(gbufferPreviousModelView, prevWorldPos); // To previous frame's view space
 	vec3 prevNDCPos = projMAD(gbufferPreviousProjection, prevViewPos) * rcp(-prevViewPos.z); // To previous frame's NDC space
 
-	#ifdef TAA_ENABLED
+	#ifdef SHOULD_APPLY_JITTER
 		prevNDCPos.xy += taaJitterPrev;
 	#endif
 	vec2 prevCoord = prevNDCPos.xy * 0.5 + 0.5;

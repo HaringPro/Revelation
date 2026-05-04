@@ -40,8 +40,14 @@
 
 //======// Output //==============================================================================//
 
+#ifdef SUPER_RESOLUTION
+// When super resolution is enabled, this pass will be running at the original resolution
+/* RENDERTARGETS: 5 */
+out vec3 color; // Tonemapped output
+#else
 /* RENDERTARGETS: 0 */
 out vec3 color; // Tonemapped output
+#endif
 
 //======// Uniform //=============================================================================//
 
@@ -56,7 +62,12 @@ out vec3 color; // Tonemapped output
 #include "/lib/universal/Random.glsl"
 
 void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
-	vec2 screenCoord = texelToUvScaled(texel);
+    #ifndef SUPER_RESOLUTION
+        vec2 screenCoord = texelToUvScaled(texel);
+    #else
+        //texel is at the original resolution
+        vec2 screenCoord = texelToUv(texel);
+    #endif
 
 	vec3 bloomData = texture(colortex4, screenCoord * 0.5).rgb;
 
@@ -157,6 +168,7 @@ vec3 Lottes(vec3 x) {
 
 //======// Main //================================================================================//
 void main() {
+    // When super resolution is enabled, texelPos will be at the original resolution
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
 
 	#if EXPOSURE_MODE == MANUAL
@@ -164,15 +176,19 @@ void main() {
 	#else
 		float exposure = exposure.value;
 	#endif
-
-	#ifdef MOTION_BLUR
-		color = texelFetch(colortex0, texelPos, 0).rgb;
-	#else
-		color = texelFetch(colortex1, texelPos, 0).rgb;
-	#endif
+    #ifndef SUPER_RESOLUTION
+	    #ifdef MOTION_BLUR
+	    	color = texelFetch(colortex0, texelPos, 0).rgb;
+	    #else
+	    	color = texelFetch(colortex1, texelPos, 0).rgb;
+	    #endif
+    #else
+        color = texelFetch(colortex18, texelPos, 0).rgb;
+    #endif
 
 	// Bloom and fog
 	#ifdef BLOOM
+        // When super resolution is enabled, bloom will be upscaled to the original resolution
 		CombineBloomAndFog(color, texelPos, exposure);
 	#endif
 
@@ -208,7 +224,11 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-		vec2 ndcCoord = texelToUvScaled(texelPos) * 2.0 - 1.0;
+        #ifndef SUPER_RESOLUTION
+		    vec2 ndcCoord = texelToUvScaled(texelPos) * 2.0 - 1.0;
+        #else
+            vec2 ndcCoord = texelToUv(texelPos) * 2.0 - 1.0;
+        #endif
 		ndcCoord.x *= mix(1.0, aspectRatio, VIGNETTE_ROUNDNESS);
 		color *= exp2(-0.5 * VIGNETTE_STRENGTH * sdot(ndcCoord));
 	#endif
@@ -230,8 +250,11 @@ void main() {
 	// Debug tone mapping plot
 	#ifdef DEBUG_TONE_MAPPING_PLOT
 		const float scale = 1.5;
-
-		vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
+        #ifndef SUPER_RESOLUTION
+		    vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
+        #else
+            vec2 uv = texelToUv(texelPos) * vec2(aspectRatio, 1.0) * scale;
+        #endif
 		float plot = smoothstep(0.0, scale * scaledPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
 
 		// Show LDR range

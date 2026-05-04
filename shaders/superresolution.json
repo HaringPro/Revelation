@@ -1,0 +1,75 @@
+{
+    "schema_version": 1,
+    "profiles": {
+        "*": {
+            "jitter": {
+                "enabled": true,
+                "source": "mod"
+            },
+            "upscale": {
+                "enabled": true,
+                "internal_format": "rgba16f",
+                "trigger": {
+                    "type": "BEFORE",
+                    "pass": "composite31"
+                },
+                "inputs": {
+                    "color": {
+                        "enabled": true,
+                        "src": "colortex16",
+                        "region": [
+                            0,
+                            0,
+                            -1,
+                            -1
+                        ]
+                    },
+                    "depth": {
+                        "enabled": true,
+                        "src": "depthtex",
+                        "region": [
+                            0,
+                            0,
+                            -1,
+                            -1
+                        ]
+                    },
+                    "motion_vectors": {
+                        "enabled": true,
+                        "src": "autotex3",
+                        "region": [
+                            0,
+                            0,
+                            -1,
+                            -1
+                        ]
+                    },
+                    "exposure": {
+                        "enabled": true,
+                        "src": "colortex17",
+                        "region": [
+                            0,
+                            0,
+                            1,
+                            1
+                        ]
+                    }
+                },
+                "outputs": {
+                    "upscaled_color": {
+                        "enabled": true,
+                        "target": [
+                            "colortex18"
+                        ],
+                        "region": [
+                            0,
+                            0,
+                            -2,
+                            -2
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
