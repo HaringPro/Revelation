@@ -248,6 +248,8 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 		#define MC_RENDER_SCALE_FACTOR 1.0
 	#endif
 
+    #define UPSCALE_MODE 10 // [10 20]
+
 /* Depth of Field */
 	// #define DEPTH_OF_FIELD
 	#define CAMERA_FOCUS_MODE 0 // [0 1]
