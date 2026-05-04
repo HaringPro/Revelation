@@ -47,7 +47,7 @@ vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
     texel = scaleTexelPos(texel);
     #endif
 
-    #if MC_RENDER_SCALE_FACTOR_FUCK_IRIS != 1000 && UPSCALE_MODE != 10
+    #if MC_RENDER_SCALE_FACTOR_1000X != 1000 && UPSCALE_MODE != 10
 	    #ifdef HDR_ENABLED
 	    	#define CasLoad(offset) reinhard(texelFetchOffset(colortex5, texel, 0, offset).rgb)
 	    #else
