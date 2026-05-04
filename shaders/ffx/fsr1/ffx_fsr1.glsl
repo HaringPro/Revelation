@@ -151,7 +151,7 @@ void FsrEasuF(
     vec2 dir2 = dir * dir;
     float dirR = dir2.x + dir2.y;
     bool zro = dirR < float(1.0 / 32768.0);
-    dirR = uintBitsToFloat(uint(0x7ef07ebb) - floatBitsToUint(dirR));
+    dirR = uintBitsToFloat(0x5f347d74u - (floatBitsToUint(dirR) >> 1u));
     dirR = zro ? float(1.0) : dirR;
     dir.x = zro ? float(1.0) : dir.x;
     dir *= vec2(dirR);
@@ -163,11 +163,9 @@ void FsrEasuF(
     float clp = uintBitsToFloat(uint(0x7ef07ebb) - floatBitsToUint(lob));
 
     vec3 min4 = min(
-            max(
-                vec3(ijfeR.z, ijfeG.z, ijfeB.z),
-                max(vec3(klhgR.w, klhgG.w, klhgB.w),
-                    vec3(ijfeR.y, ijfeG.y, ijfeB.y))
-            ),
+            min(vec3(ijfeR.z, ijfeG.z, ijfeB.z),
+                min(vec3(klhgR.w, klhgG.w, klhgB.w),
+                    vec3(ijfeR.y, ijfeG.y, ijfeB.y))),
             vec3(klhgR.x, klhgG.x, klhgB.x)
         );
     vec3 max4 = max(
