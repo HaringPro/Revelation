@@ -336,15 +336,15 @@ vec3 RRTAndODTFit(vec3 rgb) {
 	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-uniform sampler1D acesReachMTableTex;
-uniform sampler1D acesGamutCuspTableTex;
+layout(r32f) readonly uniform image1D acesReachMTable;
+layout(rgba32f) readonly uniform image1D acesGamutCuspTable;
 
 float aces_reach_m_table_sample(float h) {
 	float i_base = floor(h);
 	float i_lo = i_base + 1;
 	float i_hi = i_lo + 1;
-	float lo = texelFetch(acesReachMTableTex, int(i_lo), 0).r;
-	float hi = texelFetch(acesReachMTableTex, int(i_hi), 0).r;
+  float lo = imageLoad(acesReachMTable, int(i_lo)).r;
+  float hi = imageLoad(acesReachMTable, int(i_hi)).r;
 	float t = h - i_base;
 	return mix(lo, hi, t);
 }
@@ -383,8 +383,8 @@ vec3 aces_gamut_cusp_table_sample(float h) {
 		}
 		i = (i_lo + i_hi) >> 1;
 	}
-	vec3 lo = texelFetch(acesGamutCuspTableTex, i_hi - 1, 0).rgb;
-	vec3 hi = texelFetch(acesGamutCuspTableTex, i_hi, 0).rgb;
+  vec3 lo = imageLoad(acesGamutCuspTable, int(i_hi - 1)).rgb;
+  vec3 hi = imageLoad(acesGamutCuspTable, int(i_hi)).rgb;
 	float t = (h - aces_gamut_cusp_table_hues_array[i_hi - 1]) / (aces_gamut_cusp_table_hues_array[i_hi] - aces_gamut_cusp_table_hues_array[i_hi - 1]);
 	return mix(lo, hi, t);
 }
