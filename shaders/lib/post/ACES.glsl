@@ -343,8 +343,8 @@ float aces_reach_m_table_sample(float h) {
 	float i_base = floor(h);
 	float i_lo = i_base + 1;
 	float i_hi = i_lo + 1;
-  float lo = imageLoad(acesReachMTable, int(i_lo)).r;
-  float hi = imageLoad(acesReachMTable, int(i_hi)).r;
+    float lo = imageLoad(acesReachMTable, int(i_lo)).r;
+    float hi = imageLoad(acesReachMTable, int(i_hi)).r;
 	float t = h - i_base;
 	return mix(lo, hi, t);
 }
@@ -383,8 +383,8 @@ vec3 aces_gamut_cusp_table_sample(float h) {
 		}
 		i = (i_lo + i_hi) >> 1;
 	}
-  vec3 lo = imageLoad(acesGamutCuspTable, int(i_hi - 1)).rgb;
-  vec3 hi = imageLoad(acesGamutCuspTable, int(i_hi)).rgb;
+    vec3 lo = imageLoad(acesGamutCuspTable, int(i_hi - 1)).rgb;
+    vec3 hi = imageLoad(acesGamutCuspTable, int(i_hi)).rgb;
 	float t = (h - aces_gamut_cusp_table_hues_array[i_hi - 1]) / (aces_gamut_cusp_table_hues_array[i_hi] - aces_gamut_cusp_table_hues_array[i_hi - 1]);
 	return mix(lo, hi, t);
 }
