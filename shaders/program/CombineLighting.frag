@@ -57,7 +57,7 @@ uniform sampler2D cloudOriginTex;
 #endif
 
 #if defined SSILVB_ENABLED && defined SVGF_ENABLED
-	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewDistance, float NdotV) {
+	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewZ, float NdotV) {
 		vec3 sum = vec3(0.0);
 		float sumWeight = 0.0;
 
@@ -77,7 +77,7 @@ uniform sampler2D cloudOriginTex;
 			vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
 
 			float weight = pow4(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
-			weight *= exp2(distance(sampleAux.z, viewDistance) * sigmaZ);
+			weight *= exp2(distance(sampleAux.z, viewZ) * sigmaZ);
 			weight *= bilinearWeight[i];
 
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
@@ -344,7 +344,7 @@ void main() {
 		// Indirect diffuse lighting
 		#ifdef SSILVB_ENABLED
 			#ifdef SVGF_ENABLED
-				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewDist, NdotV);
+				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewPos.z, NdotV);
 			#else
 				vec3 radiance = texelFetch(colortex3, texelPos >> 1, 0).rgb;
 			#endif

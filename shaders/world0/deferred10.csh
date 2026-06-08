@@ -1,5 +1,5 @@
 #version 460 compatibility
 
-#define ATROUS_FILTER_SIZE 32
+#define FILTER_PASS_INDEX 4
 
 #include "/program/diffuse/EAWF.comp"
