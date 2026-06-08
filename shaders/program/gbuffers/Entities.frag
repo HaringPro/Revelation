@@ -28,14 +28,8 @@ layout (location = 3) out float parallaxShadowOut;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;
-
-#if defined MC_NORMAL_MAP
-	uniform sampler2D normals;
-#endif
-
-#if defined MC_SPECULAR_MAP
-	uniform sampler2D specular;
-#endif
+uniform sampler2D normals;
+uniform sampler2D specular;
 
 // uniform vec3 skyColor;
 
@@ -54,11 +48,6 @@ in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 flat in uint materialID;
-
-//======// Function //============================================================================//
-
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
 
 //======// Main //================================================================================//
 void main() {
@@ -80,8 +69,8 @@ void main() {
 
 	albedoOut = albedo;
 
-	materialOut.x = Pack2x8U(lightmap, bayer4(gl_FragCoord.xy));
-	#if GBUFFER_SPIDEREYES
+	materialOut.x = Pack2x8U(lightmap);
+	#if GBUFFERS_SPIDEREYES
 		materialOut.y = 20u;
 	#else
 		materialOut.y = materialID;

@@ -1,4 +1,4 @@
-#include "/lib/surface/SSRT.glsl"
+#include "/lib/lighting/SSRT.glsl"
 #include "/lib/universal/MonteCarlo.glsl"
 
 vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 screenPos, vec3 worldDir, vec3 viewPos, float skylight, float dither) {

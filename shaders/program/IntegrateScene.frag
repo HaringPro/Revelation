@@ -30,10 +30,6 @@ layout (location = 0) out vec4 sceneOut;
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -47,8 +43,10 @@ layout (location = 0) out vec4 sceneOut;
 
 #include "/lib/water/WaterFog.glsl"
 
-#include "/lib/surface/BRDF.glsl"
-#include "/lib/surface/SSRT.glsl"
+#include "/lib/surface/Material.glsl"
+
+#include "/lib/lighting/BRDF.glsl"
+#include "/lib/lighting/SSRT.glsl"
 
 vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool waterMask) {
 	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
@@ -158,20 +156,20 @@ void main() {
 	worldPos += gbufferModelViewInverse[3].xyz;
 
 	if (lessThanFLT1(depth)) {
-		vec4 translucent = ExtractSpecularTex(materialPack);
-		vec3 albedo = sRGBToLinear(translucent.rgb);
+		vec4 translucentColor = loadAlbedo(texelPos);
+		vec3 albedo = sRGBToLinear(translucentColor.rgb) * sRGB_2_Rec2020;
 
 		// Particle translucent
 		if (materialID == 500u) {
 			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
-			sceneColor = mix(sceneColor, albedo * diffuseLight, translucent.a);
+			sceneColor = mix(sceneColor, albedo * diffuseLight, translucentColor.a);
 		}
 
 		// Translucent
 		if (glassMask || waterMask) {
 			if (glassMask) {
 				// Absorption
-				sceneColor *= exp2(log2(albedo) * approxSqrt(translucent.a));
+				sceneColor *= exp2(log2(albedo * oms(0.125 * translucentColor.a)) * approxSqrt(translucentColor.a + 0.25));
 
 				// Emissive
 				sceneColor += (2.0 * EMISSIVE_BRIGHTNESS) * Unpack2x8UX(materialPack.x) * mean(albedo) * albedo;

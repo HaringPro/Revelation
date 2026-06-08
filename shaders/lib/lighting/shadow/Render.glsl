@@ -101,7 +101,7 @@ vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, f
 				if (waterMask > 0.5) {
 					waterData += vec2(sampleDepth0 - shadowScreenPos.z, 1.0);
 				} else {
-					color += cube(texelFetch(shadowcolor0, sampleTexel, 0).rgb);
+					color += texelFetch(shadowcolor0, sampleTexel, 0).rgb;
 				}
 			} else {
 				color += 1.0;
@@ -115,9 +115,10 @@ vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, f
 
 	const float rSteps = 1.0 / float(PCSS_FILTER_SAMPLES);
 	shadow *= rSteps;
-	color *= rSteps;
 
-	#ifndef COLORED_SHADOWS
+	#ifdef COLORED_SHADOWS
+        color = sRGBToLinear(color * rSteps) * sRGB_2_Rec2020;
+    #else
 		color = vec3(1.0);
 	#endif
 

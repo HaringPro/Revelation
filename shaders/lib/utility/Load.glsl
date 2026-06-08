@@ -5,7 +5,7 @@
 
 #define loadSceneMain(texel) 		texelFetch(colortex0, texel, 0).rgb
 
-#define loadAlbedo(texel) 			texelFetch(colortex6, texel, 0).rgb
+#define loadAlbedo(texel) 			texelFetch(colortex6, texel, 0)
 #define loadMaterialPack(texel) 	texelFetch(colortex7, texel, 0)
 #define loadNormalPack(texel) 		texelFetch(colortex8, texel, 0)
 

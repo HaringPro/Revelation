@@ -30,10 +30,6 @@ out vec4 specularOut;
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -42,8 +38,10 @@ out vec4 specularOut;
 
 #include "/lib/atmosphere/Common.glsl"
 
-#include "/lib/surface/BRDF.glsl"
-#include "/lib/surface/Reflection.glsl"
+#include "/lib/surface/Material.glsl"
+
+#include "/lib/lighting/BRDF.glsl"
+#include "/lib/lighting/SSR.glsl"
 
 //======// Main //================================================================================//
 void main() {

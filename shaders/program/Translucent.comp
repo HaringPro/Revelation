@@ -33,10 +33,6 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -48,10 +44,12 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/water/WaterFog.glsl"
 
+#include "/lib/surface/Material.glsl"
+
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
 
-#include "/lib/surface/SSRT.glsl"
+#include "/lib/lighting/SSRT.glsl"
 
 vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal, vec3 worldDir, float dither, float skylight, bool waterMask) {
 	float NdotV = abs(dot(worldNormal, worldDir));

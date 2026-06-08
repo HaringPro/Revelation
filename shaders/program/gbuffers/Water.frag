@@ -15,22 +15,17 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 7,8,12 */
-layout (location = 0) out uvec4 materialOut;
-layout (location = 1) out vec4 normalOut;
-layout (location = 2) out vec4 waterOut;
+/* RENDERTARGETS: 6,7,8,12 */
+layout (location = 0) out vec4 albedoOut;
+layout (location = 1) out uvec2 materialOut;
+layout (location = 2) out vec4 normalOut;
+layout (location = 3) out vec4 waterOut;
 
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;
-
-#if defined MC_NORMAL_MAP
-	uniform sampler2D normals;
-#endif
-
-#if defined MC_SPECULAR_MAP
-	uniform sampler2D specular;
-#endif
+uniform sampler2D normals;
+uniform sampler2D specular;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -120,9 +115,9 @@ void main() {
 
 		waterOut = vec4(distance(worldPos, worldPos1) * rcp255, Pack2x8(encodedNormal), 0.0, 1.0);
 	} else {
-		vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
+		albedoOut = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
 
-		if (albedo.a < 0.1) discard;
+		if (albedoOut.a < 0.1) discard;
 
 		#if defined MC_NORMAL_MAP
 			vec3 normalTex = textureGrad(normals, texCoord, deltaUv1, deltaUv2).rgb;
@@ -143,12 +138,9 @@ void main() {
         }
 
 		normalOut.zw = OctEncodeSnorm(worldNormal);
-
-		materialOut.z = Pack2x8U(albedo.xy);
-		materialOut.w = Pack2x8U(albedo.zw);
 		waterOut = vec4(0.0);
 	}
 
-	materialOut.x = Pack2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = materialID;
 }

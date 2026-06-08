@@ -1,5 +1,5 @@
 vec3 FetchBaseColor(ivec2 texel) {
-	return sRGBToLinear(loadAlbedo(texel)) * sRGB_2_Rec2020;
+	return sRGBToLinear(loadAlbedo(texel).rgb) * sRGB_2_Rec2020;
 }
 
 vec3 FetchGeometryNormal(ivec2 texel) {

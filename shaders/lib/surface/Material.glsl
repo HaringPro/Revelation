@@ -1,5 +1,5 @@
-#if !defined INCLUDE_UNIVERSAL_MATERIAL
-#define INCLUDE_UNIVERSAL_MATERIAL
+#if !defined INCLUDE_SURFACE_MATERIAL
+#define INCLUDE_SURFACE_MATERIAL
 
 float IORFromF0(float f0) {
 	float sqrtF0 = f0 * inversesqrt(f0);

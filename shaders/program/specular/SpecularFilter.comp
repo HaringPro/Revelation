@@ -26,15 +26,13 @@ writeonly uniform image2D colorimg0;
 
 #include "/lib/universal/Uniform.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
+
+#include "/lib/surface/Material.glsl"
 
 vec3 GetSpecularDominantDir(vec3 N, vec3 V, float roughness) {
 	float f = (1.0 - roughness) * (approxSqrt(1.0 - roughness) + roughness);

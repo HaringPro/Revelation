@@ -23,8 +23,6 @@ layout (location = 1) out vec4 shadowcolor1Out;
 //======// Input //===============================================================================//
 
 in vec2 texCoord;
-
-// in vec3 viewPos;
 in vec3 vectorData; // Minecraft position in water, vertColor in other materials
 
 flat in uint isWater;
@@ -51,11 +49,9 @@ void main() {
 		vec4 albedo = texture(tex, texCoord);
 		if (albedo.a < 0.1) discard;
 
-		if (albedo.a > oms(rcp255)) {
-			shadowcolor0Out = albedo.rgb * vectorData;
-		} else {
-			albedo.a = approxSqrt(approxSqrt(albedo.a));
-			shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * vectorData, albedo.a);
+		if (albedo.a < 254.5 / 255.0) {
+            albedo.rgb *= 1.0 - 0.125 * albedo.a;
+			shadowcolor0Out = pow(albedo.rgb * vectorData, vec3(approxSqrt(albedo.a + 0.25)));
 		}
 
 		shadowcolor1Out.w = 0.0;
