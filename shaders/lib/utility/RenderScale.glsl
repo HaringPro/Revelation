@@ -1,8 +1,8 @@
-#if MC_RENDER_SCALE_FACTOR_1000X != 1000
+#if RENDER_SCALE_1000X != 1000
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
 	    vertPos = project(gl_ProjectionMatrix, viewPos);
         vertPos.xy /= vertPos.w;
-        vertPos.xy = vertPos.xy * MC_RENDER_SCALE_FACTOR + MC_RENDER_SCALE_FACTOR - 1.0;
+        vertPos.xy = vertPos.xy * RENDER_SCALE + RENDER_SCALE - 1.0;
         #ifdef TAA_ENABLED
             vertPos.xy += jitter;
         #endif
@@ -10,11 +10,11 @@
     }
 
     ivec2 scaleTexelPos(ivec2 texelPos) {
-        return ivec2(vec2(texelPos) * MC_RENDER_SCALE_FACTOR);
+        return ivec2(vec2(texelPos) * RENDER_SCALE);
     }
 
     ivec2 unscaleTexelPos(ivec2 texelPos) {
-        return ivec2(vec2(texelPos) * (1.0 / MC_RENDER_SCALE_FACTOR));
+        return ivec2(vec2(texelPos) * (1.0 / RENDER_SCALE));
     }
 #else
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
