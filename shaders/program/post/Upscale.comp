@@ -22,8 +22,6 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 #define UPSCALE_FSR1 1
 #endif
 
-
-
 //======// Uniform //=============================================================================//
 
 restrict writeonly uniform image2D colorimg5; // Upscaled scene color

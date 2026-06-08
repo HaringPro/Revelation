@@ -47,8 +47,8 @@ uint histogramLumToBin(float lum) {
 //======// Main //================================================================================//
 void main() {
 	uint index = gl_LocalInvocationIndex;
-	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-	texelPos = scaleTexelPos(texelPos);
+	ivec2 texelPos = scaleTexelPos(ivec2(gl_GlobalInvocationID.xy));
+
 	// Initialize
 	sharedHistogram[index] = 0u;
 	barrier();

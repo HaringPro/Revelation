@@ -36,11 +36,7 @@ void main() {
 		vertColor.rgb = vec3(SELECTION_BOX_COLOR_R, SELECTION_BOX_COLOR_G, SELECTION_BOX_COLOR_B);
 		lightmap = vec2(0.0);
 	}
+
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	gl_Position = project(gl_ProjectionMatrix, viewPos);
-	transformVertexPosition(
-		gl_Position,
-		taaJitter,
-		MC_RENDER_SCALE_FACTOR
-	);
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }

@@ -69,10 +69,5 @@ void main() {
 	#endif
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-	gl_Position = project(dhProjection, viewPos);
-    transformVertexPosition(
-        gl_Position,
-        taaJitter,
-        MC_RENDER_SCALE_FACTOR
-    );
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }

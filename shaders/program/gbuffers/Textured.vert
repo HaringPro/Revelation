@@ -39,12 +39,7 @@ void main() {
 	vertColor = gl_Color;
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	gl_Position = project(gl_ProjectionMatrix, viewPos);
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-	transformVertexPosition(
-		gl_Position,
-		taaJitter,
-		MC_RENDER_SCALE_FACTOR
-	);
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }

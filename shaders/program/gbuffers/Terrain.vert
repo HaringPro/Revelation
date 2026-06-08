@@ -116,11 +116,5 @@ void main() {
 	#endif
 
 	vec3 viewPos = transMAD(gbufferModelView, worldPos);
-	gl_Position = project(gl_ProjectionMatrix, viewPos);
-
-	transformVertexPosition(
-		gl_Position,
-		taaJitter,
-		MC_RENDER_SCALE_FACTOR
-	);
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }
