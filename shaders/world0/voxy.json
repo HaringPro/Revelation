@@ -26,7 +26,7 @@
         "noisetex",
         "depthtex0"
     ],
-    #ifdef SR_RENDER_SCALE_FACTOR
+    #if defined(SR_ENABLE) && SR_ENABLE == 1
     "renderScale": [SR_RENDER_SCALE_FACTOR],
     #else
     #if MC_RENDER_SCALE_FACTOR_1000X == 500

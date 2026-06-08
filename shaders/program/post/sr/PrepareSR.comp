@@ -37,7 +37,7 @@ layout (r32f) restrict writeonly uniform image2D colorimg21; //Exposure value fo
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-    if (texelPos.x > int(scaledViewSize.x) || texelPos.y > int(scaledViewSize.y)) {
+    if (texelPos.x >= int(scaledViewSize.x) || texelPos.y >= int(scaledViewSize.y)) {
         return;
     }
     if (texelPos.x == 0 && texelPos.y == 0) {
