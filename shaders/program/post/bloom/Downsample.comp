@@ -41,8 +41,6 @@ writeonly uniform image2D colorimg4;
 uniform sampler2D colortex1; // TAA image output
 uniform sampler2D colortex4; // Bloom tile input
 
-uniform vec2 viewSize;
-uniform vec2 viewPixelSize;
 uniform vec2 originViewSize;
 uniform vec2 originPixelSize;
 
@@ -129,7 +127,7 @@ vec3 CalculateBloomTile(vec2 uv) {
 //======// Main //================================================================================//
 void main() {
 	vec2 srcUv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
-	srcUv *= viewPixelSize;
+	srcUv *= originPixelSize;
 
 	if (any(greaterThanEqual(srcUv, vec2(exp2(-float(DOWNSAMPLE_LEVEL)))))) {
 		return;
@@ -137,14 +135,14 @@ void main() {
 
 	#if DOWNSAMPLE_LEVEL > 0
 		const int srcIndex = DOWNSAMPLE_LEVEL - 1;
-		srcUv += float(srcIndex * 8) * viewPixelSize + bloomTileOffset[srcIndex];
+		srcUv += float(srcIndex * 8) * originPixelSize + bloomTileOffset[srcIndex];
 	#endif
 
 	//CalculateBloomTile sample bloomTileTex at srcUv,so the srcUv is using unscaled view size,so we don't need to scale it
 	vec3 bloomTile = CalculateBloomTile(srcUv);
 
 	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + DOWNSAMPLE_LEVEL * 8);
-	dstTexel += bloomTileOffset[DOWNSAMPLE_LEVEL] * viewSize + 0.5;
+	dstTexel += bloomTileOffset[DOWNSAMPLE_LEVEL] * originViewSize + 0.5;
 	imageStore(colorimg4, scaleTexelPos(ivec2(dstTexel)), vec4(bloomTile, 1.0));
 }
 

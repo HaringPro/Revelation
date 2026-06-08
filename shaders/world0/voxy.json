@@ -10,7 +10,6 @@
     "uniforms": [
         "vxProj",
         "vxProjInv",
-        "viewPixelSize",
         "gbufferModelViewInverse",
         "cameraPosition",
         "far",

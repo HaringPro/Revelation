@@ -69,7 +69,7 @@ void SpecularFilter(inout vec4 specularData, ivec2 texel, float roughness, vec3 
 	float linearDepth = ScreenToViewDepth(loadDepth0(texel));
 
 	float sharpenWeight = 0.125 + 0.375 * saturate(specularData.a * 0.25);
-	ivec2 texelEnd = ivec2(viewSize) - 2;
+	ivec2 texelEnd = ivec2(originViewSize) - 2;
 
 	// Sharpen
 	specularData.rgb *= pow(sdot(specularData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
