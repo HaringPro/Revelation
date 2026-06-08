@@ -85,6 +85,9 @@ vec2 endPortalLayer(vec2 coord, float layer) {
 
 //======// Main //================================================================================//
 void main() {
+    vec2 deltaUv1 = dFdx(texCoord);
+    vec2 deltaUv2 = dFdy(texCoord);
+
 	vec3 deltaPos1 = dFdx(worldPos);
 	vec3 deltaPos2 = dFdy(worldPos);
 
@@ -92,8 +95,6 @@ void main() {
 
 	// Construct TBN matrix
 	#ifdef MC_NORMAL_MAP
-		vec2 deltaUv1 = dFdx(texCoord);
-		vec2 deltaUv2 = dFdy(texCoord);
 
         vec3 tangentPerp = deltaPos2 * deltaUv1.x - deltaPos1 * deltaUv2.x;
         vec3 tangent = normalize(cross(tangentPerp, geoNormal));
@@ -104,14 +105,11 @@ void main() {
 		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
-	// Compute mipmap level
-	#if RENDER_MODE == 1
-		float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
-	#else
-		const float mipLevel = 0.0;
-	#endif
+    // Increase detail reserve
+    deltaUv1 *= 0.5;
+    deltaUv2 *= 0.5;
 
-	vec4 albedo = textureLod(tex, texCoord, mipLevel) * vertColor;
+	vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
 
 	if (albedo.a < 0.1) discard;
 
@@ -129,9 +127,9 @@ void main() {
 		vec2 sampleNDC = sampleNDCRaw.xy * vec2(samplePartAbs.y + samplePart.z, 1.0 - samplePartAbs.y) + sampleNDCRaw.z * vec2(-samplePart.x, samplePartAbs.y);
 		vec2 portalCoord = sampleNDC * 0.5 + 0.5;
 
-		vec3 portalColor = texture(tex, portalCoord).rgb * COLORS[0];
+		vec3 portalColor = textureGrad(tex, portalCoord, deltaUv1, deltaUv2).rgb * COLORS[0];
 		for (int i = 0; i < 16; ++i) {
-			portalColor += texture(tex, endPortalLayer(portalCoord, float(i + 1))).rgb * COLORS[i];
+			portalColor += textureGrad(tex, endPortalLayer(portalCoord, float(i + 1)), deltaUv1, deltaUv2).rgb * COLORS[i];
 		}
 		albedo.rgb = portalColor;
 		// specularTex = vec4(1.0, 0.04, vec2(254.0 / 255.0));
@@ -143,7 +141,7 @@ void main() {
 	materialOut.y = materialID;
 
 	#if defined MC_NORMAL_MAP
-		vec3 normalTex = textureLod(normals, texCoord, mipLevel).rgb;
+		vec3 normalTex = textureGrad(normals, texCoord, deltaUv1, deltaUv2).rgb;
 		DecodeNormalTex(normalTex);
 		vec3 normal = tbnMatrix * normalTex;
 	#else
@@ -155,7 +153,7 @@ void main() {
 	#endif
 
 	#if defined MC_SPECULAR_MAP
-		vec4 specularTex = textureLod(specular, texCoord, 0.0);
+		vec4 specularTex = textureGrad(specular, texCoord, deltaUv1, deltaUv2);
 	#else
 		vec4 specularTex = vec4(0.0);
 	#endif

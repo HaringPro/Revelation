@@ -120,12 +120,12 @@ void main() {
 
 		waterOut = vec4(distance(worldPos, worldPos1) * rcp255, Pack2x8(encodedNormal), 0.0, 1.0);
 	} else {
-		vec4 albedo = texture(tex, texCoord) * vertColor;
+		vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
 
 		if (albedo.a < 0.1) discard;
 
 		#if defined MC_NORMAL_MAP
-			vec3 normalTex = texture(normals, texCoord).rgb;
+			vec3 normalTex = textureGrad(normals, texCoord, deltaUv1, deltaUv2).rgb;
 			DecodeNormalTex(normalTex);
 			vec3 worldNormal = tbnMatrix * normalTex;
 		#else

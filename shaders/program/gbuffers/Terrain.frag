@@ -73,7 +73,7 @@ uniform sampler2D tex;
 #endif
 
 #ifdef AUTO_GENERATED_NORMAL
-	#define loadAlbedo(uv, mipLevel) textureLod(tex, localToAtlas(uv), mipLevel)
+	#define loadAlbedo(uv) textureGrad(tex, localToAtlas(uv), deltaUv1, deltaUv2)
 
 	vec3 AutoGenerateNormal(float mipLevel) {
         vec2 localCoord = atlasToLocal(texCoord);
@@ -81,10 +81,10 @@ uniform sampler2D tex;
 		vec2 bias = (16.0 / AGN_RESOLUTION) / quadSize;
 
 		// Sample albedo
-		vec4 sampleR = loadAlbedo(localCoord + vec2(bias.x, 0.0), mipLevel);
-		vec4 sampleL = loadAlbedo(localCoord - vec2(bias.x, 0.0), mipLevel);
-		vec4 sampleU = loadAlbedo(localCoord + vec2(0.0, bias.y), mipLevel);
-		vec4 sampleD = loadAlbedo(localCoord - vec2(0.0, bias.y), mipLevel);
+		vec4 sampleR = loadAlbedo(localCoord + vec2(bias.x, 0.0));
+		vec4 sampleL = loadAlbedo(localCoord - vec2(bias.x, 0.0));
+		vec4 sampleU = loadAlbedo(localCoord + vec2(0.0, bias.y));
+		vec4 sampleD = loadAlbedo(localCoord - vec2(0.0, bias.y));
 
 		// Evaluate heights from albedo luminance
 		float heightR = luminance(sampleR.rgb * sampleR.a);
@@ -103,6 +103,9 @@ uniform sampler2D tex;
 
 //======// Main //================================================================================//
 void main() {
+    vec2 deltaUv1 = dFdx(texCoord) * 0.5;
+    vec2 deltaUv2 = dFdy(texCoord) * 0.5;
+
 	float dither = BlueNoise(ivec2(gl_FragCoord.xy), frameCounter);
 
 	normalOut.xy = unpackSnorm2x16(normalPack);
@@ -112,19 +115,12 @@ void main() {
 	#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
 		vec3 tangent = UnpackSnorm3x10(tangentPack);
 		vec3 bitangent = cross(tangent, geoNormal);
-        bitangent *= uintBitsToFloat(bitfieldExtract(tangentPack, 30, 2));
+        bitangent *= 1.0 - 2.0 * float(bitfieldExtract(tangentPack, 30, 1));
 		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
 	vec3 viewPos = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledTexelSize, gl_FragCoord.z));
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
-
-	// Compute mipmap level
-	#if RENDER_MODE == 1
-		float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
-	#else
-		const float mipLevel = 0.0;
-	#endif
 
 	vec2 realTexCoord = texCoord;
 
@@ -132,7 +128,7 @@ void main() {
         #ifdef AUTO_GENERATED_NORMAL
             vec3 normalTex = AutoGenerateNormal(mipLevel);
         #else
-            vec3 normalTex = textureLod(normals, realTexCoord, mipLevel).xyz;
+            vec3 normalTex = textureGrad(normals, realTexCoord, deltaUv1, deltaUv2).xyz;
             DecodeNormalTex(normalTex);
         #endif
 
@@ -173,7 +169,7 @@ void main() {
         vec3 normal = geoNormal;
     #endif
 
-	vec4 albedo = textureLod(tex, realTexCoord, mipLevel);
+	vec4 albedo = textureGrad(tex, realTexCoord, deltaUv1, deltaUv2);
 
 	if (albedo.a < 0.1) discard;
 
@@ -187,7 +183,7 @@ void main() {
 	materialOut.y = materialID;
 
 	#if defined MC_SPECULAR_MAP
-		vec4 specularTex = textureLod(specular, realTexCoord, 0.0);
+		vec4 specularTex = textureGrad(specular, realTexCoord, deltaUv1, deltaUv2);
 	#else
 		vec4 specularTex = vec4(0.0);
 	#endif

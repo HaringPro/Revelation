@@ -70,8 +70,7 @@ void main() {
 	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
 	#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
 		vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-        uint tangentSign = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
-		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), tangentSign, 30, 2);
+		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), uint(at_tangent.w < 0.0), 30, 1);
 	#endif
 
 	#ifdef WAVING_FOLIAGE

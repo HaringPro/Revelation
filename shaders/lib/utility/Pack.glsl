@@ -40,7 +40,7 @@ uint PackSnorm3x10(vec3 data) {
 }
 
 vec3 UnpackSnorm3x10(uint data) {
-    vec3 res = vec3((data >> uvec3(0, 10, 20)) & 0x000003FFu);
+    vec3 res = vec3((uvec3(data) >> uvec3(0, 10, 20)) & 0x000003FFu);
     return res * (2.0 / 1023.0) - 1.0;
 }
 

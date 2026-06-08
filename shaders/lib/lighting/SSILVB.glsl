@@ -224,7 +224,7 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 		float w0_remap_add = (t0 - w0) * w0_remap_mul;
         w0_remap_mul *= t1;
 
-		vec2 rayDir = ViewToScreenPos(smplDirVS + viewPos).xy - fragCoord;
+		vec2 rayDir = ViewToScreenPosRaw(smplDirVS * abs(viewPos.z) + viewPos).xy - fragCoord;
 		rayDir *= minOf((step(0.0, rayDir) - fragCoord) / rayDir);
 
 		float rayDirNorm = inversesqrt(sdot(rayDir * originViewSize));

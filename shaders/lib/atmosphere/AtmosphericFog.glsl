@@ -161,7 +161,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, uint ste
 		vec3 stepIntegral = transmittance * oms(stepTransmittance) / maxEps(stepExtinction);
 
 		// https://zhuanlan.zhihu.com/p/457997155
-		float fms = 0.9 * oms(pow4(luminance(stepTransmittance)));
+		float fms = 0.9 * oms(exp2(-128.0 * mean(stepExtinction)));
 		vec2 msEnergy = phase + uniformPhase * fms / oms(fms);
 
 		scatteringSun += fogScatteringCoeff * (stepDensity * msEnergy) * stepIntegral * transmittanceToSun;
