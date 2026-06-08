@@ -77,13 +77,18 @@ float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
 	return single + multiple;
 }
 
-float CloudMultiScatteringApproxHaringPro(float opticalDepth, float phase, float extinction, float albedo) {
+vec2 CloudMultiScatteringApproxHaringPro(float opticalDepth, float phase, float extinction, float albedo) {
 	// https://zhuanlan.zhihu.com/p/457997155
-	float msV = albedo * oms(approxExp(-8.0 * extinction));
-	float msEnergy = msV / (1.0 - msV) * exp2(-0.25 * opticalDepth);
+	float fms = albedo * oms(approxExp(-12.0 * extinction));
+    float msBase = fms / (1.0 - fms);
 
-	float single = exp2(-rLOG2 * opticalDepth) * phase;
-	return single + msEnergy * mix(phase, uniformPhase, msV);
+    float scatteringSun = approxExp(-opticalDepth) * phase;
+    scatteringSun += approxExp(-0.3 * opticalDepth) * mix(phase, uniformPhase, fms) * msBase;
+
+    float skyTransmittance = rcp(sqr(1.0 + 8.0 * extinction));
+    float scatteringSky = skyTransmittance * (1.0 + msBase);
+
+	return vec2(scatteringSun, scatteringSky);
 }
 
 //================================================================================================//
@@ -119,19 +124,10 @@ vec3 RenderCloudHigh(vec2 rayPos, vec3 lightDir, float noise, float phase) {
 			opticalDepthSun = cirrusExtinction * 2.0 * stepLength * sumDensity;
 		}
 
-		// Approximate sunlight multi-scattering
+		// Approximate multi-scattering
 		float coarseDensity = approxSqrt(density);
-		float scatteringSun = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseDensity, cirrusAlbedo);
+		vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseDensity, cirrusAlbedo);
 
-		// float opticalDepthSky = density * (cloudHighThickness * 0.5 * cirrusExtinction * -rLOG2);
-
-		// Compute skylight multi-scattering
-		// See slide 85 of [Schneider, 2017]
-		// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-		// float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
-		float scatteringSky = 1.0 - density;
-
-		vec2 scattering = vec2(scatteringSun, scatteringSky);
 		scattering *= oms(transmittance) * cirrusAlbedo;
 		return vec3(scattering, transmittance);
 	}
@@ -219,36 +215,13 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 						// Compute the optical depth of sunlight through clouds
 						float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, lightDir, noise.y, CLOUD_LOW_SUNLIGHT_SAMPLES);
 
-						// Approximate sunlight multi-scattering
+						// Approximate multi-scattering
 						float coarseDensity = dimensionalProfile * approxSqrt(stepDensity);
-						float scatteringSun = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseDensity, cumulusAlbedo);
-
-						#if CLOUD_CU_SKYLIGHT_SAMPLES > 0
-							// Compute the optical depth of skylight through clouds
-							float opticalDepthSky = CloudVolumeOpticalDepth(rayPos, vec3(0.0, 1.0, 0.0), noise.y, CLOUD_LOW_SKYLIGHT_SAMPLES) * -rLOG2;
-
-							// See slide 85 of [Schneider, 2017]
-							// Original formula: Energy = max( exp( - density_along_light_ray ), (exp(-density_along_light_ray * 0.25) * 0.7) )
-							float scatteringSky = exp2(max(opticalDepthSky, opticalDepthSky * 0.25 - 0.5));
-						#else
-							// Nubis Ambient Scattering Approximation
-							float scatteringSky = approxSqrt(1.0 - dimensionalProfile);
-							// float scatteringSky = 1.0 - coarseDensity;
-						#endif
+						vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseDensity, cumulusAlbedo);
 
 						// Estimate the light optical depth of the ground from the cloud volume
-						float scatteringGround = oms(dimensionalProfile * saturate(heightFraction * 4.0)) * 0.5 * uniformPhase;
-
-						// Compute In-Scatter Probability
-						// See slide 92 of [Schneider, 2017]
-						#if 0
-							float depthProbability = 0.05 + pow(saturate(stepDensity * 8.0), remap(heightFraction, 0.3, 0.85, 0.5, 2.0));
-							float verticalProbability = pow(remap(heightFraction, 0.07, 0.14, 0.1, 1.0), 0.75);
-							float inScatterProbability = depthProbability * verticalProbability;
-							scatteringSun *= inScatterProbability;
-						#endif
-
-						vec2 scattering = vec2(scatteringSun + scatteringGround * lightDir.y, scatteringSky);
+						float scatteringGround = oms(coarseDensity) * 0.5 * uniformPhase;
+						scattering += scatteringGround * lightDir.y;
 
 						float stepOpticalDepth = stepDensity * stepSize;
 						float stepTransmittance = exp2(-rLOG2 * cumulusExtinction * stepOpticalDepth);

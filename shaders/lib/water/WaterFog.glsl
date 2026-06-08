@@ -6,11 +6,11 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 	#if 0
 		float phase = FournierForandPhase(LdotV, 1.175, 4.065);
 	#else
-		float phase = DualLobePhase(LdotV, 0.95, -0.6, 0.1);
+		float phase = DualLobePhase(LdotV, 0.8, -0.6, 0.1);
 	#endif
 
-	const vec3 msV = waterAlbedo * 0.99;
-	vec3 scattering = phase + uniformPhase * msV / oms(msV);
+	const vec3 fms = waterAlbedo * 0.8;
+	vec3 scattering = phase + uniformPhase * fms / oms(fms);
 	scattering *= oms(wetnessCustom * 0.8) * global.directIlluminance * sunTransmittance;
 	// scattering += uniformPhase * global.skyUpIlluminance;
 
@@ -29,7 +29,7 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 		vec3 refractDir = refract(vec3(0.0, 1.0, 0.0), waveNormal, 1.0 / WATER_IOR);
 
 		vec3 projectPos = vec3(0.0, 1.0, 0.0) - refractDir * rcp(refractDir.y);
-		return saturate(1.0 - 8.0 * length(projectPos)) * exp2(-rLOG2 * waterExtinction * waterDepth);
+		return saturate(1.0 - 32.0 * sdot(projectPos)) * exp2(-rLOG2 * waterExtinction * waterDepth);
 	}
 
 	mat2x3 RaymarchWaterFog(vec3 worldPos, float dither) {
@@ -52,37 +52,36 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 
 		// vec3 lightVector = refract(worldLightDir, vec3(0.0, -1.0, 0.0), 1.0 / WATER_IOR);
 
-		vec3 shadow = vec3(0.0);
+		vec4 visibility = vec4(0.0);
 		for (uint i = 0u; i < UW_VF_MAX_SAMPLES; ++i, shadowPos += shadowStep) {
 			vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
 			if (saturate(shadowScreenPos) != shadowScreenPos) continue;
 
 			ivec2 shadowTexel = ivec2(shadowScreenPos.xy * realShadowMapRes);
-			vec3 sampleShadow = vec3(step(shadowScreenPos.z, texelFetch(shadowtex1, shadowTexel, 0).x));
+			float sampleShadow = step(shadowScreenPos.z, texelFetch(shadowtex1, shadowTexel, 0).x);
 
-			float sampleDepth0 = texelFetch(shadowtex0, shadowTexel, 0).x;
-			if (sampleShadow.x != step(shadowScreenPos.z, sampleDepth0)) {
-				// float waterMask = texelFetch(shadowcolor1, shadowTexel, 0).w;
-				// if (waterMask > EPS) {
-					float waterDepth = (sampleDepth0 - shadowScreenPos.z) * shadowProjectionInverse[2].z * 5.0;
-					sampleShadow *= CalculateWaterCaustics(shadowTexel, waterDepth);
-				// }
+            vec3 absorption = vec3(1.0);
+			float waterMask = texelFetch(shadowcolor1, shadowTexel, 0).w;
+			if (waterMask > EPS) {
+			    float sampleDepth0 = texelFetch(shadowtex0, shadowTexel, 0).x;
+				float waterDepth = (sampleDepth0 - shadowScreenPos.z) * shadowProjectionInverse[2].z * 5.0;
+				absorption = CalculateWaterCaustics(shadowTexel, waterDepth);
 			}
 
-			shadow += sampleShadow;
+			visibility += vec4(absorption, sampleShadow);
 		}
-		shadow *= rSteps;
+		visibility *= rSteps;
 
 		float LdotV = dot(worldLightDir, worldDir);
 		#if 0
 			float phase = FournierForandPhase(LdotV, 1.175, 4.065);
 		#else
-			float phase = DualLobePhase(LdotV, 0.95, -0.6, 0.1);
+			float phase = DualLobePhase(LdotV, 0.8, -0.6, 0.1);
 		#endif
 
-		const vec3 msV = waterAlbedo * 0.99;
-		vec3 scattering = phase * shadow + uniformPhase * msV / oms(msV) * approxSqrt(shadow);
-		scattering *= oms(wetnessCustom * 0.8) * global.directIlluminance;
+		const vec3 fms = waterAlbedo * 0.8;
+		vec3 scattering = phase * visibility.w + uniformPhase * fms / oms(fms);
+		scattering *= oms(wetnessCustom * 0.8) * global.directIlluminance * visibility.xyz;
 		// scattering += uniformPhase * global.skyUpIlluminance;
 
 		vec3 transmittance = exp2(-rLOG2 * waterExtinction * rayLength);

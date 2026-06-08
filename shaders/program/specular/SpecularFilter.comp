@@ -120,7 +120,6 @@ void main() {
 		vec3 worldNormal = FetchSurfaceNormal(texelPos);
 
 		vec4 specularData = texelFetch(colortex0, texelPos, 0);
-	#ifdef REFLECTION_FILTER
 		if (material.isRough) {
 			const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
 			#if SPECULAR_FILTER_PASS > 0
@@ -131,7 +130,6 @@ void main() {
 
 			SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
 		}
-	#endif
 
 		imageStore(colorimg0, texelPos, specularData);
 	}

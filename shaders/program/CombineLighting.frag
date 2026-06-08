@@ -69,12 +69,7 @@ uniform sampler2D cloudOriginTex;
 		ivec2 floorTexel = ivec2(floor(coord));
 		vec2 fractTexel = coord - vec2(floorTexel);
 
-		float bilinearWeight[4] = {
-			oms(fractTexel.x) * oms(fractTexel.y),
-			fractTexel.x      * oms(fractTexel.y),
-			oms(fractTexel.x) * fractTexel.y,
-			fractTexel.x      * fractTexel.y
-		};
+		vec4 bilinearWeight = bilinear(fractTexel);
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = clamp(floorTexel + offset2x2[i], ivec2(1), texelEnd);
@@ -258,7 +253,7 @@ void main() {
 				const float contactShadow = 1.0;
 			#endif
 
-			float LdotV = dot(worldLightDir, worldDir);
+			float LdotV = -dot(worldLightDir, worldDir);
 
 			// Subsurface scattering
 			if (sssAmount > EPS) {
@@ -266,7 +261,7 @@ void main() {
 				vec3 sigmaA = oms(beta) * 16.0 / (sssAmount * SUBSURFACE_SCATTERING_STRENGTH);
 				vec3 sigmaS = 4.0 * beta * sssAmount;
 
-				float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
+				float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
 				vec3 sss = sigmaS * phase * exp2(-rLOG2 * surfaceDepth * (sigmaS + sigmaA));
 
 				float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
@@ -284,13 +279,12 @@ void main() {
 					#endif
 				#endif
 
-				vec3 halfway = normalize(worldLightDir - worldDir);
-				float NdotH = saturate(dot(worldNormal, halfway));
-				float LdotH = saturate(dot(worldLightDir, halfway));
-				float VdotH = saturate(-dot(worldDir, halfway));
+                float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+                float NdotH = saturate((NdotL + NdotV) * invLenH);
+                float VdotH = saturate(LdotV * invLenH + invLenH);
 
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
-				specularRadiance += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, material.roughness, f0) * NdotL;
+				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, f0) * NdotL;
 			}
 		}
 

@@ -68,12 +68,7 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 		ivec2 floorTexel = ivec2(floor(prevTexel));
 		vec2 fractTexel = prevTexel - vec2(floorTexel);
 
-		float bilinearWeight[4] = {
-			oms(fractTexel.x) * oms(fractTexel.y),
-			fractTexel.x      * oms(fractTexel.y),
-			oms(fractTexel.x) * fractTexel.y,
-			fractTexel.x      * fractTexel.y
-		};
+		vec4 bilinearWeight = bilinear(fractTexel);
 
 		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 1;
 

@@ -74,6 +74,70 @@ vec3 SampleUniformCone(vec2 xy, float cosThetaMax) {
 	return vec3(x, y, z);
 }
 
+// PDF = D * NoH / (4 * VoH)
+vec3 SampleGGX(vec2 xy, float alpha, vec3 normal) {
+	float phi = TAU * xy.x;
+	float cosTheta = sqrt((1.0 - xy.y) / (1.0 + (alpha * alpha - 1.0) * xy.y));
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+	vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
+	return BuildOrthonormalBasis(normal) * hemisphere;
+}
+
+// Sampling Visible GGX Normals with Spherical Caps
+// https://arxiv.org/pdf/2306.05044
+// PDF = D * G_SmithV / (4 * NoV)
+vec3 SampleGGXVNDF(vec3 viewDir, float alpha, vec2 xy) {
+	// Importance sampling bias
+	xy.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
+
+	viewDir = normalize(vec3(alpha * viewDir.xy, viewDir.z));
+
+	float phi = TAU * xy.x;
+	float cosTheta = 1.0 - viewDir.z * xy.y - xy.y;
+	float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
+	viewDir += vec3(cossin(phi) * sinTheta, cosTheta);
+
+	return normalize(vec3(alpha * viewDir.xy, viewDir.z));
+}
+
+// https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
+// world-space isotropic-only version
+// benefits:
+// - no need for moving to tangent space
+// - it avoids the need for an orthonormal basis
+// - it's (slightly) faster than the general version
+vec3 SampleGGXVNDF(vec2 u, vec3 wi, float alpha, vec3 n) {
+	// Importance sampling bias
+	u.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
+
+	// decompose the vector in parallel and perpendicular components
+	vec3 wi_z = n * dot(wi, n);
+	vec3 wi_xy = wi - wi_z;
+	// warp to the hemisphere configuration
+	vec3 wiStd = normalize(wi_z - alpha * wi_xy);
+	// sample a spherical cap in (-wiStd.z, 1]
+	float wiStd_z = dot(wiStd, n);
+	float phi = (2.0 * u.x - 1.0) * PI;
+	float z = (1.0 - u.y) * (1.0 + wiStd_z) - wiStd_z;
+	float sinTheta = sqrt(saturate(1.0 - z * z));
+	float x = sinTheta * cos(phi);
+	float y = sinTheta * sin(phi);
+	vec3 cStd = vec3(x, y, z);
+	// reflect sample to align with normal
+	vec3 up = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 wr = n + up;
+	vec3 c = dot(wr, cStd) * wr / wr.z - cStd;
+	// compute halfway direction as standard normal
+	vec3 wmStd = c + wiStd;
+	vec3 wmStd_z = n * dot(n, wmStd);
+	vec3 wmStd_xy = wmStd_z - wmStd;
+	// warp back to the ellipsoid configuration
+	vec3 wm = normalize(wmStd_z + alpha * wmStd_xy);
+	// return final normal
+	return wm;
+}
+
 // Veach 1997, "Robust Monte Carlo Methods for Light Transport Simulation"
 float MISWeightBalanced(float pdf, float otherPdf) {
 	float X = min(pdf, otherPdf) / max(pdf, otherPdf);

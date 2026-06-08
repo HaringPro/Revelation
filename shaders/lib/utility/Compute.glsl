@@ -1,4 +1,4 @@
-// Remap thread index to 2D index following Z-order hermite.
+// Remap thread index to 2D index following Z-order curve.
 uvec2 RemapThread8x8(uint idx) {
 	return uvec2((((idx >> 2) & 0x7) & 0xFFFE) | (idx & 0x1), ((idx >> 1) & 0x3) | (((idx >> 3) & 0x7) & 0xFFFC));
 }

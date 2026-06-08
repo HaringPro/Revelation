@@ -198,11 +198,11 @@ void main() {
 			if (notParticle) {
 				float NdotV = abs(dot(worldNormal, worldDir));
 				vec3 halfway = normalize(worldLightDir - worldDir);
-				float LdotH = dot(worldLightDir, halfway);
+				float VdotH = dot(worldLightDir, halfway);
 				float NdotH = dot(worldNormal, halfway);
 
 				float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+				lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
 			} else {
 				lightingOut.rgb += shadow * NdotL * rPI;
 			}
