@@ -14,7 +14,7 @@
     }
 
     ivec2 unscaleTexelPos(ivec2 texelPos) {
-        return ivec2(vec2(texelPos) * (1.0 / RENDER_SCALE));
+        return ivec2(vec2(texelPos) * rcp(RENDER_SCALE));
     }
 #else
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
