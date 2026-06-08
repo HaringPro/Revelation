@@ -156,7 +156,7 @@ vec3 CalculatePCSS(vec3 worldPos, vec3 normalOffset, float dither, out float blo
 //================================================================================================//
 
 float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount) {
-	vec3 rayDir = ViewToScreenPos(viewLightDir * abs(viewPos.z) + viewPos) - rayPos;
+	vec3 rayDir = ViewToScreenPos(shadowDirView * abs(viewPos.z) + viewPos) - rayPos;
 	rayDir *= minOf((step(0.0, rayDir) - rayPos) / rayDir);
 	rayDir *= inversesqrt(sdot(rayDir.xy));
 
@@ -172,8 +172,7 @@ float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount
 	for (uint i = 0u; i < SCREEN_SPACE_SHADOWS_SAMPLES; ++i, rayPos += rayStep) {
 		if (saturate(rayPos.xy) != rayPos.xy || result < 1e-2) break;
 
-		ivec2 sampleTexel = uvToTexel(rayPos.xy);
-		sampleTexel = scaleTexelPos(sampleTexel);
+		ivec2 sampleTexel = uvToTexelScaled(rayPos.xy);
 		float sampleDepth = loadDepth0(sampleTexel);
 		bool hit = abs(sampleDepth - rayPos.z + diffTolerance) < diffTolerance;
 

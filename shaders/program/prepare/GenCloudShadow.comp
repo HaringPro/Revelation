@@ -50,13 +50,13 @@ void main() {
 		vec3 rayPos = SetupCloudShadowPos(uv) + atmosphereViewPos;
 
         // Increase steps for lower elevation
-        float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - worldLightDir.y);
+        float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - shadowDirWorld.y);
 
-        vec2 intersection = RaySphericalShellIntersection(rayPos, worldLightDir, cumulusBottomRadius, cumulusTopRadius);
+        vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cumulusBottomRadius, cumulusTopRadius);
         float stepLength = (intersection.y - intersection.x) * rcp(steps);
-        vec3 rayStep = worldLightDir * stepLength;
+        vec3 rayStep = shadowDirWorld * stepLength;
 
-        rayPos += worldLightDir * intersection.x;
+        rayPos += shadowDirWorld * intersection.x;
         rayPos += rayStep * fract(dither + PHI);
 
         float extinction = 0.0;
@@ -75,7 +75,7 @@ void main() {
         float transmittance = exp2(-rLOG2 * cumulusExtinction * extinction);
         transmittance = linearstep(cloudMinTransmittance, 1.0, transmittance);
 
-        float strength = linearstep(0.02, 0.05, worldLightDir.y) * sqrt(CLOUD_SHADOW_STRENGTH);
+        float strength = linearstep(0.02, 0.05, shadowDirWorld.y) * sqrt(CLOUD_SHADOW_STRENGTH);
         float cloudShadow = oms(strength) + transmittance * strength;
 
 		// Accumulate

@@ -138,11 +138,9 @@ void main() {
 		srcUv += float(srcIndex * 8) * originTexelSize + bloomTileOffset[srcIndex];
 	#endif
 
-	//CalculateBloomTile sample bloomTileTex at srcUv,so the srcUv is using unscaled view size,so we don't need to scale it
 	vec3 bloomTile = CalculateBloomTile(srcUv);
 
 	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + DOWNSAMPLE_LEVEL * 8);
 	dstTexel += bloomTileOffset[DOWNSAMPLE_LEVEL] * originViewSize + 0.5;
 	imageStore(colorimg4, scaleTexelPos(ivec2(dstTexel)), vec4(bloomTile, 1.0));
 }
-

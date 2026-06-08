@@ -63,7 +63,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, uint ste
 	vec3 shadowStart = projMAD(shadowProjection, transMAD(shadowModelView, startPos));
 	vec3 shadowStep = mat3(shadowModelView) * rayStep * diagonal3(shadowProjection);
 
-	float LdotV = dot(worldLightDir, rayDir);
+	float LdotV = dot(shadowDirWorld, rayDir);
 	vec2 phase = AtmospherePhase(LdotV);
 
 	float mieDensityMult = VF_MIE_DENSITY * 5e2 * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
@@ -148,7 +148,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 startPos, vec3 endPos, float dither, uint ste
 		vec3 lightPos = rayPos;
 		for (uint i = 0u; i < 3u; ++i) {
 			stepSize *= 1.5;
-			lightPos += worldLightDir * stepSize;
+			lightPos += shadowDirWorld * stepSize;
 
 			vec2 density = CalculateFogDensity(lightPos, uniformFog);
 			opticalDepthSun += density * stepSize;

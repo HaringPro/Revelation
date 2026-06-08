@@ -73,7 +73,7 @@ vec3 nmzHash33(vec3 q) {
 }
 
 vec3 RenderStars(vec3 worldDir) {
-	// vec3 p = rotate(worldDir, worldSunDir, vec3(0.0, 0.0, 1.0));
+	// vec3 p = rotate(worldDir, sunDirWorld, vec3(0.0, 0.0, 1.0));
 	vec3 p = worldDir * mat3(shadowModelViewInverse);
 
 	vec3 c = vec3(0.0);

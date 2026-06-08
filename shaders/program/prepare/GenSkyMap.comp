@@ -49,7 +49,7 @@ void main() {
 		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyEnvMapImg));
 
 		vec3 worldDir = UnprojectCubemap(uv, 96.0);
-		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, worldSunDir);
+		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, sunDirWorld);
 
 		vec2 noise = SampleStbnVec2(tid, frameCounter);
 

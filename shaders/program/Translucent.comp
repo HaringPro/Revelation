@@ -131,7 +131,7 @@ void main() {
 
 		// Process water
 		if (waterMask) {
-			mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(worldLightDir, worldDir));
+			mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(shadowDirWorld, worldDir));
 			sceneOut = ApplyFog(sceneOut, waterFog);
 
 			// Skybox reflection for occluded water
@@ -168,7 +168,7 @@ void main() {
 		// Specular indirect
 		lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
 
-		NdotL = dot(worldNormal, worldLightDir);
+		NdotL = dot(worldNormal, shadowDirWorld);
 	} else {
 		// Skylight
 		lightingOut.rgb = global.skyUpIlluminance * cube(lightmap.y);
@@ -197,7 +197,7 @@ void main() {
 
 			if (notParticle) {
 				float NdotV = -dot(worldNormal, worldDir);
-			    float LdotV = -dot(worldLightDir, worldDir);
+			    float LdotV = -dot(shadowDirWorld, worldDir);
 
                 float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
                 float NdotH = (NdotL + NdotV) * invLenH;

@@ -4,7 +4,7 @@
 //================================================================================================//
 
 float CalculateFakeBouncedLight(vec3 normal) {
-	float bounce = saturate(dot(worldLightDir, vec3(0.01, 0.025, 0.01)));
+	float bounce = saturate(dot(shadowDirWorld, vec3(0.01, 0.025, 0.01)));
 
 	return approxSqrt(bounce * oms(0.75 * normal.y)) * uniformPhase;
 }

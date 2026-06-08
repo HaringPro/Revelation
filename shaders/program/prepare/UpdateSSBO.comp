@@ -37,12 +37,12 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 //======// Main //================================================================================//
 void main() {
 	// Compute illuminance
-	vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, worldSunDir);
-	vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, worldMoonDir);
+	vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, sunDirWorld);
+	vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, moonDirWorld);
 	global.directIlluminance = sunIlluminance + moonIlluminance;
 
 	// Avoid the misalignment at sunrise and sunset
-	global.directIlluminance *= smoothstep(0.0, 0.01, worldLightDir.y);
+	global.directIlluminance *= smoothstep(0.0, 0.01, shadowDirWorld.y);
 
 	global.worldTimeDiff = worldTime - global.lastWorldTime;
     global.lastWorldTime = worldTime;

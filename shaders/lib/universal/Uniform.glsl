@@ -124,6 +124,11 @@ uniform float alphaTestRef;                     // alpha test reference value, t
 uniform float darknessFactor;                   // strength of the darkness effect (0.0-1.0)
 uniform float darknessLightFactor;              // lightmap variations caused by the darkness effect (0.0-1.0)
 
+// Iris
+uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt;
+uniform vec3 previousCameraPositionFract;
+uniform ivec3 previousCameraPositionInt;
 uniform vec4 lightningBoltPosition;
 
 // Custom uniforms
@@ -142,15 +147,17 @@ uniform vec2 scaledViewSize;
 uniform vec2 scaledTexelSize;
 uniform vec2 originHalfViewSize;
 uniform vec2 scaledHalfViewSize;
+uniform vec2 originHalfViewEnd;
+uniform vec2 scaledHalfViewEnd;
 
 uniform vec2 taaJitter;
 uniform vec2 taaJitterPrev;
 
 uniform vec3 cameraMovement;
-uniform vec3 worldSunDir;
-uniform vec3 worldMoonDir;
-uniform vec3 worldLightDir;
-uniform vec3 viewLightDir;
+uniform vec3 sunDirWorld;
+uniform vec3 moonDirWorld;
+uniform vec3 shadowDirWorld;
+uniform vec3 shadowDirView;
 
 uniform bool historyReset;
 

@@ -154,8 +154,8 @@ void main() {
                 #ifdef PARALLAX_DEPTH_WRITE
                     gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(localCoord.z) * PARALLAX_DEPTH);
                 #elif defined PARALLAX_SHADOW
-                    if (dot(geoNormal, worldLightDir) > 1e-3) {
-                        parallaxShadowOut = CalculateParallaxShadow(worldLightDir * tbnMatrix, localCoord, dither, parallaxFade);
+                    if (dot(geoNormal, shadowDirWorld) > 1e-3) {
+                        parallaxShadowOut = CalculateParallaxShadow(shadowDirWorld * tbnMatrix, localCoord, dither, parallaxFade);
                     }
                 #endif
 

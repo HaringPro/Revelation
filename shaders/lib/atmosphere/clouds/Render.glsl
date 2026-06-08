@@ -154,8 +154,8 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
 	vec4 cloudData = vec4(0.0, 0.0, 1e6, 1.0);
 
-	float moonlightFactor = smoothstep(-0.03, -0.05, worldSunDir.y);
-	vec3 lightDir = normalize(worldSunDir * oms(2.0 * moonlightFactor));
+	float moonlightFactor = smoothstep(-0.03, -0.05, sunDirWorld.y);
+	vec3 lightDir = normalize(sunDirWorld * oms(2.0 * moonlightFactor));
 
 	float LdotV = dot(lightDir, rayDir);
 
@@ -312,8 +312,8 @@ void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 		vec3 cloudPos = atmosphereViewPos + rayDir * cloudData.z;
 
 		// Compute illumination to clouds
-		vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldSunDir);
-		vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(cloudPos, worldMoonDir);
+		vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, sunDirWorld);
+		vec3 moonIlluminance = moonIrradiance * AtmosphereTransmittanceToSun(cloudPos, moonDirWorld);
 		vec3 directIlluminance = sunIlluminance + moonIlluminance;
 
 		// Lerp bottom and top sky illuminance based on normalized height
@@ -329,8 +329,8 @@ void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 		// Aerial perspective
 		vec3 aerialT = AtmosphereTransmittanceToPoint(atmosphereViewPos, rayDir, cloudData.z);
 		#if 0
-			vec3 aerialSL = sunIrradiance * RaymarchScattering(cloudPos, rayDir, worldSunDir);
-				aerialSL += moonIrradiance * RaymarchScattering(cloudPos, rayDir, worldMoonDir);
+			vec3 aerialSL = sunIrradiance * RaymarchScattering(cloudPos, rayDir, sunDirWorld);
+				aerialSL += moonIrradiance * RaymarchScattering(cloudPos, rayDir, moonDirWorld);
 
 			skyRadiance += aerialSL * aerialT * (cloudData.w - 1.0);
 			skyRadiance += scattering * aerialT;
