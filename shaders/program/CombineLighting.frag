@@ -145,6 +145,9 @@ void main() {
 		}
 	} else {
 		vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
+        #ifdef PARALLAX_SHADOW
+            screenPos.z += texelFetch(colortex12, texelPos, 0).x;
+        #endif
 
 		#if defined LOD_MOD
 			bool lodMask = screenPos.z > 1.0 - EPS;
@@ -267,13 +270,6 @@ void main() {
 			}
 			if (dot(shadow, vec3(1.0)) > EPS) {
 				shadow *= contactShadow * sunlightBase;
-
-				// Apply parallax shadows
-				#ifdef PARALLAX_SHADOW
-					#if defined PARALLAX && !defined PARALLAX_DEPTH_WRITE
-						shadow *= oms(texelFetch(colortex12, texelPos, 0).x);
-					#endif
-				#endif
 
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
 				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, material.reflectance) * NdotL;

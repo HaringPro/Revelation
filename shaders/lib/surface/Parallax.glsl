@@ -86,18 +86,3 @@ vec3 CalculateParallax(vec3 tangentDir, float dither, float parallaxFade) {
 
 	return rayPos;
 }
-
-float CalculateParallaxShadow(vec3 tangentDir, vec3 rayPos, float dither, float parallaxFade) {
-	vec3 rayStep = vec3(tangentDir.xy, 1.0) * rayPos.z * rSteps;
-	rayStep.xy *= PARALLAX_DEPTH * parallaxFade / tangentDir.z;
-	rayPos += rayStep * dither;
-
-	for (uint i = 0u; i < PARALLAX_SAMPLES; ++i) {
-		float sampleHeight = SampleHeight(rayPos.xy);
-
-		if (sampleHeight > rayPos.z) return 1.0;
-		rayPos += rayStep;
-	}
-
-	return 0.0;
-}

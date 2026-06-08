@@ -9,8 +9,10 @@
 #define loadMaterialPack(texel) 	texelFetch(colortex7, texel, 0)
 #define loadNormalPack(texel) 		texelFetch(colortex8, texel, 0)
 
-#define cloudReconstructTex			colortex9
-#define cloudReconstructImg			colorimg9
+#define loadParallaxOffset(texel) 	texelFetch(colortex12, texel, 0).x
+
+#define cloudReconstructTex         colortex9
+#define cloudReconstructImg         colorimg9
 
 #if defined LOD_MOD
 	#define loadDepth0Lod(texel) 	texelFetch(lodDepthTex0, texel, 0).x

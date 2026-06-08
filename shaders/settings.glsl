@@ -173,9 +173,9 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define AGN_RESOLUTION 16.0 // [4.0 8.0 16.0 32.0 64.0 128.0 256.0 512.0 1024.0]
 
 /* Parallax */
-	#define PARALLAX
-	#define PARALLAX_DEPTH_WRITE
+	// #define PARALLAX
 
+    #ifdef PARALLAX
     // #define SMOOTH_PARALLAX
 	#define PARALLAX_SHADOW
 	#define PARALLAX_BASED_NORMAL
@@ -184,6 +184,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define PARALLAX_DEPTH 0.25 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0][0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 	#define PARALLAX_REFINEMENT
 	#define PARALLAX_REFINEMENT_STEPS 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100] [2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 18 24]
+    #endif
 
 /* Reflections */
 	#define ROUGH_REFLECTIONS

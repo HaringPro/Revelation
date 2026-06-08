@@ -20,9 +20,9 @@ layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec4 materialOut;
 layout (location = 2) out vec4 normalOut;
 
-#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE && GBUFFERS_HAND
+#if defined PARALLAX && defined PARALLAX_SHADOW && GBUFFERS_HAND
 /* RENDERTARGETS: 6,7,8,12 */
-layout (location = 3) out float parallaxShadowOut;
+layout (location = 3) out float parallaxOffsetOut;
 #endif
 
 //======// Input //===============================================================================//
@@ -88,7 +88,7 @@ void main() {
 		normalOut.zw = normalOut.xy;
 	#endif
 
-	#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE && GBUFFERS_HAND
-		parallaxShadowOut = 0.0;
+	#if defined PARALLAX && defined PARALLAX_SHADOW && GBUFFERS_HAND
+		parallaxOffsetOut = 0.0;
 	#endif
 }
