@@ -41,8 +41,7 @@ screen.Transparent=Transparent
 screen.WaterParams=Water Parameters
 screen.MiscMaterials=Miscellaneous
 
-screen.FidelityFX=FidelityFX
-screen.RenderScale=Render Scale
+screen.SuperResolution=§lSuper Resolution
 screen.DoF=DoF
 screen.TAA=TAA
 screen.MotionBlur=Motion Blur

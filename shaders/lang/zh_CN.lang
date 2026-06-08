@@ -41,8 +41,7 @@ screen.Transparent=半透明
 screen.WaterParams=水参数
 screen.MiscMaterials=杂项
 
-screen.FidelityFX=FidelityFX
-screen.RenderScale=渲染缩放
+screen.SuperResolution=§l超分辨率
 screen.DoF=景深
 screen.TAA=抗锯齿
 screen.MotionBlur=动态模糊
