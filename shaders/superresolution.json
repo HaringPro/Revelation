@@ -1,5 +1,5 @@
 {
-    "schema_version": 1,
+    "schema_version": 2,
     "profiles": {
         "*": {
             "jitter": {
@@ -10,6 +10,8 @@
                 "enabled": true,
                 "internal_format": "rgba16f",
                 "hdr": true,
+                "auto_exposure": true,
+                "motion_jittered": false,
                 "trigger": {
                     "type": "BEFORE",
                     "pass": "composite31"
@@ -17,7 +19,7 @@
                 "inputs": {
                     "color": {
                         "enabled": true,
-                        "src": "colortex16",
+                        "src": "colortex20",
                         "region": [
                             0,
                             0,
@@ -46,8 +48,8 @@
                         ]
                     },
                     "exposure": {
-                        "enabled": true,
-                        "src": "colortex17",
+                        "enabled": false,
+                        "src": "colortex21",
                         "region": [
                             0,
                             0,
@@ -60,7 +62,7 @@
                     "upscaled_color": {
                         "enabled": true,
                         "target": [
-                            "colortex18"
+                            "colortex22"
                         ],
                         "region": [
                             0,

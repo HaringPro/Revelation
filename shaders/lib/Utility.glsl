@@ -29,6 +29,7 @@
 #if SR_ENABLE == 1
     #define SUPER_RESOLUTION
     #undef MC_RENDER_SCALE_FACTOR
+    #define MC_RENDER_SCALE_FACTOR SR_RENDER_SCALE_FACTOR
 #endif
 
 #define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])

@@ -91,16 +91,16 @@
 #ifdef SUPER_RESOLUTION
 /*
     //SR input color buffer
-    const int 	colortex16Format 			= RGBA16F;
-    const bool 	colortex16Clear				= false;
+    const int 	colortex20Format 			= RGBA16F;
+    const bool 	colortex20Clear				= false;
     //Scaled size
     //SR input exposure buffer
-    const int 	colortex17Format 			= R32F;
-    const bool 	colortex17Clear				= false;
+    const int 	colortex21Format 			= R32F;
+    const bool 	colortex21Clear				= false;
     //1x1
     //SR output upscaled color buffer
-    const int 	colortex18Format 			= RGBA16F;
-    const bool 	colortex18Clear				= false;
+    const int 	colortex22Format 			= RGBA16F;
+    const bool 	colortex22Clear				= false;
     //Full size
 */
 #endif

@@ -31,8 +31,8 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 //======// Images //============================================================================//
 
 
-layout (rgba16f) restrict writeonly uniform image2D colorimg16; //Scaled scene color for SR
-layout (r32f) restrict writeonly uniform image2D colorimg17; //Exposure value for SR
+layout (rgba16f) restrict writeonly uniform image2D colorimg20; //Scaled scene color for SR
+layout (r32f) restrict writeonly uniform image2D colorimg21; //Exposure value for SR
 
 //======// Main //================================================================================//
 void main() {
@@ -41,14 +41,14 @@ void main() {
         return;
     }
     if (texelPos.x == 0 && texelPos.y == 0) {
-        imageStore(colorimg17, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
+        imageStore(colorimg21, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
     }
     #ifdef MOTION_BLUR
 		vec3 color = texelFetch(colortex0, texelPos, 0).rgb;
 	#else
 		vec3 color = texelFetch(colortex1, texelPos, 0).rgb;
 	#endif
-    imageStore(colorimg16, texelPos, vec4(color, 1.0));
+    imageStore(colorimg20, texelPos, vec4(color, 1.0));
 }
 
 /*
@@ -61,20 +61,20 @@ A:
     Motion Blur Disabled: colortex1 -> colortex1
 B:
     PrepareSR:
-        colortex0 or colortex1 -> colortex16(scaled)
-        exposure.value(ssbo) -> colortex17(1x1 R32F)
+        colortex0 or colortex1 -> colortex20(scaled)
+        exposure.value(ssbo) -> colortex21(1x1 R32F)
 C:
     Dispatch SR:
-        colortex16(scaled size) -> color buffer
+        colortex20(scaled size) -> color buffer
         depthtex0 -> depth buffer
         colortex3 -> motion vector buffer
-        colortex17 -> exposure buffer
+        colortex21 -> exposure buffer
     Epic Pro Max Giga Ultra`s Upscaling Technology:
-        Upscaled Color -> colortex18
+        Upscaled Color -> colortex22
 D:
     Grade:
         There are apply bloom,but i don`t know the effect of bloom on SR,hope it can be ignored
-        1.Use colortex18 instead of colortex0 or colortex1
+        1.Use colortex22 instead of colortex0 or colortex1
         2.Output to colortex5
 E:
     Final:

@@ -18,9 +18,9 @@ uniform sampler2D colortex14;
 uniform sampler2D colortex15;
 
 #ifdef SUPER_RESOLUTION
-uniform sampler2D colortex16;
-uniform sampler2D colortex17;
-uniform sampler2D colortex18;
+uniform sampler2D colortex21;
+uniform sampler2D colortex20;
+uniform sampler2D colortex22;
 #endif
 
 uniform sampler2D depthtex0;
