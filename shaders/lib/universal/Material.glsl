@@ -22,7 +22,7 @@ vec3 F0FromIOR(vec3 ior) {
 struct Material {
 	float roughness;
 	float metallic;
-	float emission;
+	float emissive;
     vec3 reflectance;
 	bool specularMask;
 	bool mirrorMask;
@@ -82,11 +82,12 @@ Material GetMaterialData(vec4 specTex, vec3 albedo) {
 	material.metallic = specTex.g;
 
 	#if TEXTURE_FORMAT == 0
-		material.emission = specTex.a * step(specTex.a, 0.999);
+		material.emissive = specTex.a * step(specTex.a, 0.999);
 	#else
-		material.emission = specTex.b;
+		material.emissive = specTex.b;
 	#endif
-	material.emission = pow(material.emission, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+	material.emissive = pow(material.emissive, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+    material.emissive *= luminance(albedo) * 4.0;
 
     material.reflectance = GetMaterialF0(material.metallic, albedo);
 

@@ -321,7 +321,7 @@ void main() {
 
 		// Emissive
 		#if EMISSIVE_MODE > 0 && defined MC_SPECULAR_MAP
-			diffuseRadiance += material.emission * 4.0 * sdot(albedo);
+			diffuseRadiance += material.emissive;
 		#endif
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
