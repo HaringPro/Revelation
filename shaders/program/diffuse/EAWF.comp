@@ -133,7 +133,7 @@ void main() {
 
 	for (uint i = 0u; i < 9u; ++i) {
 		ivec2 sampleTexel = ivec2(round(sampleTexelBase + offset3x3[i] * offsetScale));
-		if (clamp(sampleTexel, ivec2(1), ivec2(scaledHalfViewSize) - 1) == sampleTexel) {
+		if (clamp(sampleTexel, ivec2(1), ivec2(scaledHalfViewEnd) - 1) == sampleTexel) {
 			f16vec3 sampleAux = f16vec3(texelFetch(colortex14, sampleTexel, 0).rgb);
 
 			f16vec4 sampleColVar = f16vec4(imageLoad(colorimg3, sampleTexel));
