@@ -110,7 +110,7 @@ void main() {
 	texelPos = scaleTexelPos(texelPos);
 
 	Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
-	if (material.specularMask) {
+	if (material.specularMask && !material.mirrorMask) {
 		vec2 screenCoord = texelToUvScaled(texelPos);
 		vec3 viewDir = ScreenToViewDir(screenCoord);
 
