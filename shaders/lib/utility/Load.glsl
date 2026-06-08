@@ -1,4 +1,10 @@
 
+#define uvToTexel(coord)            ivec2((coord) * originViewSize)
+#define texelToUv(texel)            ((vec2(texel) + 0.5) * originTexelSize)
+#define uvToTexelScaled(coord)      ivec2((coord) * scaledViewSize)
+#define texelToUvScaled(texel)      ((vec2(texel) + 0.5) * scaledTexelSize)
+
+
 #define loadDepth0(texel) 			texelFetch(depthtex0, texel, 0).x
 #define loadDepth1(texel) 			texelFetch(depthtex1, texel, 0).x
 #define loadDepth2(texel) 			texelFetch(depthtex2, texel, 0).x
