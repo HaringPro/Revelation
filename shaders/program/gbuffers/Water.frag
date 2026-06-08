@@ -119,7 +119,7 @@ void main() {
 		vec2 encodedNormal = OctEncodeSnorm(worldNormal);
 		normalOut.zw = encodedNormal;
 
-		waterOut = vec4(distance(worldPos, worldPos1) * rcp255, Packup2x8(encodedNormal), 0.0, 1.0);
+		waterOut = vec4(distance(worldPos, worldPos1) * rcp255, Pack2x8(encodedNormal), 0.0, 1.0);
 	} else {
 		vec4 albedo = texture(tex, texCoord) * vertColor;
 
@@ -145,11 +145,11 @@ void main() {
 
 		normalOut.zw = OctEncodeSnorm(worldNormal);
 
-		materialOut.z = Packup2x8U(albedo.xy);
-		materialOut.w = Packup2x8U(albedo.zw);
+		materialOut.z = Pack2x8U(albedo.xy);
+		materialOut.w = Pack2x8U(albedo.zw);
 		waterOut = vec4(0.0);
 	}
 
-	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Pack2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	materialOut.y = materialID;
 }

@@ -8,12 +8,8 @@
 	}
 #endif
 
-float Packup2x8(vec2 data) {
+float Pack2x8(vec2 data) {
 	return dot(floor(data * 255.0 + 0.5), vec2(256.0 / 65535.0, 1.0 / 65535.0));
-}
-
-float PackupDithered2x8(vec2 data, float dither) {
-	return dot(floor(data * 255.0 + dither), vec2(256.0 / 65535.0, 1.0 / 65535.0));
 }
 
 vec2 Unpack2x8(float data) {
@@ -21,15 +17,12 @@ vec2 Unpack2x8(float data) {
 	return vec2(x, y) * rcp255;
 }
 
-float Packup2x8X(float data) { return floor(data * (65535.0 / 256.0)) * rcp255; }
-float Packup2x8Y(float data) { return fract(data * (65535.0 / 256.0)) * (256.0 * rcp255); }
-
-uint Packup2x8U(vec2 data) {
+uint Pack2x8U(vec2 data) {
 	uvec2 u = uvec2(data * 255.0 + 0.5);
 	return bitfieldInsert(u.x, u.y, 8, 8);
 }
 
-uint PackupDithered2x8U(vec2 data, float dither) {
+uint Pack2x8U(vec2 data, float dither) {
 	uvec2 u = uvec2(data * 255.0 + dither);
 	return bitfieldInsert(u.x, u.y, 8, 8);
 }
@@ -40,6 +33,16 @@ vec2 Unpack2x8U(uint data) {
 
 float Unpack2x8UX(uint data) { return bitfieldExtract(data, 0, 8) * rcp255; }
 float Unpack2x8UY(uint data) { return bitfieldExtract(data, 8, 8) * rcp255; }
+
+uint PackSnorm3x10(vec3 data) {
+    uvec3 u = uvec3(data * 511.5 + 511.5);
+    return u.x | u.y << 10 | u.z << 20;
+}
+
+vec3 UnpackSnorm3x10(uint data) {
+    vec3 res = vec3((data >> uvec3(0, 10, 20)) & 0x000003FFu);
+    return res * (2.0 / 1023.0) - 1.0;
+}
 
 //================================================================================================//
 

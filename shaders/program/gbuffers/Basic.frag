@@ -30,6 +30,6 @@ void main() {
 
 	albedoOut = vec4(vertColor.rgb, 1.0);
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = lightmap.x > 0.999 ? 20u : 1u;
 }

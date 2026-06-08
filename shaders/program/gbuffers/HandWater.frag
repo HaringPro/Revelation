@@ -41,15 +41,15 @@ void main() {
 
 	if (albedo.a < 0.1) { discard; return; }
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	#if GBUFFER_PARTICLES_TRANSLUCENT
 		materialOut.y = 500u;
 	#else
 		materialOut.y = 2u;
 	#endif
 
-	materialOut.z = Packup2x8U(albedo.xy);
-	materialOut.w = Packup2x8U(albedo.zw);
+	materialOut.z = Pack2x8U(albedo.xy);
+	materialOut.w = Pack2x8U(albedo.zw);
 
 	vec3 deltaPos1 = dFdx(worldPos);
 	vec3 deltaPos2 = dFdy(worldPos);

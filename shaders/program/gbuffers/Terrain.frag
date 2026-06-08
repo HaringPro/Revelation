@@ -182,7 +182,7 @@ void main() {
 		albedoOut = vec4(1.0);
 	#endif
 
-	materialOut.x = PackupDithered2x8U(lightmap, dither);
+	materialOut.x = Pack2x8U(lightmap, dither);
 	materialOut.y = materialID;
 
 	#if defined MC_SPECULAR_MAP
@@ -200,6 +200,6 @@ void main() {
 
 	normalOut.zw = OctEncodeSnorm(normal);
 
-	materialOut.z = Packup2x8U(specularTex.xy);
-	materialOut.w = Packup2x8U(specularTex.zw);
+	materialOut.z = Pack2x8U(specularTex.xy);
+	materialOut.w = Pack2x8U(specularTex.zw);
 }

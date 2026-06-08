@@ -43,7 +43,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec3 geoNormal = VoxyFaceNormal(parameters.face);
 	vec2 encodedNormal = OctEncodeSnorm(geoNormal);
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = materialId;
 	materialOut.zw = uvec2(0u);
 
@@ -76,9 +76,9 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		vec3 worldPosBack = transMAD(gbufferModelViewInverse, viewPosBack);
 		float waterDepth = distance(worldPos, worldPosBack);
 
-		waterOut = vec4(waterDepth * rcp255, Packup2x8(encodedWaterNormal), 0.0, 1.0);
+		waterOut = vec4(waterDepth * rcp255, Pack2x8(encodedWaterNormal), 0.0, 1.0);
 	} else {
-		materialOut.z = Packup2x8U(baseColor.xy);
-		materialOut.w = Packup2x8U(baseColor.zw);
+		materialOut.z = Pack2x8U(baseColor.xy);
+		materialOut.w = Pack2x8U(baseColor.zw);
 	}
 }

@@ -65,13 +65,13 @@ void main() {
 
 	albedoOut = albedo;
 
-	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Pack2x8U(lightmap, bayer4(gl_FragCoord.xy));
 	materialOut.y = 1u;
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
-		materialOut.z = Packup2x8U(specularTex.xy);
-		materialOut.w = Packup2x8U(specularTex.zw);
+		materialOut.z = Pack2x8U(specularTex.xy);
+		materialOut.w = Pack2x8U(specularTex.zw);
 	#else
 		materialOut.zw = uvec2(0);
 	#endif
