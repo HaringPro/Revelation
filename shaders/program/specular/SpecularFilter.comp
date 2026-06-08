@@ -120,17 +120,14 @@ void main() {
 		vec3 worldNormal = FetchSurfaceNormal(texelPos);
 
 		vec4 specularData = texelFetch(colortex0, texelPos, 0);
-		if (material.isRough) {
-			const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
-			#if SPECULAR_FILTER_PASS > 0
-				vec2 randOffset = SampleStbnVec2(texelPos, frameCounter) - 0.5;
-			#else
-				vec2 randOffset = vec2(0.0);
-			#endif
+        const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
+        #if SPECULAR_FILTER_PASS > 0
+            vec2 randOffset = SampleStbnVec2(texelPos, frameCounter) - 0.5;
+        #else
+            vec2 randOffset = vec2(0.0);
+        #endif
 
-			SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
-		}
-
+        SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
 		imageStore(colorimg0, texelPos, specularData);
 	}
 }

@@ -186,6 +186,10 @@ option.RAIN_PUDDLES=Rain Puddles
 option.RAIN_PUDDLE_SCALE=Rain Puddle Scale
 option.RAIN_PUDDLE_SMOOTHNESS=Rain Puddle Smoothness
 
+option.RIPPLE_MAX_RADIUS=Ripple Max Radius
+option.RIPPLE_SCALE=Ripple Scale
+option.RIPPLE_INTENSITY=Ripple Intensity
+
 option.RAIN_VISIBILITY=Rain/Snow Visibility
 option.RAIN_SCALE_X=Rain/Snow Scale X
 option.RAIN_SCALE_Y=Rain/Snow Scale Y

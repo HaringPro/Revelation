@@ -21,10 +21,11 @@ vec3 F0FromIOR(vec3 ior) {
 
 struct Material {
 	float roughness;
-	float metalness;
-	float emissiveness;
+	float metallic;
+	float emission;
+    vec3 reflectance;
 	bool specularMask;
-	bool isRough;
+	bool mirrorMask;
 };
 
 // https://shaderlabs.org/wiki/LabPBR_Material_Standard
@@ -51,14 +52,14 @@ const vec3 HardcodedMetalF0[8] = vec3[8](
 	vec3(0.999, 0.998, 0.986)  // 银 - Silver
 );
 
-vec3 GetMaterialF0(float metalness, vec3 albedo) {
+vec3 GetMaterialF0(float metallic, vec3 albedo) {
 	#if TEXTURE_FORMAT == 0
 		vec3 f0;
-		uint metalIndex = uint(metalness * 255.0);
+		uint metalIndex = uint(metallic * 255.0);
 
 		if (metalIndex < 230u) {
 			// Dielectrics
-			f0 = vec3(mix(DEFAULT_DIELECTRIC_F0, 1.0, metalness));
+			f0 = vec3(mix(DEFAULT_DIELECTRIC_F0, 1.0, metallic));
 	#ifdef LABPBR_HARDCODED_METAL
 		} else if (metalIndex < 238u) {
 			// Hardcoded metals
@@ -70,25 +71,27 @@ vec3 GetMaterialF0(float metalness, vec3 albedo) {
 		}
 		return f0;
 	#else
-		return mix(vec3(DEFAULT_DIELECTRIC_F0), albedo, metalness);
+		return mix(vec3(DEFAULT_DIELECTRIC_F0), albedo, metallic);
 	#endif
 }
 
-Material GetMaterialData(vec4 specTex) {
+Material GetMaterialData(vec4 specTex, vec3 albedo) {
 	Material material;
 
 	material.roughness = sqr(1.0 - specTex.r);
-	material.metalness = specTex.g;
+	material.metallic = specTex.g;
 
 	#if TEXTURE_FORMAT == 0
-		material.emissiveness = specTex.a * step(specTex.a, 0.999);
+		material.emission = specTex.a * step(specTex.a, 0.999);
 	#else
-		material.emissiveness = specTex.b;
+		material.emission = specTex.b;
 	#endif
-	material.emissiveness = pow(material.emissiveness, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
+	material.emission = pow(material.emission, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
 
-	material.specularMask = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
-	material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
+    material.reflectance = GetMaterialF0(material.metallic, albedo);
+
+	material.specularMask = material.roughness < 0.5 || material.metallic > EPS;
+	material.mirrorMask = material.roughness < ROUGH_REFLECTIONS_THRESHOLD;
 
 	return material;
 }
@@ -97,10 +100,10 @@ Material GetMaterialData(vec2 specTex) {
 	Material material;
 
 	material.roughness = sqr(1.0 - specTex.r);
-	material.metalness = specTex.g;
+	material.metallic = specTex.g;
 
-	material.specularMask = saturate(0.4 - material.roughness) + material.metalness > 1e-2;
-	material.isRough = material.roughness + wetnessCustom > ROUGH_REFLECTIONS_THRESHOLD;
+	material.specularMask = material.roughness < 0.5 || material.metallic > EPS;
+	material.mirrorMask = material.roughness < ROUGH_REFLECTIONS_THRESHOLD;
 
 	return material;
 }

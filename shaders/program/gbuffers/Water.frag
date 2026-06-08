@@ -64,15 +64,19 @@ in vec3 worldPos;
 	#include "/lib/water/WaterWave.glsl"
 #endif
 
+#ifdef RAIN_PUDDLES
+	#include "/lib/surface/RainPuddle.glsl"
+#endif
+
 //======// Main //================================================================================//
 void main() {
 	normalOut.xy = unpackSnorm2x16(normalPack);
 
 	// Construct TBN matrix
 	vec3 tangent = OctDecodeSnorm(unpackSnorm2x16(tangentPack.x));
-	vec3 normal = OctDecodeSnorm(normalOut.xy);
-	vec3 bitangent = cross(tangent, normal) * uintBitsToFloat(tangentPack.y);
-	mat3 tbnMatrix = mat3(tangent, bitangent, normal);
+	vec3 geoNormal = OctDecodeSnorm(normalOut.xy);
+	vec3 bitangent = cross(tangent, geoNormal) * uintBitsToFloat(tangentPack.y);
+	mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 
 	if (materialID == 3u) { // water
 		ivec2 texel = ivec2(gl_FragCoord.xy);
@@ -93,6 +97,13 @@ void main() {
 			worldNormal = tbnMatrix * worldNormal;
 		#endif
 
+        // Apply rain ripples
+		if (rainStrength > EPS) {
+            vec2 rippleSlope = RippleSlope(minecraftPos.xz * RIPPLE_SCALE, frameTimeCounter);
+            rippleSlope *= saturate(4.0 * abs(dot(geoNormal, worldDir))) * saturate(lightmap.y * 5.0 - 4.0) * 0.25;
+            worldNormal = normalize(worldNormal + vec3(rippleSlope * rainStrength, 0.0).xzy);
+        }
+
 		float depth1 = loadDepth1(texel);
 		vec3 viewPos1 = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledPixelSize, depth1));
 		vec3 worldPos1 = transMAD(gbufferModelViewInverse, viewPos1);
@@ -109,10 +120,22 @@ void main() {
 		#if defined MC_NORMAL_MAP
 			vec3 normalTex = texture(normals, texCoord).rgb;
 			DecodeNormalTex(normalTex);
-			normalOut.zw = OctEncodeSnorm(tbnMatrix * normalTex);
+			vec3 worldNormal = tbnMatrix * normalTex;
 		#else
-			normalOut.zw = normalOut.xy;
+            vec3 worldNormal = geoNormal;
 		#endif
+
+        // Apply rain ripples
+		if (rainStrength > EPS) {
+			vec3 minecraftPos = worldPos + cameraPosition;
+		    vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
+
+            vec2 rippleSlope = RippleSlope(minecraftPos.xz * RIPPLE_SCALE, frameTimeCounter);
+            rippleSlope *= saturate(4.0 * abs(dot(geoNormal, worldDir))) * saturate(lightmap.y * 5.0 - 4.0);
+            worldNormal = normalize(worldNormal + vec3(rippleSlope * rainStrength, 0.0).xzy);
+        }
+
+		normalOut.zw = OctEncodeSnorm(worldNormal);
 
 		materialOut.z = Packup2x8U(albedo.xy);
 		materialOut.w = Packup2x8U(albedo.zw);

@@ -47,7 +47,7 @@ vec4 RenderMoon(vec3 worldDir, vec3 moonDir) {
 		vec3 tangent = normalize(cross(moonDir, vec3(0.0, 1.0, 0.0)));
 		vec3 bitangent = cross(tangent, moonDir);
 
-		vec2 uv = transpose(mat2x3(tangent, bitangent)) * (worldDir - moonDir);
+		vec2 uv = (worldDir - moonDir) * mat2x3(tangent, bitangent);
 		uv *= rcp(moonAngularRadius); // Scale to [-1, 1]
 
 		float longitude = atan(uv.x, sqrt(1.0 - dot(uv, uv)));

@@ -46,7 +46,7 @@ vec2 IntegrateBRDF(float roughness, float NdotV) {
 
 	for (uint i = 0u; i < samples; ++i) {
 		vec2 Xi = Hammersley(i, samples);
-		vec3 H = SampleGGXVNDF(Xi, V, roughness, N);
+		vec3 H = SampleVisibleGGX(Xi, V, roughness, N);
 		vec3 L = 2.0 * dot(V, H) * H - V;
 
 		float NdotL = L.z;

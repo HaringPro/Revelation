@@ -190,6 +190,10 @@ option.RAIN_PUDDLES=雨水坑
 option.RAIN_PUDDLE_SCALE=雨水坑缩放
 option.RAIN_PUDDLE_SMOOTHNESS=雨水坑平滑度
 
+option.RIPPLE_MAX_RADIUS=涟漪最大半径
+option.RIPPLE_SCALE=涟漪缩放
+option.RIPPLE_INTENSITY=涟漪强度
+
 option.RAIN_VISIBILITY=雨雪能见度
 option.RAIN_SCALE_X=雨雪缩放-横向
 option.RAIN_SCALE_Y=雨雪缩放-纵向

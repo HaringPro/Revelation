@@ -75,22 +75,22 @@ vec3 SampleUniformCone(vec2 xy, float cosThetaMax) {
 }
 
 // PDF = D * NoH / (4 * VoH)
-vec3 SampleGGX(vec2 xy, float alpha, vec3 normal) {
+vec3 SampleGGX(vec2 xy, float alpha) {
 	float phi = TAU * xy.x;
 	float cosTheta = sqrt((1.0 - xy.y) / (1.0 + (alpha * alpha - 1.0) * xy.y));
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
-	vec3 hemisphere = vec3(cossin(phi) * sinTheta, cosTheta);
-	return BuildOrthonormalBasis(normal) * hemisphere;
+	return vec3(cossin(phi) * sinTheta, cosTheta);
 }
 
 // Sampling Visible GGX Normals with Spherical Caps
 // https://arxiv.org/pdf/2306.05044
 // PDF = D * G_SmithV / (4 * NoV)
-vec3 SampleGGXVNDF(vec3 viewDir, float alpha, vec2 xy) {
+vec3 SampleVisibleGGX(vec3 viewDir, float alpha, vec2 xy) {
 	// Importance sampling bias
 	xy.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
 
+	// stretch
 	viewDir = normalize(vec3(alpha * viewDir.xy, viewDir.z));
 
 	float phi = TAU * xy.x;
@@ -98,6 +98,7 @@ vec3 SampleGGXVNDF(vec3 viewDir, float alpha, vec2 xy) {
 	float sinTheta = sqrt(saturate(1.0 - cosTheta * cosTheta));
 	viewDir += vec3(cossin(phi) * sinTheta, cosTheta);
 
+	// unstretch
 	return normalize(vec3(alpha * viewDir.xy, viewDir.z));
 }
 
@@ -107,7 +108,7 @@ vec3 SampleGGXVNDF(vec3 viewDir, float alpha, vec2 xy) {
 // - no need for moving to tangent space
 // - it avoids the need for an orthonormal basis
 // - it's (slightly) faster than the general version
-vec3 SampleGGXVNDF(vec2 u, vec3 wi, float alpha, vec3 n) {
+vec3 SampleVisibleGGX(vec2 u, vec3 wi, float alpha, vec3 n) {
 	// Importance sampling bias
 	u.y *= 1.0 - SPECULAR_IMPORTANCE_SAMPLING_BIAS;
 

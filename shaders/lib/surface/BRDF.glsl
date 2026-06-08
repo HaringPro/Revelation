@@ -33,13 +33,6 @@ vec3 FresnelSchlick(float VdotH, vec3 f0, vec3 f90) {
 	return saturate(f0 + (f90 - f0) * pow5(1.0 - VdotH));
 }
 
-// Lazanyi approximation correction
-vec3 FresnelLazanyi2019(float VdotH, vec3 f0, vec3 f82) {
-	vec3 a = 17.6513846 * (f0 - f82) + 8.16666667 * oms(f0);
-	float invMu5 = pow5(1.0 - VdotH);
-	return saturate(f0 + oms(f0) * invMu5 - a * VdotH * invMu5 * oms(VdotH));
-}
-
 float FresnelSchlickGaussian(float VdotH, float f0) {
 	return saturate(f0 + oms(f0) * exp2(-9.60232 * pow8(VdotH) - 8.58092 * VdotH));
 }
@@ -108,7 +101,7 @@ float DistributionGaussian(float NdotH, float alpha2) {
 // GGX / Trowbridge-Reitz
 // Walter et al. 2007, "Microfacet models for refraction through rough surfaces"
 float DistributionGGX(float NdotH2, float alpha2) {
-	return alpha2 * rPI / sqr(1.0 + (alpha2 - 1.0) * NdotH2);
+	return alpha2 * rPI / sqr(alpha2 * NdotH2 - NdotH2 + 1.0);
 }
 
 // Anisotropic GGX
@@ -116,7 +109,7 @@ float DistributionGGX(float NdotH2, float alpha2) {
 float DistributionAnisoGGX(float ax, float ay, float NdotH, float XdotH, float YdotH) {
 	float alpha2 = ax * ay;
 	vec3 V = vec3(ay * XdotH, ax * YdotH, alpha2 * NdotH);
-	return rPI * alpha2 * sqr(alpha2 / dot(V, V));
+	return alpha2 * rPI * sqr(alpha2 / dot(V, V));
 }
 
 //================================================================================================//

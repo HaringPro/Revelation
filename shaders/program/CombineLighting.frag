@@ -176,13 +176,7 @@ void main() {
 		vec2 lightmap = Unpack2x8U(materialPack.x);
 		vec4 specularTex = ExtractSpecularTex(materialPack);
 
-		Material material = GetMaterialData(specularTex);
-
-		#if defined MC_SPECULAR_MAP
-			vec3 f0 = GetMaterialF0(material.metalness, albedo);
-		#else
-			const vec3 f0 = vec3(DEFAULT_DIELECTRIC_F0);
-		#endif
+		Material material = GetMaterialData(specularTex, albedo);
 
 		float sssAmount = 0.0;
 		#if SUBSURFACE_SCATTERING_MODE < 2
@@ -280,11 +274,11 @@ void main() {
 				#endif
 
                 float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
-                float NdotH = saturate((NdotL + NdotV) * invLenH);
-                float VdotH = saturate(LdotV * invLenH + invLenH);
+                float NdotH = (NdotL + NdotV) * invLenH;
+                float VdotH = LdotV * invLenH + invLenH;
 
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
-				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, f0) * NdotL;
+				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, material.reflectance) * NdotL;
 			}
 		}
 
@@ -326,7 +320,7 @@ void main() {
 
 		// Emissive
 		#if EMISSIVE_MODE > 0 && defined MC_SPECULAR_MAP
-			diffuseRadiance += material.emissiveness * 4.0 * sdot(albedo);
+			diffuseRadiance += material.emission * 4.0 * sdot(albedo);
 		#endif
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
@@ -361,14 +355,14 @@ void main() {
 		diffuseRadiance += (worldNormal.y * 0.4 + 0.6) * max(MINIMUM_AMBIENT_BRIGHTNESS, 5e-3 * nightVision) * ao;
 
 		// Apply diffuse color (baseColor * (1 - metallic))
-		material.metalness *= 0.2 * lightmap.y + 0.8;
-		diffuseRadiance *= albedo * oms(material.metalness);
+		material.metallic *= 0.2 * lightmap.y + 0.8;
+		diffuseRadiance *= albedo * oms(material.metallic);
 
 		// Indirect specular
 		if (material.specularMask) {
 			vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
 
-			vec3 specular = f0 * brdf.x + brdf.y;
+			vec3 specular = material.reflectance * brdf.x + brdf.y;
 			specularRadiance += loadSceneMain(texelPos) * specular;
 		}
 

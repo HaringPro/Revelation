@@ -207,7 +207,7 @@ void main() {
 	// Compute rain puddles
 	#ifdef RAIN_PUDDLES
 		if (wetnessCustom > EPS) {
-			CalculateRainPuddles(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
+			ApplyRainPuddleMaterial(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
 		}
 	#endif
 

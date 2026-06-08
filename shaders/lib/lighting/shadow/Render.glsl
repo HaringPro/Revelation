@@ -46,7 +46,10 @@ float BlockerSearch(vec3 shadowScreenPos, float dither, float searchScale) {
 }
 
 vec3 CalculateWaterCaustics(vec3 worldPos, float waterDepth, float dither) {
-	vec3 surfacePos = worldPos - vec3(0.0, 1.0, 0.0);
+    float waterDepthClamped = clamp(waterDepth, 2.0, 32.0);
+
+	vec3 flatRefractDir = refract(-worldLightDir, vec3(0.0, 1.0, 0.0), 1.0 / WATER_IOR);
+	vec3 surfacePos = worldPos + flatRefractDir * abs(waterDepthClamped / flatRefractDir.y);
 
 	float caustics = 0.0;
 	for (uint i = 0u; i < 16u; ++i) {
@@ -54,15 +57,18 @@ vec3 CalculateWaterCaustics(vec3 worldPos, float waterDepth, float dither) {
 		samplePos.xz += sampleVogelDisk(i, 16, dither) * 0.15;
 
 		vec2 sampleCoord = WorldToShadowScreenSpace(samplePos).xy;
-		vec3 waveNormal = OctDecodeUnorm(texture(shadowcolor1, sampleCoord).xy);
+		vec3 waveNormal = OctDecodeUnorm(texelFetch(shadowcolor1, ivec2(sampleCoord * realShadowMapRes), 0).xy);
 
-		vec3 refractDir = refract(vec3(0.0, 1.0, 0.0), waveNormal, 1.0 / WATER_IOR);
-		vec3 refractedPos = samplePos + refractDir * abs(1.0 / refractDir.y);
+		vec3 refractDir = refract(-worldLightDir, waveNormal, 1.0 / WATER_IOR);
+		vec3 refractedPos = samplePos + refractDir * abs(waterDepthClamped / refractDir.y);
 
 		caustics += saturate(fma(distance(surfacePos, refractedPos), -20.0, 1.0));
 	}
 
-	return -smin(-caustics, -0.1, 0.15) * saturate(exp2(-rLOG2 * waterExtinction * waterDepth));
+    // Smooth max
+	float h = saturate(0.5 - abs(caustics - 0.1));
+	caustics = max(caustics, 0.1) + h * h * 0.5;
+	return caustics * saturate(exp2(-rLOG2 * waterExtinction * waterDepth));
 }
 
 vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, float blockerDepth, float distortionFactor) {

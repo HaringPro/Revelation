@@ -50,8 +50,7 @@ uniform sampler2D tex;
 
 //======// Function //============================================================================//
 
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
+#include "/lib/universal/Random.glsl"
 
 const vec3[] COLORS = vec3[](
 	vec3(0.022087, 0.098399, 0.110818),
@@ -166,7 +165,7 @@ void main() {
 	// Compute rain puddles
 	#ifdef RAIN_PUDDLES
 		if (wetnessCustom > EPS) {
-			CalculateRainPuddles(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
+			ApplyRainPuddleMaterial(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
 		}
 	#endif
 
