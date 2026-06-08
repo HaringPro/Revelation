@@ -455,7 +455,7 @@ value.RENDER_SCALE_1000X.500=50.0%
 
 option.UPSCALE_MODE=升采样模式
 value.UPSCALE_MODE.0=无
-value.UPSCALE_MODE.1=FSR1
+value.UPSCALE_MODE.1=FSR 1.0
 
 # Compatibility
 option.MOD_BLOCK_SUPPORT=模组方块支持
