@@ -29,7 +29,7 @@ layout (location = 3) out float parallaxShadowOut;
 
 flat in uint normalPack;
 #if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
-flat in uvec2 tangentPack;
+flat in uint tangentPack;
 #endif
 
 in vec3 vertColor;
@@ -110,8 +110,9 @@ void main() {
 
 	// Construct TBN matrix
 	#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
-		vec3 tangent = OctDecodeSnorm(unpackSnorm2x16(tangentPack.x));
-		vec3 bitangent = cross(tangent, geoNormal) * uintBitsToFloat(tangentPack.y);
+		vec3 tangent = UnpackSnorm3x10(tangentPack);
+		vec3 bitangent = cross(tangent, geoNormal);
+        bitangent *= uintBitsToFloat(bitfieldExtract(tangentPack, 30, 2));
 		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
@@ -174,7 +175,7 @@ void main() {
 
 	vec4 albedo = textureLod(tex, realTexCoord, mipLevel);
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	albedoOut = vec4(albedo.rgb * vertColor, 1.0);
 

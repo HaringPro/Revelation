@@ -74,17 +74,16 @@ void main() {
 	vec3 geoNormal = normalize(cross(deltaPos1, deltaPos2));
     normalOut.xy = OctEncodeSnorm(geoNormal);
 
-    vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
-    vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
-
     vec2 deltaUv1 = dFdx(texCoord);
     vec2 deltaUv2 = dFdy(texCoord);
 
-    vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
-    vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
+    vec3 tangentPerp = deltaPos2 * deltaUv1.x - deltaPos1 * deltaUv2.x;
+    vec3 tangent = normalize(cross(tangentPerp, geoNormal));
 
-    float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
-    mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
+    vec3 bitangentPerp = deltaPos2 * deltaUv1.y - deltaPos1 * deltaUv2.y;
+    vec3 bitangent = normalize(cross(bitangentPerp, geoNormal));
+
+    mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 
 	if (materialID == 3u) { // water
 		ivec2 texelPos = ivec2(gl_FragCoord.xy);
@@ -123,7 +122,7 @@ void main() {
 	} else {
 		vec4 albedo = texture(tex, texCoord) * vertColor;
 
-		if (albedo.a < 0.1) { discard; return; }
+		if (albedo.a < 0.1) discard;
 
 		#if defined MC_NORMAL_MAP
 			vec3 normalTex = texture(normals, texCoord).rgb;

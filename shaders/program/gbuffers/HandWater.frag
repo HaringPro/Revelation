@@ -21,7 +21,10 @@ layout (location = 1) out vec4 normalOut;
 
 //======// Input //===============================================================================//
 
-in vec3 worldPos;
+flat in uint normalPack;
+#if defined MC_NORMAL_MAP
+flat in uint tangentPack;
+#endif
 
 in vec4 vertColor;
 in vec2 texCoord;
@@ -39,7 +42,7 @@ uniform sampler2D tex;
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	materialOut.x = Pack2x8U(lightmap);
 	#if GBUFFER_PARTICLES_TRANSLUCENT
@@ -51,25 +54,15 @@ void main() {
 	materialOut.z = Pack2x8U(albedo.xy);
 	materialOut.w = Pack2x8U(albedo.zw);
 
-	vec3 deltaPos1 = dFdx(worldPos);
-	vec3 deltaPos2 = dFdy(worldPos);
-
-	vec3 geoNormal = normalize(cross(deltaPos1, deltaPos2));
-	normalOut.xy = OctEncodeSnorm(geoNormal);
+	normalOut.xy = unpackSnorm2x16(normalPack);
+	vec3 geoNormal = OctDecodeSnorm(normalOut.xy);
 
 	#ifdef MC_NORMAL_MAP
 		// Construct TBN matrix
-		vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
-		vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
-
-		vec2 deltaUv1 = dFdx(texCoord);
-		vec2 deltaUv2 = dFdy(texCoord);
-
-		vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
-		vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
-
-		float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
-		mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
+		vec3 tangent = UnpackSnorm3x10(tangentPack);
+		vec3 bitangent = cross(tangent, geoNormal);
+        bitangent *= uintBitsToFloat(bitfieldExtract(tangentPack, 30, 2));
+		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 
 		vec3 normalTex = texture(normals, texCoord).rgb;
 		DecodeNormalTex(normalTex);

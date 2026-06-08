@@ -22,7 +22,7 @@
 
 flat out uint normalPack;
 #if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
-flat out uvec2 tangentPack;
+flat out uint tangentPack;
 #endif
 
 out vec3 vertColor;
@@ -52,7 +52,7 @@ in vec4 at_tangent;
 //======// Main //================================================================================//
 void main() {
 	vertColor = gl_Color.rgb;
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
@@ -70,8 +70,8 @@ void main() {
 	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
 	#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
 		vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-		tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-		tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
+        uint tangentSign = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
+		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), tangentSign, 30, 2);
 	#endif
 
 	#ifdef WAVING_FOLIAGE

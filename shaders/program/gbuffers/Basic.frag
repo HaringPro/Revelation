@@ -26,7 +26,7 @@ in vec2 lightmap;
 
 //======// Main //================================================================================//
 void main() {
-	if (vertColor.a < 0.1) { discard; return; }
+	if (vertColor.a < 0.1) discard;
 
 	albedoOut = vec4(vertColor.rgb, 1.0);
 

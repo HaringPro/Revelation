@@ -53,7 +53,7 @@ void main() {
 		}
 	#endif
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 

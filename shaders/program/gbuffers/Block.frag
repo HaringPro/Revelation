@@ -92,18 +92,16 @@ void main() {
 
 	// Construct TBN matrix
 	#ifdef MC_NORMAL_MAP
-		vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
-		vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
-
 		vec2 deltaUv1 = dFdx(texCoord);
 		vec2 deltaUv2 = dFdy(texCoord);
 
-		vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
-		vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
+        vec3 tangentPerp = deltaPos2 * deltaUv1.x - deltaPos1 * deltaUv2.x;
+        vec3 tangent = normalize(cross(tangentPerp, geoNormal));
 
-		float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
+        vec3 bitangentPerp = deltaPos2 * deltaUv1.y - deltaPos1 * deltaUv2.y;
+        vec3 bitangent = normalize(cross(bitangentPerp, geoNormal));
 
-		mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
+		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
 	// Compute mipmap level
@@ -115,7 +113,7 @@ void main() {
 
 	vec4 albedo = textureLod(tex, texCoord, mipLevel) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	#ifdef WHITE_WORLD
 		albedo.rgb = vec3(1.0);

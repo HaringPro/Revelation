@@ -29,7 +29,7 @@ layout (location = 3) out float parallaxShadowOut;
 
 flat in uint normalPack;
 #if defined MC_NORMAL_MAP
-flat in uvec2 tangentPack;
+flat in uint tangentPack;
 #endif
 
 in vec4 vertColor;
@@ -48,16 +48,11 @@ uniform sampler2D tex;
 	uniform sampler2D specular;
 #endif
 
-//======// Function //============================================================================//
-
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
-
 //======// Main //================================================================================//
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	#ifdef WHITE_WORLD
 		albedo.rgb = vec3(1.0);
@@ -65,7 +60,7 @@ void main() {
 
 	albedoOut = albedo;
 
-	materialOut.x = Pack2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = 1u;
 
 	#if defined MC_SPECULAR_MAP
@@ -77,13 +72,14 @@ void main() {
 	#endif
 
 	normalOut.xy = unpackSnorm2x16(normalPack);
+	vec3 geoNormal = OctDecodeSnorm(normalOut.xy);
 
 	#if defined MC_NORMAL_MAP
 		// Construct TBN matrix
-		vec3 tangent = OctDecodeSnorm(unpackSnorm2x16(tangentPack.x));
-		vec3 normal = OctDecodeSnorm(normalOut.xy);
-		vec3 bitangent = cross(tangent, normal) * uintBitsToFloat(tangentPack.y);
-		mat3 tbnMatrix = mat3(tangent, bitangent, normal);
+		vec3 tangent = UnpackSnorm3x10(tangentPack);
+		vec3 bitangent = cross(tangent, geoNormal);
+        bitangent *= uintBitsToFloat(bitfieldExtract(tangentPack, 30, 2));
+		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 
 		vec3 normalTex = texture(normals, texCoord).rgb;
 		DecodeNormalTex(normalTex);

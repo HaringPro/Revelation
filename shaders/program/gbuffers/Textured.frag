@@ -50,7 +50,7 @@ float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x)
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	#ifdef WHITE_WORLD
 		albedo.rgb = vec3(1.0);
