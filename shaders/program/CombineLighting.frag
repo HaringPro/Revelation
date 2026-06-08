@@ -46,7 +46,6 @@ uniform sampler2D cloudOriginTex;
 #include "/lib/atmosphere/Celestial.glsl"
 
 #include "/lib/atmosphere/clouds/Render.glsl"
-#include "/lib/atmosphere/clouds/Shadows.glsl"
 
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
@@ -57,13 +56,11 @@ uniform sampler2D cloudOriginTex;
 #endif
 
 #if defined SSILVB_ENABLED && defined SVGF_ENABLED
-	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewZ, float NdotV) {
+	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewZ) {
 		vec3 sum = vec3(0.0);
 		float sumWeight = 0.0;
 
-		float sigmaZ = -4.0 * NdotV;
-
-		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 2;
+		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 1;
 		coord = coord * scaledViewSize * 0.5 - 0.5;
 
 		ivec2 floorTexel = ivec2(floor(coord));
@@ -71,13 +68,15 @@ uniform sampler2D cloudOriginTex;
 
 		vec4 bilinearWeight = bilinear(fractTexel);
 
+		float invThresholdZ = 8.0 / viewZ;
+
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = clamp(floorTexel + offset2x2[i], ivec2(1), texelEnd);
 
 			vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
 
 			float weight = pow4(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
-			weight *= exp2(distance(sampleAux.z, viewZ) * sigmaZ);
+			weight *= saturate(fma(distance(sampleAux.z, viewZ), invThresholdZ, 1.0));
 			weight *= bilinearWeight[i];
 
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
@@ -226,8 +225,16 @@ void main() {
 			distanceFade = saturate(distanceFade + float(lodMask));
 		#endif
 
-		float NdotL = saturate(dot(worldNormal, worldLightDir));
-		float NdotV = abs(dot(worldNormal, worldDir));
+		float NdotV = dot(worldNormal, -worldDir);
+		float NdotL = dot(worldNormal, worldLightDir);
+		float LdotV = dot(worldLightDir, -worldDir);
+
+        // Must use unclamped NdotL & NdotV
+        float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+        float NdotH = saturate((NdotL + NdotV) * invLenH);
+        float VdotH = saturate(LdotV * invLenH + invLenH);
+        NdotL = saturate(NdotL);
+        NdotV = saturate(NdotV);
 
 		// Shadows and SSS
 		if (NdotL + sssAmount > EPS) {
@@ -246,8 +253,6 @@ void main() {
 			#else
 				const float contactShadow = 1.0;
 			#endif
-
-			float LdotV = -dot(worldLightDir, worldDir);
 
 			// Subsurface scattering
 			if (sssAmount > EPS) {
@@ -272,10 +277,6 @@ void main() {
 						shadow *= oms(texelFetch(colortex12, texelPos, 0).x);
 					#endif
 				#endif
-
-                float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
-                float NdotH = (NdotL + NdotV) * invLenH;
-                float VdotH = LdotV * invLenH + invLenH;
 
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
 				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, material.reflectance) * NdotL;
@@ -344,7 +345,7 @@ void main() {
 		// Indirect diffuse lighting
 		#ifdef SSILVB_ENABLED
 			#ifdef SVGF_ENABLED
-				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewPos.z, NdotV);
+				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewPos.z);
 			#else
 				vec3 radiance = texelFetch(colortex3, texelPos >> 1, 0).rgb;
 			#endif
@@ -360,7 +361,7 @@ void main() {
 
 		// Indirect specular
 		if (material.specularMask) {
-			vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
+			vec2 brdf = texture(envBRDFTex, vec2(material.roughness, NdotV)).xy;
 
 			vec3 specular = material.reflectance * brdf.x + brdf.y;
 			specularRadiance += loadSceneMain(texelPos) * specular;

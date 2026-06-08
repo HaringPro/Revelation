@@ -45,7 +45,7 @@ void main() {
 
 	// Checkerboard render
 	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
-	if ((tid & 1) == offset || global.historyReset) {
+	if ((tid & 1) == offset || historyReset) {
 		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyEnvMapImg));
 
 		vec3 worldDir = UnprojectCubemap(uv, 96.0);
@@ -67,7 +67,7 @@ void main() {
 
 		// Accumulate
 		vec4 history = texelFetch(skyEnvMapTex, tid, 0);
-		history.a *= float(!global.historyReset);
+		history.a *= float(!historyReset);
 
 		skyRadiance = mix(history.rgb, skyRadiance, rcp(min(++history.a, 64.0)));
 		imageStore(skyEnvMapImg, tid, vec4(skyRadiance, history.a));

@@ -31,7 +31,6 @@ out vec2 lightmap;
 flat out uint materialID;
 
 #if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	out vec2 tileBase;
 	flat out vec2 tileScale;
 	flat out vec2 tileOffset;
 #endif
@@ -112,10 +111,9 @@ void main() {
 	#endif
 
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-		vec2 minMidCoord = texCoord - mc_midTexCoord;
-		tileBase = signI(minMidCoord) * 0.5 + 0.5;
-		tileScale = abs(minMidCoord) * 2.0;
-		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
+        vec2 halfSize = abs(texCoord - mc_midTexCoord);
+		tileScale = halfSize * 2.0;
+		tileOffset = mc_midTexCoord - halfSize;
 	#endif
 
 	vec3 viewPos = transMAD(gbufferModelView, worldPos);

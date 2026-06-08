@@ -196,7 +196,7 @@ void main() {
 			shadow = saturate(shadow) * sunlightMult;
 
 			if (notParticle) {
-				float NdotV = abs(dot(worldNormal, worldDir));
+				float NdotV = -dot(worldNormal, worldDir);
 			    float LdotV = -dot(worldLightDir, worldDir);
 
                 float invLenH = inversesqrt(2.0 + 2.0 * LdotV);

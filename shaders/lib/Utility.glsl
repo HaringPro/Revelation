@@ -16,6 +16,8 @@
 	#define LOD_MOD
 #endif
 
+#define lessThanFLT1(x) (floatBitsToUint(x) < 0x3F800000u)
+
 #define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])
 
 #include "/lib/utility/Compat.glsl"

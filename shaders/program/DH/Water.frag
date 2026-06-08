@@ -32,8 +32,6 @@ layout (location = 2) out vec4 waterOut;
 
 //======// Input //===============================================================================//
 
-flat in vec3 geoNormal;
-
 in vec4 vertColor;
 in vec2 lightmap;
 flat in uint materialID;
@@ -60,11 +58,12 @@ void main() {
 	float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
 	float dither = BlueNoise(texel, frameCounter);
 
-	if (alpha < dither || loadDepth0(texel) < 1.0) {
+	if (alpha < dither || lessThanFLT1(loadDepth0(texel))) {
 		discard;
 		return;
 	}
 
+	vec3 geoNormal = normalize(cross(dFdx(worldPos), dFdy(worldPos)));
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 
 	if (materialID == 3u) { // water

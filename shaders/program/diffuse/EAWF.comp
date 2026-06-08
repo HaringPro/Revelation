@@ -118,7 +118,7 @@ void main() {
 	float NdotV = abs(dot(geoNormal, viewDir));
 	vec2 offsetScale = oms(abs(geoNormal.xy) * oms(NdotV)) * ldexp(2.0, FILTER_PASS_INDEX);
 
-	float16_t zThreshold = float16_t(-0.125) * normalDepthData.z;
+	float invThresholdZ = 8.0 / normalDepthData.z;
 
 	// float variance = CalculateVariance(ivec2(localPos + padRadius));
 	float16_t variance = filteredColVar.a;
@@ -139,7 +139,7 @@ void main() {
 			f16vec4 sampleColVar = f16vec4(imageLoad(colorimg3, sampleTexel));
 			float16_t sampleLuma = sampleColVar.r; // We use YCoCg color space
 
-			float16_t weight = step(abs(sampleAux.z - normalDepthData.z), zThreshold);
+			float16_t weight = float16_t(saturate(fma(abs(sampleAux.z - normalDepthData.z), invThresholdZ, 1.0)));
 
 			float logWeightN = log2(saturate(dot(OctDecodeSnorm(sampleAux.xy), centerNormal))) * sigmaN;
 			float logWeightL = abs(sampleLuma - centerLuma) * sigmaL;

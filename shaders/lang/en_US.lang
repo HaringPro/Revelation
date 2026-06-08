@@ -287,6 +287,7 @@ option.AGN_RESOLUTION=AGN Resolution
 option.AGN_STRENGTH=AGN Strength
 
 option.PARALLAX=Parallax Occlusion Mapping
+option.SMOOTH_PARALLAX=Smooth Parallax
 option.PARALLAX_SHADOW=Parallax Shadow
 option.PARALLAX_DEPTH_WRITE=Parallax Depth Write
 option.PARALLAX_BASED_NORMAL=Parallax Based Normal

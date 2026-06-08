@@ -3,7 +3,7 @@
 mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 	vec3 sunTransmittance = exp2(-rLOG2 * waterExtinction * mix(4.0, 1.0, worldLightDir.y));
 
-	#if 0
+	#if 1
 		float phase = FournierForandPhase(LdotV, 1.175, 4.065);
 	#else
 		float phase = DualLobePhase(LdotV, 0.8, -0.6, 0.1);
@@ -24,12 +24,12 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 
 #if defined PASS_VOLUMETRIC_FOG
 	#include "/lib/water/WaterWave.glsl"
-	vec3 CalculateWaterCaustics(ivec2 shadowTexel, float waterDepth, vec3 surfaceOffset) {
+	vec3 CalculateWaterCaustics(ivec2 shadowTexel, float waterDepth) {
 		vec3 waveNormal = OctDecodeUnorm(texelFetch(shadowcolor1, shadowTexel, 0).xy);
-		vec3 refractDir = refract(worldLightDir, -waveNormal, 1.0 / WATER_IOR);
+		vec3 refractDir = refract(vec3(0.0, -1.0, 0.0), waveNormal, 1.0 / WATER_IOR);
 
 		vec3 projectOffset = refractDir * abs(1.0 / refractDir.y);
-		return saturate(1.0 - 16.0 * distance(surfaceOffset, projectOffset)) * exp2(-rLOG2 * waterExtinction * waterDepth);
+		return saturate(1.0 - 32.0 * distance(vec3(0.0, -1.0, 0.0), projectOffset)) * exp2(-rLOG2 * waterExtinction * waterDepth);
 	}
 
 	mat2x3 RaymarchWaterFog(vec3 worldPos, float dither) {
@@ -50,9 +50,6 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 			shadowStart = projMAD(shadowProjection, shadowStart);
 		vec3 shadowPos = shadowStart + shadowStep * dither;
 
-        vec3 flatRefractDir = refract(worldLightDir, vec3(0.0, -1.0, 0.0), 1.0 / WATER_IOR);
-        vec3 surfaceOffset = flatRefractDir * abs(1.0 / flatRefractDir.y);
-
 		vec4 visibility = vec4(0.0);
 		for (uint i = 0u; i < UW_VF_MAX_SAMPLES; ++i, shadowPos += shadowStep) {
 			vec3 shadowScreenPos = DistortShadowSpace(shadowPos) * 0.5 + 0.5;
@@ -66,7 +63,7 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 			if (waterMask > EPS) {
 			    float sampleDepth0 = texelFetch(shadowtex0, shadowTexel, 0).x;
 				float waterDepth = (sampleDepth0 - shadowScreenPos.z) * shadowProjectionInverse[2].z * 5.0;
-				absorption = CalculateWaterCaustics(shadowTexel, waterDepth, surfaceOffset);
+				absorption = CalculateWaterCaustics(shadowTexel, waterDepth);
 			}
 
 			visibility += vec4(absorption, sampleShadow);
@@ -74,7 +71,7 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 		visibility *= rSteps;
 
 		float LdotV = dot(worldLightDir, worldDir);
-		#if 0
+		#if 1
 			float phase = FournierForandPhase(LdotV, 1.175, 4.065);
 		#else
 			float phase = DualLobePhase(LdotV, 0.8, -0.6, 0.1);

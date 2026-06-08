@@ -296,7 +296,8 @@ vec3 SphericalAreaGGX(float VdotH, float NdotV, float NdotL, float LdotV, float 
 	return F * D * Vis * normalization;
 }
 
-float SpecularThroughputGGX(float NdotV, float NdotL, float roughness) {
+// G / G_SmithV
+float SpecularThroughputGGX(float NdotL, float NdotV, float roughness) {
 	float alpha2 = roughness * roughness;
 	float lt = sqrt((NdotL - NdotL * alpha2) * NdotL + alpha2);
 	float vt = sqrt((NdotV - NdotV * alpha2) * NdotV + alpha2);

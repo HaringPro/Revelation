@@ -66,7 +66,7 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_HIGH_WIND_SPEED;
 		motionVector.xz -= windVelocity;
 	}
-	motionVector *= float(worldTime - global.prevWorldTime) * 0.05;
+	motionVector *= float(global.worldTimeDiff) * 0.05;
 	motionVector += cameraMovement;
 
 	cloudPos += motionVector; // To previous frame's world space
@@ -96,7 +96,7 @@ void main() {
 	vec2 prevCoord = ReprojectClouds(screenCoord, cloudDepth).xy;
 	uint frameIndex = texture(colortex13, prevCoord).x;
 
-	bool disocclusion = global.historyReset;
+	bool disocclusion = historyReset;
 	// Offscreen invalidation
 	disocclusion = disocclusion || saturate(prevCoord) != prevCoord;
 	// Previous ground invalidation

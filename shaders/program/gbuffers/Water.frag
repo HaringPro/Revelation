@@ -40,9 +40,6 @@ uniform sampler2D tex;
 
 //======// Input //===============================================================================//
 
-flat in uint normalPack;
-flat in uvec2 tangentPack;
-
 in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
@@ -70,16 +67,27 @@ in vec3 worldPos;
 
 //======// Main //================================================================================//
 void main() {
-	normalOut.xy = unpackSnorm2x16(normalPack);
-
 	// Construct TBN matrix
-	vec3 tangent = OctDecodeSnorm(unpackSnorm2x16(tangentPack.x));
-	vec3 geoNormal = OctDecodeSnorm(normalOut.xy);
-	vec3 bitangent = cross(tangent, geoNormal) * uintBitsToFloat(tangentPack.y);
-	mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
+	vec3 deltaPos1 = dFdx(worldPos);
+	vec3 deltaPos2 = dFdy(worldPos);
+
+	vec3 geoNormal = normalize(cross(deltaPos1, deltaPos2));
+    normalOut.xy = OctEncodeSnorm(geoNormal);
+
+    vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
+    vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
+
+    vec2 deltaUv1 = dFdx(texCoord);
+    vec2 deltaUv2 = dFdy(texCoord);
+
+    vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
+    vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
+
+    float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
+    mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
 
 	if (materialID == 3u) { // water
-		ivec2 texel = ivec2(gl_FragCoord.xy);
+		ivec2 texelPos = ivec2(gl_FragCoord.xy);
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
 		#ifdef PHYSICS_OCEAN
@@ -104,7 +112,7 @@ void main() {
             worldNormal = normalize(worldNormal + vec3(rippleSlope * rainStrength, 0.0).xzy);
         }
 
-		float depth1 = loadDepth1(texel);
+		float depth1 = loadDepth1(texelPos);
 		vec3 viewPos1 = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledPixelSize, depth1));
 		vec3 worldPos1 = transMAD(gbufferModelViewInverse, viewPos1);
 

@@ -15,9 +15,6 @@
 
 //======// Output //==============================================================================//
 
-flat out uint normalPack;
-flat out uvec2 tangentPack;
-
 out vec4 vertColor;
 out vec2 texCoord;
 out vec2 lightmap;
@@ -56,13 +53,6 @@ void main() {
 	lightmap.x = float(mc_Entity.x == 11500.0);
 
 	vertColor = gl_Color;
-
-	// Encode normal and tangent
-	vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
-	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
-	vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-	tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-	tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
 
 	materialID = mc_Entity.x == 10003.0 ? 3u : 2u;
 

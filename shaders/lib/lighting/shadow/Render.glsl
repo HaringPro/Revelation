@@ -46,29 +46,29 @@ float BlockerSearch(vec3 shadowScreenPos, float dither, float searchScale) {
 }
 
 vec3 CalculateWaterCaustics(vec3 worldPos, float waterDepth, float dither) {
-    float waterDepthClamped = clamp(waterDepth, 2.0, 32.0);
+    float waterDepthModified = approxSqrt(clamp(waterDepth, 2.0, 64.0));
 
-	vec3 flatRefractDir = refract(-worldLightDir, vec3(0.0, 1.0, 0.0), 1.0 / WATER_IOR);
-	vec3 surfacePos = worldPos + flatRefractDir * abs(waterDepthClamped / flatRefractDir.y);
+	vec3 flatRefractDir = refract(vec3(0.0, -1.0, 0.0), vec3(0.0, 1.0, 0.0), 1.0 / WATER_IOR);
+	vec3 surfacePos = worldPos + flatRefractDir * abs(waterDepthModified / flatRefractDir.y);
+
+	float radius = 0.1 * waterDepthModified;
+	float distThresholdInv = -3.0 / radius;
 
 	float caustics = 0.0;
 	for (uint i = 0u; i < 16u; ++i) {
 		vec3 samplePos = worldPos;
-		samplePos.xz += sampleVogelDisk(i, 16, dither) * 0.15;
+		samplePos.xz += sampleVogelDisk(i, 16, dither) * radius;
 
 		vec2 sampleCoord = WorldToShadowScreenSpace(samplePos).xy;
 		vec3 waveNormal = OctDecodeUnorm(texelFetch(shadowcolor1, ivec2(sampleCoord * realShadowMapRes), 0).xy);
 
-		vec3 refractDir = refract(-worldLightDir, waveNormal, 1.0 / WATER_IOR);
-		vec3 refractedPos = samplePos + refractDir * abs(waterDepthClamped / refractDir.y);
+		vec3 refractDir = refract(vec3(0.0, -1.0, 0.0), waveNormal, 1.0 / WATER_IOR);
+		vec3 refractedPos = samplePos + refractDir * abs(waterDepthModified / refractDir.y);
 
-		caustics += saturate(fma(distance(surfacePos, refractedPos), -20.0, 1.0));
+		caustics += saturate(fma(distance(surfacePos, refractedPos), distThresholdInv, 1.0));
 	}
 
-    // Smooth max
-	float h = saturate(0.5 - abs(caustics - 0.1));
-	caustics = max(caustics, 0.1) + h * h * 0.5;
-	return caustics * saturate(exp2(-rLOG2 * waterExtinction * waterDepth));
+	return sqr(caustics) * saturate(exp2(-rLOG2 * waterExtinction * waterDepth));
 }
 
 vec3 PercentageCloserFilter(vec3 shadowScreenPos, vec3 worldPos, float dither, float blockerDepth, float distortionFactor) {

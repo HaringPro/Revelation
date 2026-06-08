@@ -35,23 +35,51 @@ writeonly uniform image2D cloudShadowImg;
 #include "/lib/universal/Random.glsl"
 
 #include "/lib/atmosphere/Common.glsl"
-#include "/lib/atmosphere/clouds/Shadows.glsl"
+#include "/lib/atmosphere/clouds/Shape.glsl"
 
 //======// Main //================================================================================//
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 
 	// Checkerboard render cloud shadow map
-	ivec2 offset = checkerboardOffset4x4[frameCounter & 15];
-	if ((tid & 3) == offset || global.historyReset) {
+	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
+	if ((tid & 1) == offset || historyReset) {
 		float dither = BlueNoise(tid, frameCounter);
 
 		vec2 uv = (vec2(tid) + dither) * rcp(textureSize(cloudShadowTex, 0));
-		vec3 rayPos = SetupCloudShadowPos(uv);
-		float cloudShadow = CalculateCloudShadows(rayPos, dither);
+		vec3 rayPos = SetupCloudShadowPos(uv) + atmosphereViewPos;
+
+        // Increase steps for lower elevation
+        float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - worldLightDir.y);
+
+        vec2 intersection = RaySphericalShellIntersection(rayPos, worldLightDir, cumulusBottomRadius, cumulusTopRadius);
+        float stepLength = (intersection.y - intersection.x) * rcp(steps);
+        vec3 rayStep = worldLightDir * stepLength;
+
+        rayPos += worldLightDir * intersection.x;
+        rayPos += rayStep * fract(dither + PHI);
+
+        float extinction = 0.0;
+        const float threshold = -log2(cloudMinTransmittance) / cumulusExtinction;
+
+        // Raymarch along the light vector
+        for (uint i = 0u; i < uint(steps) && extinction < threshold; ++i, rayPos += rayStep) {
+            // Normalized height in clouds
+            float heightFraction = fma(length(rayPos), rcp(cumulusThickness), -cumulusBottomRadius / cumulusThickness);
+            // if (abs(heightFraction - 0.5) > 0.5) break; // Skip if outside the clouds
+
+            float temp;
+            extinction += CloudVolumeDensity(rayPos, heightFraction, temp, false) * stepLength;
+        }
+
+        float transmittance = exp2(-rLOG2 * cumulusExtinction * extinction);
+        transmittance = linearstep(cloudMinTransmittance, 1.0, transmittance);
+
+        float strength = linearstep(0.02, 0.05, worldLightDir.y) * sqrt(CLOUD_SHADOW_STRENGTH);
+        float cloudShadow = oms(strength) + transmittance * strength;
 
 		// Accumulate
-		float weight = rcp(min(frameCounter, 64) * float(!global.historyReset) + 1.0);
+		float weight = rcp(min(frameCounter, 32) * float(!historyReset) + 1.0);
 		cloudShadow = mix(texelFetch(cloudShadowTex, tid, 0).x, cloudShadow, weight);
 
 		imageStore(cloudShadowImg, tid, vec4(cloudShadow));

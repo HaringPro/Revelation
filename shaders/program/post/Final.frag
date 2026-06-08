@@ -29,7 +29,6 @@ out vec3 finalOut;
 
 //======// SSBO //================================================================================//
 
-#define SSBO_DECLARED_TPYE restrict
 #include "/lib/universal/SSBO.glsl"
 
 //======// Function //============================================================================//
@@ -119,9 +118,6 @@ void HistogramDisplay(inout vec3 color, ivec2 texel) {
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-
-	// Update SSBO
-	global.prevWorldTime = worldTime;
 
 	#ifdef DEBUG_BLOOM_TILES
 		finalOut = texelFetch(colortex4, texelPos, 0).rgb;

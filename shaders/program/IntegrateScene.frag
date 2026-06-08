@@ -160,7 +160,7 @@ void main() {
 	vec3 worldDir = worldPos / viewDist;
 	worldPos += gbufferModelViewInverse[3].xyz;
 
-	if (depth < 1.0) {
+	if (lessThanFLT1(depth)) {
 		vec4 translucent = ExtractSpecularTex(materialPack);
 		vec3 albedo = sRGBToLinear(translucent.rgb);
 

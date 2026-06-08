@@ -291,6 +291,7 @@ option.AGN_RESOLUTION=分辨率
 option.AGN_STRENGTH=强度
 
 option.PARALLAX=视差
+option.SMOOTH_PARALLAX=平滑视差
 option.PARALLAX_SHADOW=视差阴影
 option.PARALLAX_DEPTH_WRITE=深度写入
 option.PARALLAX_BASED_NORMAL=视差法线

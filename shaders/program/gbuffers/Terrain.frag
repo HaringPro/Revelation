@@ -38,9 +38,11 @@ in vec2 lightmap;
 flat in uint materialID;
 
 #if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	in vec2 tileBase;
 	flat in vec2 tileScale;
 	flat in vec2 tileOffset;
+
+    #define localToAtlas(coord) (tileOffset + tileScale * fract(coord))
+    #define atlasToLocal(coord) ((coord - tileOffset) * rcp(tileScale))
 #endif
 
 //======// Uniform //=============================================================================//
@@ -71,16 +73,18 @@ uniform sampler2D tex;
 #endif
 
 #ifdef AUTO_GENERATED_NORMAL
-	#define loadAlbedo(uv, mipLevel) textureLod(tex, tileOffset + tileScale * fract(uv), mipLevel)
+	#define loadAlbedo(uv, mipLevel) textureLod(tex, localToAtlas(uv), mipLevel)
 
 	vec3 AutoGenerateNormal(float mipLevel) {
-		vec2 bias = (16.0 / AGN_RESOLUTION) / (tileScale * vec2(atlasSize));
+        vec2 localCoord = atlasToLocal(texCoord);
+        vec2 quadSize = tileScale * vec2(atlasSize);
+		vec2 bias = (16.0 / AGN_RESOLUTION) / quadSize;
 
 		// Sample albedo
-		vec4 sampleR = loadAlbedo(tileBase + vec2(bias.x, 0.0), mipLevel);
-		vec4 sampleL = loadAlbedo(tileBase - vec2(bias.x, 0.0), mipLevel);
-		vec4 sampleU = loadAlbedo(tileBase + vec2(0.0, bias.y), mipLevel);
-		vec4 sampleD = loadAlbedo(tileBase - vec2(0.0, bias.y), mipLevel);
+		vec4 sampleR = loadAlbedo(localCoord + vec2(bias.x, 0.0), mipLevel);
+		vec4 sampleL = loadAlbedo(localCoord - vec2(bias.x, 0.0), mipLevel);
+		vec4 sampleU = loadAlbedo(localCoord + vec2(0.0, bias.y), mipLevel);
+		vec4 sampleD = loadAlbedo(localCoord - vec2(0.0, bias.y), mipLevel);
 
 		// Evaluate heights from albedo luminance
 		float heightR = luminance(sampleR.rgb * sampleR.a);
@@ -89,11 +93,11 @@ uniform sampler2D tex;
 		float heightD = luminance(sampleD.rgb * sampleD.a);
 
 		// Compute normal from height differences
-		float deltaX = (heightL - heightR) * AGN_STRENGTH;
-		float deltaY = (heightD - heightU) * AGN_STRENGTH;
+		float deltaX = (heightL - heightR) * quadSize.x * AGN_STRENGTH;
+		float deltaY = (heightD - heightU) * quadSize.y * AGN_STRENGTH;
 
-		// Normalize normal
-		return normalize(vec3(deltaX, deltaY, 32.0 / AGN_RESOLUTION));
+		// Normalize
+		return normalize(vec3(deltaX, deltaY, 32.0));
 	}
 #endif
 
@@ -123,67 +127,50 @@ void main() {
 
 	vec2 realTexCoord = texCoord;
 
-	#ifdef PARALLAX
-		vec4 normalTex = textureLod(normals, realTexCoord, mipLevel);
+    #if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
+        #ifdef AUTO_GENERATED_NORMAL
+            vec3 normalTex = AutoGenerateNormal(mipLevel);
+        #else
+            vec3 normalTex = textureLod(normals, realTexCoord, mipLevel).xyz;
+            DecodeNormalTex(normalTex);
+        #endif
 
-		#ifdef PARALLAX_DEPTH_WRITE
-			gl_FragDepth = gl_FragCoord.z;
-		#endif
+        #ifdef PARALLAX
+            #ifdef PARALLAX_DEPTH_WRITE
+                gl_FragDepth = gl_FragCoord.z;
+            #endif
 
-		if (normalTex.w < (1.0 - rcp255)) {
-			vec3 tangentPos = worldPos * tbnMatrix;
+            float sampleHeight = SampleHeight(texCoord);
+            vec3 tangentPos = worldPos * tbnMatrix;
 
-			float worldLength = length(worldPos);
-			float parallaxFade = smoothstep(64.0, 32.0, worldLength);
+            float worldLengthSq = sdot(worldPos);
+            float worldLengthInv = inversesqrt(worldLengthSq);
+            float parallaxFade = smoothstep(64.0, 32.0, worldLengthSq * worldLengthInv);
 
-			vec3 offsetCoord = CalculateParallax(tangentPos / worldLength, dither, parallaxFade);
-			realTexCoord = atlasCoord(offsetCoord.xy);
+            if (lessThanFLT1(sampleHeight) && parallaxFade > EPS) {
+                vec3 localCoord = CalculateParallax(tangentPos * worldLengthInv, dither, parallaxFade);
+                realTexCoord = localToAtlas(localCoord.xy);
 
-			normalTex = textureLod(normals, realTexCoord, mipLevel);
-			DecodeNormalTex(normalTex.xyz);
+                #ifdef PARALLAX_DEPTH_WRITE
+                    gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(localCoord.z) * PARALLAX_DEPTH);
+                #elif defined PARALLAX_SHADOW
+                    if (dot(geoNormal, worldLightDir) > 1e-3) {
+                        parallaxShadowOut = CalculateParallaxShadow(worldLightDir * tbnMatrix, localCoord, dither, parallaxFade);
+                    }
+                #endif
 
-			if (offsetCoord.z < (1.0 - rcp255) && parallaxFade > EPS) {
-				#ifdef PARALLAX_DEPTH_WRITE
-					gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(offsetCoord.z) * PARALLAX_DEPTH);
-				#elif defined PARALLAX_SHADOW
-					if (dot(tbnMatrix[2], worldLightDir) > 1e-3) {
-						parallaxShadowOut = CalculateParallaxShadow(worldLightDir * tbnMatrix, offsetCoord, dither, parallaxFade);
-					}
-				#endif
-				#ifdef PARALLAX_BASED_NORMAL
-					#define sampleHeight(uv) textureLod(normals, atlasCoord(uv), mipLevel).w
+                #ifdef PARALLAX_BASED_NORMAL
+                if (lessThanFLT1(localCoord.z)) {
+                    normalTex = HeightBasedNormal(localCoord.xy);
+                }
+                #endif
+            }
+        #endif
 
-					vec2 bias = 1e-2 / (tileScale * vec2(atlasSize));
-					float heightR = sampleHeight(offsetCoord.xy + vec2(bias.x, 0.0));
-					float heightL = sampleHeight(offsetCoord.xy - vec2(bias.x, 0.0));
-					float heightU = sampleHeight(offsetCoord.xy + vec2(0.0, bias.y));
-					float heightD = sampleHeight(offsetCoord.xy - vec2(0.0, bias.y));
-
-					float deltaX = heightL - heightR;
-					float deltaY = heightD - heightU;
-
-					normalTex.xyz = normalize(vec3(deltaX, deltaY, step(abs(deltaX) + abs(deltaY), 1e-3)));
-				#endif
-			}
-		} else {
-			DecodeNormalTex(normalTex.xyz);
-		}
-
-		vec3 normal = tbnMatrix * normalTex.xyz;
-	#else
-		#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
-			#ifdef AUTO_GENERATED_NORMAL
-				vec3 normalTex = AutoGenerateNormal(mipLevel);
-			#else
-				vec3 normalTex = textureLod(normals, realTexCoord, mipLevel).xyz;
-				DecodeNormalTex(normalTex);
-			#endif
-
-			vec3 normal = tbnMatrix * normalTex;
-		#else
-			vec3 normal = geoNormal;
-		#endif
-	#endif
+        vec3 normal = tbnMatrix * normalTex;
+    #else
+        vec3 normal = geoNormal;
+    #endif
 
 	vec4 albedo = textureLod(tex, realTexCoord, mipLevel);
 

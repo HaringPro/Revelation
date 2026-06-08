@@ -244,7 +244,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 				}
 
 				// Update integral data
-				if (transmittance < 1.0) {
+				if (lessThanFLT1(transmittance)) {
 					cloudData.xy = stepScattering * cumulusAlbedo;
 					cloudData.w = transmittance;
 					cloudData.z = sumDist / oms(transmittance);
@@ -266,7 +266,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 			vec3 cloudTemp = RenderCloudMid(rayPos.xz, lightDir, noise.y, phase);
 
 			// Update integral data
-			if (cloudTemp.z < 1.0) {
+			if (lessThanFLT1(cloudTemp.z)) {
 				// Blend layers
 				cloudData.xy = mix(cloudData.xy + cloudTemp.xy * cloudData.w, cloudData.xy * cloudTemp.z + cloudTemp.xy, step(cloudMidRadius, r));
 
@@ -290,7 +290,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 			vec3 cloudTemp = RenderCloudHigh(rayPos.xz, lightDir, noise.y, phase);
 
 			// Update integral data
-			if (cloudTemp.z < 1.0) {
+			if (lessThanFLT1(cloudTemp.z)) {
 				// Blend layers
 				cloudData.xy = mix(cloudData.xy + cloudTemp.xy * cloudData.w, cloudData.xy * cloudTemp.z + cloudTemp.xy, step(cloudHighRadius, r));
 
@@ -308,7 +308,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 
 void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
 	// x: sunlight, y: skylight, z: depth, w: transmittance
-	if (cloudData.w < 1.0) {
+	if (lessThanFLT1(cloudData.w)) {
 		vec3 cloudPos = atmosphereViewPos + rayDir * cloudData.z;
 
 		// Compute illumination to clouds
