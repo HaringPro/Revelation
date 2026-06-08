@@ -115,7 +115,7 @@ void main() {
 		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
-	vec3 viewPos = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledPixelSize, gl_FragCoord.z));
+	vec3 viewPos = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledTexelSize, gl_FragCoord.z));
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
 	// Compute mipmap level

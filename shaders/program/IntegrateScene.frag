@@ -128,7 +128,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 
 	float depth = loadDepth0(texelPos);
 

@@ -39,7 +39,7 @@ layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
 uniform sampler2D colortex4; // Bloom tiles
 
 uniform vec2 originViewSize;
-uniform vec2 originPixelSize;
+uniform vec2 originTexelSize;
 
 //======// Function //============================================================================//
 
@@ -57,7 +57,7 @@ void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
 
 	vec2 srcUv = texelToUv(texelPos) * 0.5 + bloomTileOffset[UPSAMPLE_LEVEL + 1];
-	srcUv += originPixelSize * float((UPSAMPLE_LEVEL + 1) * 8);
+	srcUv += originTexelSize * float((UPSAMPLE_LEVEL + 1) * 8);
 
     vec3 b00 = textureOffset(colortex4, srcUv, ivec2(-1, -1)).rgb;
     vec3 b01 = textureOffset(colortex4, srcUv, ivec2(-1,  1)).rgb;

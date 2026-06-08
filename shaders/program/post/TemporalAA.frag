@@ -58,7 +58,7 @@ vec3 CrossClosestFragment(ivec2 texelPos, float depth) {
 	closest = closest.z > d3 ? vec3(vec2(t3), d3) : closest;
 	closest = closest.z > d4 ? vec3(vec2(t4), d4) : closest;
 
-	closest.xy *= scaledPixelSize;
+	closest.xy *= scaledTexelSize;
 	return closest;
 }
 
@@ -144,7 +144,7 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	float depth = loadDepth0(screenTexel);
-	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 
 	#if RENDER_MODE == 1
 		vec2 motionVector;

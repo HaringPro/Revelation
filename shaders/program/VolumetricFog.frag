@@ -59,7 +59,7 @@ void main() {
 		return;
 	}
 	//texelPos = scaleTexelPos(texelPos);
-	vec2 screenCoord = (gl_FragCoord.xy * scaledPixelSize * 2.0);
+	vec2 screenCoord = (gl_FragCoord.xy * scaledTexelSize * 2.0);
 	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
 
 	vec3 viewPos = ScreenToViewPosRaw(screenPos);

@@ -137,9 +137,9 @@ uniform float timeSunset;
 uniform float cameraVelocity;
 
 uniform vec2 originViewSize;
-uniform vec2 originPixelSize;
+uniform vec2 originTexelSize;
 uniform vec2 scaledViewSize;
-uniform vec2 scaledPixelSize;
+uniform vec2 scaledTexelSize;
 uniform vec2 originHalfViewSize;
 uniform vec2 scaledHalfViewSize;
 
