@@ -69,7 +69,7 @@ uniform sampler2D specular;
 #ifdef AUTO_GENERATED_NORMAL
 	#define loadAlbedo(uv) textureGrad(tex, localToAtlas(uv), deltaUv1, deltaUv2)
 
-	vec3 AutoGenerateNormal(float mipLevel) {
+	vec3 AutoGenerateNormal(vec2 deltaUv1, vec2 deltaUv2) {
         vec2 localCoord = atlasToLocal(texCoord);
         vec2 quadSize = tileScale * vec2(atlasSize);
 		vec2 bias = (16.0 / AGN_RESOLUTION) / quadSize;
@@ -120,7 +120,7 @@ void main() {
 
     #if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
         #ifdef AUTO_GENERATED_NORMAL
-            vec3 normalTex = AutoGenerateNormal(mipLevel);
+            vec3 normalTex = AutoGenerateNormal(deltaUv1, deltaUv2);
         #else
             vec3 normalTex = textureGrad(normals, realTexCoord, deltaUv1, deltaUv2).xyz;
             DecodeNormalTex(normalTex);
