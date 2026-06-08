@@ -26,7 +26,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		albedoOut = vec4(1.0);
 	#endif
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = max(parameters.customId - 10000u, 1u);
 	materialOut.zw = uvec2(0u);
 

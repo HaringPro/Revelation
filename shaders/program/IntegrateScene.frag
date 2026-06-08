@@ -30,10 +30,6 @@ layout (location = 0) out vec4 sceneOut;
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -47,10 +43,11 @@ layout (location = 0) out vec4 sceneOut;
 
 #include "/lib/water/WaterFog.glsl"
 
-#include "/lib/surface/BRDF.glsl"
-#include "/lib/surface/SSRT.glsl"
+#include "/lib/surface/Material.glsl"
 
-// texelPos - scaled,viewPos/screenPos - unscaled
+#include "/lib/lighting/BRDF.glsl"
+#include "/lib/lighting/SSRT.glsl"
+
 vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool waterMask) {
 	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
 	float viewLengthInv = inversesqrt(sdot(viewPos));
@@ -88,8 +85,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		vec2 refractedCoord = ViewToScreenPos(viewPos + refractedDir).xy;
 	#endif
 
-	// uvToTexel is using unscaled view size
-	float refractedDepth = loadDepth1(scaleTexelPos(uvToTexel(refractedCoord)));
+	float refractedDepth = loadDepth1(uvToTexelScaled(refractedCoord));
 	refractedCoord = mix(refractedCoord, screenPos.xy, step(refractedDepth, screenPos.z));
 
 	vec2 edgeFade = smoothstep(0.8, 1.0, abs(refractedCoord * 2.0 - 1.0));
@@ -101,7 +97,6 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 		return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
 	}
 
-	//texelPos - scaled
 	mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
 		ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
 		float sigmaZ = -32.0 / linearDepth;
@@ -128,7 +123,7 @@ vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool 
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = (gl_FragCoord.xy + 0.5) * scaledPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 
 	float depth = loadDepth0(texelPos);
 
@@ -150,7 +145,7 @@ void main() {
 	// Process refraction
 	ivec2 refractedTexel = texelPos;
 	if (glassMask || waterMask) {
-		refractedTexel = scaleTexelPos(uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask)));
+		refractedTexel = uvToTexelScaled(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask));
 	}
 
 	vec3 sceneColor = loadSceneMain(refractedTexel);
@@ -160,21 +155,21 @@ void main() {
 	vec3 worldDir = worldPos / viewDist;
 	worldPos += gbufferModelViewInverse[3].xyz;
 
-	if (depth < 1.0) {
-		vec4 translucent = ExtractSpecularTex(materialPack);
-		vec3 albedo = sRGBToLinear(translucent.rgb);
+	if (lessThanFLT1(depth)) {
+		vec4 translucentColor = loadAlbedo(texelPos);
+		vec3 albedo = sRGBToLinear(translucentColor.rgb) * sRGB_2_Rec2020;
 
 		// Particle translucent
 		if (materialID == 500u) {
 			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
-			sceneColor = mix(sceneColor, albedo * diffuseLight, translucent.a);
+			sceneColor = mix(sceneColor, albedo * diffuseLight, translucentColor.a);
 		}
 
 		// Translucent
 		if (glassMask || waterMask) {
 			if (glassMask) {
 				// Absorption
-				sceneColor *= exp2(log2(albedo) * approxSqrt(translucent.a));
+				sceneColor *= exp2(log2(albedo * oms(0.125 * translucentColor.a)) * approxSqrt(translucentColor.a + 0.25));
 
 				// Emissive
 				sceneColor += (2.0 * EMISSIVE_BRIGHTNESS) * Unpack2x8UX(materialPack.x) * mean(albedo) * albedo;
@@ -191,7 +186,7 @@ void main() {
 				float density = exp2(-0.1 * max0(worldPos.y - 63.0)) * pow8(sdot(worldPos.xz) * rcp(lodRenderDist * lodRenderDist));
 				float transmittance = exp2(-BORDER_FOG_FALLOFF * density);
 
-				vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, worldSunDir);
+				vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, sunDirWorld);
 				sceneColor = mix(skyRadiance, sceneColor, transmittance);
 			}
 		#endif
@@ -209,7 +204,7 @@ void main() {
 		}
 	#endif
 
-	float LdotV = dot(worldLightDir, worldDir);
+	float LdotV = dot(shadowDirWorld, worldDir);
 
 	// Underwater fog
 	if (isEyeInWater == 1) {
@@ -225,15 +220,15 @@ void main() {
 	// Vanilla fog
 	RenderVanillaFog(sceneColor, fogMask, viewDist);
 
-	// Convert to YCoCg for TAA clipping
-	#if defined TAA_ENABLED && RENDER_MODE == 1
-		sceneColor = RGBToYCoCg(sceneColor);
-	#endif
-
 	#if DEBUG_NORMALS == 1
 		sceneColor = FetchSurfaceNormal(texelPos) * 0.5 + 0.5;
 	#elif DEBUG_NORMALS == 2
 		sceneColor = FetchGeometryNormal(texelPos) * 0.5 + 0.5;
+	#endif
+
+	// Convert to YCoCg for TAA clipping
+	#if defined TAA_ENABLED && RENDER_MODE == 1
+		sceneColor = RGBToYCoCg(sceneColor);
 	#endif
 
 	sceneOut = vec4(sceneColor, saturate(1.0 - fogMask));

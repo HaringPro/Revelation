@@ -6,8 +6,9 @@
 	Copyright (C) 2026 HaringPro
 	Apache License 2.0
 
-	Reference: https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
-			https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
+	References:
+        https://www.gamedevs.org/uploads/real-shading-in-unreal-engine-4.pdf
+	    https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
 
 --------------------------------------------------------------------------------
 */
@@ -15,7 +16,7 @@
 //======// Input //===============================================================================//
 
 layout (local_size_x = 16, local_size_y = 16) in;
-const ivec3 workGroups = ivec3(32, 32, 1);
+const ivec3 workGroups = ivec3(16, 16, 1);
 
 //======// Utility //=============================================================================//
 
@@ -23,18 +24,21 @@ const ivec3 workGroups = ivec3(32, 32, 1);
 
 //======// Uniform //=============================================================================//
 
-writeonly uniform image2D brdfLutImg;
+writeonly uniform image2D envBRDFImg;
 
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
 #include "/lib/universal/Random.glsl"
+#include "/lib/universal/MonteCarlo.glsl"
 #include "/lib/surface/BRDF.glsl"
 
 const uint samples = 2048u;
 
-vec2 IntegrateBRDF(float roughness, float NdotV) {
+// brdf = D * G * F / (4 * NoL * NoV) = D * Vis * F
+// pdf = D * NoH / (4 * VoH)
+vec2 IntegrateEnvBRDF(float roughness, float NdotV) {
 	vec3 V; // View direction
 	V.x = sqrt(1.0 - NdotV * NdotV); // sin(theta)
 	V.y = 0.0;
@@ -42,19 +46,19 @@ vec2 IntegrateBRDF(float roughness, float NdotV) {
 
 	float A = 0.0; // Scale factor
 	float B = 0.0; // Offset factor
-	const vec3 N = vec3(0.0, 0.0, 1.0); // Normal
 
 	for (uint i = 0u; i < samples; ++i) {
 		vec2 Xi = Hammersley(i, samples);
-		vec3 H = SampleGGXVNDF(Xi, V, roughness, N);
+		vec3 H = SampleGGX(Xi, roughness);
 		vec3 L = 2.0 * dot(V, H) * H - V;
 
 		float NdotL = L.z;
 		if (NdotL > 0.0) {
 			float VdotH = saturate(dot(V, H));
 
-			// Geometric occlusion term
-			float G_Vis = SpecularThroughputGGX(NdotL, NdotV, roughness);
+			// NoL * Vis / pdf
+			float G_Vis = VisibilitySmithJoint(NdotL, NdotV, sqr(roughness));
+            G_Vis *= NdotL * 4.0 * VdotH / saturate(H.z);
 
 			// Fresnel term approximation
 			float Fc = pow5(1.0 - VdotH);
@@ -71,8 +75,8 @@ vec2 IntegrateBRDF(float roughness, float NdotV) {
 //======// Main //================================================================================//
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
-	vec2 uv = (vec2(tid) + 0.5) / vec2(imageSize(brdfLutImg));
+	vec2 uv = (vec2(tid) + 0.5) / vec2(imageSize(envBRDFImg));
 
-	vec2 brdf = IntegrateBRDF(uv.x, uv.y);
-	imageStore(brdfLutImg, tid, vec4(brdf, 0.0, 1.0));
+	vec2 brdf = IntegrateEnvBRDF(uv.x, uv.y);
+	imageStore(envBRDFImg, tid, vec4(brdf, 0.0, 1.0));
 }

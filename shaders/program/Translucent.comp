@@ -33,10 +33,6 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -48,10 +44,12 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/water/WaterFog.glsl"
 
+#include "/lib/surface/Material.glsl"
+
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
 
-#include "/lib/surface/SSRT.glsl"
+#include "/lib/lighting/SSRT.glsl"
 
 vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal, vec3 worldDir, float dither, float skylight, bool waterMask) {
 	float NdotV = abs(dot(worldNormal, worldDir));
@@ -108,7 +106,8 @@ void main() {
 	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
 	float worldDistSquared = sdot(worldPos);
-	vec3 worldDir = worldPos * inversesqrt(worldDistSquared);
+    float worldDistInverse = inversesqrt(worldDistSquared);
+	vec3 worldDir = worldPos * worldDistInverse;
 	worldPos += gbufferModelViewInverse[3].xyz;
 
 	vec2 waterData = texelFetch(colortex12, texelPos, 0).xy;
@@ -131,7 +130,7 @@ void main() {
 
 		// Process water
 		if (waterMask) {
-			mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(worldLightDir, worldDir));
+			mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(shadowDirWorld, worldDir));
 			sceneOut = ApplyFog(sceneOut, waterFog);
 
 			// Skybox reflection for occluded water
@@ -168,7 +167,7 @@ void main() {
 		// Specular indirect
 		lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
 
-		NdotL = dot(worldNormal, worldLightDir);
+		NdotL = dot(worldNormal, shadowDirWorld);
 	} else {
 		// Skylight
 		lightingOut.rgb = global.skyUpIlluminance * cube(lightmap.y);
@@ -188,7 +187,7 @@ void main() {
 	// Sunlight
 	vec3 sunlightMult = cloudShadow * saturate(lightmap.y * 1e6) * global.directIlluminance;
 	if (NdotL > EPS) {
-		vec3 normalOffset = geoNormal * (approxSqrt(worldDistSquared) * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
+		vec3 normalOffset = geoNormal * (worldDistSquared * worldDistInverse * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
 		float surfaceDepth;
 		vec3 shadow = CalculatePCSS(worldPos, normalOffset, dither, surfaceDepth);
 
@@ -196,15 +195,19 @@ void main() {
 			shadow = saturate(shadow) * sunlightMult;
 
 			if (notParticle) {
-				float NdotV = abs(dot(worldNormal, worldDir));
-				vec3 halfway = normalize(worldLightDir - worldDir);
-				float LdotH = dot(worldLightDir, halfway);
-				float NdotH = dot(worldNormal, halfway);
+				float NdotV = -dot(worldNormal, worldDir);
+			    float LdotV = -dot(shadowDirWorld, worldDir);
+
+                float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+                float NdotH = saturate((NdotL + NdotV) * invLenH);
+                float VdotH = saturate(LdotV * invLenH + invLenH);
+                NdotL = saturate(NdotL);
+                NdotV = saturate(NdotV);
 
 				float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+				lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
 			} else {
-				lightingOut.rgb += shadow * NdotL * rPI;
+				lightingOut.rgb += shadow * rPI;
 			}
 		}
 	}

@@ -32,8 +32,6 @@ layout (location = 2) out vec4 waterOut;
 
 //======// Input //===============================================================================//
 
-flat in vec3 geoNormal;
-
 in vec4 vertColor;
 in vec2 lightmap;
 flat in uint materialID;
@@ -60,11 +58,12 @@ void main() {
 	float alpha = smoothstep(sqr(far - 32.0), sqr(far - 16.0), sdot(worldPos));
 	float dither = BlueNoise(texel, frameCounter);
 
-	if (alpha < dither || loadDepth0(texel) < 1.0) {
+	if (alpha < dither || lessThanFLT1(loadDepth0(texel))) {
 		discard;
 		return;
 	}
 
+	vec3 geoNormal = normalize(cross(dFdx(worldPos), dFdy(worldPos)));
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 
 	if (materialID == 3u) { // water
@@ -88,21 +87,21 @@ void main() {
 		#endif
 
 		float depthBack = loadDepth1Lod(texel);
-		vec3 viewPosBack = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledPixelSize, depthBack));
+		vec3 viewPosBack = ScreenToViewPos(vec3(gl_FragCoord.xy * scaledTexelSize, depthBack));
 		vec3 worldPosBack = transMAD(gbufferModelViewInverse, viewPosBack);
 
 		vec2 encodedNormal = OctEncodeSnorm(worldNormal);
 		normalOut.zw = encodedNormal;
 
-		waterOut = vec4(distance(worldPos, worldPosBack) * rcp255, Packup2x8(encodedNormal), 0.0, 1.0);
+		waterOut = vec4(distance(worldPos, worldPosBack) * rcp255, Pack2x8(encodedNormal), 0.0, 1.0);
 	} else {
 		normalOut.zw = normalOut.xy;
 
-		materialOut.z = Packup2x8U(vertColor.xy);
-		materialOut.w = Packup2x8U(vertColor.zw);
+		materialOut.z = Pack2x8U(vertColor.xy);
+		materialOut.w = Pack2x8U(vertColor.zw);
 		waterOut = vec4(0.0);
 	}
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = materialID;
 }

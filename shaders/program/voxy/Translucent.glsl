@@ -21,6 +21,10 @@ vec3 ScreenToViewPos(vec3 screenPos) {
 	return projectAndDivide(vxProjInv, ndcPos);
 }
 
+vec2 VoxyScreenCoord(vec2 fragCoord) {
+	return fragCoord / vec2(textureSize(vxDepthTexOpaque, 0));
+}
+
 float BlueNoise(ivec2 texel, int frame) {
 	float base = texelFetch(noisetex, texel & 255, 0).a;
 	#if defined(TAA_ENABLED) || defined(SUPER_RESOLUTION)
@@ -32,7 +36,7 @@ float BlueNoise(ivec2 texel, int frame) {
 
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
+	vec2 screenCoord = VoxyScreenCoord(gl_FragCoord.xy);
 
 	vec4 baseColor = parameters.sampledColour * parameters.tinting;
 	vec2 lightmap = vec2(0.0, saturate((parameters.lightMap.y - 0.03125) * 1.06667));
@@ -43,7 +47,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec3 geoNormal = VoxyFaceNormal(parameters.face);
 	vec2 encodedNormal = OctEncodeSnorm(geoNormal);
 
-	materialOut.x = Packup2x8U(lightmap);
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = materialId;
 	materialOut.zw = uvec2(0u);
 
@@ -76,9 +80,9 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		vec3 worldPosBack = transMAD(gbufferModelViewInverse, viewPosBack);
 		float waterDepth = distance(worldPos, worldPosBack);
 
-		waterOut = vec4(waterDepth * rcp255, Packup2x8(encodedWaterNormal), 0.0, 1.0);
+		waterOut = vec4(waterDepth * rcp255, Pack2x8(encodedWaterNormal), 0.0, 1.0);
 	} else {
-		materialOut.z = Packup2x8U(baseColor.xy);
-		materialOut.w = Packup2x8U(baseColor.zw);
+		materialOut.z = Pack2x8U(baseColor.xy);
+		materialOut.w = Pack2x8U(baseColor.zw);
 	}
 }

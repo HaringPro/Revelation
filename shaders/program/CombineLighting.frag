@@ -32,10 +32,6 @@ uniform sampler2D cloudOriginTex;
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -44,9 +40,9 @@ uniform sampler2D cloudOriginTex;
 
 #include "/lib/atmosphere/Common.glsl"
 #include "/lib/atmosphere/Celestial.glsl"
-
 #include "/lib/atmosphere/clouds/Render.glsl"
-#include "/lib/atmosphere/clouds/Shadows.glsl"
+
+#include "/lib/surface/Material.glsl"
 
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
@@ -57,24 +53,19 @@ uniform sampler2D cloudOriginTex;
 #endif
 
 #if defined SSILVB_ENABLED && defined SVGF_ENABLED
-	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewDistance, float NdotV) {
+	vec3 UpscaleDiffuseIndirect(vec2 coord, vec3 worldNormal, float viewZ) {
 		vec3 sum = vec3(0.0);
 		float sumWeight = 0.0;
 
-		float sigmaZ = -4.0 * NdotV;
-
-		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 2;
+		ivec2 texelEnd = ivec2(scaledHalfViewEnd) - 1;
 		coord = coord * scaledViewSize * 0.5 - 0.5;
 
 		ivec2 floorTexel = ivec2(floor(coord));
 		vec2 fractTexel = coord - vec2(floorTexel);
 
-		float bilinearWeight[4] = {
-			oms(fractTexel.x) * oms(fractTexel.y),
-			fractTexel.x      * oms(fractTexel.y),
-			oms(fractTexel.x) * fractTexel.y,
-			fractTexel.x      * fractTexel.y
-		};
+		vec4 bilinearWeight = bilinear(fractTexel);
+
+		float invThresholdZ = 8.0 / viewZ;
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = clamp(floorTexel + offset2x2[i], ivec2(1), texelEnd);
@@ -82,7 +73,7 @@ uniform sampler2D cloudOriginTex;
 			vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
 
 			float weight = pow4(saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
-			weight *= exp2(distance(sampleAux.z, viewDistance) * sigmaZ);
+			weight *= saturate(fma(distance(sampleAux.z, viewZ), invThresholdZ, 1.0));
 			weight *= bilinearWeight[i];
 
 			vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
@@ -100,7 +91,7 @@ uniform sampler2D cloudOriginTex;
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_FragCoord.xy);
-	vec2 screenCoord = gl_FragCoord.xy * scaledPixelSize;
+	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 
 	uvec4 materialPack = loadMaterialPack(texelPos);
 	uint materialID = materialPack.y;
@@ -116,7 +107,7 @@ void main() {
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		vec3 transmittance = AtmosphereTransmittance(atmosphereViewPos, worldDir);
-		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, worldSunDir);
+		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, sunDirWorld);
 
 		sceneOut = skyRadiance;
 
@@ -126,7 +117,7 @@ void main() {
 				vec4 cloudData = texture(cloudReconstructTex, screenCoord);
 			#else
 				// Dither offset
-				screenCoord += scaledPixelSize * (dither - 0.5);
+				screenCoord += scaledTexelSize * (dither - 0.5);
 				vec4 cloudData = textureBicubic(cloudOriginTex, screenCoord);
 			#endif
 
@@ -136,10 +127,10 @@ void main() {
 
 		// Celestial objects
 		if (dot(transmittance, vec3(1.0)) > EPS) {
-			vec3 celestial = RenderSun(worldDir, worldSunDir);
+			vec3 celestial = RenderSun(worldDir, sunDirWorld);
 
 			#ifdef RENDER_MOON
-				vec4 moon = RenderMoon(worldDir, worldMoonDir);
+				vec4 moon = RenderMoon(worldDir, moonDirWorld);
 			#else
 				vec4 moon = vec4(albedo, step(0.06, albedo.g));
 			#endif
@@ -181,13 +172,7 @@ void main() {
 		vec2 lightmap = Unpack2x8U(materialPack.x);
 		vec4 specularTex = ExtractSpecularTex(materialPack);
 
-		Material material = GetMaterialData(specularTex);
-
-		#if defined MC_SPECULAR_MAP
-			vec3 f0 = GetMaterialF0(material.metalness, albedo);
-		#else
-			const vec3 f0 = vec3(DEFAULT_DIELECTRIC_F0);
-		#endif
+		Material material = GetMaterialData(specularTex, albedo);
 
 		float sssAmount = 0.0;
 		#if SUBSURFACE_SCATTERING_MODE < 2
@@ -237,8 +222,16 @@ void main() {
 			distanceFade = saturate(distanceFade + float(lodMask));
 		#endif
 
-		float NdotL = saturate(dot(worldNormal, worldLightDir));
-		float NdotV = abs(dot(worldNormal, worldDir));
+		float NdotV = dot(worldNormal, -worldDir);
+		float NdotL = dot(worldNormal, shadowDirWorld);
+		float LdotV = dot(shadowDirWorld, -worldDir);
+
+        // Must use unclamped NdotL & NdotV
+        float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+        float NdotH = saturate((NdotL + NdotV) * invLenH);
+        float VdotH = saturate(LdotV * invLenH + invLenH);
+        NdotL = saturate(NdotL);
+        NdotV = saturate(NdotV);
 
 		// Shadows and SSS
 		if (NdotL + sssAmount > EPS) {
@@ -248,8 +241,8 @@ void main() {
 			float normalOffsetBase = (viewDist * 2e-3 + 2e-2) * (2.0 - NdotL);
 
 			// PCSS
-			if (distanceFade < EPS) {
-				shadow *= CalculatePCSS(worldPos, geoNormal * normalOffsetBase, dither, surfaceDepth);
+			if (lessThanFLT1(distanceFade)) {
+				shadow *= mix(CalculatePCSS(worldPos, geoNormal * normalOffsetBase, dither, surfaceDepth), vec3(1.0), distanceFade);
 			}
 
 			#ifdef SCREEN_SPACE_SHADOWS
@@ -258,15 +251,13 @@ void main() {
 				const float contactShadow = 1.0;
 			#endif
 
-			float LdotV = dot(worldLightDir, worldDir);
-
 			// Subsurface scattering
 			if (sssAmount > EPS) {
 				vec3 beta = approxSqrt(saturate(normalize(albedo)));
 				vec3 sigmaA = oms(beta) * 16.0 / (sssAmount * SUBSURFACE_SCATTERING_STRENGTH);
 				vec3 sigmaS = 4.0 * beta * sssAmount;
 
-				float phase = HenyeyGreensteinPhase(LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
+				float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
 				vec3 sss = sigmaS * phase * exp2(-rLOG2 * surfaceDepth * (sigmaS + sigmaA));
 
 				float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
@@ -284,13 +275,8 @@ void main() {
 					#endif
 				#endif
 
-				vec3 halfway = normalize(worldLightDir - worldDir);
-				float NdotH = saturate(dot(worldNormal, halfway));
-				float LdotH = saturate(dot(worldLightDir, halfway));
-				float VdotH = saturate(-dot(worldDir, halfway));
-
 				diffuseRadiance += shadow * DiffuseHammon(NdotV, NdotL, VdotH, NdotH, material.roughness, albedo) * NdotL;
-				specularRadiance += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, material.roughness, f0) * NdotL;
+				specularRadiance += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, material.roughness, material.reflectance) * NdotL;
 			}
 		}
 
@@ -332,7 +318,7 @@ void main() {
 
 		// Emissive
 		#if EMISSIVE_MODE > 0 && defined MC_SPECULAR_MAP
-			diffuseRadiance += material.emissiveness * 4.0 * sdot(albedo);
+			diffuseRadiance += material.emissive;
 		#endif
 		#if EMISSIVE_MODE < 2
 			// Hard-coded emissive
@@ -356,7 +342,7 @@ void main() {
 		// Indirect diffuse lighting
 		#ifdef SSILVB_ENABLED
 			#ifdef SVGF_ENABLED
-				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewDist, NdotV);
+				vec3 radiance = UpscaleDiffuseIndirect(screenCoord, worldNormal, viewPos.z);
 			#else
 				vec3 radiance = texelFetch(colortex3, texelPos >> 1, 0).rgb;
 			#endif
@@ -367,14 +353,14 @@ void main() {
 		diffuseRadiance += (worldNormal.y * 0.4 + 0.6) * max(MINIMUM_AMBIENT_BRIGHTNESS, 5e-3 * nightVision) * ao;
 
 		// Apply diffuse color (baseColor * (1 - metallic))
-		material.metalness *= 0.2 * lightmap.y + 0.8;
-		diffuseRadiance *= albedo * oms(material.metalness);
+		material.metallic *= 0.2 * lightmap.y + 0.8;
+		diffuseRadiance *= albedo * oms(material.metallic);
 
 		// Indirect specular
 		if (material.specularMask) {
-			vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
+			vec2 brdf = texture(envBRDFTex, vec2(material.roughness, NdotV)).xy;
 
-			vec3 specular = f0 * brdf.x + brdf.y;
+			vec3 specular = material.reflectance * brdf.x + brdf.y;
 			specularRadiance += loadSceneMain(texelPos) * specular;
 		}
 

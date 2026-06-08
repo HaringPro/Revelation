@@ -16,6 +16,8 @@
 	#define LOD_MOD
 #endif
 
+#define lessThanFLT1(x) (floatBitsToUint(x) < 0x3F800000u)
+
 #if (SR_INSTALLED == 1) && (SR_ENABLE == 1)
     #undef TAA_ENABLED
 #endif

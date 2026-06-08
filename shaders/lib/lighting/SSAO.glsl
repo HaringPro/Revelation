@@ -21,13 +21,13 @@ float CalculateSSAO(vec2 coord, vec3 viewPos, vec3 normal, vec2 dir) {
 		radius += rayStep;
 
 		vec2 sampleCoord = coord + dir * radius;
-		float sampleDepth = loadDepth0(scaleTexelPos(uvToTexel(sampleCoord)));
+		float sampleDepth = loadDepth0(uvToTexelScaled(sampleCoord));
 		if (sampleDepth < 0.56) continue;
 
 		#if defined LOD_MOD
 			vec3 difference;
 			if (sampleDepth > 1.0 - EPS) {
-				sampleDepth = loadDepth0Lod(scaleTexelPos(uvToTexel(sampleCoord)));
+				sampleDepth = loadDepth0Lod(uvToTexelScaled(sampleCoord));
 				difference = ScreenToViewPosLod(vec3(sampleCoord, sampleDepth)) - viewPos;
 			} else {
 				difference = ScreenToViewPos(vec3(sampleCoord, sampleDepth)) - viewPos;

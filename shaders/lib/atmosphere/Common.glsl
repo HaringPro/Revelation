@@ -443,3 +443,30 @@ vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
 
 	return lum;
 }
+
+// de Carpentier 2017, "Decima Engine: Advances in Lighting and AA"
+void ExponentialHeightFog(
+	vec3 sunColor,
+	vec3 ambColor,
+	float rayLength,
+	float cameraHeight,
+	float worldHeight,
+	float LdotV,
+	inout vec3 background)
+{
+	const float scaleHeight = 1e3;
+	const float falloff = 1.0 / scaleHeight;
+	const vec3 betaT = atmosphereExtinctionCoeff[0] + atmosphereExtinctionCoeff[1];
+
+	// Transmittance
+	float t = max(cameraHeight - worldHeight, 0.1) * falloff;
+	t = (1.0 - exp2(-t)) / t * exp2(-worldHeight * falloff);
+	vec3 transmittance = exp(-rayLength * t * betaT);
+
+	// In-scatter
+	vec3 inscatter = sunColor * (atmosphereScatteringCoeff * AtmospherePhase(LdotV));
+	inscatter += ambColor * (atmosphereScatteringCoeff * vec2(1.0));
+	inscatter *= (1.0 - transmittance) * rcp(betaT);
+
+	background = background * transmittance + inscatter;
+}

@@ -53,12 +53,11 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 	vec2 prevCoord = prevNDCPos.xy * 0.5 + 0.5;
 
 	vec2 currCoord = texelToUvScaled(texelPos);
-	encodedNormalDepth = vec3(OctEncodeSnorm(worldNormal), length(viewPos));
+	encodedNormalDepth = vec3(OctEncodeSnorm(worldNormal), viewPos.z);
 
-	if (saturate(prevCoord) == prevCoord && !global.historyReset) {
+	if (saturate(prevCoord) == prevCoord && !historyReset) {
 		vec4 prevDiffuse = vec4(0.0);
 		float sumWeight = 0.0;
-		float confidence = 0.0;
 
 		// Custom bilinear filter
 		vec2 prevTexel = (prevCoord * scaledViewSize
@@ -68,28 +67,18 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 		ivec2 floorTexel = ivec2(floor(prevTexel));
 		vec2 fractTexel = prevTexel - vec2(floorTexel);
 
-		float bilinearWeight[4] = {
-			oms(fractTexel.x) * oms(fractTexel.y),
-			fractTexel.x      * oms(fractTexel.y),
-			oms(fractTexel.x) * fractTexel.y,
-			fractTexel.x      * fractTexel.y
-		};
+		vec4 bilinearWeight = bilinear(fractTexel);
 
-		ivec2 texelEnd = ivec2(scaledHalfViewSize) - 1;
-
-		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
-		float NdotV = abs(dot(worldNormal, worldDir));
+		float invThresholdZ = 8.0 / encodedNormalDepth.z;
 
 		for (uint i = 0u; i < 4u; ++i) {
 			ivec2 sampleTexel = floorTexel + offset2x2[i];
-			if (clamp(sampleTexel, ivec2(0), texelEnd) == sampleTexel) {
+			if (clamp(sampleTexel, ivec2(0), ivec2(scaledHalfViewSize) - 1) == sampleTexel) {
 				vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).xyz;
 				vec4 sampleIrradiance = texelFetch(colortex2, sampleTexel, 0);
 
-				float weight = exp2(-8.0 * distance(encodedNormalDepth.z, sampleAux.z) * NdotV);
+				float weight = saturate(fma(distance(encodedNormalDepth.z, sampleAux.z), invThresholdZ, 1.0));
 				weight *= linearstep(0.5, 0.8, saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal)));
-
-				confidence = max(confidence, weight);
 				weight *= bilinearWeight[i];
 
 				prevDiffuse += sampleIrradiance * weight;
@@ -101,7 +90,7 @@ void TemporalFilter(ivec2 texelPos, vec3 screenPos, vec3 worldNormal) {
 			sumWeight = 1.0 / sumWeight;
 			prevDiffuse *= sumWeight;
 
-			integratedDiffuse.a = min(prevDiffuse.a * confidence + 1.0, SSILVB_MAX_ACCUM_FRAMES);
+			integratedDiffuse.a = min(prevDiffuse.a + 1.0, SSILVB_MAX_ACCUM_FRAMES);
 
 			if (integratedDiffuse.a < 8.0) {
 				float mipLevel = 3.0 * saturate(1.0 - integratedDiffuse.a * rcp(8.0));
@@ -139,12 +128,12 @@ void main() {
 	vec2 renderCoord = texelToUvScaled(renderTexel);
 
 	float depth = loadDepth0(renderTexel);
-	bool terrainCheck = min(GetClosestDepthN(renderTexel), depth) < 1.0;
+	bool terrainCheck = lessThanFLT1(min(GetClosestDepthN(renderTexel), depth));
 	#if defined LOD_MOD
 		bool lodMask = !terrainCheck;
 		if (lodMask) {
 			depth = loadDepth0Lod(renderTexel);
-			terrainCheck = depth < 1.0;
+			terrainCheck = lessThanFLT1(depth);
 		}
 	#endif
 

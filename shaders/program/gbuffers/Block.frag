@@ -37,22 +37,16 @@ in vec3 worldPos;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;
-
-#if defined MC_NORMAL_MAP
-	uniform sampler2D normals;
-#endif
-
-#if defined MC_SPECULAR_MAP
-	uniform sampler2D specular;
-#endif
+uniform sampler2D normals;
+uniform sampler2D specular;
 
 #include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
+#include "/lib/universal/Random.glsl"
 
+// Thanks to GeForceLegend
 const vec3[] COLORS = vec3[](
 	vec3(0.022087, 0.098399, 0.110818),
 	vec3(0.011892, 0.095924, 0.089485),
@@ -86,6 +80,9 @@ vec2 endPortalLayer(vec2 coord, float layer) {
 
 //======// Main //================================================================================//
 void main() {
+    vec2 deltaUv1 = dFdx(texCoord);
+    vec2 deltaUv2 = dFdy(texCoord);
+
 	vec3 deltaPos1 = dFdx(worldPos);
 	vec3 deltaPos2 = dFdy(worldPos);
 
@@ -93,60 +90,30 @@ void main() {
 
 	// Construct TBN matrix
 	#ifdef MC_NORMAL_MAP
-		vec3 deltaPos1Perp = cross(geoNormal, deltaPos1);
-		vec3 deltaPos2Perp = cross(deltaPos2, geoNormal);
 
-		vec2 deltaUv1 = dFdx(texCoord);
-		vec2 deltaUv2 = dFdy(texCoord);
+        vec3 tangentPerp = deltaPos2 * deltaUv1.x - deltaPos1 * deltaUv2.x;
+        vec3 tangent = normalize(cross(tangentPerp, geoNormal));
 
-		vec3 tangent   = normalize(deltaPos2Perp * deltaUv1.x + deltaPos1Perp * deltaUv2.x);
-		vec3 bitangent = normalize(deltaPos2Perp * deltaUv1.y + deltaPos1Perp * deltaUv2.y);
+        vec3 bitangentPerp = deltaPos2 * deltaUv1.y - deltaPos1 * deltaUv2.y;
+        vec3 bitangent = normalize(cross(bitangentPerp, geoNormal));
 
-		float invmax = inversesqrt(max(sdot(tangent), sdot(bitangent)));
-
-		mat3 tbnMatrix = mat3(tangent * invmax, bitangent * invmax, geoNormal);
+		mat3 tbnMatrix = mat3(tangent, bitangent, geoNormal);
 	#endif
 
-	// Compute mipmap level
-	#if RENDER_MODE == 1
-		float mipLevel = 0.5 * log2(maxOf(fwidth(texCoord * vec2(atlasSize))));
-	#else
-		const float mipLevel = 0.0;
-	#endif
+    // Increase detail reserve
+    deltaUv1 *= 0.5;
+    deltaUv2 *= 0.5;
 
-	vec4 albedo = textureLod(tex, texCoord, mipLevel) * vertColor;
+	vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	#ifdef WHITE_WORLD
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	if (materialID == 46u) {
-		vec3 worldDir = normalize(worldPos);
-		vec3 worldDirAbs = abs(worldDir);
-		vec3 samplePartAbs = step(maxOf(worldDirAbs), worldDirAbs);
-		vec3 samplePart = signMul(samplePartAbs, worldDir);
-		float intersection = 1.0 / dot(samplePartAbs, worldDirAbs);
-		vec3 sampleNDCRaw = samplePart - worldDir * intersection;
-		vec2 sampleNDC = sampleNDCRaw.xy * vec2(samplePartAbs.y + samplePart.z, 1.0 - samplePartAbs.y) + sampleNDCRaw.z * vec2(-samplePart.x, samplePartAbs.y);
-		vec2 portalCoord = sampleNDC * 0.5 + 0.5;
-
-		vec3 portalColor = texture(tex, portalCoord).rgb * COLORS[0];
-		for (int i = 0; i < 16; ++i) {
-			portalColor += texture(tex, endPortalLayer(portalCoord, float(i + 1))).rgb * COLORS[i];
-		}
-		albedo.rgb = portalColor;
-		// specularTex = vec4(1.0, 0.04, vec2(254.0 / 255.0));
-	}
-
-	albedoOut = albedo;
-
-	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
-	materialOut.y = materialID;
-
 	#if defined MC_NORMAL_MAP
-		vec3 normalTex = textureLod(normals, texCoord, mipLevel).rgb;
+		vec3 normalTex = textureGrad(normals, texCoord, deltaUv1, deltaUv2).rgb;
 		DecodeNormalTex(normalTex);
 		vec3 normal = tbnMatrix * normalTex;
 	#else
@@ -158,21 +125,45 @@ void main() {
 	#endif
 
 	#if defined MC_SPECULAR_MAP
-		vec4 specularTex = textureLod(specular, texCoord, 0.0);
+		vec4 specularTex = textureGrad(specular, texCoord, deltaUv1, deltaUv2);
 	#else
 		vec4 specularTex = vec4(0.0);
 	#endif
 
+    // Render end portal
+	if (materialID == 46u) {
+		vec3 worldDir = normalize(worldPos);
+		vec3 worldDirAbs = abs(worldDir);
+		vec3 sampleMask = step(maxOf(worldDirAbs), worldDirAbs);
+		vec3 samplePart = signMul(sampleMask, worldDir);
+		float intersection = 1.0 / dot(sampleMask, worldDirAbs);
+		vec3 sampleNDCRaw = samplePart - worldDir * intersection;
+		vec2 sampleNDC = sampleNDCRaw.xy * vec2(sampleMask.y + samplePart.z, 1.0 - sampleMask.y) + sampleNDCRaw.z * vec2(-samplePart.x, sampleMask.y);
+		vec2 portalCoord = sampleNDC * 0.5 + 0.5;
+
+		vec3 portalColor = vec3(0.0);
+		for (uint i = 0u; i < 16u; ++i) {
+			portalColor += textureGrad(tex, endPortalLayer(portalCoord, float(i + 1)), deltaUv1, deltaUv2).rgb * COLORS[i];
+		}
+		albedo.rgb = portalColor;
+		specularTex = vec4(1.0, 0.0, vec2(254.0 / 255.0));
+	}
+
+	albedoOut = albedo;
+
+	materialOut.x = Pack2x8U(lightmap, BlueNoise(ivec2(gl_FragCoord.xy), frameCounter + 1));
+	materialOut.y = materialID;
+
 	// Compute rain puddles
 	#ifdef RAIN_PUDDLES
 		if (wetnessCustom > EPS) {
-			CalculateRainPuddles(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
+			ApplyRainPuddleMaterial(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
 		}
 	#endif
 
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 	normalOut.zw = OctEncodeSnorm(normal);
 
-	materialOut.z = Packup2x8U(specularTex.xy);
-	materialOut.w = Packup2x8U(specularTex.zw);
+	materialOut.z = Pack2x8U(specularTex.xy);
+	materialOut.w = Pack2x8U(specularTex.zw);
 }

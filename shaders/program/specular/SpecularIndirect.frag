@@ -30,10 +30,6 @@ out vec4 specularOut;
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -42,8 +38,10 @@ out vec4 specularOut;
 
 #include "/lib/atmosphere/Common.glsl"
 
-#include "/lib/surface/BRDF.glsl"
-#include "/lib/surface/Reflection.glsl"
+#include "/lib/surface/Material.glsl"
+
+#include "/lib/lighting/BRDF.glsl"
+#include "/lib/lighting/SSR.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -53,7 +51,7 @@ void main() {
 
 	Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
 	if (material.specularMask) {
-		vec3 screenPos = vec3(gl_FragCoord.xy * scaledPixelSize, loadDepth0(texelPos));
+		vec3 screenPos = vec3(gl_FragCoord.xy * scaledTexelSize, loadDepth0(texelPos));
 		if (screenPos.z > 1.0 - EPS) discard;
 
 		// Hand-depth correction

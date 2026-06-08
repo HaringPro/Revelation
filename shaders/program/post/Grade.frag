@@ -250,12 +250,13 @@ void main() {
 	// Debug tone mapping plot
 	#ifdef DEBUG_TONE_MAPPING_PLOT
 		const float scale = 1.5;
+
         #ifndef SUPER_RESOLUTION
-		    vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
+        vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
         #else
-            vec2 uv = texelToUv(texelPos) * vec2(aspectRatio, 1.0) * scale;
+        vec2 uv = texelToUv(texelPos) * vec2(aspectRatio, 1.0) * scale;
         #endif
-		float plot = smoothstep(0.0, scale * scaledPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
+        float plot = smoothstep(0.0, scale * scaledPixelSize.y, abs(uv.y - TONEMAPPING_FN(vec3(uv.x)).x));
 
 		// Show LDR range
 		color = vec3(0.25) * step(uv.x, 1.0);

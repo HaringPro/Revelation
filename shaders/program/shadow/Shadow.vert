@@ -16,9 +16,7 @@
 //======// Output //==============================================================================//
 
 out vec2 texCoord;
-
-// out vec3 viewPos;
-out vec3 vectorData; // Minecraf position in water, vertColor in other materials
+out vec3 vectorData; // Minecraft position in water, vertColor in other materials
 
 flat out uint isWater;
 
@@ -45,15 +43,14 @@ void main() {
 		return;
 	}
 
-	vec3 normal = normalize(gl_NormalMatrix * gl_Normal);
 	#ifdef SHADOW_BACKFACE_CULLING
-		if (normal.z < 0.0) {
+		if ((gl_NormalMatrix * gl_Normal).z < 0.0) {
 			gl_Position = vec4(-1.0);
 			return;
 		}
 	#endif
 
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 

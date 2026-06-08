@@ -1,3 +1,5 @@
 #version 460 compatibility
 
-#include "/program/gbuffers/HandWater.frag"
+#define GBUFFERS_HAND_WATER 1
+
+#include "/program/gbuffers/Hand.frag"

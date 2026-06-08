@@ -150,13 +150,10 @@ vec3 Transform_Vz0Qz0(vec2 v, vec4 q) {
 	return vec3(v, 0.0) + 2.0 * (b * q.yxw);
 }
 
-vec2 SliceRelCDF_Cos(vec2 x, float angN, float cosN) {
-	vec2 phi = x * PI - hPI;
+vec2 SliceRelCDF_Cos(vec2 x, float angN, float sinN) {
+    vec2 phi = x * TAU - PI;
 
-	vec2 t0 = 3.0 * cosN + -cos(angN - 2.0 * phi) + (4.0 * angN - 2.0 * phi + PI) * sin(angN);
-	float t1 = 4.0 * (cosN + angN * sin(angN));
-
-	return mix(x, t0 / t1, step(abs(x - 0.5), vec2(0.5)));
+    return -cos(angN - phi) - phi * sinN;
 }
 
 // https://cdrinmatane.github.io/posts/ssaovb-code/
@@ -215,17 +212,22 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 		float angN = signMul(acosFast4(satSnorm(cosN)), dot(viewDir, cross(sliceN, projN)));
 		float angOff = angN * rPI + 0.5;
 
+        float sinN = sin(angN);
+
 		// percentage of the slice we don't use ([0, angN]-integrated slice-relative pdf)
-		float w0 = saturate((sin(angN) / (cos(angN) + angN * sin(angN))) * (PI / 4.0) + 0.5);
+		float w0 = saturate((sinN / (cosN + angN * sinN)) * (PI / 4.0) + 0.5);
+        float t1 = 0.25 / (cosN + angN * sinN);
+        float t0 = (3.0 * cosN + (4.0 * angN + PI) * sinN) * t1;
 
 		// partial slice re-mapping constants
 		float w0_remap_mul = 1.0 / (1.0 - w0);
-		float w0_remap_add = -w0 * w0_remap_mul;
+		float w0_remap_add = (t0 - w0) * w0_remap_mul;
+        w0_remap_mul *= t1;
 
-		vec2 rayDir = ViewToScreenPos(smplDirVS + viewPos).xy - fragCoord;
+		vec2 rayDir = ViewToScreenPosRaw(smplDirVS * abs(viewPos.z) + viewPos).xy - fragCoord;
 		rayDir *= minOf((step(0.0, rayDir) - fragCoord) / rayDir);
 
-		float rayDirNorm = inversesqrt(sdot(rayDir * viewSize));
+		float rayDirNorm = inversesqrt(sdot(rayDir * originViewSize));
 		float stepScale = -rSampleCount * log2(saturate(rayDirNorm));
 
 		float stepLength = exp2(stepScale * dither);
@@ -263,7 +265,7 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 				frontBackHorizon = saturate(frontBackHorizon * rPI + angOff);
 
 				// map to slice relative distribution
-				frontBackHorizon = SliceRelCDF_Cos(frontBackHorizon, angN, cosN);
+				frontBackHorizon = SliceRelCDF_Cos(frontBackHorizon, angN, sinN);
 
 				// partial slice re-mapping
 				frontBackHorizon = frontBackHorizon * w0_remap_mul + w0_remap_add;
@@ -278,7 +280,7 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 
 					bitMask |= sBitMask;
 
-					if (bitMask == 0xFFFFFFFFu) break;
+					// if (bitMask == 0xFFFFFFFFu) break;
 				}
 			}
 		}

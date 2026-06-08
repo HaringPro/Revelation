@@ -27,7 +27,7 @@ uniform sampler2D tex;
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	albedoOut = albedo;
 }

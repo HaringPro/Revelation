@@ -28,10 +28,7 @@ layout (location = 3) out float parallaxShadowOut;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D tex;
-
-#if defined MC_SPECULAR_MAP
-	uniform sampler2D specular;
-#endif
+uniform sampler2D specular;
 
 //======// Input //===============================================================================//
 
@@ -41,16 +38,11 @@ in vec4 vertColor;
 in vec2 texCoord;
 in vec2 lightmap;
 
-//======// Function //============================================================================//
-
-float bayer2 (vec2 a) { a = 0.5 * floor(a); return fract(1.5 * fract(a.y) + a.x); }
-#define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
-
 //======// Main //================================================================================//
 void main() {
 	vec4 albedo = texture(tex, texCoord) * vertColor;
 
-	if (albedo.a < 0.1) { discard; return; }
+	if (albedo.a < 0.1) discard;
 
 	#ifdef WHITE_WORLD
 		albedo.rgb = vec3(1.0);
@@ -58,13 +50,13 @@ void main() {
 
 	albedoOut = vec4(albedo.rgb, 1.0);
 
-	materialOut.x = PackupDithered2x8U(lightmap, bayer4(gl_FragCoord.xy));
+	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = lightmap.x > 0.999 ? 20u : 40u;
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);
-		materialOut.z = Packup2x8U(specularTex.xy);
-		materialOut.w = Packup2x8U(specularTex.zw);
+		materialOut.z = Pack2x8U(specularTex.xy);
+		materialOut.w = Pack2x8U(specularTex.zw);
 	#else
 		materialOut.zw = uvec2(0);
 	#endif

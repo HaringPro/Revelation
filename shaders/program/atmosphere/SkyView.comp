@@ -57,7 +57,7 @@ vec3 RenderSkyView(vec2 uv) {
 	float viewZenithSin = sqrt(1.0 - viewZenithCos * viewZenithCos);
 	vec3 rayDir = vec3(viewZenithSin * lightViewCos, viewZenithCos, viewZenithSin * sqrt(1.0 - lightViewCos * lightViewCos));
 
-	float sunZenithCos = dot(up, worldSunDir);
+	float sunZenithCos = dot(up, sunDirWorld);
 	vec3 sunDir = normalize(vec3(sqrt(1.0 - sunZenithCos * sunZenithCos), sunZenithCos, 0.0));
 
 	vec3 lum = sunIrradiance * RaymarchScattering(atmosphereViewPos, rayDir, sunDir);

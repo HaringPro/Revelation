@@ -130,9 +130,21 @@ const float cloudMinTransmittance   = 0.02;
 
 //================================================================================================//
 
-// From [Schneider, 2015]
+// [Schneider, 2015]
 float remap(float value, float orignalMin, float orignalMax, float newMin, float newMax) {
 	return newMin + saturate((value - orignalMin) / (orignalMax - orignalMin)) * (newMax - newMin);
+}
+
+vec3 SetupCloudShadowPos(vec2 coord) {
+	vec3 shadowPos = vec3(coord * 2.0 - 1.0, 0.0);
+	shadowPos.xy *= rcp(2.0 - length(shadowPos.xy));
+	return transMAD(cloud.shadowViewProjInv, shadowPos);
+}
+
+vec3 WorldToCloudShadowScreenPos(vec3 worldPos) {
+	vec3 shadowPos = transMAD(cloud.shadowViewProj, worldPos);
+	shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
+	return shadowPos * 0.5 + 0.5;
 }
 
 #endif

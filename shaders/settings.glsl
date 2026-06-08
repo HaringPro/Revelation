@@ -26,8 +26,8 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //======// Environment //=========================================================================//
 
-#define SUN_RADIUS_MULT 2.0 // Multiplier of the sun radius (1.0 = real sun radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0]
-#define MOON_RADIUS_MULT 8.0 // Multiplier of the moon radius (1.0 = real moon radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0]
+#define SUN_RADIUS_MULT 1.0 // Multiplier of the sun radius (1.0 = real sun radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0]
+#define MOON_RADIUS_MULT 6.0 // Multiplier of the moon radius (1.0 = real moon radius). [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0]
 
 /* Clouds */
 	#define CLOUDS
@@ -102,7 +102,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define TRANSLUCENT_ROUGHNESS 0.005 // [0.0 0.0005 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 	const vec3 waterAbsorption = vec3(WATER_ABSORPTION_R, WATER_ABSORPTION_G, WATER_ABSORPTION_B) * WATER_FOG_DENSITY;
-	const vec3 waterScattering = vec3(WATER_SCATTERING_R, WATER_SCATTERING_G, WATER_SCATTERING_B) * WATER_FOG_DENSITY * 0.1;
+	const vec3 waterScattering = vec3(WATER_SCATTERING_R, WATER_SCATTERING_G, WATER_SCATTERING_B) * WATER_FOG_DENSITY * 0.05;
 	const vec3 waterExtinction = waterAbsorption + waterScattering;
 	const vec3 waterAlbedo = waterScattering / waterExtinction;
 
@@ -128,7 +128,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 /* Lighting Brightness */
 	#define MINIMUM_AMBIENT_BRIGHTNESS 0.0001 // [0.0 0.00001 0.00002 0.00003 0.00005 0.00007 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.0015 0.002 0.0025 0.003 0.004 0.005 0.006 0.007 0.01 0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
-	#define NIGHT_BRIGHTNESS 1.0 // [-8.0 -7.0 -6.0 -5.0 -4.0 -3.0 -2.0 -1.0 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0]
+	#define NIGHT_BRIGHTNESS 0.0 // [-8.0 -7.0 -6.0 -5.0 -4.0 -3.0 -2.0 -1.0 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0]
 
 /* Global Illumination */
 	#define SSILVB_ENABLED
@@ -176,6 +176,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define PARALLAX
 	#define PARALLAX_DEPTH_WRITE
 
+    // #define SMOOTH_PARALLAX
 	#define PARALLAX_SHADOW
 	#define PARALLAX_BASED_NORMAL
 

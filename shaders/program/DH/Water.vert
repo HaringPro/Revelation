@@ -15,8 +15,6 @@
 
 //======// Output //==============================================================================//
 
-flat out vec3 geoNormal;
-
 out vec4 vertColor;
 out vec2 lightmap;
 flat out uint materialID;
@@ -55,8 +53,6 @@ void main() {
 	lightmap.x = 0.0;
 
 	vertColor = gl_Color;
-
-	geoNormal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
 
 	materialID = dhMaterialId == DH_BLOCK_WATER ? 3u : 2u;
 

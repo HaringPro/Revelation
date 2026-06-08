@@ -22,7 +22,7 @@
 
 flat out uint normalPack;
 #if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
-flat out uvec2 tangentPack;
+flat out uint tangentPack;
 #endif
 
 out vec3 vertColor;
@@ -31,7 +31,6 @@ out vec2 lightmap;
 flat out uint materialID;
 
 #if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-	out vec2 tileBase;
 	flat out vec2 tileScale;
 	flat out vec2 tileOffset;
 #endif
@@ -53,7 +52,7 @@ in vec4 at_tangent;
 //======// Main //================================================================================//
 void main() {
 	vertColor = gl_Color.rgb;
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
@@ -71,8 +70,7 @@ void main() {
 	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
 	#if defined MC_NORMAL_MAP || defined AUTO_GENERATED_NORMAL
 		vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-		tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-		tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
+		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), uint(at_tangent.w < 0.0), 30, 1);
 	#endif
 
 	#ifdef WAVING_FOLIAGE
@@ -112,10 +110,9 @@ void main() {
 	#endif
 
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
-		vec2 minMidCoord = texCoord - mc_midTexCoord;
-		tileBase = signI(minMidCoord) * 0.5 + 0.5;
-		tileScale = abs(minMidCoord) * 2.0;
-		tileOffset = min(texCoord, mc_midTexCoord - minMidCoord);
+        vec2 halfSize = abs(texCoord - mc_midTexCoord);
+		tileScale = halfSize * 2.0;
+		tileOffset = mc_midTexCoord - halfSize;
 	#endif
 
 	vec3 viewPos = transMAD(gbufferModelView, worldPos);

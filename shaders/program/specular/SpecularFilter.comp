@@ -26,15 +26,13 @@ writeonly uniform image2D colorimg0;
 
 #include "/lib/universal/Uniform.glsl"
 
-//======// Struct //==============================================================================//
-
-#include "/lib/universal/Material.glsl"
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
+
+#include "/lib/surface/Material.glsl"
 
 vec3 GetSpecularDominantDir(vec3 N, vec3 V, float roughness) {
 	float f = (1.0 - roughness) * (approxSqrt(1.0 - roughness) + roughness);
@@ -69,7 +67,7 @@ void SpecularFilter(inout vec4 specularData, ivec2 texel, float roughness, vec3 
 	float linearDepth = ScreenToViewDepth(loadDepth0(texel));
 
 	float sharpenWeight = 0.125 + 0.375 * saturate(specularData.a * 0.25);
-	ivec2 texelEnd = ivec2(viewSize) - 2;
+	ivec2 texelEnd = ivec2(originViewSize) - 2;
 
 	// Sharpen
 	specularData.rgb *= pow(sdot(specularData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
@@ -112,7 +110,7 @@ void main() {
 	texelPos = scaleTexelPos(texelPos);
 
 	Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
-	if (material.specularMask) {
+	if (material.specularMask && !material.mirrorMask) {
 		vec2 screenCoord = texelToUvScaled(texelPos);
 		vec3 viewDir = ScreenToViewDir(screenCoord);
 
@@ -120,19 +118,14 @@ void main() {
 		vec3 worldNormal = FetchSurfaceNormal(texelPos);
 
 		vec4 specularData = texelFetch(colortex0, texelPos, 0);
-	#ifdef REFLECTION_FILTER
-		if (material.isRough) {
-			const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
-			#if SPECULAR_FILTER_PASS > 0
-				vec2 randOffset = SampleStbnVec2(texelPos, frameCounter) - 0.5;
-			#else
-				vec2 randOffset = vec2(0.0);
-			#endif
+        const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
+        #if SPECULAR_FILTER_PASS > 0
+            vec2 randOffset = SampleStbnVec2(texelPos, frameCounter) - 0.5;
+        #else
+            vec2 randOffset = vec2(0.0);
+        #endif
 
-			SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
-		}
-	#endif
-
+        SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
 		imageStore(colorimg0, texelPos, specularData);
 	}
 }

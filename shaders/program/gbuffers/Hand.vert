@@ -17,7 +17,7 @@
 
 flat out uint normalPack;
 #if defined MC_NORMAL_MAP
-flat out uvec2 tangentPack;
+flat out uint tangentPack;
 #endif
 
 out vec4 vertColor;
@@ -37,12 +37,11 @@ uniform vec2 taaJitter;
 //======// Main //================================================================================//
 void main() {
 	vertColor = gl_Color;
-	texCoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	// worldPos = transMAD(gbufferModelViewInverse, viewPos);
 	gl_Position = project(gl_ProjectionMatrix, viewPos);
 
     #ifdef SUPER_RESOLUTION
@@ -64,7 +63,10 @@ void main() {
 	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
 	#if defined MC_NORMAL_MAP
 		vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-		tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-		tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
+		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), uint(at_tangent.w < 0.0), 30, 1);
+	#endif
+
+	#ifdef TAA_ENABLED
+		gl_Position.xy += taaJitter * gl_Position.w;
 	#endif
 }
