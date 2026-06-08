@@ -88,7 +88,7 @@ void main() {
 	vec2 prevCoord = ReprojectScreenPos(screenPos).xy;
 
 	if (saturate(prevCoord) == prevCoord && !historyReset) {
-		uvec3 reprojectedData = texelFetch(colortex11, scaleTexelPos(uvToTexel(prevCoord)) >> 1, 0).xyz;
+		uvec3 reprojectedData = texelFetch(colortex11, uvToTexelScaled(prevCoord) >> 1, 0).xyz;
 		mat2x3 reprojectedFog = UnpackFogData(reprojectedData.xy);
 
 		float blendWeight = 0.9;

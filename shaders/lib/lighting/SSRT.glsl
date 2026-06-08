@@ -46,7 +46,7 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 			break;
 		}
 
-		ivec2 sampleTexel = scaleTexelPos(uvToTexel(hitPos.xy));
+		ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
 		float sampleDepth = loadDepth2(sampleTexel);
 		#if defined LOD_MOD
 			if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
@@ -67,7 +67,7 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 		for (uint i = 0u; i < SSRT_REFINEMENT_STEPS; ++i) {
 			rayStep *= 0.5;
 
-			ivec2 sampleTexel = scaleTexelPos(uvToTexel(hitPos.xy));
+			ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
 			float sampleDepth = loadDepth2(sampleTexel);
 			#if defined LOD_MOD
 				if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));

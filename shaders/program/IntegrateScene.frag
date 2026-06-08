@@ -145,7 +145,7 @@ void main() {
 	// Process refraction
 	ivec2 refractedTexel = texelPos;
 	if (glassMask || waterMask) {
-		refractedTexel = scaleTexelPos(uvToTexel(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask)));
+		refractedTexel = uvToTexelScaled(CalculateRefractedCoord(texelPos, viewPos, screenPos, waterMask));
 	}
 
 	vec3 sceneColor = loadSceneMain(refractedTexel);
