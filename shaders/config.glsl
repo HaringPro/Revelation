@@ -96,7 +96,7 @@
     const bool 	colortex20Clear				= false;
 
     // SR input exposure buffer - 1x1
-    const int 	colortex21Format 			= R16F;
-    const bool 	colortex21Clear				= false;
+    // const int 	colortex21Format 			= R16F;
+    // const bool 	colortex21Clear				= false;
 */
 #endif

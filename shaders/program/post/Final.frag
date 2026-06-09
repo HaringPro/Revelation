@@ -41,7 +41,7 @@ out vec3 finalOut;
 // https://github.com/GPUOpen-Effects/FidelityFX-CAS
 
 vec3 FFXCasFilter(in ivec2 texel, in float sharpness) {
-    #if UPSCALE_MODE == 0 && !SR_ENABLE
+    #if UPSCALE_MODE == 0 && SR_DISABLE
         texel = scaleTexelPos(texel);
     #endif
 

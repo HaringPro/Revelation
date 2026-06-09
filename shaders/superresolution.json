@@ -20,46 +20,24 @@
                     "color": {
                         "enabled": true,
                         "src": "autotex20",
-                        "region": [
-                            0,
-                            0,
-                            -1,
-                            -1
-                        ]
+                        "region": [0, 0, -1, -1]
                     },
                     "depth": {
                         "enabled": true,
                         "src": "depthtex",
-                        "region": [
-                            0,
-                            0,
-                            -1,
-                            -1
-                        ]
+                        "region": [0, 0, -1, -1]
                     },
                     "motion_vectors": {
                         "enabled": true,
                         "src": "autotex3",
-                        "region": [
-                            0,
-                            0,
-                            -1,
-                            -1
-                        ]
+                        "region": [0, 0, -1, -1]
                     }
                 },
                 "outputs": {
                     "upscaled_color": {
                         "enabled": true,
-                        "target": [
-                            "colortex5"
-                        ],
-                        "region": [
-                            0,
-                            0,
-                            -2,
-                            -2
-                        ]
+                        "target": ["colortex5"],
+                        "region": [0, 0, -2, -2]
                     }
                 }
             }

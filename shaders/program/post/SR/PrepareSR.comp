@@ -23,7 +23,7 @@ const vec2 workGroupsRender = vec2(RENDER_SCALE, RENDER_SCALE);
 //======// Uniform //=============================================================================//
 
 restrict writeonly uniform image2D colorimg20; // Scaled scene color for SR
-restrict writeonly uniform image2D colorimg21; // Exposure value for SR
+// restrict writeonly uniform image2D colorimg21; // Exposure value for SR
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -35,9 +35,9 @@ restrict writeonly uniform image2D colorimg21; // Exposure value for SR
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
 
-    if (texelPos.x + texelPos.y == 0) {
-        imageStore(colorimg21, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
-    }
+    // if (texelPos.x + texelPos.y == 0) {
+    //     imageStore(colorimg21, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
+    // }
     #if defined(MOTION_BLUR) || SR_ENABLE
 		vec3 color = texelFetch(colortex0, texelPos, 0).rgb;
 	#else
