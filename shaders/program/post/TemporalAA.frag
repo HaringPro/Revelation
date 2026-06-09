@@ -86,7 +86,7 @@ vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
 	ivec2 texel = uvToTexelScaled(screenCoord + taaJitter * 0.5);
 
 	vec3 currData = loadSceneMain(texel);
-	vec2 prevCoord = screenCoord - motionVector;
+	vec2 prevCoord = screenCoord + motionVector;
 
 	if (saturate(prevCoord) != prevCoord) return vec4(YCoCgToRGB(currData), 1.0);
 
@@ -154,24 +154,21 @@ void main() {
 			uint materialID = loadMaterialPack(screenTexel).y;
 			if (depth > 1.0 - EPS && materialID != 0u) {
 				float lodDepth = loadDepth0Lod(screenTexel);
-				motionVector = screenCoord - ReprojectScreenPosLod(vec3(screenCoord, lodDepth)).xy;
+				motionVector = ReprojectScreenPosLod(vec3(screenCoord, lodDepth)).xy - screenCoord;
 			} else
 		#endif
 		{
 		#ifdef TAA_CLOSEST_FRAGMENT
 			vec3 closestFragment = CrossClosestFragment(screenTexel, depth);
-			motionVector = closestFragment.xy - ReprojectScreenPos(closestFragment).xy;
+			motionVector = ReprojectScreenPos(closestFragment).xy - closestFragment.xy;
 		#else
-			motionVector = screenCoord - ReprojectScreenPos(vec3(screenCoord, depth)).xy;
+			motionVector = ReprojectScreenPos(vec3(screenCoord, depth)).xy - screenCoord;
 		#endif
 		}
 
 		#if defined(MOTION_BLUR) || SR_ENABLE
 			// motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
             motionVectorOut = motionVector;
-            #if SR_ENABLE
-                motionVectorOut = -motionVector;
-            #endif
 		#endif
 
 		#if defined(TAA_ENABLED) && !SR_ENABLE
