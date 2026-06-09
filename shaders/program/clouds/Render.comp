@@ -27,8 +27,6 @@ layout (local_size_x = 16, local_size_y = 16) in;
 	const vec2 workGroupsRender = vec2(0.333333, 0.333333);
 #elif CLOUD_TAAU_SCALE == 4
 	const vec2 workGroupsRender = vec2(0.25, 0.25);
-#elif CLOUD_TAAU_SCALE == 5
-	const vec2 workGroupsRender = vec2(0.2, 0.2);
 #endif
 
 //======// Uniform //=============================================================================//
