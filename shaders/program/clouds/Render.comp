@@ -17,7 +17,9 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-#ifndef CLOUD_TAAU_ENABLED
+#ifdef SUPER_RESOLUTION
+	const vec2 workGroupsRender = vec2(RENDER_SCALE, RENDER_SCALE);
+#elif !defined CLOUD_TAAU_ENABLED
 	const vec2 workGroupsRender = vec2(1.0, 1.0);
 #elif CLOUD_TAAU_SCALE == 2
 	const vec2 workGroupsRender = vec2(0.5, 0.5);
@@ -25,6 +27,8 @@ layout (local_size_x = 16, local_size_y = 16) in;
 	const vec2 workGroupsRender = vec2(0.333333, 0.333333);
 #elif CLOUD_TAAU_SCALE == 4
 	const vec2 workGroupsRender = vec2(0.25, 0.25);
+#elif CLOUD_TAAU_SCALE == 5
+	const vec2 workGroupsRender = vec2(0.2, 0.2);
 #endif
 
 //======// Uniform //=============================================================================//
@@ -68,19 +72,24 @@ bool SkyCheck4x4(vec2 coord) {
 	return any(equal(LL & LR & UL & UR, uvec4(0u)));
 }
 
-// Work in (original view size * CLOUD_TAAU_SCALE)
+// Work in SR input size when SR is enabled; otherwise work in cloud TAAU source size.
 //======// Main //================================================================================//
 void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
-	//0~0.5(CLOUD_TAAU_SCALE)
-	vec2 coord = texelToUv(texelPos);
+	#ifdef SUPER_RESOLUTION
+		vec2 coord = texelToUvScaled(texelPos);
+	#else
+		vec2 coord = texelToUv(texelPos);
+	#endif
 
-	#ifdef CLOUD_TAAU_ENABLED
+	#ifdef SUPER_RESOLUTION
+		vec2 renderCoord = coord;
+	#elif defined CLOUD_TAAU_ENABLED
 		vec2 renderCoord = (coord + taaJitter * 0.5) * CLOUD_TAAU_SCALE;
 	#else
-		#define renderCoord coord
+		vec2 renderCoord = coord;
 	#endif
 
 	// x: sunlight, y: skylight, z: depth, w: transmittance
@@ -90,7 +99,11 @@ void main() {
 	if (SkyCheck4x4(renderCoord)) {
 		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
 
-		vec3 viewDir  = ScreenToViewDirRaw(renderCoord);
+		#ifdef SUPER_RESOLUTION
+			vec3 viewDir  = ScreenToViewDir(renderCoord);
+		#else
+			vec3 viewDir  = ScreenToViewDirRaw(renderCoord);
+		#endif
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		cloudOut = RenderClouds(worldDir, noise);
