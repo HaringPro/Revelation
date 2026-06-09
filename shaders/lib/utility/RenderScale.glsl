@@ -1,5 +1,5 @@
 #if RENDER_SCALE_1000X != 1000 || defined(SUPER_RESOLUTION)
-    #ifdef RENDER_SCALE_VERTEX
+    #ifndef RENDER_SCALE_NO_VERTEX_TRANSFORM
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
 	    vertPos = project(gl_ProjectionMatrix, viewPos);
         vertPos.xy /= vertPos.w;
@@ -19,7 +19,7 @@
         return ivec2(vec2(texelPos) * rcp(RENDER_SCALE));
     }
 #else
-    #ifdef RENDER_SCALE_VERTEX
+    #ifndef RENDER_SCALE_NO_VERTEX_TRANSFORM
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
 	    vertPos = project(gl_ProjectionMatrix, viewPos);
         #ifdef SHOULD_APPLY_JITTER
