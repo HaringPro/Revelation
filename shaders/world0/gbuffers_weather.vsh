@@ -13,7 +13,6 @@
 
 //======// Utility //=============================================================================//
 
-#define RENDER_SCALE_VERTEX
 #include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
@@ -39,6 +38,5 @@ void main() {
 	float windAngle = dot(worldPos + cameraPosition, vec3(1.0)) + frameTimeCounter * 0.05;
 
 	worldPos.xz -= worldPos.y * 0.15 * (1.0 + vec2(cos(windAngle), sin(windAngle)));
-	vec3 viewPos = transMAD(gbufferModelView, worldPos);
-	transformVertexPosition(gl_Position, viewPos, taaJitter);
+    gl_Position = diagonal4(gl_ProjectionMatrix) * transMAD(gbufferModelView, worldPos).xyzz + gl_ProjectionMatrix[3];
 }
