@@ -13,6 +13,7 @@
 
 //======// Utility //=============================================================================//
 
+#define RENDER_SCALE_VERTEX
 #include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
@@ -31,7 +32,7 @@ uniform vec2 taaJitter;
 
 //======// Main //================================================================================//
 void main() {
-    texCoord = gl_MultiTexCoord0.xy * vec2(RAIN_SCALE_X, RAIN_SCALE_Y);
+	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0) * vec2(RAIN_SCALE_X, RAIN_SCALE_Y);
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
     vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
@@ -40,5 +41,5 @@ void main() {
     worldPos.xz -= worldPos.y * 0.15 * (1.0 + vec2(cos(windAngle), sin(windAngle)));
 
     viewPos = transMAD(gbufferModelView, worldPos);
-    gl_Position = project(gl_ProjectionMatrix, viewPos);
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }
