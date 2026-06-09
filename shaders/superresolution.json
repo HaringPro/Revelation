@@ -29,7 +29,7 @@
                     },
                     "motion_vectors": {
                         "enabled": true,
-                        "src": "autotex3",
+                        "src": "autotex8",
                         "region": [0, 0, -1, -1]
                     }
                 },

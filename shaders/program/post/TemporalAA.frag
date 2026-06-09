@@ -23,7 +23,7 @@ layout(location = 0) out vec4 temporalOut;
 layout(location = 1) out vec3 clearOut;
 
 #if defined(MOTION_BLUR) || SR_ENABLE
-/* RENDERTARGETS: 1,4,3 */
+/* RENDERTARGETS: 1,4,8 */
 layout(location = 2) out vec2 motionVectorOut;
 #endif
 
