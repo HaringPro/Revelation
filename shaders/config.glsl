@@ -88,19 +88,19 @@
 --------------------------------------------------------------------------------
 */
 
-#ifdef SUPER_RESOLUTION
+// Super Resolution Support
+#if defined(SUPER_RESOLUTION)
 /*
-    //SR input color buffer
+    // SR input color buffer - Scaled size
     const int 	colortex20Format 			= RGBA16F;
     const bool 	colortex20Clear				= false;
-    //Scaled size
-    //SR input exposure buffer
-    const int 	colortex21Format 			= R32F;
+
+    // SR input exposure buffer - 1x1
+    const int 	colortex21Format 			= R16F;
     const bool 	colortex21Clear				= false;
-    //1x1
-    //SR output upscaled color buffer
+
+    // SR output color buffer - Full size
     const int 	colortex22Format 			= RGBA16F;
     const bool 	colortex22Clear				= false;
-    //Full size
 */
 #endif

@@ -22,25 +22,21 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 //======// Uniform //=============================================================================//
 
+restrict writeonly uniform image2D colorimg20; // Scaled scene color for SR
+restrict writeonly uniform image2D colorimg21; // Exposure value for SR
+
 #include "/lib/universal/Uniform.glsl"
 
 //======// SSBO //================================================================================//
 
 #include "/lib/universal/SSBO.glsl"
 
-//======// Images //============================================================================//
-
-
-layout (rgba16f) restrict writeonly uniform image2D colorimg20; //Scaled scene color for SR
-layout (r32f) restrict writeonly uniform image2D colorimg21; //Exposure value for SR
-
 //======// Main //================================================================================//
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-    if (texelPos.x >= int(scaledViewSize.x) || texelPos.y >= int(scaledViewSize.y)) {
-        return;
-    }
-    if (texelPos.x == 0 && texelPos.y == 0) {
+    if (any(greaterThanEqual(texelPos, ivec2(scaledViewSize)))) return;
+
+    if (texelPos.x + texelPos.y == 0) {
         imageStore(colorimg21, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
     }
     #if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
