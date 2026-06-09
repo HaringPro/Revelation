@@ -82,7 +82,7 @@ void main() {
 	cloudOut = vec4(0.0, 0.0, 1e6, 1.0);
 	frameOut = 0u;
 
-	#ifdef SUPER_RESOLUTION
+	#if SR_ENABLE
 		vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 		vec2 currCoord = screenCoord - taaJitter * 0.5;
 	#else
@@ -113,7 +113,7 @@ void main() {
 		// Return smoothed origin
 		cloudOut = textureBicubic(cloudOriginTex, currCoord);
 	} else {
-		#ifdef SUPER_RESOLUTION
+		#if SR_ENABLE
 			ivec2 currTexel = uvToTexelScaled(currCoord);
 		#else
 			ivec2 currTexel = uvToTexel(currCoord) / CLOUD_TAAU_SCALE;

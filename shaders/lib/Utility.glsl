@@ -18,16 +18,15 @@
 
 #define lessThanFLT1(x) (floatBitsToUint(x) < 0x3F800000u)
 
-#if (SR_INSTALLED == 1) && (SR_ENABLE == 1)
+#if SR_INSTALLED && SR_ENABLE
     #undef TAA_ENABLED
 #endif
 
-#if defined(TAA_ENABLED) || (SR_ALGO_SUPPORTS_JITTER == 1 && SR_SHOULD_APPLY_JITTER == 1)
+#if defined(TAA_ENABLED) || (SR_ALGO_SUPPORTS_JITTER && SR_SHOULD_APPLY_JITTER)
     #define SHOULD_APPLY_JITTER
 #endif
 
-#if SR_ENABLE == 1
-    #define SUPER_RESOLUTION
+#if SR_ENABLE
     #undef RENDER_SCALE
     #define RENDER_SCALE SR_RENDER_SCALE_FACTOR
 #endif

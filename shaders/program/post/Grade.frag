@@ -40,7 +40,7 @@
 
 //======// Output //==============================================================================//
 
-#ifdef SUPER_RESOLUTION
+#if SR_ENABLE
 // When super resolution is enabled, this pass will be running at the original resolution
 /* RENDERTARGETS: 5 */
 out vec3 color; // Tonemapped output
@@ -62,10 +62,9 @@ out vec3 color; // Tonemapped output
 #include "/lib/universal/Random.glsl"
 
 void CombineBloomAndFog(inout vec3 scene, ivec2 texel, float exposure) {
-    #ifndef SUPER_RESOLUTION
+    #if !SR_ENABLE
         vec2 screenCoord = texelToUvScaled(texel);
     #else
-        //texel is at the original resolution
         vec2 screenCoord = texelToUv(texel);
     #endif
 
@@ -176,7 +175,7 @@ void main() {
 	#else
 		float exposure = exposure.value;
 	#endif
-    #ifndef SUPER_RESOLUTION
+    #if !SR_ENABLE
 	    #ifdef MOTION_BLUR
 	    	color = texelFetch(colortex0, texelPos, 0).rgb;
 	    #else
@@ -224,7 +223,7 @@ void main() {
 
 	// Vignetting
 	#ifdef VIGNETTE_ENABLED
-        #ifndef SUPER_RESOLUTION
+        #if !SR_ENABLE
 		    vec2 ndcCoord = texelToUvScaled(texelPos) * 2.0 - 1.0;
         #else
             vec2 ndcCoord = texelToUv(texelPos) * 2.0 - 1.0;
@@ -251,7 +250,7 @@ void main() {
 	#ifdef DEBUG_TONE_MAPPING_PLOT
 		const float scale = 1.5;
 
-        #ifndef SUPER_RESOLUTION
+        #if !SR_ENABLE
         vec2 uv = texelToUvScaled(texelPos) * vec2(aspectRatio, 1.0) * scale;
         #else
         vec2 uv = texelToUv(texelPos) * vec2(aspectRatio, 1.0) * scale;

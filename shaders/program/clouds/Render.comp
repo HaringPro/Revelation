@@ -17,7 +17,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-#ifdef SUPER_RESOLUTION
+#if SR_ENABLE
 	const vec2 workGroupsRender = vec2(SR_RENDER_SCALE_FACTOR, SR_RENDER_SCALE_FACTOR);
 #elif !defined CLOUD_TAAU_ENABLED
 	const vec2 workGroupsRender = vec2(1.0, 1.0);
@@ -78,7 +78,7 @@ void main() {
 
 	vec2 coord = texelToUv(texelPos);
 
-	#ifdef SUPER_RESOLUTION
+	#if SR_ENABLE
 		vec2 renderCoord = coord * rcp(SR_RENDER_SCALE_FACTOR) + taaJitter * 0.5;
 	#elif defined CLOUD_TAAU_ENABLED
 		vec2 renderCoord = (coord + taaJitter * 0.5) * CLOUD_TAAU_SCALE;

@@ -89,7 +89,7 @@
 */
 
 // Super Resolution Support
-#if defined(SUPER_RESOLUTION)
+#if SR_ENABLE
 /*
     // SR input color buffer - Scaled size
     const int 	colortex20Format 			= RGBA16F;

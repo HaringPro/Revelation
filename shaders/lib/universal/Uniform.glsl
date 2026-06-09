@@ -17,7 +17,7 @@ uniform usampler2D colortex13;
 uniform sampler2D colortex14;
 uniform sampler2D colortex15;
 
-#ifdef SUPER_RESOLUTION
+#if SR_ENABLE
 uniform sampler2D colortex21;
 uniform sampler2D colortex20;
 uniform sampler2D colortex22;

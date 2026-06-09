@@ -22,7 +22,7 @@
 layout (location = 0) out vec4 temporalOut;
 layout (location = 1) out vec3 clearOut;
 
-#if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
+#if defined(MOTION_BLUR) || SR_ENABLE
 /* RENDERTARGETS: 1,4,3 */
 layout (location = 2) out vec2 motionVectorOut;
 #endif
@@ -166,15 +166,15 @@ void main() {
 		#endif
 		}
 
-		#if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
+		#if defined(MOTION_BLUR) || SR_ENABLE
 			// motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
             motionVectorOut = motionVector;
-            #ifdef SUPER_RESOLUTION
+            #if SR_ENABLE
                 motionVectorOut = -motionVector;
             #endif
 		#endif
 
-		#if defined(TAA_ENABLED) && !defined(SUPER_RESOLUTION)
+		#if defined(TAA_ENABLED) && !SR_ENABLE
 			temporalOut = TemporalReprojection(screenCoord, motionVector);
 		#else
 			temporalOut = vec4(loadSceneMain(screenTexel), 1.0);

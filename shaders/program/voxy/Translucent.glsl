@@ -27,7 +27,7 @@ vec2 VoxyScreenCoord(vec2 fragCoord) {
 
 float BlueNoise(ivec2 texel, int frame) {
 	float base = texelFetch(noisetex, texel & 255, 0).a;
-	#if defined(TAA_ENABLED) || defined(SUPER_RESOLUTION)
+	#if defined(TAA_ENABLED) || SR_ENABLE
 		return fract(base + float(frame) * PHI);
 	#else
 		return base;

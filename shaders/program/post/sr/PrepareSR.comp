@@ -39,7 +39,7 @@ void main() {
     if (texelPos.x + texelPos.y == 0) {
         imageStore(colorimg21, ivec2(0), vec4(exposure.value, 0.0, 0.0, 1.0));
     }
-    #if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
+    #if defined(MOTION_BLUR) || SR_ENABLE
 		vec3 color = texelFetch(colortex0, texelPos, 0).rgb;
 	#else
 		vec3 color = texelFetch(colortex1, texelPos, 0).rgb;
