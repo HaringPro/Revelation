@@ -10,7 +10,7 @@
     }
 #endif
 
-#if RENDER_SCALE_1000X != 1000
+#if (RENDER_SCALE_1000X != 1000) || defined(SUPER_RESOLUTION)
     #define scaleTexelPos(texelPos) ivec2(vec2(texelPos) * RENDER_SCALE)
     #define unscaleTexelPos(texelPos) ivec2(vec2(texelPos) * rcp(RENDER_SCALE))
 #else
