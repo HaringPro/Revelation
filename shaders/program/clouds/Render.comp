@@ -79,7 +79,7 @@ void main() {
 	vec2 coord = texelToUv(texelPos);
 
 	#ifdef SUPER_RESOLUTION
-		vec2 renderCoord = (coord + taaJitter * 0.5) * rcp(SR_RENDER_SCALE_FACTOR);
+		vec2 renderCoord = coord * rcp(SR_RENDER_SCALE_FACTOR) + taaJitter * 0.5;
 	#elif defined CLOUD_TAAU_ENABLED
 		vec2 renderCoord = (coord + taaJitter * 0.5) * CLOUD_TAAU_SCALE;
 	#else

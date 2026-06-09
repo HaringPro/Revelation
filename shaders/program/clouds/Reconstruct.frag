@@ -84,7 +84,7 @@ void main() {
 
 	#ifdef SUPER_RESOLUTION
 		vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
-		vec2 currCoord = screenCoord - taaJitter * (0.5 / SR_RENDER_SCALE_FACTOR);
+		vec2 currCoord = screenCoord - taaJitter * 0.5;
 	#else
 		vec2 screenCoord = gl_FragCoord.xy * originTexelSize;
 		vec2 currCoord = screenCoord - taaJitter * (0.5 * float(CLOUD_TAAU_SCALE));
