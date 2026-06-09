@@ -7,7 +7,7 @@
 	Apache License 2.0
 
 	Reference: https://publications.lib.chalmers.se/records/fulltext/241770/241770.pdf
-			https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
+			   https://www.advances.realtimerendering.com/s2019/slides_public_release.pptx
 
 --------------------------------------------------------------------------------
 */
@@ -84,7 +84,7 @@ void main() {
 
 	#ifdef SUPER_RESOLUTION
 		vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
-		vec2 currCoord = screenCoord;
+		vec2 currCoord = screenCoord - taaJitter * (0.5 / SR_RENDER_SCALE_FACTOR);
 	#else
 		vec2 screenCoord = gl_FragCoord.xy * originTexelSize;
 		vec2 currCoord = screenCoord - taaJitter * (0.5 * float(CLOUD_TAAU_SCALE));

@@ -18,7 +18,7 @@
 layout (local_size_x = 16, local_size_y = 16) in;
 
 #ifdef SUPER_RESOLUTION
-	const vec2 workGroupsRender = vec2(RENDER_SCALE, RENDER_SCALE);
+	const vec2 workGroupsRender = vec2(SR_RENDER_SCALE_FACTOR, SR_RENDER_SCALE_FACTOR);
 #elif !defined CLOUD_TAAU_ENABLED
 	const vec2 workGroupsRender = vec2(1.0, 1.0);
 #elif CLOUD_TAAU_SCALE == 2
@@ -76,14 +76,10 @@ void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
-	#ifdef SUPER_RESOLUTION
-		vec2 coord = texelToUvScaled(texelPos);
-	#else
-		vec2 coord = texelToUv(texelPos);
-	#endif
+	vec2 coord = texelToUv(texelPos);
 
 	#ifdef SUPER_RESOLUTION
-		vec2 renderCoord = coord;
+		vec2 renderCoord = (coord + taaJitter * 0.5) * rcp(SR_RENDER_SCALE_FACTOR);
 	#elif defined CLOUD_TAAU_ENABLED
 		vec2 renderCoord = (coord + taaJitter * 0.5) * CLOUD_TAAU_SCALE;
 	#else
@@ -97,11 +93,7 @@ void main() {
 	if (SkyCheck4x4(renderCoord)) {
 		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
 
-		#ifdef SUPER_RESOLUTION
-			vec3 viewDir  = ScreenToViewDir(renderCoord);
-		#else
-			vec3 viewDir  = ScreenToViewDirRaw(renderCoord);
-		#endif
+		vec3 viewDir  = ScreenToViewDirRaw(renderCoord);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
 		cloudOut = RenderClouds(worldDir, noise);
