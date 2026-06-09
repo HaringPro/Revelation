@@ -98,9 +98,5 @@
     // SR input exposure buffer - 1x1
     const int 	colortex21Format 			= R16F;
     const bool 	colortex21Clear				= false;
-
-    // SR output color buffer - Full size
-    const int 	colortex22Format 			= RGBA16F;
-    const bool 	colortex22Clear				= false;
 */
 #endif

@@ -43,11 +43,10 @@
 #if SR_ENABLE
 // When super resolution is enabled, this pass will be running at the original resolution
 /* RENDERTARGETS: 5 */
-out vec3 color; // Tonemapped output
 #else
 /* RENDERTARGETS: 0 */
-out vec3 color; // Tonemapped output
 #endif
+out vec3 color; // Tonemapped output
 
 //======// Uniform //=============================================================================//
 
@@ -182,7 +181,7 @@ void main() {
 	    	color = texelFetch(colortex1, texelPos, 0).rgb;
 	    #endif
     #else
-        color = texture(colortex22, texelToUv(texelPos)).rgb;
+        color = texture(colortex5, texelToUv(texelPos)).rgb;
     #endif
 
 	// Bloom and fog

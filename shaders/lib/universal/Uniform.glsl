@@ -20,7 +20,6 @@ uniform sampler2D colortex15;
 #if SR_ENABLE
 uniform sampler2D colortex21;
 uniform sampler2D colortex20;
-uniform sampler2D colortex22;
 #endif
 
 uniform sampler2D depthtex0;
