@@ -46,16 +46,6 @@
                             -1,
                             -1
                         ]
-                    },
-                    "exposure": {
-                        "enabled": false,
-                        "src": "colortex21",
-                        "region": [
-                            0,
-                            0,
-                            1,
-                            1
-                        ]
                     }
                 },
                 "outputs": {
