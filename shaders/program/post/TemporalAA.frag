@@ -160,17 +160,17 @@ void main() {
 		{
 		#ifdef TAA_CLOSEST_FRAGMENT
 			vec3 closestFragment = CrossClosestFragment(screenTexel, depth);
-			motionVector = (closestFragment.xy - ReprojectScreenPos(closestFragment).xy);
+			motionVector = closestFragment.xy - ReprojectScreenPos(closestFragment).xy;
 		#else
 			motionVector = screenCoord - ReprojectScreenPos(vec3(screenCoord, depth)).xy;
 		#endif
 		}
 
 		#if defined(MOTION_BLUR) || defined(SUPER_RESOLUTION)
-			//motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
+			// motionVectorOut = depth < 0.56 ? motionVector * 0.25 : motionVector;
             motionVectorOut = motionVector;
             #ifdef SUPER_RESOLUTION
-                motionVectorOut *= vec2(-1.0, -1.0);
+                motionVectorOut = -motionVector;
             #endif
 		#endif
 
