@@ -439,7 +439,7 @@ option.GAMMA_CORRECTION=Gamma Correction
 option.CAS_ENABLED=Contrast-Adaptive Sharpening
 option.CAS_STRENGTH=CAS Strength
 
-option.RENDER_SCALE_1000X=Render Scale Factor
+option.RENDER_SCALE_1000X=Render Scale
 value.RENDER_SCALE_1000X.1000=100%
 value.RENDER_SCALE_1000X.900=90.0%
 value.RENDER_SCALE_1000X.850=85.0%
