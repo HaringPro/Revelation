@@ -22,7 +22,7 @@ const vec2 workGroupsRender = vec2(RENDER_SCALE, RENDER_SCALE);
 
 //======// Uniform //=============================================================================//
 
-restrict writeonly uniform image2D colorimg20; // Scaled scene color for SR
+restrict writeonly uniform image2D colorimg3; // Scaled scene color for SR
 // restrict writeonly uniform image2D colorimg21; // Exposure value for SR
 
 #include "/lib/universal/Uniform.glsl"
@@ -43,27 +43,27 @@ void main() {
 	#else
 		vec3 color = texelFetch(colortex1, texelPos, 0).rgb;
 	#endif
-    imageStore(colorimg20, texelPos, vec4(color, 1.0));
+    imageStore(colorimg3, texelPos, vec4(color, 1.0));
 }
 
 /*
 SR Enabled:
 -0:
     TemporalAA:
-        Motion Vector -> colortex3
+        Motion Vector -> colortex8
 A:
     Motion Blur Enabled: colortex1 -> colortex0
     Motion Blur Disabled: colortex1 -> colortex1
 B:
     PrepareSR:
-        colortex0 or colortex1 -> colortex20(scaled)
-        exposure.value(ssbo) -> colortex21(1x1 R32F)
+        colortex0 or colortex1 -> colortex3(scaled)
+        # exposure.value(ssbo) -> colortex21(1x1 R16F)
 C:
     Dispatch SR:
-        colortex20(scaled size) -> color buffer
+        colortex3(scaled size) -> color buffer
         depthtex0 -> depth buffer
-        colortex3 -> motion vector buffer
-        colortex21 -> exposure buffer
+        colortex8 -> motion vector buffer
+        # colortex21 -> exposure buffer
     Epic Pro Max Giga Ultra`s Upscaling Technology:
         Upscaled Color -> colortex5
 D:
@@ -78,7 +78,7 @@ E:
 SR Disabled:
 -0:
     TemporalAA:
-        Motion Vector -> colortex3 (just when motion blur enabled)
+        Motion Vector -> colortex8 (just when motion blur enabled)
 A:
     Motion Blur Enabled: colortex1 -> colortex0
     Motion Blur Disabled: colortex1 -> colortex1

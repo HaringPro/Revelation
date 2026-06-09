@@ -71,7 +71,7 @@
 	|	colortex0	|   rgba16f  		|	Full res  	|	Indirect specular -> Scene data
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
 	|	colortex2	|   rgba16f         |	Half res	|	Indirect diffuse history
-	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse
+	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse [-> SR input color]
 	|	colortex4	|   r11f_g11f_b10f  |	Full res  	|	Reprojected scene history -> Bloom tiles
 	|	colortex5	|   rgba16f	  		|	Full res   	|	Upscaled Scene Color
 	|	colortex6	|   rgba8           |	Full res  	|	Solid albedo, rain alpha
@@ -87,16 +87,3 @@
 
 --------------------------------------------------------------------------------
 */
-
-// Super Resolution Support
-#if SR_ENABLE
-/*
-    // SR input color buffer - Scaled size
-    const int 	colortex20Format 			= RGBA16F;
-    const bool 	colortex20Clear				= false;
-
-    // SR input exposure buffer - 1x1
-    // const int 	colortex21Format 			= R16F;
-    // const bool 	colortex21Clear				= false;
-*/
-#endif

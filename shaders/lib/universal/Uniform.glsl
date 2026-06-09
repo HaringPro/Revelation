@@ -17,11 +17,6 @@ uniform usampler2D colortex13;
 uniform sampler2D colortex14;
 uniform sampler2D colortex15;
 
-#if SR_ENABLE
-uniform sampler2D colortex21;
-uniform sampler2D colortex20;
-#endif
-
 uniform sampler2D depthtex0;
 uniform sampler2D depthtex1;
 uniform sampler2D depthtex2;
