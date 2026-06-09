@@ -80,6 +80,12 @@ vec2 endPortalLayer(vec2 coord, float layer) {
 
 //======// Main //================================================================================//
 void main() {
+    #if (RENDER_SCALE_1000X != 1000) || SR_ENABLE
+        if (any(greaterThanEqual(gl_FragCoord.xy, scaledViewSize))) {
+            discard;
+        }
+    #endif
+
     vec2 deltaUv1 = dFdx(texCoord);
     vec2 deltaUv2 = dFdy(texCoord);
 

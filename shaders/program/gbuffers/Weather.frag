@@ -15,16 +15,16 @@
 
 //======// Output //==============================================================================//
 
-/* RENDERTARGETS: 6,7 */
-layout(location = 0) out vec4 albedoOut;
-layout(location = 1) out uvec2 materialOut;
+/* RENDERTARGETS: 6 */
+out vec4 albedoOut;
 
 //======// Input //===============================================================================//
 
-flat in vec4 vertColor;
-in vec2 lightmap;
+in vec2 texCoord;
 
 //======// Uniform //=============================================================================//
+
+uniform sampler2D tex;
 
 uniform vec2 scaledViewSize;
 
@@ -36,10 +36,9 @@ void main() {
         }
     #endif
 
-	if (vertColor.a < 0.1) discard;
+	float albedoAlpha = texture(tex, texCoord).a;
 
-	albedoOut = vec4(vertColor.rgb, 1.0);
+	if (albedoAlpha < 0.1) discard;
 
-	materialOut.x = Pack2x8U(lightmap);
-	materialOut.y = lightmap.x > 0.999 ? 20u : 1u;
+	albedoOut.a = albedoAlpha;
 }

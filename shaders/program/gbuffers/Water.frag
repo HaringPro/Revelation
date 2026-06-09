@@ -62,6 +62,12 @@ in vec3 worldPos;
 
 //======// Main //================================================================================//
 void main() {
+    #if (RENDER_SCALE_1000X != 1000) || SR_ENABLE
+        if (any(greaterThanEqual(gl_FragCoord.xy, scaledViewSize))) {
+            discard;
+        }
+    #endif
+
 	// Construct TBN matrix
 	vec3 deltaPos1 = dFdx(worldPos);
 	vec3 deltaPos2 = dFdy(worldPos);
