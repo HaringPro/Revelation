@@ -26,10 +26,9 @@
         "noisetex",
         "depthtex0"
     ],
-    #if defined(SR_ENABLE) && SR_ENABLE == 1
+    #if SR_ENABLE
     "renderScale": [SR_RENDER_SCALE_FACTOR],
-    #else
-    #if RENDER_SCALE_1000X == 500
+    #elif RENDER_SCALE_1000X == 500
     "renderScale": [0.5],
     #elif RENDER_SCALE_1000X == 588
     "renderScale": [0.588],
@@ -43,9 +42,6 @@
     "renderScale": [0.85],
     #elif RENDER_SCALE_1000X == 900
     "renderScale": [0.9],
-    #elif RENDER_SCALE_1000X == 1000
-    "renderScale": [1.0],
-    #endif
     #endif
 
     "taaOffset": "{ return taaJitter; }"
