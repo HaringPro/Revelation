@@ -11,6 +11,7 @@
 
 //======// Utility //=============================================================================//
 
+#define RENDER_SCALE_VERTEX
 #include "/lib/Utility.glsl"
 
 //======// Output //==============================================================================//
@@ -50,5 +51,5 @@ void main() {
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);
 
-    transformVertexPosition(gl_Position, dhProjection, viewPos, taaJitter);
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 }
