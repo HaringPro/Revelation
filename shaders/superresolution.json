@@ -19,7 +19,7 @@
                 "inputs": {
                     "color": {
                         "enabled": true,
-                        "src": "colortex20",
+                        "src": "autotex20",
                         "region": [
                             0,
                             0,

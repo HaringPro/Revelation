@@ -183,7 +183,7 @@ void main() {
 	    	color = texelFetch(colortex1, texelPos, 0).rgb;
 	    #endif
     #else
-        color = texelFetch(colortex22, texelPos, 0).rgb;
+        color = texture(colortex0, texelToUv(texelPos)).rgb;
     #endif
 
 	// Bloom and fog
