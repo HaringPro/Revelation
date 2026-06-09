@@ -89,7 +89,7 @@ void main() {
 	#elif defined CLOUD_TAAU_ENABLED
 		vec2 renderCoord = (coord + taaJitter * 0.5) * CLOUD_TAAU_SCALE;
 	#else
-		vec2 renderCoord = coord;
+		#define renderCoord coord
 	#endif
 
 	// x: sunlight, y: skylight, z: depth, w: transmittance
