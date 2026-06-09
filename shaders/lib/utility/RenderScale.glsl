@@ -1,4 +1,5 @@
 #if RENDER_SCALE_1000X != 1000
+    #ifdef RENDER_SCALE_VERTEX
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
 	    vertPos = project(gl_ProjectionMatrix, viewPos);
         vertPos.xy /= vertPos.w;
@@ -8,6 +9,7 @@
         #endif
         vertPos.xy *= vertPos.w;
     }
+    #endif
 
     ivec2 scaleTexelPos(ivec2 texelPos) {
         return ivec2(vec2(texelPos) * RENDER_SCALE);
@@ -17,12 +19,14 @@
         return ivec2(vec2(texelPos) * rcp(RENDER_SCALE));
     }
 #else
+    #ifdef RENDER_SCALE_VERTEX
     void transformVertexPosition(out vec4 vertPos, vec3 viewPos, vec2 jitter) {
 	    vertPos = project(gl_ProjectionMatrix, viewPos);
         #ifdef TAA_ENABLED
             vertPos.xy += jitter * vertPos.w;
         #endif
     }
+    #endif
 
     #define scaleTexelPos(texelPos) texelPos
     #define unscaleTexelPos(texelPos) texelPos
