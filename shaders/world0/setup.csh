@@ -1,7 +1,5 @@
 #version 460 compatibility
 
-#define RENDER_SCALE_NO_VERTEX_TRANSFORM
-
 #define CLEAR_IMAGE skyMapImg
 #define CLEAR_COLOR vec4(0.0)
 
