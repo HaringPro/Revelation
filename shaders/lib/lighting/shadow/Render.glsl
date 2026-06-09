@@ -161,7 +161,7 @@ float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount
 	rayDir *= inversesqrt(sdot(rayDir.xy));
 
 	vec3 rayStep = rayDir * (0.05 / float(SCREEN_SPACE_SHADOWS_SAMPLES));
-	rayPos += dither * rayStep;
+	rayPos += dither * rayStep + rayDir * maxOf(scaledTexelSize);
 
 	float viewDistInv = inversesqrt(sdot(viewPos));
 	float diffTolerance = 5e-4 * viewDistInv;
