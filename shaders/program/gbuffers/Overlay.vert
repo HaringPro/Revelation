@@ -25,21 +25,7 @@ uniform vec2 taaJitter;
 //======// Main //================================================================================//
 void main() {
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	gl_Position = project(gl_ProjectionMatrix, viewPos);
-
-    #ifdef SUPER_RESOLUTION
-        transformVertexPosition(
-            gl_Position,
-            taaJitter,
-            SR_RENDER_SCALE_FACTOR
-        );
-     #else
-        transformVertexPosition(
-            gl_Position,
-            taaJitter,
-            MC_RENDER_SCALE_FACTOR
-        );
-     #endif
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 
 	vertColor = gl_Color;
 	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);

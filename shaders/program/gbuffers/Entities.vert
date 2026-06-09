@@ -54,22 +54,7 @@ void main() {
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	// worldPos = transMAD(gbufferModelViewInverse, viewPos);
-	gl_Position = project(gl_ProjectionMatrix, viewPos);
-
-    #ifdef SUPER_RESOLUTION
-        transformVertexPosition(
-            gl_Position,
-            taaJitter,
-            SR_RENDER_SCALE_FACTOR
-        );
-     #else
-        transformVertexPosition(
-            gl_Position,
-            taaJitter,
-            MC_RENDER_SCALE_FACTOR
-        );
-     #endif
+    transformVertexPosition(gl_Position, viewPos, taaJitter);
 
 	#if defined MC_NORMAL_MAP
 		tbnMatrix[2] = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);

@@ -173,9 +173,9 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define AGN_RESOLUTION 16.0 // [4.0 8.0 16.0 32.0 64.0 128.0 256.0 512.0 1024.0]
 
 /* Parallax */
-	#define PARALLAX
-	#define PARALLAX_DEPTH_WRITE
+	// #define PARALLAX
 
+    #ifdef PARALLAX
     // #define SMOOTH_PARALLAX
 	#define PARALLAX_SHADOW
 	#define PARALLAX_BASED_NORMAL
@@ -184,6 +184,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 	#define PARALLAX_DEPTH 0.25 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0][0.01 0.02 0.05 0.07 0.1 0.15 0.2 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.5 3.0 4.0 5.0 7.0 10.0]
 	#define PARALLAX_REFINEMENT
 	#define PARALLAX_REFINEMENT_STEPS 8 // [4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100] [2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 18 24]
+    #endif
 
 /* Reflections */
 	#define ROUGH_REFLECTIONS
@@ -232,26 +233,26 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 //======// Post-Processing //=====================================================================//
 
-	#define MC_RENDER_SCALE_FACTOR_1000X 1000 // [500 588 600 667 750 850 900 1000]
-	#if MC_RENDER_SCALE_FACTOR_1000X == 500
-		#define MC_RENDER_SCALE_FACTOR 0.5
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 588
-		#define MC_RENDER_SCALE_FACTOR 0.588
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 600
-		#define MC_RENDER_SCALE_FACTOR 0.600
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 667
-		#define MC_RENDER_SCALE_FACTOR 0.667
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 750
-		#define MC_RENDER_SCALE_FACTOR 0.75
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 850
-		#define MC_RENDER_SCALE_FACTOR 0.85
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 900
-		#define MC_RENDER_SCALE_FACTOR 0.9
-	#elif MC_RENDER_SCALE_FACTOR_1000X == 1000
-		#define MC_RENDER_SCALE_FACTOR 1.0
+	#define RENDER_SCALE_1000X 1000 // [500 588 600 667 750 850 900 1000]
+	#if RENDER_SCALE_1000X == 500
+		#define RENDER_SCALE 0.5
+	#elif RENDER_SCALE_1000X == 588
+		#define RENDER_SCALE 0.588
+	#elif RENDER_SCALE_1000X == 600
+		#define RENDER_SCALE 0.600
+	#elif RENDER_SCALE_1000X == 667
+		#define RENDER_SCALE 0.667
+	#elif RENDER_SCALE_1000X == 750
+		#define RENDER_SCALE 0.75
+	#elif RENDER_SCALE_1000X == 850
+		#define RENDER_SCALE 0.85
+	#elif RENDER_SCALE_1000X == 900
+		#define RENDER_SCALE 0.9
+	#elif RENDER_SCALE_1000X == 1000
+		#define RENDER_SCALE 1.0
 	#endif
 
-    #define UPSCALE_MODE 10 // [10 20]
+    #define UPSCALE_MODE 0 // [0 1]
 
 /* Depth of Field */
 	// #define DEPTH_OF_FIELD

@@ -80,7 +80,7 @@
 	|	colortex9	|   rgba16f     	|	Full res	|	Cloud history
 	|	colortex10	|                   |				|	Unused
 	|	colortex11	|   rgb32ui         |	Half res  	|	Volumetric fog, linear depth
-	|	colortex12	|   rg16          	|	Full res	|	Water data
+	|	colortex12	|   rg16          	|	Full res	|	Parallax offset -> Water data
 	|	colortex13	|   r8i	        	|	Full res  	|	Cloud frame index
 	|	colortex14	|   rgb16f          |	Half res	|	Encoded normal, linear depth
 	|	colortex15	|   	           	|				|	Unused

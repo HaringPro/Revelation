@@ -29,21 +29,21 @@
     #if defined(SR_ENABLE) && SR_ENABLE == 1
     "renderScale": [SR_RENDER_SCALE_FACTOR],
     #else
-    #if MC_RENDER_SCALE_FACTOR_1000X == 500
+    #if RENDER_SCALE_1000X == 500
     "renderScale": [0.5],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 588
+    #elif RENDER_SCALE_1000X == 588
     "renderScale": [0.588],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 600
+    #elif RENDER_SCALE_1000X == 600
     "renderScale": [0.6],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 667
+    #elif RENDER_SCALE_1000X == 667
     "renderScale": [0.667],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 750
+    #elif RENDER_SCALE_1000X == 750
     "renderScale": [0.75],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 850
+    #elif RENDER_SCALE_1000X == 850
     "renderScale": [0.85],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 900
+    #elif RENDER_SCALE_1000X == 900
     "renderScale": [0.9],
-    #elif MC_RENDER_SCALE_FACTOR_1000X == 1000
+    #elif RENDER_SCALE_1000X == 1000
     "renderScale": [1.0],
     #endif
     #endif

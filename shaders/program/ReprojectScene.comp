@@ -33,8 +33,8 @@ writeonly restrict uniform image2D colorimg4;
 //======// Main //================================================================================//
 void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
-	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
-	texelPos = scaleTexelPos(texelPos);
+	ivec2 texelPos = scaleTexelPos(ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy));
+
 	float depth = loadDepth0(texelPos);
 	vec2 previousCoord = ReprojectScreenPos(vec3(texelToUvScaled(texelPos), depth)).xy;
 

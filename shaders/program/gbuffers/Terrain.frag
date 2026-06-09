@@ -20,9 +20,9 @@ layout (location = 0) out vec4 albedoOut;
 layout (location = 1) out uvec4 materialOut;
 layout (location = 2) out vec4 normalOut;
 
-#if defined PARALLAX && defined PARALLAX_SHADOW && !defined PARALLAX_DEPTH_WRITE
+#if defined PARALLAX && defined PARALLAX_SHADOW
 /* RENDERTARGETS: 6,7,8,12 */
-layout (location = 3) out float parallaxShadowOut;
+layout (location = 3) out float parallaxOffsetOut;
 #endif
 
 //======// Input //===============================================================================//
@@ -127,8 +127,8 @@ void main() {
         #endif
 
         #ifdef PARALLAX
-            #ifdef PARALLAX_DEPTH_WRITE
-                gl_FragDepth = gl_FragCoord.z;
+            #ifdef PARALLAX_SHADOW
+                parallaxOffsetOut = 0.0;
             #endif
 
             float sampleHeight = SampleHeight(texCoord);
@@ -142,12 +142,9 @@ void main() {
                 vec3 localCoord = CalculateParallax(tangentPos * worldLengthInv, dither, parallaxFade);
                 realTexCoord = localToAtlas(localCoord.xy);
 
-                #ifdef PARALLAX_DEPTH_WRITE
-                    gl_FragDepth = ViewToScreenDepth(ScreenToViewDepth(gl_FragDepth) - oms(localCoord.z) * PARALLAX_DEPTH);
-                #elif defined PARALLAX_SHADOW
-                    if (dot(geoNormal, shadowDirWorld) > 1e-3) {
-                        parallaxShadowOut = CalculateParallaxShadow(shadowDirWorld * tbnMatrix, localCoord, dither, parallaxFade);
-                    }
+                #ifdef PARALLAX_SHADOW
+                    viewPos.z += viewPos.z / maxEps(-dot(worldPos, geoNormal)) * oms(localCoord.z) * PARALLAX_DEPTH;
+                    parallaxOffsetOut = ViewToScreenDepth(viewPos.z) - gl_FragCoord.z;
                 #endif
 
                 #ifdef PARALLAX_BASED_NORMAL

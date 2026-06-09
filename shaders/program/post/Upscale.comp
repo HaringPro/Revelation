@@ -20,12 +20,6 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 #include "/lib/Utility.glsl"
 
-#if UPSCALE_MODE == 20
-#define UPSCALE_FSR1 1
-#endif
-
-
-
 //======// Uniform //=============================================================================//
 
 restrict writeonly uniform image2D colorimg5; // Upscaled scene color
@@ -34,24 +28,11 @@ restrict writeonly uniform image2D colorimg5; // Upscaled scene color
 
 //======// Function //============================================================================//
 
-#include "/lib/universal/Random.glsl"
-
-#if UPSCALE_FSR1 == 1
 #define FSR1_EASU_IN colortex0
 #define FSR1_EASU_OUT colorimg5
 #include "/ffx/fsr1/ffx_fsr1.glsl"
-#endif
-
 
 //======// Main //================================================================================//
 void main() {
-    #if UPSCALE_FSR1 == 1
-        fsr1Easu(
-            scaledViewSize,
-            scaledViewSize,
-            originViewSize
-        );
-    #else
-        discard;
-    #endif
+    fsr1Easu(scaledViewSize, scaledViewSize, originViewSize);
 }
