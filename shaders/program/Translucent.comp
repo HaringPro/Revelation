@@ -79,7 +79,7 @@ vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texelPos = scaleTexelPos(ivec2(gl_GlobalInvocationID.xy));
+	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
 
 	uvec2 materialPack = loadMaterialPack(texelPos).xy;
 
