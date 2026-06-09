@@ -16,10 +16,10 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7,8,12 */
-layout (location = 0) out vec4 albedoOut;
-layout (location = 1) out uvec2 materialOut;
-layout (location = 2) out vec4 normalOut;
-layout (location = 3) out vec4 waterOut;
+layout(location = 0) out vec4 albedoOut;
+layout(location = 1) out uvec2 materialOut;
+layout(location = 2) out vec4 normalOut;
+layout(location = 3) out vec4 waterOut;
 
 //======// Uniform //=============================================================================//
 

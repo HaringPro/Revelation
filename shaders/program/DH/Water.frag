@@ -18,9 +18,9 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 7,8,12 */
-layout (location = 0) out uvec4 materialOut;
-layout (location = 1) out vec4 normalOut;
-layout (location = 2) out vec4 waterOut;
+layout(location = 0) out uvec4 materialOut;
+layout(location = 1) out vec4 normalOut;
+layout(location = 2) out vec4 waterOut;
 
 //======// Uniform //=============================================================================//
 

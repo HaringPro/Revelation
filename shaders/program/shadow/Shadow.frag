@@ -17,8 +17,8 @@
 
 //======// Output //==============================================================================//
 
-layout (location = 0) out vec3 shadowcolor0Out;
-layout (location = 1) out vec4 shadowcolor1Out;
+layout(location = 0) out vec3 shadowcolor0Out;
+layout(location = 1) out vec4 shadowcolor1Out;
 
 //======// Input //===============================================================================//
 

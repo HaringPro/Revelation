@@ -19,8 +19,8 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 9,13 */
-layout (location = 0) out vec4 cloudOut;
-layout (location = 1) out uint frameOut;
+layout(location = 0) out vec4 cloudOut;
+layout(location = 1) out uint frameOut;
 
 //======// Uniform //=============================================================================//
 

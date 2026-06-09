@@ -16,9 +16,9 @@
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 6,7,8 */
-layout (location = 0) out vec4 albedoOut;
-layout (location = 1) out uvec4 materialOut;
-layout (location = 2) out vec4 normalOut;
+layout(location = 0) out vec4 albedoOut;
+layout(location = 1) out uvec4 materialOut;
+layout(location = 2) out vec4 normalOut;
 
 //======// Input //===============================================================================//
 

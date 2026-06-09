@@ -22,8 +22,8 @@ const bool colortex3MipmapEnabled = true;
 //======// Output //==============================================================================//
 
 /* RENDERTARGETS: 2,14 */
-layout (location = 0) out vec4 integratedDiffuse;
-layout (location = 1) out vec3 encodedNormalDepth;
+layout(location = 0) out vec4 integratedDiffuse;
+layout(location = 1) out vec3 encodedNormalDepth;
 
 //======// Uniform //=============================================================================//
 

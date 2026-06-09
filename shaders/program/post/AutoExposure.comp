@@ -21,7 +21,7 @@
 
 //======// Input //===============================================================================//
 
-layout (local_size_x = HISTOGRAM_BIN_COUNT, local_size_y = 1) in;
+layout(local_size_x = HISTOGRAM_BIN_COUNT, local_size_y = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
 //======// Uniform //=============================================================================//
