@@ -57,7 +57,10 @@ void main() {
         // Increase steps for lower elevation
         float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - shadowDirWorld.y);
 
-        vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cumulusBottomRadius, cumulusTopRadius);
+        // vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cumulusBottomRadius, cumulusTopRadius);
+        float top = RaySphereIntersection(rayPos, shadowDirWorld, cumulusTopRadius).y;
+	    float bottom = RaySphereIntersection(rayPos, shadowDirWorld, cumulusBottomRadius).y;
+	    vec2 intersection = vec2(bottom, top);
         float stepLength = (intersection.y - intersection.x) * rcp(steps);
         vec3 rayStep = shadowDirWorld * stepLength;
 
