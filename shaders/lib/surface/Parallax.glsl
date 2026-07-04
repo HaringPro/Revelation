@@ -56,11 +56,11 @@ vec3 HeightBasedNormal(vec2 localCoord) {
 
 const float rSteps = 1.0 / float(PARALLAX_SAMPLES);
 
-vec3 CalculateParallax(vec3 tangentDir, float dither, float parallaxFade) {
+vec3 CalculateParallax(vec2 localCoord, vec3 tangentDir, float dither, float parallaxFade) {
 	vec3 rayStep = vec3(tangentDir.xy, 1.0) * -rSteps;
 	rayStep.xy *= PARALLAX_DEPTH * parallaxFade / tangentDir.z;
 
-	vec3 rayPos = vec3(atlasToLocal(texCoord), 1.0) + rayStep * dither;
+	vec3 rayPos = vec3(localCoord, 1.0) + rayStep * dither;
 
 	for (uint i = 0u; i < PARALLAX_SAMPLES; ++i) {
 		float sampleHeight = SampleHeight(rayPos.xy);

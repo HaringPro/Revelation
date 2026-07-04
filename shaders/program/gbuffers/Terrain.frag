@@ -137,16 +137,18 @@ void main() {
                 parallaxOffsetOut = 0.0;
             #endif
 
-            float sampleHeight = SampleHeight(texCoord);
-            vec3 tangentPos = worldPos * tbnMatrix;
+            vec2 localCoord = atlasToLocal(texCoord);
+            float sampleHeight = SampleHeight(localCoord);
 
             float worldLengthSq = sdot(worldPos);
             float worldLengthInv = inversesqrt(worldLengthSq);
             float parallaxFade = smoothstep(64.0, 32.0, worldLengthSq * worldLengthInv);
 
             if (lessThanFLT1(sampleHeight) && parallaxFade > EPS) {
-                vec3 localCoord = CalculateParallax(tangentPos * worldLengthInv, dither, parallaxFade);
-                realTexCoord = localToAtlas(localCoord.xy);
+                vec3 tangentWorldPos = worldPos * tbnMatrix;
+                vec3 tangentWorldDir = tangentWorldPos * worldLengthInv;
+                vec3 localPos = CalculateParallax(localCoord, tangentWorldDir, dither, parallaxFade);
+                realTexCoord = localToAtlas(localPos.xy);
 
                 vec4 normalTex = textureGrad(normals, realTexCoord, deltaUv1, deltaUv2);
                 tangentNormal = normalTex.xyz;
@@ -154,13 +156,13 @@ void main() {
 
                 #ifdef PARALLAX_SHADOW
                     // Store offset between parallaxed screen depth and original depth
-                    viewPos.z += viewPos.z / maxEps(-dot(worldPos, geoNormal)) * oms(localCoord.z) * PARALLAX_DEPTH;
+                    viewPos.z += viewPos.z / maxEps(-dot(worldPos, geoNormal)) * oms(localPos.z) * PARALLAX_DEPTH;
                     parallaxOffsetOut = ViewToScreenDepth(viewPos.z) - gl_FragCoord.z;
                 #endif
 
                 #ifdef PARALLAX_BASED_NORMAL
-                if (normalTex.w > localCoord.z + rcp255) {
-                    tangentNormal = HeightBasedNormal(localCoord.xy);
+                if (normalTex.w > localPos.z + rcp255) {
+                    tangentNormal = HeightBasedNormal(localPos.xy);
                 }
                 #endif
             }
