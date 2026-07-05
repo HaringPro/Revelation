@@ -36,8 +36,21 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #include "/lib/universal/Random.glsl"
 
-const mat4 shadowProj = BuildOrthoMat(CLOUD_SHADOW_DISTANCE * 32.0, CLOUD_SHADOW_DISTANCE * 32.0, 0.0, cumulusTopRadius);
-const mat4 shadowInvProj = BuildInvOrthoMat(CLOUD_SHADOW_DISTANCE * 32.0, CLOUD_SHADOW_DISTANCE * 32.0, 0.0, cumulusTopRadius);
+const float size = CLOUD_SHADOW_DISTANCE * 32.0;
+
+const mat4 shadowProj = mat4(
+	2.0 / size, 0.0, 0.0, 0.0,
+	0.0, 2.0 / size, 0.0, 0.0,
+	0.0, 0.0, -2.0 / cumulusTopRadius, -1.0,
+	0.0, 0.0, 0.0, 1.0
+);
+
+const mat4 shadowInvProj = mat4(
+	0.5 * size, 0.0, 0.0, 0.0,
+	0.0, 0.5 * size, 0.0, 0.0,
+	0.0, 0.0, -0.5 * cumulusTopRadius, -0.5 * cumulusTopRadius,
+	0.0, 0.0, 0.0, 1.0
+);
 
 //======// Main //================================================================================//
 void main() {
