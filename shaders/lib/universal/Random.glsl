@@ -85,6 +85,25 @@ uint triple32(uint x) {
 	return x;
 }
 
+// https://www.pcg-random.org/
+uint pcg(inout uint state) {
+    state = state * 747796405u + 2891336453u;
+    uint result = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (result >> 22u) ^ result;
+}
+
+float nextFloat(inout uint state) {
+    return float(pcg(state)) * rcp(4294967295.0);
+}
+
+vec2 nextVec2(inout uint state) {
+    return vec2(nextFloat(state), nextFloat(state));
+}
+
+uint initRandomState(uvec2 texelIndex, uint frameIndex) {
+	return triple32(EncodeMorton2D(texelIndex)) + frameIndex;
+}
+
 //================================================================================================//
 
 // Rn sequence from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
@@ -160,21 +179,6 @@ vec2 SampleStbnUnitvec2(ivec2 texel, int frame) {
 
 //================================================================================================//
 
-// Bayer Dithering
-float bayer2(vec2 a) {
-	a = floor(a);
-	return fract(dot(a, vec2(0.5, a.y * 0.75)));
-}
-
-float bayer4(vec2 a)   { return bayer2 (0.5 * a) * 0.25 + bayer2(a); }
-float bayer8(vec2 a)   { return bayer4 (0.5 * a) * 0.25 + bayer2(a); }
-float bayer16(vec2 a)  { return bayer8 (0.5 * a) * 0.25 + bayer2(a); }
-float bayer32(vec2 a)  { return bayer16(0.5 * a) * 0.25 + bayer2(a); }
-float bayer64(vec2 a)  { return bayer32(0.5 * a) * 0.25 + bayer2(a); }
-float bayer128(vec2 a) { return bayer64(0.5 * a) * 0.25 + bayer2(a); }
-
-//================================================================================================//
-
 // Interleaved Gradient Noise
 // https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
 // https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
@@ -216,110 +220,6 @@ float dither256x256(uvec2 fragCoord) {
     return uintBitsToFloat(
         floatBitsToUint(1.0) | z
     ) - 1.0;
-}
-
-//================================================================================================//
-
-/***************************************************************************
-# Copyright (c) 2015-21, NVIDIA CORPORATION. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**************************************************************************/
-
-/** Utility functions for Morton codes.
-	This is using the usual bit twiddling. See e.g.: https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
-
-	The interleave functions are named based to their output size in bits.
-	The deinterleave functions are named based on their input size in bits.
-	So, deinterleave_16bit(interleave_16bit(x)) == x should hold true.
-
-	TODO: Make this a host/device shared header, ensure code compiles on the host.
-	TODO: Add optimized 8-bit and 2x8-bit interleaving functions.
-	TODO: Use NvApi intrinsics to optimize the code on NV.
-*/
-
-/** 32-bit bit interleave (Morton code).
-	\param[in] v 16-bit values in the LSBs of each component (higher bits don't matter).
-	\return 32-bit value.
-*/
-uint interleave_32bit(uvec2 v) {
-	uint x = v.x & 0x0000ffffu;              // x = ---- ---- ---- ---- fedc ba98 7654 3210
-	uint y = v.y & 0x0000ffffu;
-
-	x = (x | (x << 8)) & 0x00FF00FFu;        // x = ---- ---- fedc ba98 ---- ---- 7654 3210
-	x = (x | (x << 4)) & 0x0F0F0F0Fu;        // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
-	x = (x | (x << 2)) & 0x33333333u;        // x = --fe --dc --ba --98 --76 --54 --32 --10
-	x = (x | (x << 1)) & 0x55555555u;        // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
-
-	y = (y | (y << 8)) & 0x00FF00FFu;
-	y = (y | (y << 4)) & 0x0F0F0F0Fu;
-	y = (y | (y << 2)) & 0x33333333u;
-	y = (y | (y << 1)) & 0x55555555u;
-
-	return x | (y << 1);
-}
-
-/** Generates a pair of 32-bit pseudorandom numbers based on a pair of 32-bit values.
-
-	The code uses a 64-bit block cipher, the Tiny Encryption Algorithm (TEA) by Wheeler et al., 1994.
-	The 128-bit key is fixed and adapted from here: https://www.ibiblio.org/e-notes/webcl/mc.htm.
-	This function can be useful for seeding other pseudorandom number generators.
-
-	\param[in] v0 The first value (low dword of the block).
-	\param[in] v1 The second value (high dword of the block).
-	\param[in] iterations Number of iterations (the authors recommend 16 at a minimum).
-	\return Two pseudorandom numbers (the block cipher of (v0,v1)).
-*/
-uvec2 blockCipherTEA(uint v0, uint v1) {
-	uint sum = 0u;
-	const uint delta = 0x9e3779b9u;
-	const uint k[4] = uint[4](0xa341316cu, 0xc8013ea4u, 0xad90777du, 0x7e95761eu); // 128-bit key.
-	for (uint i = 0u; i < 16u; ++i) {
-		sum += delta;
-		v0 += ((v1 << 4) + k[0]) ^ (v1 + sum) ^ ((v1 >> 5) + k[1]);
-		v1 += ((v0 << 4) + k[2]) ^ (v0 + sum) ^ ((v0 >> 5) + k[3]);
-	}
-	return uvec2(v0, v1);
-}
-
-float nextFloat(inout uint currentNum) {
-	const uint A = 1664525u;
-	const uint C = 1013904223u;
-	currentNum = (A * currentNum + C);
-	return float(currentNum >> 8) * rcp(16777216.0);
-}
-
-vec2 nextVec2(inout uint currentNum) {
-	vec2 noise;
-	noise.x = nextFloat(currentNum);
-	noise.y = nextFloat(currentNum);
-	return noise;
-}
-
-uint initNoiseGenerator(uvec2 texelIndex, uint frameIndex) {
-	return blockCipherTEA(interleave_32bit(texelIndex), frameIndex).x;
 }
 
 //================================================================================================//

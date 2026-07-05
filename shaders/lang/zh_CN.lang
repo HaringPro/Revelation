@@ -102,6 +102,7 @@ option.CLOUD_TAAU_SCALE=升采样缩放比
 suffix.CLOUD_TAAU_SCALE=x
 
 option.CLOUD_TAAU_CLIPPING=方差裁切
+option.CLOUD_TAAU_CLIPPING.comment=将历史帧云数据裁剪到当前 3×3 邻域统计范围（均值±标准差）内，防止云层重影。
 option.CLOUD_MAX_ACCUM_FRAMES=最大累积帧数
 option.CLOUD_TAAU_ANTIFLICKER=抗闪烁
 
@@ -171,7 +172,9 @@ value.VF_NOISE_QUALITY.LOW=低
 value.VF_NOISE_QUALITY.MEDIUM=中
 value.VF_NOISE_QUALITY.HIGH=高
 option.VF_TIME_FADE=时段过渡
+option.VF_TIME_FADE.comment=根据游戏内时间动态调整体积雾密度，正午最浓、日落及夜间逐渐消退，模拟真实雾气日变化。
 option.COLORED_VOLUMETRIC_FOG=彩色阴影
+option.COLORED_VOLUMETRIC_FOG.comment=体积雾步进时检测染色玻璃等半透明方块的彩色阴影，将透射颜色混入散射光，产生彩色光束效果。
 
 option.UW_VOLUMETRIC_FOG=水下体积雾
 option.UW_VF_MAX_SAMPLES=水下体积雾最大采样数
@@ -284,6 +287,7 @@ option.NORMAL_MAPPING=法线贴图支持
 option.SPECULAR_MAPPING=高光贴图支持
 
 option.LABPBR_HARDCODED_METAL=labPBR金属预设
+option.LABPBR_HARDCODED_METAL.comment=LabPBR 格式下将 metal 值 230-237 映射为 8 种真实金属（铁/金/铝/铬/铜/铅/铂/银）的物理 F0 反射率，而非直接用反照率。
 
 option.AUTO_GENERATED_NORMAL=自动生成法线
 option.AGN_RESOLUTION=分辨率
@@ -322,8 +326,10 @@ option.SSRT_REFINEMENT_STEPS=重采样精度
 option.SSRT_SKY_TRACING=追踪天空
 
 option.SPECULAR_IMPORTANCE_SAMPLING_BIAS=重要性采样偏度
+option.SPECULAR_IMPORTANCE_SAMPLING_BIAS.comment=缩放 GGX 可见法线采样的随机参数，使样本偏向镜面波瓣中心。值越高镜面噪点越少，但可能丢失粗糙表面的宽波瓣贡献。
 
 option.ROUGH_REFLECTIONS=粗糙反射支持
+option.ROUGH_REFLECTIONS.comment=粗糙度低于阈值的表面视为完美镜面（直接镜面反射，无 GGX 采样），高于阈值则进行粗糙光泽反射。
 option.ROUGH_REFLECTIONS_THRESHOLD=粗糙反射阈值
 option.REFLECTION_FILTER=反射过滤
 
@@ -359,11 +365,15 @@ option.SELECTION_BOX_COLOR_B=选择框颜色-§1蓝
 # Post-Processing
 option.TAA_ENABLED=时域抗锯齿(TAA)
 option.TAA_CLOSEST_FRAGMENT=片元择邻
+option.TAA_CLOSEST_FRAGMENT.comment=从当前像素及其四个对角邻域中选择深度最近的片元进行历史重投影，减少运动物体边缘的重影和拖尾。
 option.TAA_SHARPEN=锐化
 option.TAA_CLIPPING=方差裁切
+option.TAA_CLIPPING.comment=计算当前像素 3×3 邻域的均值和标准差，将历史帧颜色裁剪到该统计椭球内，防止差异过大的历史数据产生重影。
 option.TAA_AGGRESSION=裁切容差
+option.TAA_AGGRESSION.comment=控制方差裁切时允许历史颜色偏离邻域均值的标准差倍数。值越小裁切越严格，重影越少但可能引入噪点。
 option.TAA_MAX_ACCUM_FRAMES=最大累积帧数
 option.TAA_ANTIFLICKER=抗闪烁
+option.TAA_ANTIFLICKER.comment=根据当前帧与历史帧的亮度对比度动态增加混合权重，使 TAA 在亮度剧烈波动时更偏向当前帧来抑制闪烁。值越高抑制越强。
 
 option.MOTION_BLUR=动态模糊
 option.MOTION_BLUR_SAMPLES=动态模糊采样数
@@ -375,6 +385,7 @@ value.BLOOM_BLENDING_MODE.0=叠加
 value.BLOOM_BLENDING_MODE.1=插值
 value.BLOOM_BLENDING_MODE.2=重映射
 option.BLOOM_KARIS_AVERAGE=Karis平均
+option.BLOOM_KARIS_AVERAGE.comment=首次泛光降采样时用 Karis 加权平均（1/(1+luminance)）降低极高亮像素的权重，防止太阳等亮区过度扩散导致全屏泛白。
 option.BLOOM_INTENSITY=泛光强度
 option.BLOOMY_FOG=泛光雾
 option.BLOOMY_FOG_INTENSITY=泛光雾强度
@@ -395,6 +406,7 @@ option.HISTOGRAM_UPPER_BOUND=直方图上限
 option.MANUAL_EV=手动曝光值
 
 option.PURKINJE_SHIFT=浦肯野效应
+option.PURKINJE_SHIFT.comment=模拟人眼在低光照下视锥细胞→视杆细胞切换的色觉偏移：暗处颜色向蓝绿偏移（视杆细胞敏感色），红色减弱。光照越暗效果越强。
 option.PURKINJE_SHIFT_STRENGTH=浦肯野效应强度
 option.PURKINJE_SHIFT_NOISE=浦肯野效应噪声
 option.PURKINJE_SHIFT_R=浦肯野效应-§4红

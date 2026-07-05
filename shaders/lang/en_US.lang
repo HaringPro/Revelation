@@ -98,6 +98,7 @@ option.CLOUD_TAAU_SCALE=Upsampling Scale
 suffix.CLOUD_TAAU_SCALE=x
 
 option.CLOUD_TAAU_CLIPPING=Upsampling Clipping
+option.CLOUD_TAAU_CLIPPING.comment=Clips history-frame cloud data to the statistical range (mean ± stddev) of the current 3×3 neighborhood, preventing cloud ghosting.
 option.CLOUD_MAX_ACCUM_FRAMES=Max Accumulated Frames
 option.CLOUD_TAAU_ANTIFLICKER=Anti-flicker
 
@@ -167,7 +168,9 @@ value.VF_NOISE_QUALITY.LOW=Low
 value.VF_NOISE_QUALITY.MEDIUM=Medium
 value.VF_NOISE_QUALITY.HIGH=High
 option.VF_TIME_FADE=Volumetric Fog Time Fade
+option.VF_TIME_FADE.comment=Dynamically adjusts volumetric fog density based on time of day: strongest at noon, gradually fading during sunset and night, simulating real fog driven by solar heating.
 option.COLORED_VOLUMETRIC_FOG=Colored Volumetric Fog
+option.COLORED_VOLUMETRIC_FOG.comment=During volumetric fog raymarching, detects colored shadows from translucent blocks like stained glass and mixes the transmitted color into scattered light, producing colored light shafts.
 
 option.UW_VOLUMETRIC_FOG=Underwater Volumetric Fog
 option.UW_VF_MAX_SAMPLES=Underwater Volumetric Fog Max Samples
@@ -280,6 +283,7 @@ option.NORMAL_MAPPING=Normal Mapping
 option.SPECULAR_MAPPING=Specular Mapping
 
 option.LABPBR_HARDCODED_METAL=labPBR Hardcoded Metal
+option.LABPBR_HARDCODED_METAL.comment=In LabPBR format, maps metal values 230–237 to physically-based spectral F0 reflectance for 8 real metals (Iron/Gold/Aluminium/Chromium/Copper/Lead/Platinum/Silver) instead of using albedo directly.
 
 option.AUTO_GENERATED_NORMAL=Auto Generated Normal
 option.AGN_RESOLUTION=AGN Resolution
@@ -318,8 +322,10 @@ option.SSRT_REFINEMENT_STEPS=Raytrace Refinement Steps
 option.SSRT_SKY_TRACING=Raytrace Sky
 
 option.SPECULAR_IMPORTANCE_SAMPLING_BIAS=Importance Sampling Bias
+option.SPECULAR_IMPORTANCE_SAMPLING_BIAS.comment=Scales the random parameter in GGX visible-normal importance sampling, biasing samples toward the specular lobe peak. Higher values reduce specular noise but may miss wide-lobe contributions from rough surfaces.
 
 option.ROUGH_REFLECTIONS=Rough Reflections
+option.ROUGH_REFLECTIONS.comment=Surfaces with roughness below the threshold are treated as perfect mirrors (direct mirror reflection, no GGX sampling); rougher surfaces use glossy GGX sampling.
 option.ROUGH_REFLECTIONS_THRESHOLD=Rough Reflections Threshold
 option.REFLECTION_FILTER=Reflection Filter
 
@@ -355,11 +361,15 @@ option.SELECTION_BOX_COLOR_B=Selection Box Color §1Blue
 # Post-Processing
 option.TAA_ENABLED=Temporal Anti-Aliasing
 option.TAA_CLOSEST_FRAGMENT=Closest Fragment
+option.TAA_CLOSEST_FRAGMENT.comment=Selects the fragment with the smallest depth from the current pixel and its four diagonal neighbors for history reprojection, reducing ghosting and smearing at motion boundaries.
 option.TAA_SHARPEN=Sharpen
 option.TAA_CLIPPING=Clipping
+option.TAA_CLIPPING.comment=Computes the mean and standard deviation of a 3×3 neighborhood around the current pixel and clips the history color to this statistical ellipsoid, preventing ghosting from history colors that deviate too far from the current frame.
 option.TAA_AGGRESSION=Clipping Aggression
+option.TAA_AGGRESSION.comment=Controls how many standard deviations the history color is allowed to deviate from the local mean during clipping. Lower values clip more aggressively, reducing ghosting but potentially introducing noise.
 option.TAA_MAX_ACCUM_FRAMES=Max Accumulated Frames
 option.TAA_ANTIFLICKER=Anti-flicker
+option.TAA_ANTIFLICKER.comment=Dynamically increases the blend weight toward the current frame when large luminance fluctuations are detected between frames, suppressing temporal flicker. Higher values suppress flicker more aggressively.
 
 option.MOTION_BLUR=Motion Blur
 option.MOTION_BLUR_SAMPLES=Motion Blur Samples
@@ -371,6 +381,7 @@ value.BLOOM_BLENDING_MODE.0=Add
 value.BLOOM_BLENDING_MODE.1=Lerp
 value.BLOOM_BLENDING_MODE.2=Remap
 option.BLOOM_KARIS_AVERAGE=Karis Average
+option.BLOOM_KARIS_AVERAGE.comment=During the first bloom downsample pass, weights each bilinear tile by the Karis average (1/(1+luminance)) to reduce the influence of extremely bright pixels, preventing bright sources like the sun from excessively blooming the entire image.
 option.BLOOM_INTENSITY=Bloom Intensity
 option.BLOOMY_FOG=Bloomy Fog
 option.BLOOMY_FOG_INTENSITY=Bloomy Fog Intensity
@@ -391,6 +402,7 @@ option.HISTOGRAM_UPPER_BOUND=Histogram Upper Bound
 option.MANUAL_EV=Manual EV
 
 option.PURKINJE_SHIFT=Purkinje Shift
+option.PURKINJE_SHIFT.comment=Simulates the human eye's photopic-to-scotopic vision transition in low light: colors shift toward blue-green (rod cell sensitivity), reds fade, and blues/greens become more visible. Stronger in darker scenes.
 option.PURKINJE_SHIFT_STRENGTH=Purkinje Shift Strength
 option.PURKINJE_SHIFT_NOISE=Purkinje Shift Noise
 option.PURKINJE_SHIFT_R=Purkinje Color §4Red

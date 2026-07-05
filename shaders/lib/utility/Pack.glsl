@@ -69,6 +69,25 @@ vec3 OctDecodeUnorm(vec2 oct) {
 	return OctDecodeSnorm(oct * 2.0 - 1.0);
 }
 
+// https://github.com/liamdon/fast-morton
+uint EncodeMorton2D(uvec2 xy) {
+    xy &= 0x0000FFFFu;
+    xy = (xy | (xy << 8)) & 0x00FF00FFu;
+    xy = (xy | (xy << 4)) & 0x0F0F0F0Fu;
+    xy = (xy | (xy << 2)) & 0x33333333u;
+    xy = (xy | (xy << 1)) & 0x55555555u;
+    return xy.x | (xy.y << 1);
+}
+
+uint EncodeMorton3D(uvec3 xyz) {
+    xyz &= 0x000003FFu;
+    xyz = (xyz | (xyz << 16)) & 0x030000FFu;
+    xyz = (xyz | (xyz <<  8)) & 0x0300F00Fu;
+    xyz = (xyz | (xyz <<  4)) & 0x030C30C3u;
+    xyz = (xyz | (xyz <<  2)) & 0x09249249u;
+    return xyz.x | (xyz.y << 1) | (xyz.z << 2);
+}
+
 // Mercator projection
 vec2 ProjectMercator(vec3 dir) {
 	float phi = atan(dir.x, dir.z); // Longitude

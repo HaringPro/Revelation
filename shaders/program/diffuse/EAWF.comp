@@ -95,7 +95,7 @@ void main() {
 	uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
-	f16vec3 normalDepthData = f16vec3(texelFetch(colortex14, texelPos, 0).rgb);
+	vec3 normalDepthData = texelFetch(colortex14, texelPos, 0).rgb;
 	// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 
 	// 0.0625 0.125 0.0625
@@ -105,8 +105,8 @@ void main() {
 
 	const float kernel[8] = {0.0625, 0.125, 0.0625, 0.125, 0.125, 0.0625, 0.125, 0.0625};
 
-	f16vec4 filteredColVar = f16vec4(imageLoad(colorimg3, texelPos));
-	float16_t centerLuma = filteredColVar.r; // We use YCoCg color space
+	vec4 filteredColVar = imageLoad(colorimg3, texelPos);
+	float centerLuma = filteredColVar.r; // We use YCoCg color space
 
 	float frameIndex = texelFetch(colortex2, texelPos, 0).a;
 	float historyFactor = saturate(frameIndex * 0.1 - 0.125);
@@ -120,36 +120,36 @@ void main() {
 	float invThresholdZ = 8.0 / normalDepthData.z;
 
 	// float variance = CalculateVariance(ivec2(localPos + padRadius));
-	float16_t variance = filteredColVar.a;
+	float variance = filteredColVar.a;
 	float sigmaL = -0.5 * inversesqrt(variance + EPS) * historyFactor;
 	float sigmaN = 32.0 * exp2(-0.5 * variance / sqr(centerLuma)) * historyFactor;
 
-	f16vec3 centerNormal = f16vec3(OctDecodeSnorm(normalDepthData.xy));
+	vec3 centerNormal = OctDecodeSnorm(normalDepthData.xy);
 
-	float16_t sumWeight = float16_t(1.0);
+	float sumWeight = 1.0;
 	// filteredColVar *= vec4(vec3(sumWeight), sumWeight * sumWeight);
 	vec2 sampleTexelBase = vec2(texelPos) + (BlueNoise(texelPos, frameCounter + FILTER_PASS_INDEX) - 0.5) * offsetScale;
 
 	for (uint i = 0u; i < 9u; ++i) {
 		ivec2 sampleTexel = ivec2(round(sampleTexelBase + offset3x3[i] * offsetScale));
 		if (clamp(sampleTexel, ivec2(1), ivec2(scaledHalfViewSize) - 2) == sampleTexel) {
-			f16vec3 sampleAux = f16vec3(texelFetch(colortex14, sampleTexel, 0).rgb);
+			vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
 
-			f16vec4 sampleColVar = f16vec4(imageLoad(colorimg3, sampleTexel));
-			float16_t sampleLuma = sampleColVar.r; // We use YCoCg color space
+			vec4 sampleColVar = imageLoad(colorimg3, sampleTexel);
+			float sampleLuma = sampleColVar.r; // We use YCoCg color space
 
-			float16_t weight = float16_t(saturate(fma(abs(sampleAux.z - normalDepthData.z), invThresholdZ, 1.0)));
+			float weight = saturate(fma(abs(sampleAux.z - normalDepthData.z), invThresholdZ, 1.0));
 
 			float logWeightN = log2(saturate(dot(OctDecodeSnorm(sampleAux.xy), centerNormal))) * sigmaN;
 			float logWeightL = abs(sampleLuma - centerLuma) * sigmaL;
-			weight *= float16_t(saturate(exp2(logWeightN + logWeightL)));
+			weight *= saturate(exp2(logWeightN + logWeightL));
 
-			filteredColVar += sampleColVar * f16vec4(f16vec3(weight), weight * weight);
+			filteredColVar += sampleColVar * vec4(vec3(weight), weight * weight);
 			sumWeight += weight;
 		}
 	}
 
-	sumWeight = float16_t(1.0) / sumWeight;
-	filteredColVar *= f16vec4(f16vec3(sumWeight), sumWeight * sumWeight);
+	sumWeight = 1.0 / sumWeight;
+	filteredColVar *= vec4(vec3(sumWeight), sumWeight * sumWeight);
 	imageStore(colorimg3, texelPos, min(filteredColVar, FP16_MAX));
 }
