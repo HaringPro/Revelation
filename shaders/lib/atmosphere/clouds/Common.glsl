@@ -147,4 +147,10 @@ vec3 WorldToCloudShadowScreenPos(vec3 worldPos) {
 	return shadowPos * 0.5 + 0.5;
 }
 
+vec3 WorldToCloudShadowPrevScreenPos(vec3 worldPos) {
+	vec3 shadowPos = transMAD(cloud.prevShadowViewProj, worldPos);
+	shadowPos.xy *= rcp(length(shadowPos.xy) * 0.5 + 0.5);
+	return shadowPos * 0.5 + 0.5;
+}
+
 #endif

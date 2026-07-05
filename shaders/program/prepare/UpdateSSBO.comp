@@ -36,9 +36,6 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #include "/lib/universal/Random.glsl"
 
-const mat4 shadowProj = BuildOrthoMat(CLOUD_SHADOW_DISTANCE * 32.0, CLOUD_SHADOW_DISTANCE * 32.0, 0.0, cumulusTopRadius);
-const mat4 shadowInvProj = BuildInvOrthoMat(CLOUD_SHADOW_DISTANCE * 32.0, CLOUD_SHADOW_DISTANCE * 32.0, 0.0, cumulusTopRadius);
-
 //======// Main //================================================================================//
 void main() {
 	// Compute illuminance
@@ -54,9 +51,14 @@ void main() {
 
     #ifdef CLOUDS
         #ifdef CLOUD_SHADOWS
+            const float size = CLOUD_SHADOW_DISTANCE * 32.0;
+            const float zFar = CLOUD_SHADOW_DISTANCE * 32.0;
+            mat4 shadowProj = BuildOrthoMat(size, size, 0.0, zFar);
+            mat4 shadowProjInv = BuildInvOrthoMat(size, size, 0.0, zFar);
+
             cloud.prevShadowViewProj = cloud.shadowViewProj;
             cloud.shadowViewProj = shadowProj * shadowModelView;
-            cloud.shadowViewProjInv = shadowModelViewInverse * shadowInvProj;
+            cloud.shadowViewProjInv = shadowModelViewInverse * shadowProjInv;
         #endif
 
         cloud.upscaleJitter = Halton23(frameCounter + 211);

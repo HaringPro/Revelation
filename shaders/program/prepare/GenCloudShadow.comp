@@ -37,22 +37,18 @@ writeonly uniform image2D cloudShadowImg;
 #include "/lib/atmosphere/Common.glsl"
 #include "/lib/atmosphere/clouds/Shape.glsl"
 
-const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
-const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
-const vec3 windVelocity = windDir * CLOUD_LOW_WIND_SPEED;
-
 //======// Main //================================================================================//
 void main() {
     ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 rSize = rcp(textureSize(cloudShadowTex, 0));
 
     // Checkerboard render cloud shadow map
     ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
     if ((tid & 1) == offset || historyReset) {
         float dither = BlueNoise(tid, frameCounter);
 
-        vec2 uv = (vec2(tid) + 0.5) * rSize;
-        vec3 rayPos = SetupCloudShadowPos(uv + (dither - 0.5) * rSize) + atmosphereViewPos;
+        vec2 uv = (vec2(tid) + dither) / textureSize(cloudShadowTex, 0);
+        vec3 worldPos = SetupCloudShadowPos(uv);
+        vec3 rayPos = worldPos + atmosphereViewPos;
 
         // Increase steps for lower elevation
         float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - shadowDirWorld.y);
@@ -66,8 +62,6 @@ void main() {
 
         rayPos += shadowDirWorld * intersection.x;
         rayPos += rayStep * fract(dither + PHI);
-
-        vec3 cloudPos = rayPos - atmosphereViewPos + shadowDirWorld * dot(intersection, vec2(0.5));
 
         float extinction = 0.0;
         const float threshold = -log2(cloudMinTransmittance) / cumulusExtinction;
@@ -89,20 +83,15 @@ void main() {
         float cloudShadow = oms(strength) + transmittance * strength;
 
         // Reproject and accumulate
-        vec3 motionVector = -windVelocity;
-        motionVector *= global.worldTimeDiff * 0.05;
-        motionVector += cameraMovement;
-        vec2 prevUV = transMAD(cloud.prevShadowViewProj, cloudPos).xy;
-        prevUV *= rcp(length(prevUV) * 0.5 + 0.5);
-        prevUV = prevUV * 0.5 + 0.5;
+        vec3 cloudMidPos = worldPos + shadowDirWorld * dot(intersection, vec2(0.5));
+        vec2 prevUV = WorldToCloudShadowPrevScreenPos(cloudMidPos).xy;
 
-        vec2 prevValue = textureLod(cloudShadowTex, prevUV, 0).xy;
-        float frameIdx = min(fma(prevValue.y, 256.0, 1.0), 16.0);
-        if (saturate(prevUV) == prevUV && frameIdx > 2.0 && !historyReset) {
-            float weight = rcp(frameIdx);
-            cloudShadow = mix(prevValue.x, cloudShadow, weight);
+        if (saturate(prevUV) == prevUV && !historyReset) {
+            const float weight = rcp(32.0);
+            float prevValue = textureLod(cloudShadowTex, prevUV, 0.0).x;
+            cloudShadow = mix(prevValue, cloudShadow, weight);
         }
 
-        imageStore(cloudShadowImg, tid, vec4(cloudShadow, frameIdx * rcp(256.0), 0.0, 0.0));
+        imageStore(cloudShadowImg, tid, vec4(cloudShadow, 0.0, 0.0, 0.0));
     }
 }
