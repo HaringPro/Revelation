@@ -53,8 +53,20 @@ void main() {
         #ifdef CLOUD_SHADOWS
             const float size = CLOUD_SHADOW_DISTANCE * 32.0;
             const float zFar = CLOUD_SHADOW_DISTANCE * 32.0;
-            mat4 shadowProj = BuildOrthoMat(size, size, 0.0, zFar);
-            mat4 shadowProjInv = BuildInvOrthoMat(size, size, 0.0, zFar);
+
+            const mat4 shadowProj = mat4(
+                2.0 / size, 0.0, 0.0, 0.0,
+                0.0, 2.0 / size, 0.0, 0.0,
+                0.0, 0.0, -2.0 / zFar, -1.0,
+                0.0, 0.0, 0.0, 1.0
+            );
+
+            const mat4 shadowProjInv = mat4(
+                0.5 * size, 0.0, 0.0, 0.0,
+                0.0, 0.5 * size, 0.0, 0.0,
+                0.0, 0.0, -0.5 * zFar, -0.5 * zFar,
+                0.0, 0.0, 0.0, 1.0
+            );
 
             cloud.prevShadowViewProj = cloud.shadowViewProj;
             cloud.shadowViewProj = shadowProj * shadowModelView;
