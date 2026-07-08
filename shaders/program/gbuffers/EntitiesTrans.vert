@@ -71,7 +71,7 @@ void main() {
 		geoNormal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
 	#endif
 
+	// Translucent entities offset material ID by 500 to stay in 500-999 range
 	// 829925: Physics mod snow
-	// Handle default case when entityId is -1 (not mapped in entity.properties)
-	materialID = entityId == 829925 ? 39u : (entityId < 10000 ? 1u : uint(entityId - 10000));
+	materialID = entityId == 829925 ? 39u : (entityId < 10000 ? 501u : uint(entityId - 10000 + 500));
 }

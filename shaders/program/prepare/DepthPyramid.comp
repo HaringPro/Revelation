@@ -1,0 +1,36 @@
+/*
+--------------------------------------------------------------------------------
+
+    Revelation Shaders
+
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
+
+    Pass: Generate Hi-Z depth pyramid for SSRT acceleration
+
+--------------------------------------------------------------------------------
+*/
+
+#include "/lib/Utility.glsl"
+
+layout(local_size_x = 16, local_size_y = 16) in;
+const vec2 workGroupsRender = vec2(RENDER_SCALE, RENDER_SCALE);
+
+writeonly uniform image2D colorimg5;
+
+#include "/lib/universal/Uniform.glsl"
+#include "/lib/universal/Transform.glsl"
+#include "/lib/universal/Fetch.glsl"
+
+void main() {
+    uvec2 localPos = RemapThread16x16(gl_LocalInvocationIndex);
+    ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
+
+    // Level 0: copy depth, min of 2x2
+    float d00 = loadDepth0(texelPos * 2 + ivec2(0, 0));
+    float d10 = loadDepth0(texelPos * 2 + ivec2(1, 0));
+    float d01 = loadDepth0(texelPos * 2 + ivec2(0, 1));
+    float d11 = loadDepth0(texelPos * 2 + ivec2(1, 1));
+    float minDepth = min(min(d00, d10), min(d01, d11));
+    imageStore(colorimg5, texelPos, vec4(minDepth, 0.0, 0.0, 0.0));
+}

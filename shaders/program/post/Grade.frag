@@ -15,8 +15,8 @@
 
 #include "/lib/Utility.glsl"
 
-#define TONE_MAPPER 1 // [0 1 2 3 16 17 32 33 48]
-#define HDR_TONE_MAPPER 33 // [0 3 16 17 32 33]
+#define TONE_MAPPER 17 // [0 1 2 3 16 17 32 33 48]
+#define HDR_TONE_MAPPER 17 // [0 3 16 17 32 33]
 
 // 0: disables gamut compression, 1: Rec.2020, 2: P3-D65
 #define ACES_HDR_TARGET_GAMUT 1 // [0 1 2]

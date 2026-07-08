@@ -81,13 +81,16 @@ vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal
 void main() {
 	ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
 
-	uvec2 materialPack = loadMaterialPack(texelPos).xy;
+	uvec4 materialPack = loadMaterialPack(texelPos);
 
 	uint materialID = materialPack.y;
-	bool notParticle = materialID != 500u;
+	bool isParticle = materialID == 500u;
+	bool isWaterGlass = clamp(materialID, 2u, 3u) == materialID;
+	bool isTranslucentEntity = materialID >= 500u && materialID < 1000u;
+	bool isTranslucent = isWaterGlass || isTranslucentEntity;
 
 	// Skip opaque fragments
-	if (clamp(materialID, 2u, 3u) != materialID && notParticle) return;
+	if (!isTranslucent) return;
 
 	vec3 screenPos = vec3(texelToUvScaled(texelPos), loadDepth0(texelPos));
 	#if defined LOD_MOD
@@ -162,9 +165,15 @@ void main() {
 
 	float NdotL = 1.0;
 
-	if (notParticle) {
-		// Specular indirect
-		lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
+	if (!isParticle) {
+		// Specular indirect - only water/glass gets reflections
+		if (isWaterGlass) {
+			lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
+		} else {
+			// Entity/block translucent: ambient base
+			lightingOut.rgb = global.skyUpIlluminance * cube(lightmap.y);
+			lightingOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blocklightColor;
+		}
 
 		NdotL = dot(worldNormal, shadowDirWorld);
 	} else {
@@ -191,24 +200,30 @@ void main() {
 		vec3 shadow = CalculatePCSS(worldPos, normalOffset, dither, surfaceDepth);
 
 		if (dot(shadow, vec3(1.0)) > EPS) {
-			shadow = saturate(shadow) * sunlightMult;
+		shadow = saturate(shadow) * sunlightMult;
 
-			if (notParticle) {
+		if (!isParticle) {
 				float NdotV = -dot(worldNormal, worldDir);
 			    float LdotV = -dot(shadowDirWorld, worldDir);
 
-                float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
-                float NdotH = saturate((NdotL + NdotV) * invLenH);
-                float VdotH = saturate(LdotV * invLenH + invLenH);
-                NdotL = saturate(NdotL);
-                NdotV = saturate(NdotV);
+	            float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+	            float NdotH = saturate((NdotL + NdotV) * invLenH);
+	            float VdotH = saturate(LdotV * invLenH + invLenH);
+	            NdotL = saturate(NdotL);
+	            NdotV = saturate(NdotV);
 
-				float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+				if (isWaterGlass) {
+					float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
+					lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+				} else {
+					vec4 specularTex = ExtractSpecularTex(materialPack);
+					float roughness = sqr(1.0 - specularTex.r);
+					lightingOut.rgb += shadow * (rPI + SpecularGGX(VdotH, NdotV, NdotL, NdotH, max(roughness, 0.04), vec3(DEFAULT_DIELECTRIC_F0)));
+				}
 			} else {
 				lightingOut.rgb += shadow * rPI;
 			}
-		}
+	}
 	}
 
 	imageStore(colorimg3, texelPos, lightingOut);

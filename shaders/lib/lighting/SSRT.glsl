@@ -14,76 +14,75 @@
 //================================================================================================//
 
 bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps, inout vec3 hitPos) {
-	vec3 rayOrigin = hitPos;
+    vec3 rayOrigin = hitPos;
 
-	float maxDist = step(viewDir.z, 0.0) * 1e23 - (viewOrigin.z + near) / viewDir.z;
-	vec3 rayDir = normalize(ViewToScreenPos(viewDir * maxDist + viewOrigin) - rayOrigin);
-	rayDir *= minOf((step(0.0, rayDir) - rayOrigin) / rayDir);
+    float maxDist = step(viewDir.z, 0.0) * 1e23 - (viewOrigin.z + near) / viewDir.z;
+    vec3 rayDir = normalize(ViewToScreenPos(viewDir * maxDist + viewOrigin) - rayOrigin);
+    rayDir *= minOf((step(0.0, rayDir) - rayOrigin) / rayDir);
 
-	float rSteps = 1.0 / float(steps);
-	vec3 rayStep = rayDir * rSteps;
-	float invDirZ = rcp(abs(rayStep.z));
+    float rSteps = 1.0 / float(steps);
+    vec3 rayStep = rayDir * rSteps;
+    float invDirZ = rcp(abs(rayStep.z));
 
-	float compareTolerance = 2.0 * max(abs(rayStep.z), (rayOrigin.z + gbufferProjection[2].z) * rSteps);
+    float compareTolerance = 2.0 * max(abs(rayStep.z), (rayOrigin.z + gbufferProjection[2].z) * rSteps);
 
-	#if defined LOD_MOD
-		float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
-	#else
-		#define screenDepthSky 1.0
-	#endif
+    #if defined LOD_MOD
+        float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
+    #else
+        #define screenDepthSky 1.0
+    #endif
 
-	float t = dither;
+    float t = dither;
 
-	bool hit = false;
-	for (uint i = 0u; i < steps; ++i) {
-		hitPos = rayOrigin + rayStep * t;
+    bool hit = false;
+    for (uint i = 0u; i < steps; ++i) {
+        hitPos = rayOrigin + rayStep * t;
 
-		if (saturate(hitPos.xy) != hitPos.xy) break;
-		if (hitPos.z >= screenDepthSky) {
-		#ifdef SSRT_SKY_TRACING
-			hit = true;
-		#endif
-			break;
-		}
+        if (saturate(hitPos.xy) != hitPos.xy) break;
+        if (hitPos.z >= screenDepthSky) {
+        #ifdef SSRT_SKY_TRACING
+            hit = true;
+        #endif
+            break;
+        }
 
-		ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
-		float sampleDepth = loadDepth2(sampleTexel);
-		#if defined LOD_MOD
-			if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
-		#endif
+        ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
+        float sampleDepth = loadDepth2(sampleTexel);
+        #if defined LOD_MOD
+            if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
+        #endif
 
-		float depthDiff = sampleDepth - hitPos.z;
-		if (abs(depthDiff + compareTolerance) < compareTolerance) {
-			hit = true;
-			break;
-		}
+        float depthDiff = sampleDepth - hitPos.z;
+        if (abs(depthDiff + compareTolerance) < compareTolerance) {
+            hit = true;
+            break;
+        }
 
-		t += clamp(depthDiff * invDirZ, 0.01, 1.1);
-	}
+        t += clamp(depthDiff * invDirZ, 0.01, 1.1);
+    }
 
-	#ifdef SSRT_REFINEMENT
-	if (hit) {
-		// Refine hit position (binary search)
-		for (uint i = 0u; i < SSRT_REFINEMENT_STEPS; ++i) {
-			rayStep *= 0.5;
+    #ifdef SSRT_REFINEMENT
+    if (hit) {
+        for (uint i = 0u; i < SSRT_REFINEMENT_STEPS; ++i) {
+            rayStep *= 0.5;
 
-			ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
-			float sampleDepth = loadDepth2(sampleTexel);
-			#if defined LOD_MOD
-				if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
-			#endif
+            ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
+            float sampleDepth = loadDepth2(sampleTexel);
+            #if defined LOD_MOD
+                if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
+            #endif
 
-			float depthDiff = sampleDepth - hitPos.z;
-			if (abs(depthDiff + compareTolerance) < compareTolerance) {
-				hitPos -= rayStep;
-			} else {
-				hitPos += rayStep;
-			}
-		}
-	}
-	#endif
+            float depthDiff = sampleDepth - hitPos.z;
+            if (abs(depthDiff + compareTolerance) < compareTolerance) {
+                hitPos -= rayStep;
+            } else {
+                hitPos += rayStep;
+            }
+        }
+    }
+    #endif
 
-	return hit;
+    return hit;
 }
 
 #endif // INCLUDE_LIGHTING_SSRT

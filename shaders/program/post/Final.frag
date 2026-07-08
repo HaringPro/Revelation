@@ -151,7 +151,7 @@ void main() {
 	#endif
 
 	#ifndef HDR_ENABLED
-		// Apply dithering to reduce banding artifacts
-		finalOut += (InterleavedGradientNoise(gl_FragCoord.xy) - 0.5) * rcp255;
+		// Apply bayer dithering to reduce banding artifacts
+		finalOut += (bayer16(gl_FragCoord.xy) - 0.5) * rcp255;
 	#endif
 }

@@ -192,6 +192,12 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 	#define REFLECTION_FILTER
 
+/* SSRT Optimizations */
+	#define SSRT_HIZ
+	#define SSRT_TEMPORAL
+	#define SSRT_MIPMAP_ROUGH
+	#define SSRT_EDGE_FADE 0.5 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
 	#if RENDER_MODE == 0
 		#undef REFLECTION_FILTER
 	#endif

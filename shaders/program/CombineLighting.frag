@@ -137,6 +137,10 @@ void main() {
 
 			sceneOut += celestial * transmittance;
 		}
+	} else if (materialID >= 500u && materialID < 1000u) {
+		// Translucent entities/blocks/particles - skip PBR, handled by Translucent.comp
+		// sceneOut is already vec3(0.0) from initialization
+		return;
 	} else {
 		vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
         #ifdef PARALLAX_SHADOW

@@ -15,7 +15,7 @@
 	const int 	colortex2Format 			= RGBA16F;
 	const int 	colortex3Format 			= RGBA16F;
 	const int 	colortex4Format 			= R11F_G11F_B10F;
-//	const int 	colortex5Format 			= ;
+const int 	colortex5Format 			= R32F;
 	const int 	colortex6Format 			= RGBA8;
 	const int 	colortex7Format 			= RGBA16UI;
 	const int 	colortex8Format 			= RGBA16_SNORM;
@@ -67,8 +67,7 @@
 	- Buffer Table -
 
 	|   Buffer		|   Format          |   Resolution	|   Usage
-	|———————————————|———————————————————|———————————————|———————————————————————————
-	|	colortex0	|   rgba16f  		|	Full res  	|	Indirect specular -> Scene color
+	|———————————————|———————————————————|———————————————|——————————————————————————�?	|	colortex0	|   rgba16f  		|	Full res  	|	Indirect specular -> Scene color
 	|	colortex1	|   rgba16f		    |	Full res  	|	Scene history
 	|	colortex2	|   rgba16f         |	Half res	|	Indirect diffuse history
 	|	colortex3	|   rgba16f         |	Full res  	|	Indirect diffuse -> Upscaled scene color

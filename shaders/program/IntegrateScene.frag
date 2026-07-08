@@ -141,6 +141,8 @@ void main() {
 	uint materialID = materialPack.y;
 	bool glassMask = materialID == 2u;
 	bool waterMask = materialID == 3u;
+	bool isGlassOrWater = glassMask || waterMask;
+	bool isTranslucentGeneric = materialID >= 500u && materialID < 1000u;
 
 	// Process refraction
 	ivec2 refractedTexel = texelPos;
@@ -159,14 +161,20 @@ void main() {
 		vec4 translucentColor = loadAlbedo(texelPos);
 		vec3 albedo = sRGBToLinear(translucentColor.rgb) * sRGB_2_Rec2020;
 
-		// Particle translucent
-		if (materialID == 500u) {
+		// Generic translucent blending (particles, entities, blocks, text, etc.)
+		if (isTranslucentGeneric) {
 			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
 			sceneColor = mix(sceneColor, albedo * diffuseLight, translucentColor.a);
 		}
 
-		// Translucent
-		if (glassMask || waterMask) {
+		// Emissive translucent (spider eyes, enderman eyes, etc.)
+		if (materialID == 20u) {
+			vec3 emissive = albedo * Unpack2x8UX(materialPack.x) * (2.0 * EMISSIVE_BRIGHTNESS);
+			sceneColor = mix(sceneColor, sceneColor + emissive, translucentColor.a);
+		}
+
+		// Translucent (water/glass with special handling)
+		if (isGlassOrWater) {
 			if (glassMask) {
 				// Absorption
 				sceneColor *= exp2(log2(albedo * oms(0.125 * translucentColor.a)) * approxSqrt(translucentColor.a + 0.25));

@@ -58,11 +58,12 @@ void main() {
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(gl_ModelViewMatrix, gl_Vertex.xyz));
 
-	materialID = uint(max(mc_Entity.x - 1e4, 1));
+	float rawMaterialID = mc_Entity.x - 1e4;
+	materialID = uint(max(rawMaterialID, 1.0));
 
 	// Unlabelled foilage detection
 	#ifdef UNLABELLED_FOILAGE_DETECTION
-		if (materialID < 1u && maxOf(abs(gl_Normal)) < 0.99) materialID = 1003u;
+		if (rawMaterialID < 1.0 && maxOf(abs(gl_Normal)) < 0.99) materialID = 1003u;
 	#endif
 
 	// Encode normal and tangent
