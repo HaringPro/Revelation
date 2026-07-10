@@ -49,21 +49,18 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 
 	// Apply wind
 	float radius = depth + atmosphereViewHeight;
-	if (radius < cloudMidRadius) {
+	if (radius < cloudLayer1.minHeight) {
 		// Low clouds
-		const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
-		const vec3 windDir = vec3(cos(windAngle), 0.5, sin(windAngle));
-		const vec3 windVelocity = windDir * CLOUD_LOW_WIND_SPEED;
+        const vec3 windDir = vec3(cos(cloudLayer0.windAngle), 0.5, sin(cloudLayer0.windAngle));
+        const vec3 windVelocity = windDir * cloudLayer0.windSpeed;
 		motionVector -= windVelocity;
-	} else if (radius < cloudHighRadius) {
+	} else if (radius < cloudLayer2.minHeight) {
 		// Mid clouds
-		const float windAngle = radians(CLOUD_MID_WIND_ANGLE);
-		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_MID_WIND_SPEED;
+		const vec2 windVelocity = vec2(cos(cloudLayer1.windAngle), sin(cloudLayer1.windAngle)) * cloudLayer1.windSpeed;
 		motionVector.xz -= windVelocity;
 	} else {
 		// High clouds
-		const float windAngle = radians(CLOUD_HIGH_WIND_ANGLE);
-		const vec2 windVelocity = vec2(cos(windAngle), sin(windAngle)) * CLOUD_HIGH_WIND_SPEED;
+		const vec2 windVelocity = vec2(cos(cloudLayer2.windAngle), sin(cloudLayer2.windAngle)) * cloudLayer2.windSpeed;
 		motionVector.xz -= windVelocity;
 	}
 	motionVector *= float(global.worldTimeDiff) * 0.05;

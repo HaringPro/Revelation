@@ -123,7 +123,6 @@ suffix.CLOUD_MID_WIND_ANGLE=°
 
 option.CLOUD_HIGH_ALTITUDE=Altitude
 option.CLOUD_HIGH_THICKNESS=Thickness
-option.CLOUD_HIGH_SUNLIGHT_SAMPLES=Sunlight Samples
 suffix.CLOUD_HIGH_ALTITUDE=m
 suffix.CLOUD_HIGH_THICKNESS=m
 option.CLOUD_HIGH_WIND_SPEED=Wind Speed
@@ -131,7 +130,7 @@ suffix.CLOUD_HIGH_WIND_SPEED=m/s
 option.CLOUD_HIGH_WIND_ANGLE=Wind Angle
 suffix.CLOUD_HIGH_WIND_ANGLE=°
 
-option.CLOUD_CUMULUS=Cumulus
+option.CLOUD_CU=Cumulus
 option.CLOUD_CU_COVERAGE=Cumulus Coverage
 option.CLOUD_CU_ALTITUDE=Cumulus Altitude
 option.CLOUD_CU_THICKNESS=Cumulus Thickness
@@ -140,11 +139,11 @@ option.CLOUD_CU_DENSITY_T=Cumulus Top Density
 suffix.CLOUD_CU_ALTITUDE=m
 suffix.CLOUD_CU_THICKNESS=m
 
-option.CLOUD_ALTOSTRATUS=Altostratus
-option.CLOUD_AS_COVERAGE=Altostratus Coverage
-option.CLOUD_CIRRUS=Cirrus
+option.CLOUD_CI=Cirrus
 option.CLOUD_CI_COVERAGE=Cirrus Coverage
-option.CLOUD_CIRROCUMULUS=Cirrocumulus
+option.CLOUD_CS=Cirrostratus
+option.CLOUD_CS_COVERAGE=Cirrostratus Coverage
+option.CLOUD_CC=Cirrocumulus
 option.CLOUD_CC_COVERAGE=Cirrocumulus Coverage
 
 option.CLOUD_SHADOWS=Cloud Shadows

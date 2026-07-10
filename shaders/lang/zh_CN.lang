@@ -127,7 +127,6 @@ suffix.CLOUD_MID_WIND_ANGLE=°
 
 option.CLOUD_HIGH_ALTITUDE=海拔
 option.CLOUD_HIGH_THICKNESS=厚度
-option.CLOUD_HIGH_SUNLIGHT_SAMPLES=阳光步进采样数
 suffix.CLOUD_HIGH_ALTITUDE=m
 suffix.CLOUD_HIGH_THICKNESS=m
 option.CLOUD_HIGH_WIND_SPEED=风速
@@ -135,7 +134,7 @@ suffix.CLOUD_HIGH_WIND_SPEED=m/s
 option.CLOUD_HIGH_WIND_ANGLE=风向角
 suffix.CLOUD_HIGH_WIND_ANGLE=°
 
-option.CLOUD_CUMULUS=积云
+option.CLOUD_CU=积云
 option.CLOUD_CU_COVERAGE=积云覆盖率
 option.CLOUD_CU_ALTITUDE=积云海拔
 option.CLOUD_CU_THICKNESS=积云厚度
@@ -144,11 +143,11 @@ option.CLOUD_CU_DENSITY_T=积云顶部密度
 suffix.CLOUD_CU_ALTITUDE=m
 suffix.CLOUD_CU_THICKNESS=m
 
-option.CLOUD_ALTOSTRATUS=高层云
-option.CLOUD_AS_COVERAGE=高层云覆盖率
-option.CLOUD_CIRRUS=卷云
+option.CLOUD_CI=卷云
 option.CLOUD_CI_COVERAGE=卷云覆盖率
-option.CLOUD_CIRROCUMULUS=卷积云
+option.CLOUD_CS=卷层云
+option.CLOUD_CS_COVERAGE=卷层云覆盖率
+option.CLOUD_CC=卷积云
 option.CLOUD_CC_COVERAGE=卷积云覆盖率
 
 option.CLOUD_SHADOWS=云影

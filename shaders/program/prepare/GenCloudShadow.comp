@@ -53,9 +53,9 @@ void main() {
         // Increase steps for lower elevation
         float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - shadowDirWorld.y);
 
-        // vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cumulusBottomRadius, cumulusTopRadius);
-        float top = RaySphereIntersection(rayPos, shadowDirWorld, cumulusTopRadius).y;
-	    float bottom = RaySphereIntersection(rayPos, shadowDirWorld, cumulusBottomRadius).y;
+        // vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cloudLayer0.minHeight, cloudLayer0.maxHeight);
+        float top = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.maxHeight).y;
+	    float bottom = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.minHeight).y;
 	    vec2 intersection = vec2(bottom, top);
         float stepLength = (intersection.y - intersection.x) * rcp(steps);
         vec3 rayStep = shadowDirWorld * stepLength;
@@ -64,19 +64,19 @@ void main() {
         rayPos += rayStep * fract(dither + PHI);
 
         float extinction = 0.0;
-        const float threshold = -log2(cloudMinTransmittance) / cumulusExtinction;
+        const float threshold = -log2(cloudMinTransmittance) / cloudLayer0.coeff.extinction;
 
         // Raymarch along the light vector
         for (uint i = 0u; i < uint(steps) && extinction < threshold; ++i, rayPos += rayStep) {
             // Normalized height in clouds
-            float heightFraction = fma(length(rayPos), rcp(cumulusThickness), -cumulusBottomRadius / cumulusThickness);
+            float heightFraction = fma(length(rayPos), rcp(cloudLayer0.thickness), -cloudLayer0.minHeight / cloudLayer0.thickness);
             // if (abs(heightFraction - 0.5) > 0.5) break; // Skip if outside the clouds
 
             float temp;
             extinction += CloudVolumeDensity(rayPos, heightFraction, temp, false) * stepLength;
         }
 
-        float transmittance = exp2(-rLOG2 * cumulusExtinction * extinction);
+        float transmittance = exp2(-rLOG2 * cloudLayer0.coeff.extinction * extinction);
         transmittance = linearstep(cloudMinTransmittance, 1.0, transmittance);
 
         float strength = linearstep(0.02, 0.05, shadowDirWorld.y) * sqrt(CLOUD_SHADOW_STRENGTH);
