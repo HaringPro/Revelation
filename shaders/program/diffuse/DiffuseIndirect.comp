@@ -41,6 +41,16 @@ writeonly restrict uniform image2D colorimg3;
 #include "/lib/surface/BRDF.glsl"
 #include "/lib/lighting/SSILVB.glsl"
 
+#ifdef VOXEL_GI_TRACE
+    // 体素 GI 信号源（阶段④：与 SSILVB 互斥，体素优先）：
+    // IRC 采样器/查询 + 每像素漫反射追踪（VoxelTracing 内含 VoxelData/VoxelShape）
+    #include "/lib/lighting/VoxelGI.glsl"
+    // 方块图集（shaders.properties customTexture.atlas2D = blocks.png，与传播端同图集；
+    // 无显式 binding：Iris 按名字自动绑定）
+    uniform sampler2D atlas2D;
+    #include "/lib/lighting/VoxelTracing.glsl"
+#endif
+
 float GetClosestDepthN(in ivec2 texel) {
     float depth = 1.0;
 
@@ -77,10 +87,27 @@ void main() {
     	vec2 screenCoord = texelToUv(renderTexel);
 		vec3 viewPos = ScreenToViewPos(vec3(screenCoord, depth));
 
-		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
-		float lightmapSky = Unpack2x8UY(loadMaterialPack(renderTexel).x);
+		vec4 result;
+		#ifdef VOXEL_GI_TRACE
+			// 体素 GI 优先：信号源 = 每像素漫反射追踪（棋盘半分辨率 1 SPP，与 SSILVB 同套路：
+			// 每帧只更新 1/4 像素，时域由 Accumulate 补全；信号存 colortex3 左上象限）。
+			// 入射光（不乘 albedo）——albedo 在 DeferredLight 读回时补乘，
+			// 与旧全分辨率路径（VoxelTracePixel × albedo × STRENGTH）视觉语义一致。
+			vec3 worldNormal = FetchSurfaceNormal(renderTexel);
+			vec3 geoNormal = FetchGeometryNormal(renderTexel);
+			vec2 lightmap = Unpack2x8U(loadMaterialPack(renderTexel).x);
+			// 种子：全分辨率像素索引哈希 + 帧计数（每帧不同方向，棋盘 offset 轮转 4 帧全覆盖）
+			uint traceSeed = triple32(uint(renderTexel.x + renderTexel.y * int(viewWidth)) * 0x9E3779B1u
+			                          + uint(frameCounter + 1) * 0x85EBCA77u);
+			result = vec4(VoxelTracePixel(mat3(gbufferModelViewInverse) * viewPos, worldNormal, geoNormal,
+			                              -viewPos.z, lightmap.y, lightmap.x, traceSeed)
+			             * VOXEL_GI_TRACE_STRENGTH, 1.0);
+		#else
+			vec3 worldNormal = FetchSurfaceNormal(renderTexel);
+			float lightmapSky = Unpack2x8UY(loadMaterialPack(renderTexel).x);
 
-		vec4 result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);
+			result = CalculateSSILVB(screenCoord, viewPos, worldNormal, lightmapSky);
+		#endif
 		result.rgb = RGBToYCoCg(result.rgb); // Convert to YCoCg color space (for filtering)
 		imageStore(colorimg3, texelPos, result);
 	} else {

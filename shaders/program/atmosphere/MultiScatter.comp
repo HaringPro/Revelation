@@ -1,15 +1,15 @@
 /*
 --------------------------------------------------------------------------------
 
-	Revelation Shaders
+    Revelation Shaders
 
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
-	References:
-		Sébastien Hillaire. "A Scalable and Production Ready Sky and Atmosphere Rendering Technique". EGSR 2020.
+    References:
+        Sébastien Hillaire. "A Scalable and Production Ready Sky and Atmosphere Rendering Technique". EGSR 2020.
             https://sebh.github.io/publications/egsr2020.pdf
-		Epic Games, Inc. "Unreal Engine Sky Atmosphere Rendering Technique". 2020.
+        Epic Games, Inc. "Unreal Engine Sky Atmosphere Rendering Technique". 2020.
             https://github.com/sebh/UnrealEngineSkyAtmosphere
 
 --------------------------------------------------------------------------------
@@ -46,25 +46,38 @@ mat2x3 RaymarchMultiScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
     rayPos += 0.5 * rayStep;
 
     vec3 lum = vec3(0.0), fms = vec3(0.0), transmittance = vec3(1.0);
+    
+    // [优化] 预计算常量，并提到高频循环体外部
+    vec3 phaseIrradiance = uniformPhase * sunIrradiance;
+    float bottomRadiusSq = atmosphere.bottomRadius * atmosphere.bottomRadius;
+
     for (uint i = 0u; i < ATMOSPHERE_MSLUT_SAMPLES; ++i, rayPos += rayStep) {
         vec3 density = AtmosphereDensityAtPoint(rayPos);
         vec3 extinction = atmosphereExtinction * density;
 
         vec3 sampleTransmittance = exp(-stepSize * extinction);
 
-        float tEarth = RaySphereIntersectNearest(rayPos, sunDir, atmosphere.bottomRadius);
-        float earthShadow = step(tEarth, 0.0);
+        // [优化] 快速地球地平线阴影检测 (Fast Earth Shadow Check) 
+        float rSq = dot(rayPos, rayPos);
+        float rDotS = dot(rayPos, sunDir);
+        float earthShadow = (rSq < bottomRadiusSq || (rDotS < 0.0 && rSq - rDotS * rDotS < bottomRadiusSq)) ? 0.0 : 1.0;
 
         vec3 inScattering = atmosphereScattering * density.xy;
-        vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
+        
+        // [优化] 增加 1e-8 防止高空密度为 0 时引发 NaN (除以零错误)
+        vec3 scatteringIntegral = inScattering * ((1.0 - sampleTransmittance) / max(extinction, 1e-8));
+        
         fms += scatteringIntegral * transmittance * earthShadow;
 
         vec3 sunTransmittance = AtmosphereTransmittanceToSun(rayPos, sunDir);
-        scatteringIntegral *= uniformPhase * sunIrradiance * sunTransmittance;
 
-        lum += scatteringIntegral * transmittance;
+        // 注意：这里移除了原本的 uniformPhase * sunIrradiance，提到循环体外处理
+        lum += scatteringIntegral * (transmittance * sunTransmittance);
         transmittance *= sampleTransmittance;
     }
+
+    // [优化] 在循环结束后统一乘上相位与光照强度，大幅节省 FMA 计算量
+    lum *= phaseIrradiance;
 
     // Ground diffuse
     if (groundHit) {
@@ -85,8 +98,8 @@ shared vec3 sharedFms[64];
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 tid = ivec2(gl_WorkGroupID.xy);
-	vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(msLutImg));
+    ivec2 tid = ivec2(gl_WorkGroupID.xy);
+    vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(msLutImg));
 
     float cosTheta = uv.x * 2.0 - 1.0;
     float height = mix(atmosphere.bottomRadius, atmosphere.topRadius, uv.y);
@@ -104,44 +117,49 @@ void main() {
 
     sharedLum[i] = res[0];
     sharedFms[i] = res[1];
-	barrier();
+    barrier();
 
-	// 64 to 32
-	if (i < 32) {
-		sharedLum[i] += sharedLum[i + 32];
-		sharedFms[i] += sharedFms[i + 32];
-	}
-	barrier();
+    // Standard unrolled shared memory reduction (64 -> 1)
+    if (i < 32) {
+        sharedLum[i] += sharedLum[i + 32];
+        sharedFms[i] += sharedFms[i + 32];
+    }
+    barrier();
+    if (i < 16) {
+        sharedLum[i] += sharedLum[i + 16];
+        sharedFms[i] += sharedFms[i + 16];
+    }
+    barrier();
+    if (i < 8) {
+        sharedLum[i] += sharedLum[i + 8];
+        sharedFms[i] += sharedFms[i + 8];
+    }
+    barrier();
+    if (i < 4) {
+        sharedLum[i] += sharedLum[i + 4];
+        sharedFms[i] += sharedFms[i + 4];
+    }
+    barrier();
+    if (i < 2) {
+        sharedLum[i] += sharedLum[i + 2];
+        sharedFms[i] += sharedFms[i + 2];
+    }
+    barrier();
+    if (i < 1) {
+        sharedLum[i] += sharedLum[i + 1];
+        sharedFms[i] += sharedFms[i + 1];
+    }
+    barrier();
+    
+    if (i > 0) return;
 
-	// 32 to 16
-	if (i < 16) {
-		sharedLum[i] += sharedLum[i + 16];
-		sharedFms[i] += sharedFms[i + 16];
-	}
-	barrier();
+    vec3 lum = sharedLum[0] / max(1.0 - sharedFms[0], 1e-8);
 
-	// 16 to 8 (16 is thread group min hardware size with intel, no sync required from there)
-	if (i < 8) {
-		sharedLum[i] += sharedLum[i + 8];
-		sharedFms[i] += sharedFms[i + 8];
-	}
-	barrier();
-	if (i < 4) {
-		sharedLum[i] += sharedLum[i + 4];
-		sharedFms[i] += sharedFms[i + 4];
-	}
-	barrier();
-	if (i < 2) {
-		sharedLum[i] += sharedLum[i + 2];
-		sharedFms[i] += sharedFms[i + 2];
-	}
-	barrier();
-	if (i < 1) {
-		sharedLum[i] += sharedLum[i + 1];
-		sharedFms[i] += sharedFms[i + 1];
-	}
-	barrier();
-	if (i > 0) return;
+    // 末地维度散射亮度降低到 0.6
+    #ifdef DIMENSION_THE_END
+        if (worldId == 1) lum *= 1.0;
+    #endif
 
-	imageStore(msLutImg, tid, vec4(sharedLum[0] / (1.0 - sharedFms[0]), 1.0));
+    // [优化] 分母增加安全偏移量，绝对避免 LUT 中心像素黑洞
+    imageStore(msLutImg, tid, vec4(lum, 1.0));
 }

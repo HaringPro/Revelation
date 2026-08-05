@@ -1,12 +1,12 @@
 /*
 --------------------------------------------------------------------------------
 
-	Revelation Shaders
+    Revelation Shaders
 
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
-	Pass: Gaussian blur for bloom tiles
+    Pass: Cached Gaussian blur for bloom tiles (Ping-Pong Setup)
 
 --------------------------------------------------------------------------------
 */
@@ -17,7 +17,12 @@ const vec2 workGroupsRender = vec2(0.5, 1.0);
 
 //======// Uniform //=============================================================================//
 
-layout (r11f_g11f_b10f) restrict uniform image2D colorimg4;
+// 【优化】输出端保持不变
+layout (r11f_g11f_b10f) restrict uniform image2D colorimg4; 
+
+// 【核心优化】引入标准的 sampler2D 作为输入端，激活显卡 L1 纹理缓存
+// 提示：如果是横向 Pass，这里读 colortex4；如果是纵向 Pass，这里读中转的 colortex5
+uniform sampler2D colortex4; 
 
 //======// Shared Memory //=======================================================================//
 
@@ -25,21 +30,24 @@ shared vec3 sharedData[128 + 8];
 
 //======// Main //================================================================================//
 void main() {
-	ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-	uint index = gl_LocalInvocationIndex;
+    ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+    uint index = gl_LocalInvocationIndex;
 
-	sharedData[index] = imageLoad(colorimg4, texel - (OFFSET << 2)).rgb;
-	if (index < 8) {
-		sharedData[index + 128] = imageLoad(colorimg4, texel + OFFSET * (128 - 4)).rgb;
-	}
-	barrier();
+    // 【硬件加速】改用 texelFetch 代替 imageLoad
+    // 完美的 0 级别 Mipmap 像素直取，直接白嫖显卡的 Texture Filter Unit 缓存，带宽开销暴跌
+    sharedData[index] = texelFetch(colortex4, texel - (OFFSET << 2), 0).rgb;
+    if (index < 8) {
+        sharedData[index + 128] = texelFetch(colortex4, texel + OFFSET * (128 - 4), 0).rgb;
+    }
+    barrier();
 
-	const float kernel[5] = float[5](0.27343750, 0.21875000, 0.10937500, 0.03125000, 0.00390625);
+    const float kernel[5] = float[5](0.27343750, 0.21875000, 0.10937500, 0.03125000, 0.00390625);
 
-	vec3 bloomTiles = vec3(0.0);
-	for (int i = 0; i < 9; ++i) {
-		bloomTiles += sharedData[index + i].rgb * kernel[abs(i - 4)];
-	}
+    vec3 bloomTiles = vec3(0.0);
+    for (int i = 0; i < 9; ++i) {
+        bloomTiles += sharedData[index + i].rgb * kernel[abs(i - 4)];
+    }
 
+    // 写入目标（确保此处的写入目标与上面的读取采样器不是同一张图）
     imageStore(colorimg4, texel, vec4(bloomTiles, 1.0));
 }

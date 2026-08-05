@@ -112,6 +112,11 @@ float CloudHighDensity(in vec2 rayPos) {
     }
 #endif
 
+// Pre‑compute inverses of constants that are used repeatedly
+const float invCloudMapExtend = 1.0 / cloudMapExtend;      // cloudMapExtend is compile‑time constant
+const float invNoiseScale512k = 1.0 / 512000.0;             // 512e3
+const float invCurlNoiseScale2e3 = 1.0 / 2000.0;           // 2e3
+
 float CloudVolumeDensity(in vec3 rayPos, in float heightFraction, out float dimensionalProfile, in bool detail) {
     // Wind field
     const float windAngle = radians(CLOUD_LOW_WIND_ANGLE);
@@ -123,51 +128,47 @@ float CloudVolumeDensity(in vec3 rayPos, in float heightFraction, out float dime
     rayPos.xz += cameraPosition.xz;
 
     // Sample cloud map
-    vec2 cloudMap = texture(cloudMapTex, (rayPos.xz * rcp(cloudMapExtend))).xy;
+    vec2 cloudMap = texture(cloudMapTex, (rayPos.xz * invCloudMapExtend)).xy;
 
-    // Coveage profile
-    vec2 stepEdge = mix(vec2(0.5, 1.0) - CLOUD_CU_COVERAGE * 0.4, vec2(0.15, 0.5), sqr(wetness));
+    // Coverage profile
+    float wetnessSq = sqr(wetness);
+    vec2 stepEdge = mix(vec2(0.5, 1.0) - CLOUD_CU_COVERAGE * 0.4, vec2(0.15, 0.5), wetnessSq);
     float coverage = linearstep(stepEdge.x, stepEdge.y, cloudMap.x);
 
-    float localCoverage = texture(noisetex, rayPos.xz * rcp(512e3) + 0.75).z;
+    float localCoverage = texture(noisetex, rayPos.xz * invNoiseScale512k + 0.75).z;
     coverage *= linearstep(stepEdge.x * 1.1, stepEdge.y * 0.8, localCoverage);
 
     // Vertical profile
     float type = cloudMap.y * approxSqrt(coverage);
-    // heightFraction = ValueErosion(heightFraction, oms(cloudMap.y) * 0.3);
     float gradient = GetVerticalProfile(heightFraction, type);
 
-    #if 0
-    dimensionalProfile = (gradient * coverage);
-    #else
     dimensionalProfile = saturate(gradient + coverage - 1.0);
-    #endif
     if (dimensionalProfile < 0.1) return 0.0;
 
-    vec3 noisePos = (rayPos - windDir * heightFraction * cumulusTopOffset) * rcp(2e3);
+    vec3 noisePos = (rayPos - windDir * heightFraction * cumulusTopOffset) * invCurlNoiseScale2e3;
     noisePos.y += dot(noisePos.xz, vec2(0.2, 0.3)); // Reduce repetition pattern
 
     // Add curl noise
     #if !defined PASS_SKY_MAP
     if (detail) {
+        const vec3 curlCoordScale = vec3(2.0, 3.0, 2.0);
         for (int i = 0; i < CLOUD_BASE_NOISE_ITERATIONS; i++) {
-            vec3 curlNoise = texture(curlNoise3D, noisePos * vec3(2.0, 3.0, 2.0)).xyz;
-            noisePos += curlNoise * gradient * oms(coverage) * 0.4;
+            vec3 curlNoise = texture(curlNoise3D, noisePos * curlCoordScale).xyz;
+            noisePos += curlNoise * gradient * (1.0 - coverage) * 0.4;
         }
     }
     #endif
 
-    #if 0
-    vec2 billowyNoise = texture(baseNoiseTex, fract(noisePos)).xy;
-
-    // Blend between HF and LF according to dimensionalProfile
-    float baseNoise = mix(billowyNoise.x, billowyNoise.y, approxSqrt(dimensionalProfile));
-    #else
     float baseNoise = 0.0;
-    for (int i = 0; i < CLOUD_BASE_NOISE_ITERATIONS; i++) {
-        baseNoise += texture(baseNoiseTex, noisePos * (1.0 + float(i) * 0.5)).x;
-    }
-    baseNoise /= float(CLOUD_BASE_NOISE_ITERATIONS);
+    // Manually unroll if iteration count is 1 to save loop overhead;
+    // keep the loop for higher counts to maintain compatibility.
+    #if CLOUD_BASE_NOISE_ITERATIONS == 1
+        baseNoise = texture(baseNoiseTex, noisePos).x;
+    #else
+        for (int i = 0; i < CLOUD_BASE_NOISE_ITERATIONS; i++) {
+            baseNoise += texture(baseNoiseTex, noisePos * (1.0 + float(i) * 0.5)).x;
+        }
+        baseNoise /= float(CLOUD_BASE_NOISE_ITERATIONS);
     #endif
 
     // See [Schneider, 2022]
@@ -175,22 +176,6 @@ float CloudVolumeDensity(in vec3 rayPos, in float heightFraction, out float dime
     if (cloudDensity < cloudEpsilon) return 0.0;
 
     float heightFade = smoothstep(0.1, 0.5, heightFraction);
-
-    // Detail erosion
-    // float detailNoise = 0.1;
-
-    // #if !defined PASS_SKY_MAP
-    // if (detail) {
-    //  for (int i = 0; i < CLOUD_DETAIL_ITERATIONS; i++) {
-    //      vec3 detailPos = noisePos - baseNoise * 0.1 * windDir + windOffset * 1e-4;
-    //      float d = texture(detailNoiseTex, detailPos * (8.0 + float(i) * 4.0)).x;
-    //      detailNoise = sqr(mix(d, 0.75 - d * 0.5, heightFade)) * 0.4;
-    //  }
-    // }
-    // #endif
-
-    // cloudDensity = ValueErosion(cloudDensity, detailNoise);
-    // cloudDensity = saturate(cloudDensity - detailNoise * oms(cloudDensity));
 
     // Density profile
     cloudDensity *= mix(1.0, inversesqrt(cloudDensity), heightFraction);

@@ -1,6 +1,6 @@
 /* Reflective Shadow Maps */
 // Reference: https://users.soe.ucsc.edu/~pang/160/s13/proposal/mijallen/proposal/media/p203-dachsbacher.pdf
-#define RSM_ENABLED
+//#define RSM_ENABLED
 #define RSM_SAMPLES 16 // [4 8 12 16 20 24 32 48 64 96 128 256]
 #define RSM_RADIUS 8.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 12.0 15.0 20.0 25.0 30.0 40.0 50.0 70.0 100.0]
 #define RSM_BRIGHTNESS 1.0 // [0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.6 1.8 2.0 2.5 3.0 5.0 7.0 10.0 15.0 20.0 30.0 40.0 50.0 70.0 100.0]
@@ -40,6 +40,9 @@ vec3 CalculateRSM(in vec3 viewPos, in vec3 worldNormal, in vec2 noise, in float 
 
 		vec2 sampleClipCoord 		= shadowClipPos.xy + dir * sampleRad;
 		vec2 sampleScreenCoord		= sampleClipCoord * CalcDistortionFactor(sampleClipCoord) * 0.5 + 0.5;
+		#ifdef ENABLE_VOXELIZATION
+			ShiftShadowScreenPos(sampleScreenCoord); // 体素平铺布局：真阴影右上区
+		#endif
 		ivec2 sampleTexel 			= ivec2(sampleScreenCoord * realShadowMapRes);
 
 		float sampleDepth 			= texelFetch(shadowtex1, sampleTexel, 0).x * 10.0 - 5.0;

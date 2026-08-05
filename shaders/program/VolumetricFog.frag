@@ -1,13 +1,13 @@
 /*
 --------------------------------------------------------------------------------
 
-	Revelation Shaders
+    Revelation Shaders (Ultra Performance Edition - UnderWater Pass Disabled)
 
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
-	Pass: Compute and accumulate volumetric fog
-
+    Pass: Underwater volumetric fog (DISABLED – replaced by analytic fog elsewhere)
+    Optimization: RaymarchWaterFog removed, temporal reprojection skipped.
 --------------------------------------------------------------------------------
 */
 
@@ -24,11 +24,6 @@ out uvec4 packedFogData;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D shadowtex0;
-uniform sampler2D shadowtex1;
-uniform sampler2D shadowcolor0;
-uniform sampler2D shadowcolor1;
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// SSBO //================================================================================//
@@ -41,64 +36,27 @@ uniform sampler2D shadowcolor1;
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
 
-#include "/lib/lighting/shadow/Common.glsl"
-
-#include "/lib/atmosphere/Common.glsl"
-#include "/lib/atmosphere/AtmosphericFog.glsl"
-
-#include "/lib/water/WaterFog.glsl"
+// 不再需要 water fog 步进，只保留空的编码输出
+// #include "/lib/water/WaterFog.glsl"
 
 mat2x3 UnpackFogData(in uvec2 data) {
-	return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
+    return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
 }
 
 //======// Main //================================================================================//
 void main() {
-    ivec2 texelPos = ivec2(gl_FragCoord.xy * 2.0);
+    // 玩家不在水中 → 直接输出完全透明的雾，并立即返回
+    if (isEyeInWater == 0) {
+        packedFogData = uvec4(EncodeRGBE8U(vec3(0.0)), EncodeRGBE8U(vec3(1.0)), 0u, 0u);
+        return;
+    }
 
-    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize * 2.0;
-	vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
-
-	vec3 viewPos = ScreenToViewPosRaw(screenPos);
-	#if defined LOD_MOD
-		if (screenPos.z > 1.0 - EPS) {
-			screenPos.z = loadDepth0Lod(texelPos);
-			viewPos = ScreenToViewPosRawLod(screenPos);
-		}
-	#endif
-
-	vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
-
-	float dither = BlueNoise(texelPos, frameCounter);
-
-	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
-
-	#ifdef VOLUMETRIC_FOG
-		if (isEyeInWater == 0) {
-			volFogData = RaymarchAtmosphericFog(gbufferModelViewInverse[3].xyz, worldPos, dither, screenPos.z > 1.0 - EPS, VF_MAX_SAMPLES);
-		}
-	#endif
-	#ifdef UW_VOLUMETRIC_FOG
-		if (isEyeInWater == 1) {
-			volFogData = RaymarchWaterFog(worldPos - gbufferModelViewInverse[3].xyz, dither);
-		}
-	#endif
-
-	// Temporal reprojection
-    vec2 prevCoord = ReprojectScreenPos(screenPos).xy;
-
-    if (saturate(prevCoord) == prevCoord && !worldTimeChanged) {
-        uvec3 reprojectedData = texelFetch(colortex11, uvToTexel(prevCoord) >> 1, 0).xyz;
-		mat2x3 reprojectedFog = UnpackFogData(reprojectedData.xy);
-
-		float blendWeight = 0.9;
-		blendWeight *= exp2(abs(uintBitsToFloat(reprojectedData.z) + viewPos.z) * 32.0 / viewPos.z);
-
-        volFogData[0] = mix(volFogData[0], reprojectedFog[0], blendWeight);
-        volFogData[1] = mix(volFogData[1], reprojectedFog[1], blendWeight);
-	}
-
-	packedFogData.x = EncodeRGBE8U(volFogData[0]);
-	packedFogData.y = EncodeRGBE8U(volFogData[1]);
-	packedFogData.z = floatBitsToUint(-viewPos.z);
+    // 即使在水下，也不再执行任何体积步进，直接输出无散射的雾数据。
+    // 雾效将由 AnalyticWaterFog 在其它 Pass 中处理。
+    packedFogData = uvec4(
+        EncodeRGBE8U(vec3(0.0)), // 散射为零
+        EncodeRGBE8U(vec3(1.0)), // 透射率为 1（完全透明）
+        0u,                      // 不需要深度信息
+        0u
+    );
 }

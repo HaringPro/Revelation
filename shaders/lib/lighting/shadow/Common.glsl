@@ -1,6 +1,6 @@
 // --- 阴影设置 ---
 #define SHADOW_DISTORTION          // [OFF ON] 阴影形变开关
-#define SHADOW_DISTORTION_STRENGTH 4.0 // [1.0 1.5 2.0 2.25 2.5 2.75 3.0 3.25 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0]
+#define SHADOW_DISTORTION_STRENGTH 2.75 // [1.0 1.5 2.0 2.25 2.5 2.75 3.0 3.25 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0]
 
 // 计算形变因子的函数
 float CalcDistortionFactor(in vec2 shadowClipPos) {

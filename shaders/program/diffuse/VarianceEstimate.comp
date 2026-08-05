@@ -89,10 +89,13 @@ void main() {
     ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
     vec4 integratedDiffuse = texelFetch(colortex2, texelPos, 0);
 
-    // Vanilla lightmap blending
-    float blocklight = Unpack2x8UX(loadMaterialPack(texelPos << 1).x);
-    blocklight = pow5(blocklight) * exp2(-16.0 * integratedDiffuse.x * exposure.value);
-    integratedDiffuse.rgb += RGBToYCoCg(blocklightColor) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;
+    // Vanilla lightmap blending（仅 SSILVB 信号需要；体素 GI 的原版 Lightmap 混合由
+    // DeferredLight 按 VOXEL_GI_BLENDED_LIGHTMAP 处理，此处再混会重复叠加方块光）
+    #ifndef VOXEL_GI_TRACE
+        float blocklight = Unpack2x8UX(loadMaterialPack(texelPos << 1).x);
+        blocklight = pow5(blocklight) * exp2(-16.0 * integratedDiffuse.x * exposure.value);
+        integratedDiffuse.rgb += RGBToYCoCg(blocklightColor) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;
+    #endif
 
     float variance = 32.0 * max0(moments.y - moments.x * moments.x);
     imageStore(colorimg3, texelPos, vec4(integratedDiffuse.rgb, variance));

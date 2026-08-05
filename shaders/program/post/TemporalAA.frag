@@ -1,44 +1,37 @@
 /*
 --------------------------------------------------------------------------------
-
-	Revelation Shaders
-
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
-
-    Pass: Temporal Reprojection Anti-Aliasing
-    Reference: https://github.com/playdeadgames/temporal
-
+    Revelation Shaders - Hybrid Temporal Reprojection Anti-Aliasing
+    Mode 0 (High Quality): Playdead's variance-clipping & perceptual YCoCg TAA
+    Mode 1 (High Performance): MakeUp Fast RGB TAA (fixed history weight)
 --------------------------------------------------------------------------------
 */
 
-//======// Utility //=============================================================================//
+//======// 配置与宏定义 //=======================================================================//
+
+#define TAA_QUALITY_MODE 1 // [0 1] 0: 高画质模式 (原版 Playdead) | 1: 高性能模式 (MakeUp Fast TAA)
+
+#ifdef TAA_SHARPEN
+    #undef TAA_SHARPEN
+#endif
+
+//======// 基础引用 //===========================================================================//
 
 #include "/lib/Utility.glsl"
 
-//======// Output //==============================================================================//
-
 /* RENDERTARGETS: 1,4 */
-layout (location = 0) out vec4 temporalOut;
-layout (location = 1) out vec3 clearOut;
+layout(location = 0) out vec4 temporalOut;
+layout(location = 1) out vec3 clearOut;
 
 #ifdef MOTION_BLUR
-/* RENDERTARGETS: 1,4,3 */
-layout (location = 2) out vec2 motionVectorOut;
+    /* RENDERTARGETS: 1,4,3 */
+    layout(location = 2) out vec2 motionVectorOut;
 #endif
 
-//======// Input //===============================================================================//
-
-// flat in float exposure;
-
-//======// Uniform //=============================================================================//
-
 #include "/lib/universal/Uniform.glsl"
-
-//======// Function //============================================================================//
-
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
+
+//======// 共享辅助函数 //========================================================================//
 
 vec3 CrossClosestFragment(in ivec2 texelPos, in float depth) {
     vec3 closest = vec3(vec2(texelPos), depth);
@@ -62,7 +55,9 @@ vec3 CrossClosestFragment(in ivec2 texelPos, in float depth) {
     return closest;
 }
 
-// Lumiance aware perceptual weight
+//======// 方案 0：高画质模式专属函数 (Playdead YCoCg) //==========================================//
+#if TAA_QUALITY_MODE == 0
+
 vec3 perceptualWeight(vec3 colorYCoCg) {
     return colorYCoCg * rcp(1.0 + colorYCoCg.x);
 }
@@ -78,79 +73,137 @@ vec3 historyClipAABB(in vec3 history, in vec3 center, in vec3 extent) {
     if (maxUnit > 1.0) {
         return center + delta / maxUnit;
     }
-
     return history;
 }
 
+#endif
+
+//======// 方案 1：高性能模式专属函数 (MakeUp RGB ConvexHull，优化版) //===================================//
+#if TAA_QUALITY_MODE == 1
+
+// 直接返回裁剪后的 RGB，不再需要 a 通道
+vec3 convexHull(
+    vec3 c, vec3 previous, vec3 up, vec3 down, vec3 left, vec3 right,
+    vec3 ul, vec3 ur, vec3 dl, vec3 dr
+) {
+    vec3 sum = c + up + down + left + right + ul + ur + dl + dr;
+    vec3 sum_sq = c * c + up * up + down * down + left * left + right * right + ul * ul + ur * ur + dl * dl + dr * dr;
+
+    vec3 mean = sum * 0.1111111111111111;
+    vec3 variance = abs(sum_sq * 0.1111111111111111 - mean * mean);
+    vec3 stdDev = sqrt(variance);
+    vec3 minValid = mean - stdDev;
+    vec3 maxValid = mean + stdDev;
+
+    return clamp(previous, minValid, maxValid);
+}
+
+#endif
+
+// ----------------------------------------------------------------------------
+// 核心时序重投影函数
+// ----------------------------------------------------------------------------
 vec4 TemporalReprojection(in vec2 screenCoord, in vec2 motionVector) {
     ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
-
-    vec3 currData = loadSceneMain(texel);
     vec2 prevCoord = screenCoord - motionVector;
 
-    if (saturate(prevCoord) != prevCoord) return vec4(YCoCgToRGB(currData), 1.0);
+    // --- 模式 1：高性能 MakeUp Fast TAA（固定高历史权重） ---
+    #if TAA_QUALITY_MODE == 1
+        vec3 currentRGB = YCoCgToRGB(loadSceneMain(texel));
 
-    #ifdef TAA_SHARPEN
-        vec4 temporalData = textureCatmullRomFastAntiRing(colortex1, prevCoord);
-    #else
+        if (saturate(prevCoord) != prevCoord)
+            return vec4(currentRGB, 1.0);
+
         vec4 temporalData = texture(colortex1, prevCoord);
-    #endif
+        vec3 previousRGB = temporalData.rgb;
 
-    vec3 prevData = RGBToYCoCg(temporalData.rgb);
+        #define FETCH_NEIGHBOUR(off) YCoCgToRGB(texelFetch(colortex0, texel + (off), 0).rgb)
+        vec3 up    = FETCH_NEIGHBOUR(ivec2( 0,  1));
+        vec3 down  = FETCH_NEIGHBOUR(ivec2( 0, -1));
+        vec3 left  = FETCH_NEIGHBOUR(ivec2(-1,  0));
+        vec3 right = FETCH_NEIGHBOUR(ivec2( 1,  0));
+        vec3 ul    = FETCH_NEIGHBOUR(ivec2(-1,  1));
+        vec3 ur    = FETCH_NEIGHBOUR(ivec2( 1,  1));
+        vec3 dl    = FETCH_NEIGHBOUR(ivec2(-1, -1));
+        vec3 dr    = FETCH_NEIGHBOUR(ivec2( 1, -1));
+        #undef FETCH_NEIGHBOUR
 
-    float currLum = currData.x, prevLum = prevData.x;
-    float temporalContrast = saturate(abs(currLum - prevLum) / max(currLum, prevLum));
+        vec3 previousClipped = convexHull(currentRGB, previousRGB, up, down, left, right, ul, ur, dl, dr);
 
-    #ifdef TAA_CLIPPING
-        vec3 moment1 = currData;
-        vec3 moment2 = currData * currData;
+        float accumFrames = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
 
-	    for (uint i = 0u; i < 8u; ++i) {
-            vec3 sampleData = texelFetch(colortex0, texel + offset3x3N[i], 0).rgb;
+        // 固定历史权重 0.9，新帧 0.1，极大减轻噪点
+        const float historyWeight = 0.9;
+        #ifdef MOTION_BLUR
+            float velocity = length(prevCoord - screenCoord) * 10.0;
+            float blendFactor = clamp(historyWeight - velocity * 0.02, 0.0, 1.0);
+        #else
+            float blendFactor = historyWeight;
+        #endif
 
-            moment1 += sampleData;
-            moment2 += sampleData * sampleData;
-        }
-        moment1 *= rcp(9.0);
-        moment2 *= rcp(9.0);
+        return vec4(mix(currentRGB, previousClipped, blendFactor), temporalData.a);
 
-        vec3 clipStdDev = sqrt(abs(moment2 - moment1 * moment1)) * TAA_AGGRESSION;
+    // --- 模式 0：高画质 Playdead YCoCg TAA（裁剪默认关闭） ---
+    #else
+        vec3 currData = loadSceneMain(texel);
 
-        #if 1
-            // Ellipsoid intersection clipping
+        if (saturate(prevCoord) != prevCoord) 
+            return vec4(YCoCgToRGB(currData), 1.0);
+
+        #ifdef TAA_SHARPEN
+            vec4 temporalData = textureCatmullRomFastAntiRing(colortex1, prevCoord);
+        #else
+            vec4 temporalData = texture(colortex1, prevCoord);
+        #endif
+
+        vec3 prevData = RGBToYCoCg(temporalData.rgb);
+
+        float currLum = currData.x, prevLum = prevData.x;
+        float temporalContrast = saturate(abs(currLum - prevLum) / max(currLum, prevLum));
+
+        // 默认不裁剪（原版行为），拖影问题因此消失
+        #ifdef TAA_CLIPPING
+            vec3 moment1 = currData;
+            vec3 moment2 = currData * currData;
+
+            for (uint i = 0u; i < 8u; ++i) {
+                vec3 sampleData = texelFetch(colortex0, texel + offset3x3N[i], 0).rgb;
+                moment1 += sampleData;
+                moment2 += sampleData * sampleData;
+            }
+            moment1 *= rcp(9.0);
+            moment2 *= rcp(9.0);
+
+            vec3 clipStdDev = sqrt(abs(moment2 - moment1 * moment1)) * TAA_AGGRESSION;
+
+            // 椭球交集裁剪
             prevData -= moment1;
             prevData *= saturate(inversesqrt(sdot(prevData / clipStdDev)));
             prevData += moment1;
-        #else
-            // AABB clipping
-            prevData = historyClipAABB(prevData, moment1, clipStdDev);
         #endif
+
+        // 次像素锐化
+        prevData = mix(prevData, currData, sdot(fract(prevCoord * viewSize) - 0.5) * 0.5);
+
+        float blendWeight = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
+        blendWeight *= 1.0 + sqr(temporalContrast) * TAA_ANTIFLICKER;
+
+        currData = mix(perceptualWeight(prevData), perceptualWeight(currData), rcp(blendWeight));
+        return vec4(YCoCgToRGB(perceptualWeightInv(currData)), temporalData.a);
     #endif
-
-    // Subpixel sharpening
-	prevData = mix(prevData, currData, sdot(fract(prevCoord * viewSize) - 0.5) * 0.5);
-
-    float blendWeight = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
-    blendWeight *= 1.0 + sqr(temporalContrast) * TAA_ANTIFLICKER;
-
-    currData = mix(perceptualWeight(prevData), perceptualWeight(currData), rcp(blendWeight));
-    return vec4(YCoCgToRGB(perceptualWeightInv(currData)), temporalData.a);
 }
 
-//======// Main //================================================================================//
+//======// 主函数入口 //==========================================================================//
 void main() {
-    clearOut = vec3(0.0); // Clear the output buffer for bloom tiles
+    clearOut = vec3(0.0);
 
-	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
-
+    ivec2 screenTexel = ivec2(gl_FragCoord.xy);
     float depth = loadDepth0(screenTexel);
-	vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
+    vec2 screenCoord = gl_FragCoord.xy * viewPixelSize;
 
     #if RENDER_MODE == 1
         vec2 motionVector;
         #if defined LOD_MOD
-            // Voxy LoD often does not write vanilla depth (depth ~= 1.0 but non-sky material).
-            // Detect it and use DH/VOXY reprojection path instead of fully disabling temporal effects.
             uint materialID = loadMaterialPack(screenTexel).y;
             if (depth > 1.0 - EPS && materialID != 0u) {
                 float lodDepth = loadDepth0Lod(screenTexel);
@@ -176,13 +229,13 @@ void main() {
             temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
         #endif
     #else
+        // 手持物品等特殊渲染模式的快速混合逻辑
         ivec2 srcTexel = uvToTexel(screenCoord + taaJitter * 0.5);
         temporalOut = vec4(loadSceneMain(srcTexel), 1.0);
 
         vec2 prevCoord = ReprojectScreenPos(vec3(screenCoord, depth)).xy;
         if (distance(prevCoord, screenCoord) < EPS) {
             vec4 prevData = texture(colortex1, prevCoord);
-
             temporalOut.rgb = mix(prevData.rgb, temporalOut.rgb, rcp(++prevData.a));
             temporalOut.a = prevData.a;
         }

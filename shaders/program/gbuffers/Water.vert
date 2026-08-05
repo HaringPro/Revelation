@@ -1,10 +1,10 @@
 /*
 --------------------------------------------------------------------------------
 
-	Revelation Shaders
+    Revelation Shaders
 
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
 --------------------------------------------------------------------------------
 */
@@ -33,55 +33,54 @@ in vec4 at_tangent;
 //======// Uniform //=============================================================================//
 
 uniform mat4 gbufferModelViewInverse;
-
 uniform vec2 taaJitter;
 
 //======// Function //============================================================================//
 
 #define PHYSICS_OCEAN_SUPPORT
-#ifdef PHYSICS_OCEAN_SUPPORT
-#endif
-
 #ifdef PHYSICS_OCEAN
-	#define PHYSICS_VERTEX
-	#include "/lib/water/PhysicsOceans.glsl"
+    #define PHYSICS_VERTEX
+    #include "/lib/water/PhysicsOceans.glsl"
 #endif
 
 //======// Main //================================================================================//
 void main() {
-	texCoord = mat2(gl_TextureMatrix[0]) * gl_MultiTexCoord0.xy + gl_TextureMatrix[0][3].xy;
+    texCoord = mat2(gl_TextureMatrix[0]) * gl_MultiTexCoord0.xy + gl_TextureMatrix[0][3].xy;
+    lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
-	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
+    // Nether portal brightness
+    lightmap.x = float(mc_Entity.x == 11500.0);
 
-	// Nether portal
-	lightmap.x = float(mc_Entity.x == 11500.0);
+    vertColor = gl_Color;
 
-	vertColor = gl_Color;
+    // Encode normal and tangent into packed integers
+    vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
+    normalPack = packSnorm2x16(OctEncodeSnorm(normal));
 
-	// Encode normal and tangent
-	vec3 normal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
-	normalPack = packSnorm2x16(OctEncodeSnorm(normal));
-	vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
-	tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
-	tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
+    vec3 tangent = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * at_tangent.xyz);
+    tangentPack.x = packSnorm2x16(OctEncodeSnorm(tangent));
+    // Store the handedness of the tangent space as -1.0 or 1.0
+    tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
 
-	materialID = mc_Entity.x == 10003.0 ? 3u : 2u;
+    materialID = mc_Entity.x == 10003.0 ? 3u : 2u;
 
-	#ifdef PHYSICS_OCEAN
-		// basic texture to determine how shallow/far away from the shore the water is
-		physics_localWaviness = texelFetch(physics_waviness, ivec2(gl_Vertex.xz) - physics_textureOffset, 0).r;
-		// transform gl_Vertex (since it is the raw mesh, i.e. not transformed yet)
-		vec4 finalPosition = vec4(gl_Vertex.x, gl_Vertex.y + physics_waveHeight(gl_Vertex.xz, PHYSICS_ITERATIONS_OFFSET, physics_localWaviness, physics_gameTime), gl_Vertex.z, gl_Vertex.w);
-		// pass this to the fragment shader to fetch the texture there for per fragment normals
-		physics_localPosition = finalPosition.xyz;
-		vec3 viewPos = transMAD(gl_ModelViewMatrix, finalPosition.xyz);
-	#else
-		vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
-	#endif
-	worldPos = transMAD(gbufferModelViewInverse, viewPos);
+    vec3 viewPos;
+    #ifdef PHYSICS_OCEAN
+        physics_localWaviness = texelFetch(physics_waviness, ivec2(gl_Vertex.xz) - physics_textureOffset, 0).r;
+        vec4 finalPosition = vec4(gl_Vertex.x,
+                                   gl_Vertex.y + physics_waveHeight(gl_Vertex.xz, PHYSICS_ITERATIONS_OFFSET, physics_localWaviness, physics_gameTime),
+                                   gl_Vertex.z,
+                                   gl_Vertex.w);
+        physics_localPosition = finalPosition.xyz;
+        viewPos = transMAD(gl_ModelViewMatrix, finalPosition.xyz);
+    #else
+        viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
+    #endif
 
-	gl_Position = diagonal4(gl_ProjectionMatrix) * viewPos.xyzz + gl_ProjectionMatrix[3];
-	#ifdef TAA_ENABLED
-		gl_Position.xy += taaJitter * gl_Position.w;
-	#endif
+    worldPos = transMAD(gbufferModelViewInverse, viewPos);
+
+    gl_Position = diagonal4(gl_ProjectionMatrix) * viewPos.xyzz + gl_ProjectionMatrix[3];
+    #ifdef TAA_ENABLED
+        gl_Position.xy += taaJitter * gl_Position.w;
+    #endif
 }

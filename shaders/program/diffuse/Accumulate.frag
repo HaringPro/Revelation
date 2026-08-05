@@ -13,6 +13,13 @@
 --------------------------------------------------------------------------------
 */
 
+/*
+--------------------------------------------------------------------------------
+    Revelation Shaders – Accumulation and variance estimation
+    Peak Hold re-enabled for smoother GI convergence.
+--------------------------------------------------------------------------------
+*/
+
 const bool colortex3MipmapEnabled = true;
 
 //======// Utility //=============================================================================//
@@ -34,6 +41,15 @@ layout (location = 1) out vec3 encodedNormalDepth;
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
+
+// ====== Peak Hold 控制宏（仅添加，不改其他）======
+#define SSILVB_PEAK_HOLD
+#ifndef SSILVB_HOLD_DOWN_SPEED
+    #define SSILVB_HOLD_DOWN_SPEED 0.05  // [0.01 0.02 0.05 0.1 0.2 0.5 1.0]
+#endif
+#ifndef SSILVB_HOLD_UP_SPEED
+    #define SSILVB_HOLD_UP_SPEED 3.0     // [0.1 0.5 1.0 2.0 3.0 5.0]
+#endif
 
 void TemporalFilter(in ivec2 texelPos, in vec3 screenPos, in vec3 worldNormal) {
 	vec3 viewPos = ScreenToViewPos(screenPos);
@@ -105,6 +121,18 @@ void TemporalFilter(in ivec2 texelPos, in vec3 screenPos, in vec3 worldNormal) {
             integratedDiffuse.rgb = textureLod(colortex3, currCoord, mipLevel).rgb;
 
             float alpha = rcp(integratedDiffuse.a);
+
+            // ====== 峰值保持：亮度下降慢，上升快 ======
+            #ifdef SSILVB_PEAK_HOLD
+                float currLuma = integratedDiffuse.r;
+                float prevLuma = prevDiffuse.r;
+                if (prevLuma > currLuma) {
+                    alpha *= SSILVB_HOLD_DOWN_SPEED;
+                } else {
+                    alpha *= SSILVB_HOLD_UP_SPEED;
+                }
+            #endif
+
             integratedDiffuse.rgb = mix(min(prevDiffuse.rgb, FP16_MAX), integratedDiffuse.rgb, alpha);
             return;
         }

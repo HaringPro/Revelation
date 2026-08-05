@@ -10,20 +10,56 @@
 
 vec3 RenderSun(in vec3 worldDir, in vec3 sunVector) {
     const float cosRadius = cos(sunAngularRadius);
-	const vec3 sunIlluminance = sunIrradiance * 128.0;
+    const vec3 sunIlluminance = sunIrradiance * 128.0;
     const vec3 sunRadiance = sunIlluminance / (TAU * oms(cosRadius));
 
     float cosTheta = dot(worldDir, sunVector);
-    if (cosTheta >= cosRadius) {
-        // Physical sun model from http://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf
-        const vec3 alpha = vec3(0.397, 0.503, 0.652);
 
+    // --- 太阳本体 ---
+    if (cosTheta >= cosRadius) {
+        const vec3 alpha = vec3(0.397, 0.503, 0.652);
         float centerToEdge = saturate(oms(cosTheta) / oms(cosRadius));
         vec3 factor = pow(vec3(1.0 - centerToEdge * centerToEdge), alpha * 0.5);
         vec3 finalLuminance = sunRadiance * factor;
 
+        #ifdef DIMENSION_THE_END
+            // 紫色渐变
+            vec3 purpleTint = vec3(0.85, 0.70, 0.90);
+            float purpleStrength = centerToEdge * 3.0;
+            finalLuminance = mix(finalLuminance, finalLuminance * purpleTint, purpleStrength);
+
+            // 让太阳整体变暗
+            finalLuminance *= 0.01;
+        #endif
+
         return finalLuminance;
     }
+
+    // --- 末地外部涟漪 ---
+    #ifdef DIMENSION_THE_END
+        const float outerScale = 3.8;
+        const float cosOuter = cos(sunAngularRadius * outerScale);
+        if (cosTheta >= cosOuter) {
+            float distFromEdge = (cosTheta - cosRadius) / (cosOuter - cosRadius);
+
+            float fade = 1.0 - smoothstep(0.0, 0.4, distFromEdge);
+
+            float rippleSpeed = 0.12;
+            float rippleFreq = 0.5;
+            float ripplePhase = (distFromEdge * outerScale * rippleFreq - frameTimeCounter * rippleSpeed) * TAU;
+            float ripple = pow(abs(sin(ripplePhase)), 12.0);
+
+            vec3 darkPurple = vec3(0.25, 0.12, 0.35);
+            float dimFactor = 1.0 - distFromEdge * 0.8;
+            vec3 rippleColor = darkPurple * dimFactor;
+
+            // 稍微提升涟漪整体亮度
+            float baseLuminance = 2.2;
+            float intensity = 0.35;
+            return baseLuminance * rippleColor * (ripple * fade * intensity);
+        }
+    #endif
+
     return vec3(0.0);
 }
 

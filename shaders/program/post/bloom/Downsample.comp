@@ -1,14 +1,13 @@
 /*
 --------------------------------------------------------------------------------
+    Revelation Shaders
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
-	Revelation Shaders
-
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
-
-	Pass: Downsample bloom tiles
-	Reference: https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare/
-
+    Pass: Downsample bloom tiles (Single-Level Only)
+    Generates a single half‑resolution bloom tile with adjustable blur.
+    Macro BLOOM_DOWNSAMPLE_BLUR_RADIUS controls blur spread (default 4).
+    All higher levels are skipped.
 --------------------------------------------------------------------------------
 */
 
@@ -16,18 +15,11 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
+// Level 0 半分辨率，其余层级不再使用但仍需定义以通过编译
 #if DOWNSAMPLE_LEVEL == 0
 const vec2 workGroupsRender = vec2(0.5, 0.5);
-#elif DOWNSAMPLE_LEVEL == 1
+#else
 const vec2 workGroupsRender = vec2(0.25, 0.25);
-#elif DOWNSAMPLE_LEVEL == 2
-const vec2 workGroupsRender = vec2(0.125, 0.125);
-#elif DOWNSAMPLE_LEVEL == 3
-const vec2 workGroupsRender = vec2(0.0625, 0.0625);
-#elif DOWNSAMPLE_LEVEL == 4
-const vec2 workGroupsRender = vec2(0.03125, 0.03125);
-#elif DOWNSAMPLE_LEVEL == 5
-const vec2 workGroupsRender = vec2(0.015625, 0.015625);
 #endif
 
 //======// Utility //=============================================================================//
@@ -38,110 +30,61 @@ const vec2 workGroupsRender = vec2(0.015625, 0.015625);
 
 writeonly uniform image2D colorimg4;
 
-uniform sampler2D colortex1; // TAA image output
-uniform sampler2D colortex4; // Bloom tile input
+uniform sampler2D colortex1; // TAA image output (full resolution)
+uniform sampler2D colortex4; // Bloom tile input (not used in Level 0)
 
 uniform vec2 viewSize;
 uniform vec2 viewPixelSize;
 
+//======// 自定义模糊半径宏 ======================================================================//
+
+// 控制降采样时伴随的模糊程度。值越大，采样点离中心越远，模糊范围越大。
+// 推荐范围：1 ~ 16。1 为几乎无扩散，12 为强扩散。
+#ifndef BLOOM_DOWNSAMPLE_BLUR_RADIUS
+    #define BLOOM_DOWNSAMPLE_BLUR_RADIUS 3 // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16]
+#endif
+
 //======// Function //============================================================================//
 
 #if DOWNSAMPLE_LEVEL == 0
-	#define bloomTileTex colortex1
+    #define bloomTileTex colortex1
 #else
-	#define bloomTileTex colortex4
+    #define bloomTileTex colortex4
 #endif
 
-const vec2 bloomTileOffset[6] = vec2[6](
-	vec2(0.0000, 0.0000),
-	vec2(0.0000, 0.5000),
-	vec2(0.2500, 0.5000),
-	vec2(0.2500, 0.6250),
-	vec2(0.3125, 0.6250),
-	vec2(0.3150, 0.6563)
-);
+vec3 CalculateBloomTile(in vec2 centerUV) {
+    // centerUV 已经是正确的归一化坐标，直接使用
+    // 采样半径（归一化坐标单位），值越大扩散越远
+    float radius = float(BLOOM_DOWNSAMPLE_BLUR_RADIUS);
+    vec2 offset = vec2(radius) * viewPixelSize;
 
-const ivec2 sampleOffsets[13] = ivec2[13](
-    ivec2(-2, -2),
-	ivec2( 0, -2),
-	ivec2( 2, -2),
-    ivec2(-2,  0),
-	ivec2( 0,  0),
-	ivec2( 2,  0),
-    ivec2(-2,  2),
-	ivec2( 0,  2),
-	ivec2( 2,  2),
-    ivec2(-1, -1),
-	ivec2( 1, -1),
-    ivec2(-1,  1),
-	ivec2( 1,  1)
-);
-
-vec3 CalculateBloomTile(in vec2 uv) {
-	// Custom hand-crafted 36-texel downsample (13 bilinear fetches)
-    vec3 b00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[0]).rgb;
-    vec3 b01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[1]).rgb;
-    vec3 b02 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[2]).rgb;
-    vec3 b10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[3]).rgb;
-    vec3 b11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[4]).rgb;
-    vec3 b12 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[5]).rgb;
-    vec3 b20 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[6]).rgb;
-    vec3 b21 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[7]).rgb;
-    vec3 b22 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[8]).rgb;
-    vec3 c00 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[9]).rgb;
-    vec3 c01 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[10]).rgb;
-    vec3 c10 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[11]).rgb;
-    vec3 c11 = textureLodOffset(bloomTileTex, uv, 0.0, sampleOffsets[12]).rgb;
-
-    vec3 B00 = (b00 + b01 + b10 + b11) * 0.25;
-    vec3 B01 = (b01 + b02 + b11 + b12) * 0.25;
-    vec3 B10 = (b10 + b11 + b20 + b21) * 0.25;
-    vec3 B11 = (b11 + b12 + b21 + b22) * 0.25;
-    vec3 C00 = (c00 + c01 + c10 + c11) * 0.25;
-
-	#if defined BLOOM_KARIS_AVERAGE && DOWNSAMPLE_LEVEL == 0
-		// [Karis2013] proposes reducing the dynamic range before averaging
-		vec4 bloomTile = vec4(0.0);
-
-		float weight = karisAverage(C00) * 0.5;
-		bloomTile += vec4(C00 * weight, weight);
-
-		weight = karisAverage(B00) * 0.125;
-		bloomTile += vec4(B00 * weight, weight);
-
-		weight = karisAverage(B01) * 0.125;
-		bloomTile += vec4(B01 * weight, weight);
-
-		weight = karisAverage(B10) * 0.125;
-		bloomTile += vec4(B10 * weight, weight);
-
-		weight = karisAverage(B11) * 0.125;
-		bloomTile += vec4(B11 * weight, weight);
-
-		return bloomTile.rgb / bloomTile.a;
-	#else
-		return (B00 + B01 + B10 + B11) * 0.125 + C00 * 0.5;
-	#endif
+    // 四个角点采样（以中心为基准，向外扩展 radius 个像素）
+    vec3 c00 = textureLod(bloomTileTex, centerUV + vec2(-offset.x, -offset.y), 0.0).rgb;
+    vec3 c01 = textureLod(bloomTileTex, centerUV + vec2( offset.x, -offset.y), 0.0).rgb;
+    vec3 c10 = textureLod(bloomTileTex, centerUV + vec2(-offset.x,  offset.y), 0.0).rgb;
+    vec3 c11 = textureLod(bloomTileTex, centerUV + vec2( offset.x,  offset.y), 0.0).rgb;
+    return (c00 + c01 + c10 + c11) * 0.25;
 }
 
 //======// Main //================================================================================//
 void main() {
-    vec2 srcUv = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
-	srcUv *= viewPixelSize;
+    // 仅执行 Level 0，其余层级直接返回
+    #if DOWNSAMPLE_LEVEL > 0
+        return;
+    #endif
 
-    if (any(greaterThanEqual(srcUv, vec2(exp2(-float(DOWNSAMPLE_LEVEL)))))) {
+    // 计算 2×2 块的中心归一化坐标（与发光体完美对齐）
+    vec2 centerUV = vec2(gl_GlobalInvocationID.xy) * 2.0 + 1.0;
+    centerUV *= viewPixelSize;
+
+    // 边界检查
+    if (any(greaterThanEqual(centerUV, vec2(1.0)))) {
         return;
     }
 
-	#if DOWNSAMPLE_LEVEL > 0
-		const int srcIndex = DOWNSAMPLE_LEVEL - 1;
-		srcUv += float(srcIndex * 8) * viewPixelSize + bloomTileOffset[srcIndex];
-	#endif
+    // 降采样并可控扩散
+    vec3 bloomTile = CalculateBloomTile(centerUV);
 
-	vec3 bloomTile = CalculateBloomTile(srcUv);
-
-	const int dstIndex = DOWNSAMPLE_LEVEL;
-	vec2 dstTexel = vec2(gl_GlobalInvocationID.xy + dstIndex * 8);
-	dstTexel += bloomTileOffset[dstIndex] * viewSize + 0.5;
-	imageStore(colorimg4, ivec2(dstTexel), vec4(bloomTile, 1.0));
+    // 写入半分辨率目标纹理 (colorimg4)
+    imageStore(colorimg4, ivec2(gl_GlobalInvocationID.xy), vec4(bloomTile, 1.0));
 }

@@ -1,138 +1,372 @@
 /*
 --------------------------------------------------------------------------------
-
-	Revelation Shaders
-
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
-
-	References:
-		Sébastien Hillaire. "A Scalable and Production Ready Sky and Atmosphere Rendering Technique". EGSR 2020.
-            https://sebh.github.io/publications/egsr2020.pdf
-		Epic Games, Inc. "Unreal Engine Sky Atmosphere Rendering Technique". 2020.
-            https://github.com/sebh/UnrealEngineSkyAtmosphere
-
+    Revelation Shaders
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
+    https://github.com/benanders/Hosek-Wilkie/
 --------------------------------------------------------------------------------
 */
 
-//======// Input //===============================================================================//
+//======// 天空模型选择 //========================================================================//
+// 0 = Hillaire模型（RaymarchScattering），1 = Hosek-Wilkie 解析模型
+#ifndef SKY_MODEL
+    #define SKY_MODEL 0 // [0 1]
+#endif
 
-layout (local_size_x = 16, local_size_y = 16) in;
-const ivec3 workGroups = ivec3(12, 12, 1);
+//A	天顶与地平线的亮度差	负值时：天顶暗、地平线亮；正值时：天顶亮、地平线暗
+//B	亮度差过渡的锐利度	绝对值越大，天顶到地平线的变化越突然
+//C	整体底色亮度（类似基础亮度）	整个天空变亮/变暗，地平线尤其明显
+//D	太阳周围颜色增强（角度依赖）	太阳附近区域更亮/更饱和
+//E	太阳周围颜色衰减速度	值越大，太阳光晕越集中（越锐利）
+//F	太阳光晕的强度（cosGamma² 项）	太阳方向周围白色亮斑增大，天空发白
+//G	气溶胶散射（灰雾感）	整个天空变灰、变白，能见度下降
+//H	气溶胶的方向性（与太阳夹角有关）	调节灰雾的分布形状
+//I	天顶额外亮度/颜色（√cosTheta 项）	天顶单独提亮，其他区域几乎不变
+//Z	最终输出缩放（整体亮度倍率）	直接乘在结果上，线性控制整体明暗
+
+
+//======// 通用分辨率宏 //========================================================================//
+#ifndef SKY_VIEW_RESOLUTION
+    #define SKY_VIEW_RESOLUTION 64 // [32 64 96 128 192 256]
+#endif
+
+//======// Input //===============================================================================//
+layout (local_size_x = 8, local_size_y = 8) in;
+// Iris 的 ComputeDirectiveParser 只接受整数常量：既不能写 SKY_VIEW_RESOLUTION / 8 这类
+// 表达式（NumberFormatException → pipeline 加载失败），也不能用 #if/#elif 提供多个分支
+// （解析器不做条件求值，会取到错误分支，导致天空图只渲染一部分）。
+// 必须写死字面量。workGroups = imageSize / local_size = 192 / 8 = 24
+// （skyViewImg 在 shaders.properties 固定为 192×192，与 SKY_VIEW_RESOLUTION 选项无关）。
+const ivec3 workGroups = ivec3(24, 24, 1);
 
 //======// Utility //=============================================================================//
-
 #include "/lib/Utility.glsl"
 
 //======// Uniform //=============================================================================//
-
 writeonly restrict uniform image2D skyViewImg;
-
 #include "/lib/universal/Uniform.glsl"
 
-//======// Function //============================================================================//
-
+//======// 大气公共参数（两种模型都需要）=========================================================//
 #include "/lib/atmosphere/Common.glsl"
-#include "/lib/universal/Random.glsl"
 
-vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
-    float cosTheta = dot(rayDir, sunDir);
+//======// 模型专属宏与函数 //====================================================================//
 
-    #ifndef PLANET_GROUND
-        // Hacks to simulate atmosphere on the ground
-        if (rayDir.y < 0.0) {
-            rayDir.y *= saturate(exp2(atmosphereViewHeight * 1e-3 - atmosphere.topRadius * 1e-3));
-            rayDir = normalize(rayDir);
+#if SKY_MODEL == 0
+    // ==================== 原始物理模型 ====================
+    #include "/lib/universal/Random.glsl"
+
+    // 原始模型不需要额外宏，直接使用 Common.glsl 中的 ATMOSPHERE_SKY_SAMPLES 等
+
+    vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
+        float cosTheta = dot(rayDir, sunDir);
+
+        #ifndef PLANET_GROUND
+            if (rayDir.y < 0.0) {
+                rayDir.y *= saturate(exp2(atmosphereViewHeight * 1e-3 - atmosphere.topRadius * 1e-3));
+                rayDir = normalize(rayDir);
+            }
+        #endif
+
+        float tMax;
+        bool groundHit;
+        if (AtmosphereSetupRay(rayPos, rayDir, tMax, groundHit)) return vec3(0.0);
+
+        vec2 phaseValue = AtmospherePhase(cosTheta);
+
+        const float maxSamples = ATMOSPHERE_SKY_SAMPLES;
+        float sampleCount = round(maxSamples * saturate(0.5 + tMax * 1e-5));
+        uint uSampleCount = uint(sampleCount);
+
+        float stepSize = tMax * rcp(sampleCount);
+        vec3 rayStep = stepSize * rayDir;
+        rayPos += 0.5 * rayStep;
+
+        vec3 lum = vec3(0.0);
+        vec3 transmittance = vec3(1.0);
+        
+        for (uint i = 0u; i < uSampleCount; ++i, rayPos += rayStep) {
+            vec3 density = AtmosphereDensityAtPoint(rayPos);
+            vec3 extinction = max(atmosphereExtinction * density, 1e-8);
+
+            float rSq = dot(rayPos, rayPos);
+            float invR = inversesqrt(rSq);
+            float r = rSq * invR;
+            float mu = dot(sunDir, rayPos) * invR;
+
+            vec3 sunTransmittance = AtmosphereTransmittanceToSun(r, mu);
+            vec3 psiMs = AtmosphereMultiScattering(r, mu);
+
+            vec3 inScattering = atmosphereScattering * (density.xy * phaseValue) * sunTransmittance;
+            inScattering += atmosphereScattering * density.xy * psiMs;
+
+            vec3 sampleTransmittance = exp(-stepSize * extinction);
+            vec3 scatteringIntegral = inScattering * ((1.0 - sampleTransmittance) / extinction);
+            lum += scatteringIntegral * transmittance;
+            transmittance *= sampleTransmittance;
+
+            if (max(transmittance.x, max(transmittance.y, transmittance.z)) < 1e-4) break;
         }
+
+        if (groundHit) {
+            float planetSq = dot(rayPos, rayPos);
+            float invPlanet = inversesqrt(planetSq);
+            float planetHeight = planetSq * invPlanet;
+            float sunZenithCos = dot(rayPos, sunDir) * invPlanet;
+            vec3 transmittanceToSun = AtmosphereTransmittanceToSun(planetHeight, sunZenithCos);
+            lum += atmosphere.groundAlbedo * (rPI * saturate(sunZenithCos)) * transmittance * transmittanceToSun;
+        }
+
+        return lum * sunIrradiance;
+    }
+
+    vec3 RenderSkyView_Physical(vec2 uv) {
+        float lightViewCos = 1.0 - sqr(uv.x) * 2.0;
+        float height = atmosphereViewHeight;
+        vec3 up = vec3(0.0, 1.0, 0.0);
+
+        float bottomSq = atmosphere.bottomRadius * atmosphere.bottomRadius;
+        float vHorizon = sqrt(height * height - bottomSq);
+        float beta = fastAcos(vHorizon / height);
+        float zenithHorizon = PI - beta;
+
+        float viewZenithCos;
+        if (uv.y < 0.5) {
+            float coord = 1.0 - 2.0 * uv.y;
+            viewZenithCos = cos(zenithHorizon * (1.0 - sqr(coord)));
+        } else {
+            float coord = uv.y * 2.0 - 1.0;
+            viewZenithCos = cos(zenithHorizon + beta * sqr(coord));
+        }
+
+        float viewZenithSin = sqrt(1.0 - sqr(viewZenithCos));
+        vec3 rayDir = vec3(viewZenithSin * lightViewCos, viewZenithCos, viewZenithSin * sqrt(1.0 - sqr(lightViewCos)));
+
+        float sunZenithCos = dot(up, worldSunDir);
+        vec3 sunDir = normalize(vec3(sqrt(1.0 - sqr(sunZenithCos)), sunZenithCos, 0.0));
+
+        vec3 lum = RaymarchScattering(atmosphereViewPos, rayDir, sunDir);
+        if (moonlightMult > 0.01) {
+            lum += RaymarchScattering(atmosphereViewPos, rayDir, -sunDir) * moonlightMult;
+        }
+
+        lum = desaturate(lum, wetness * 0.5);
+        return lum * 128.0;
+    }
+
+#else
+    // ==================== Hosek-Wilkie 解析模型 ====================
+
+    // 天空整体亮度缩放（仅 Hosek-Wilkie 有效）
+    #ifndef SKY_LIGHT_STRENGTH
+        #define SKY_LIGHT_STRENGTH 1.0 // [0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.2 1.5]
     #endif
 
-    float tMax;
-    bool groundHit;
-    if (AtmosphereSetupRay(rayPos, rayDir, tMax, groundHit)) return vec3(0.0);
+    // 大气雾霾强度（仅 Hosek-Wilkie 有效）
+    #ifndef HAZE_STRENGTH
+        #define HAZE_STRENGTH 0.5 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.5 3.0]
+    #endif
 
-    vec2 phaseValue = AtmospherePhase(cosTheta);
+    // 分时段颜色深度（仅 Hosek-Wilkie 有效）
+    #ifndef COLOR_DEPTH_DAY
+        #define COLOR_DEPTH_DAY 1.5    // [0.0 0.5 0.8 1.0 1.2 1.5 2.0 2.5 3.0]
+    #endif
+    #ifndef COLOR_DEPTH_SUNSET
+        #define COLOR_DEPTH_SUNSET 1.0 // [0.0 0.5 0.8 1.0 1.2 1.5 2.0 2.5 3.0]
+    #endif
+    #ifndef COLOR_DEPTH_NIGHT
+        #define COLOR_DEPTH_NIGHT 1.0  // [0.0 0.5 0.8 1.0 1.2 1.5 2.0 2.5 3.0]
+    #endif
 
-    // Adaptive sample count
-    const float maxSamples = ATMOSPHERE_SKY_SAMPLES;
-	float sampleCount = round(maxSamples * saturate(0.5 + tMax * 1e-5));
+    vec3 HosekWilkieCalibrated(vec3 viewDir, vec3 sunDir, float cosThetaSun, int mode, float turbidity) {
+        float cosTheta = clamp(viewDir.y, 0.0, 1.0);
+        float cosGamma = clamp(dot(viewDir, sunDir), -1.0, 1.0);
+        float gamma = acos(cosGamma);
 
-    float stepSize = tMax * rcp(sampleCount);
-    vec3 rayStep = stepSize * rayDir;
-    rayPos += 0.5 * rayStep;
+        float sunFactor = saturate(cosThetaSun * 3.0 - 0.2);
+        float turbFactor = saturate((turbidity - 1.0) / 2.5);
 
-    vec3 lum = vec3(0.0);
-    vec3 transmittance = vec3(1.0);
-    for (uint i = 0u; i < uint(sampleCount); ++i, rayPos += rayStep) {
-        vec3 density = AtmosphereDensityAtPoint(rayPos);
-        vec3 extinction = atmosphereExtinction * density;
+        //==================== 清澈参数（turbidity ≈ 1.0）====================
+        vec3 A_day_clear = vec3(-0.58, -0.30, -0.35);
+        vec3 B_day_clear = vec3(-0.94, -1.06, -0.80);
+        vec3 C_day_clear = vec3(0.28, 0.33, 0.58);
+        vec3 D_day_clear = vec3(0.05, 0.07, 0.12);
+        vec3 E_day_clear = vec3(0.16, 0.13, 0.10);
+        vec3 F_day_clear = vec3(0.06, 0.08, 0.15);
+        vec3 G_day_clear = vec3(0.003, 0.004, 0.010);
+        vec3 H_day_clear = vec3(0.85, 0.86, 0.85);
+        vec3 I_day_clear = vec3(-0.205, -0.209, -0.212);
+        vec3 Z_day_clear = vec3(1.92);
 
-        float r = length(rayPos);
-        float mu = dot(sunDir, rayPos) / r;
+        vec3 A_sun_clear = vec3(-1.25, -0.48, -0.12);
+        vec3 B_sun_clear = vec3(-2.25, -0.60, -0.22);
+        vec3 C_sun_clear = vec3(0.62, 0.28, 0.06);
+        vec3 D_sun_clear = vec3(0.24, 0.07, 0.002);
+        vec3 E_sun_clear = vec3(0.05, 0.04, 0.03);
+        vec3 F_sun_clear = vec3(0.22, 0.08, 0.005);
+        vec3 G_sun_clear = vec3(0.045, 0.020, 0.002);
+        vec3 H_sun_clear = vec3(0.88, 0.89, 0.91);
+        vec3 I_sun_clear = vec3(0.006, 0.003, 0.000);
+        vec3 Z_sun_clear = vec3(0.40);
 
-        vec3 sunTransmittance = AtmosphereTransmittanceToSun(r, mu);
-        vec3 psiMs = AtmosphereMultiScattering(r, mu);
+        vec3 A_night_clear = vec3(-0.012, -0.025, -0.20);
+        vec3 B_night_clear = vec3(-0.10, -0.15, -0.32);
+        vec3 C_night_clear = vec3(0.08, 0.08, 0.12);
+        vec3 D_night_clear = vec3(0.005, 0.006, 0.018);
+        vec3 E_night_clear = vec3(0.006, 0.008, 0.024);
+        vec3 F_night_clear = vec3(0.005, 0.006, 0.012);
+        vec3 G_night_clear = vec3(0.0003, 0.0004, 0.0012);
+        vec3 H_night_clear = vec3(0.56, 0.57, 0.58);
+        vec3 I_night_clear = vec3(0.003, 0.004, 0.006);
+        vec3 Z_night_clear = vec3(0.30);
 
-        vec3 inScattering = atmosphereScattering * (density.xy * phaseValue) * sunTransmittance;
-        inScattering += atmosphereScattering * density.xy * psiMs;
+        //==================== 浑浊参数（turbidity ≈ 3.5）====================
+        vec3 A_day_hazy = vec3(-0.20, -0.34, -0.58);
+        vec3 B_day_hazy = vec3(-0.35, -0.45, -0.49);
+        vec3 C_day_hazy = vec3(0.38, 0.42, 0.66);
+        vec3 D_day_hazy = vec3(0.08, 0.10, 0.14);
+        vec3 E_day_hazy = vec3(0.15, 0.13, 0.10);
+        vec3 F_day_hazy = vec3(0.11, 0.13, 0.22);
+        vec3 G_day_hazy = vec3(0.006, 0.008, 0.016);
+        vec3 H_day_hazy = vec3(0.86, 0.87, 0.86);
+        vec3 I_day_hazy = vec3(0.009, 0.013, 0.016);
+        vec3 Z_day_hazy = vec3(0.95);
 
-        vec3 sampleTransmittance = exp(-stepSize * extinction);
+        vec3 A_sun_hazy = vec3(-1.30, -0.52, -0.14);
+        vec3 B_sun_hazy = vec3(-2.35, -0.62, -0.24);
+        vec3 C_sun_hazy = vec3(0.68, 0.32, 0.08);
+        vec3 D_sun_hazy = vec3(0.27, 0.09, 0.003);
+        vec3 E_sun_hazy = vec3(0.06, 0.05, 0.04);
+        vec3 F_sun_hazy = vec3(0.24, 0.10, 0.007);
+        vec3 G_sun_hazy = vec3(0.055, 0.028, 0.003);
+        vec3 H_sun_hazy = vec3(0.89, 0.90, 0.92);
+        vec3 I_sun_hazy = vec3(0.008, 0.004, 0.001);
+        vec3 Z_sun_hazy = vec3(0.50);
 
-        vec3 scatteringIntegral = (inScattering - inScattering * sampleTransmittance) / extinction;
-        lum += scatteringIntegral * transmittance;
+        vec3 A_night_hazy = vec3(-0.014, -0.030, -0.22);
+        vec3 B_night_hazy = vec3(-0.10, -0.15, -0.34);
+        vec3 C_night_hazy = vec3(0.10, 0.10, 0.14);
+        vec3 D_night_hazy = vec3(0.006, 0.007, 0.020);
+        vec3 E_night_hazy = vec3(0.007, 0.009, 0.028);
+        vec3 F_night_hazy = vec3(0.007, 0.008, 0.014);
+        vec3 G_night_hazy = vec3(0.0004, 0.0006, 0.0018);
+        vec3 H_night_hazy = vec3(0.57, 0.58, 0.59);
+        vec3 I_night_hazy = vec3(0.004, 0.005, 0.007);
+        vec3 Z_night_hazy = vec3(0.38);
 
-        transmittance *= sampleTransmittance;
+        vec3 A, B, C, D, E, F, G, H, I, Z;
+        if (mode == 0) {
+            vec3 A_clear = mix(A_sun_clear, A_day_clear, sunFactor);
+            vec3 A_hazy  = mix(A_sun_hazy,  A_day_hazy,  sunFactor);
+            A = mix(A_clear, A_hazy, turbFactor);
+            B = mix(mix(B_sun_clear, B_day_clear, sunFactor), mix(B_sun_hazy, B_day_hazy, sunFactor), turbFactor);
+            C = mix(mix(C_sun_clear, C_day_clear, sunFactor), mix(C_sun_hazy, C_day_hazy, sunFactor), turbFactor);
+            D = mix(mix(D_sun_clear, D_day_clear, sunFactor), mix(D_sun_hazy, D_day_hazy, sunFactor), turbFactor);
+            E = mix(mix(E_sun_clear, E_day_clear, sunFactor), mix(E_sun_hazy, E_day_hazy, sunFactor), turbFactor);
+            F = mix(mix(F_sun_clear, F_day_clear, sunFactor), mix(F_sun_hazy, F_day_hazy, sunFactor), turbFactor);
+            G = mix(mix(G_sun_clear, G_day_clear, sunFactor), mix(G_sun_hazy, G_day_hazy, sunFactor), turbFactor);
+            H = mix(mix(H_sun_clear, H_day_clear, sunFactor), mix(H_sun_hazy, H_day_hazy, sunFactor), turbFactor);
+            I = mix(mix(I_sun_clear, I_day_clear, sunFactor), mix(I_sun_hazy, I_day_hazy, sunFactor), turbFactor);
+            Z = mix(mix(Z_sun_clear, Z_day_clear, sunFactor), mix(Z_sun_hazy, Z_day_hazy, sunFactor), turbFactor);
+        } else {
+            A = mix(A_night_clear, A_night_hazy, turbFactor);
+            B = mix(B_night_clear, B_night_hazy, turbFactor);
+            C = mix(C_night_clear, C_night_hazy, turbFactor);
+            D = mix(D_night_clear, D_night_hazy, turbFactor);
+            E = mix(E_night_clear, E_night_hazy, turbFactor);
+            F = mix(F_night_clear, F_night_hazy, turbFactor);
+            G = mix(G_night_clear, G_night_hazy, turbFactor);
+            H = mix(H_night_clear, H_night_hazy, turbFactor);
+            I = mix(I_night_clear, I_night_hazy, turbFactor);
+            Z = mix(Z_night_clear, Z_night_hazy, turbFactor);
+        }
+
+        vec3 chi = (1.0 + cosGamma * cosGamma) / pow(1.0 + H * H - 2.0 * cosGamma * H, vec3(1.5));
+        vec3 result = (1.0 + A * exp(B / (cosTheta + 0.01))) *
+                      (C + D * exp(E * gamma) + F * cosGamma * cosGamma + G * chi + I * sqrt(cosTheta));
+
+        if (mode == 0) {
+            float glowPow = mix(256.0, 128.0, turbFactor);
+            float glowIntensity = mix(0.45, 0.65, turbFactor);
+            vec3 glowColor = mix(vec3(1.0, 0.55, 0.15), vec3(1.0, 0.9, 0.7), sunFactor);
+            result += pow(max(cosGamma, 0.0), glowPow) * glowColor * glowIntensity;
+        } else {
+            result += pow(max(cosGamma, 0.0), 512.0) * vec3(0.8, 0.9, 1.0) * 0.03;
+        }
+
+        return max(result * Z, 0.0);
     }
 
-    // Ground diffuse
-    if (groundHit) {
-        float planetHeight = length(rayPos);
-        vec3 upVector = rayPos / planetHeight;
+    vec3 RenderSkyView_Hosek(vec2 uv) {
+        float lightViewCos = 1.0 - sqr(uv.x) * 2.0;
+        float height = atmosphereViewHeight;
+        vec3 up = vec3(0.0, 1.0, 0.0);
 
-        float sunZenithCos = dot(upVector, sunDir);
-        vec3 transmittanceToSun = AtmosphereTransmittanceToSun(planetHeight, sunZenithCos);
+        float bottomSq = atmosphere.bottomRadius * atmosphere.bottomRadius;
+        float vHorizon = sqrt(height * height - bottomSq);
+        float beta = fastAcos(vHorizon / height);
+        float zenithHorizon = PI - beta;
 
-        lum += atmosphere.groundAlbedo * rPI * saturate(sunZenithCos) * transmittance * transmittanceToSun;
+        float viewZenithCos;
+        if (uv.y < 0.5) {
+            float coord = 1.0 - 2.0 * uv.y;
+            viewZenithCos = cos(zenithHorizon * (1.0 - sqr(coord)));
+        } else {
+            float coord = uv.y * 2.0 - 1.0;
+            viewZenithCos = cos(zenithHorizon + beta * sqr(coord));
+        }
+
+        float viewZenithSin = sqrt(1.0 - sqr(viewZenithCos));
+        vec3 rayDir = vec3(viewZenithSin * lightViewCos, viewZenithCos, viewZenithSin * sqrt(1.0 - sqr(lightViewCos)));
+
+        float sunZenithCos = dot(up, worldSunDir);
+        vec3 sunDir = normalize(vec3(sqrt(1.0 - sqr(sunZenithCos)), sunZenithCos, 0.0));
+
+        float turbidity = ATMOSPHERE_TURBIDITY * HAZE_STRENGTH;
+
+        float sunVisible = smoothstep(-0.08, -0.02, sunZenithCos);
+        vec3 lum = vec3(0.0);
+
+        if (sunVisible > 0.001) {
+            lum += HosekWilkieCalibrated(rayDir, sunDir, sunZenithCos, 0, turbidity) * sunVisible;
+        }
+
+        float moonVisible = smoothstep(0.02, -0.08, sunZenithCos);
+        float moonBaseIntensity = 0.04;
+        float moonMult = mix(1.0, moonlightMult, step(0.01, moonlightMult));
+        float moonStrength = moonVisible * moonBaseIntensity * moonMult;
+
+        if (moonStrength > 0.001) {
+            lum += HosekWilkieCalibrated(rayDir, -sunDir, sunZenithCos, 1, turbidity) * moonStrength;
+        }
+
+        lum = desaturate(lum, wetness * 0.5);
+
+        // 分时段颜色深度（仅影响上半球）
+        float dayWeight   = smoothstep(0.02, 0.06, sunZenithCos);
+        float nightWeight = smoothstep(0.02, 0.06, -sunZenithCos);
+        float sunsetWeight = 1.0 - dayWeight - nightWeight;
+
+        float depthFactor = COLOR_DEPTH_DAY * dayWeight
+                          + COLOR_DEPTH_SUNSET * sunsetWeight
+                          + COLOR_DEPTH_NIGHT * nightWeight;
+
+        float zenithWeight = smoothstep(0.0, 0.4, viewZenithCos);
+        float luma = luminance(lum);
+        vec3 saturatedLum = mix(vec3(luma), lum, depthFactor);
+        lum = mix(lum, saturatedLum, zenithWeight);
+
+        return lum * 110.0 * SKY_LIGHT_STRENGTH;
     }
+#endif
 
-    return lum * sunIrradiance;
-}
-
-vec3 RenderSkyView(vec2 uv) {
-    float lightViewCos = 1.0 - sqr(uv.x) * 2.0;
-    float height = atmosphereViewHeight;
-    vec3 up = vec3(0.0, 1.0, 0.0);
-
-    float vHorizon = sqrt(height * height - atmosphere.bottomRadius * atmosphere.bottomRadius);
-    float beta = fastAcos(vHorizon / height);
-    float zenithHorizon = PI - beta;
-
-    float viewZenithCos;
-    if (uv.y < 0.5) {
-        float coord = 1.0 - 2.0 * uv.y;
-        coord *= coord; // Non-linear mapping
-        viewZenithCos = cos(zenithHorizon * (1.0 - coord));
-    } else {
-        float coord = uv.y * 2.0 - 1.0;
-        coord *= coord; // Non-linear mapping
-        viewZenithCos = cos(zenithHorizon + beta * coord);
-    }
-    float viewZenithSin = sqrt(1.0 - viewZenithCos * viewZenithCos);
-    vec3 rayDir = vec3(viewZenithSin * lightViewCos, viewZenithCos, viewZenithSin * sqrt(1.0 - lightViewCos * lightViewCos));
-
-    float sunZenithCos = dot(up, worldSunDir);
-    vec3 sunDir = normalize(vec3(sqrt(1.0 - sunZenithCos * sunZenithCos), sunZenithCos, 0.0));
-
-    vec3 lum = RaymarchScattering(atmosphereViewPos, rayDir, sunDir);
-        lum += RaymarchScattering(atmosphereViewPos, rayDir, -sunDir) * moonlightMult;
-
-    lum = desaturate(lum, wetness * 0.5); // Post-process
-    return lum * 128.0;
-}
-
-//======// Main //================================================================================//
+//======// 主入口 ================================================================================//
 void main() {
-	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
-	vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyViewImg));
+    ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
+    vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyViewImg));
 
-	imageStore(skyViewImg, tid, vec4(RenderSkyView(uv), 1.0));
+    #if SKY_MODEL == 0
+        imageStore(skyViewImg, tid, vec4(RenderSkyView_Physical(uv), 1.0));
+    #else
+        imageStore(skyViewImg, tid, vec4(RenderSkyView_Hosek(uv), 1.0));
+    #endif
 }

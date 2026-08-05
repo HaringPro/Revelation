@@ -1,0 +1,43 @@
+/*
+--------------------------------------------------------------------------------
+
+	Revelation Shaders
+
+	Copyright (C) 2026 HaringPro
+	Apache License 2.0
+
+	Pass: Clear voxelization buffers (albedo + light) before gbuffers.
+
+	原因：gbuffers 使用 imageAtomicMax 累加体素化结果，若不在每帧开始前清空，
+	跨帧最大值会残留形成"鬼影"；同时必须赶在 gbuffers 之前清空，
+	deferred22 才能稳定读到本帧完整数据（旧实现"先清后读"导致注入永远为 0）。
+
+--------------------------------------------------------------------------------
+*/
+
+layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+// VOXEL_AREA 等配置来自 settings.glsl（其内部 include VoxelLighting.glsl）。
+// 不用 VoxelLighting.glsl 直接：tile 布局宏引用 shadowMapResolution（VoxelLighting.glsl
+// L24），必须先有 settings.glsl L22 的定义，否则函数体内的宏展开会编译失败。
+#include "/settings.glsl"
+
+#if VOXEL_AREA == 32
+	const ivec3 workGroups = ivec3(8, 8, 8);
+#elif VOXEL_AREA == 128
+	const ivec3 workGroups = ivec3(32, 32, 32);
+#else
+	const ivec3 workGroups = ivec3(16, 16, 16);
+#endif
+
+// 无显式 binding：与 Terrain.frag / 传播端保持一致，交由 Iris 按名字自动绑定。
+// 显式 binding 会与 Iris 给普通贴图分配的硬件纹理单元冲突（全黑根因），照抄 ITRP 做法。
+// 格式限定符必须保留：voxelData 为 rgba16f，voxelLightData 为 r32ui。
+layout (rgba16f) writeonly uniform image3D voxelData;
+layout (r32ui) writeonly uniform uimage3D voxelLightData;
+
+void main() {
+	ivec3 c = ivec3(gl_GlobalInvocationID.xyz);
+	imageStore(voxelData, c, vec4(0.0));          // z=voxelID=0 即空体素（gbuffers 只写命中格，必须清空防跨帧残留）
+	imageStore(voxelLightData, c, uvec4(0u));
+}

@@ -1,17 +1,34 @@
 /*
 --------------------------------------------------------------------------------
+    Revelation Shaders
+    Copyright (C) 2026 HaringPro
+    Apache License 2.0
 
-	Revelation Shaders
-
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
-
-	Pass: Compute translucent lighting & water fog
-
+    Pass: Compute translucent lighting & water fog
+    Optimizations:
+        - Moved volumetric fog calculation out of this pass (already computed in composite).
+        - Switched default sky/cloud sampling to fast bilinear for performance.
+        - Reused precomputed distance to avoid extra sqrt.
+        - Minor branch simplification.
+    SSR: Use TRANSLUCENT_SSR_MODE to select algorithm:
+         0 = Sky reflections only
+         1 = Original SSRT (ScreenSpaceRaytrace)
+         2 = Fast SSR (Belmu/Shadax style) – default
 --------------------------------------------------------------------------------
 */
 
 #define PASS_TRANSLUCENT
+
+// 反射模式：0 = 仅天空反射，1 = 原版 SSRT，2 = 快速 SSR
+#ifndef TRANSLUCENT_SSR_MODE
+    #define TRANSLUCENT_SSR_MODE 1 // [0 1 2]
+#endif
+
+#define TRANSLUCENT_SKY_REF       // [开关] 是否启用半透明与水面的天空盒静态反射
+//#define TRANSLUCENT_SSRT_MAX_STEPS // [开关] 强制始终使用最大步数（忽略菲涅尔权重）
+
+// 默认启用快速双线性采样以提升性能
+#define FAST_CLOUD_SKY_SAMPLING
 
 //======// Input //===============================================================================//
 
@@ -51,161 +68,273 @@ writeonly uniform image2D colorimg3; // Lighting output
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
 
+// 提供 SSRT_MAX_SAMPLES、ScreenSpaceRaytrace 等
 #include "/lib/surface/SSRT.glsl"
 
+// ---- 快速 SSR 光线追踪器（仅模式 2 编译） ----
+#if TRANSLUCENT_SSR_MODE == 2
+const uint rayTraceSteps     = uint(SSRT_MAX_SAMPLES);
+#ifdef SSRT_REFINEMENT
+    const uint rayTraceBiSteps   = uint(SSRT_REFINEMENT_STEPS);
+#else
+    const uint rayTraceBiSteps   = 0u;
+#endif
+const float rayTracerStepsInv = 1.0 / float(rayTraceSteps);
+
+vec3 rayTraceScene(in vec3 screenPos, in vec3 viewPos, in vec3 rayDir, in float dither) {
+    if (rayDir.z > -viewPos.z) return vec3(0.0);
+
+    // 使用 ViewToScreenPosRaw 避免 TAA 偏移
+    vec3 targetScreen = ViewToScreenPosRaw(viewPos + rayDir);
+    vec3 screenPosRayDir = normalize(targetScreen - screenPos) * rayTracerStepsInv;
+
+    // 完全禁用抖动：起始位置固定为 screenPos
+    vec3 startPos = screenPos;
+
+    for (uint i = 0u; i < rayTraceSteps; i++) {
+        startPos += screenPosRayDir;
+
+        if (startPos.x < 0.0 || startPos.y < 0.0 || startPos.x > 1.0 || startPos.y > 1.0)
+            return vec3(0.0);
+
+        float currDepth = textureLod(depthtex0, startPos.xy, 0).x;
+        if (currDepth <= 0.56) return vec3(0.0);
+
+        bool intersection = currDepth < startPos.z;
+
+        if (intersection) {
+            #if rayTraceBiSteps > 0
+                for (uint j = 0u; j < rayTraceBiSteps; j++) {
+                    if (textureLod(depthtex0, startPos.xy, 0).x >= 1.0) return vec3(0.0);
+
+                    screenPosRayDir *= 0.5;
+                    startPos += intersection ? -screenPosRayDir : screenPosRayDir;
+
+                    currDepth = textureLod(depthtex0, startPos.xy, 0).x;
+                    intersection = currDepth < startPos.z;
+                }
+            #else
+                if (textureLod(depthtex0, startPos.xy, 0).x >= 1.0) return vec3(0.0);
+            #endif
+
+            return vec3(startPos.xy, 1.0);
+        }
+    }
+
+    return vec3(0.0);
+}
+#endif
+
+// ---- 反射计算函数 ----
 vec4 CalculateSpecularReflections(in vec3 screenPos, in vec3 viewPos, in vec3 worldNormal, in vec3 worldDir, in float dither, in float skylight, in bool waterMask) {
-	float NdotV = abs(dot(worldNormal, worldDir));
-	vec3 rayDir = worldDir + worldNormal * NdotV * 2.0;
+    float NdotV = abs(dot(worldNormal, worldDir));
+    vec3 rayDir = worldDir + worldNormal * (NdotV * 2.0);
 
-	if (dot(worldNormal, rayDir) < EPS) return vec4(0.0, 0.0, 0.0, 1.0);
+    if (dot(worldNormal, rayDir) < EPS) return vec4(0.0, 0.0, 0.0, 1.0);
 
-	vec3 reflection = vec3(0.0);
-	if (skylight > EPS && isEyeInWater == 0) {
-		vec3 skyRadiance = textureBicubic(skyMapTex, ProjectSky(rayDir)).rgb;
-		reflection = skyRadiance * smoothstep(0.3, 0.7, skylight);
-	}
+    vec3 reflection = vec3(0.0);
+    
+    // 静态天空反射
+    #ifdef TRANSLUCENT_SKY_REF
+    if (skylight > EPS && isEyeInWater == 0) {
+        #ifdef FAST_CLOUD_SKY_SAMPLING
+            vec3 skyRadiance = texture(skyMapTex, ProjectSky(rayDir)).rgb;
+        #else
+            vec3 skyRadiance = textureBicubic(skyMapTex, ProjectSky(rayDir)).rgb;
+        #endif
+        reflection = skyRadiance * smoothstep(0.3, 0.7, skylight);
+    }
+    #endif
 
-	float ior = waterMask ? isEyeInWater == 1 ? 1.0 / WATER_IOR : WATER_IOR : GLASS_IOR;
-	float fresnel = FresnelDielectricN(NdotV, ior);
-	uint raySteps = uint(SSRT_MAX_SAMPLES * (fresnel * 0.5 + 0.5));
+    float ior = waterMask ? (isEyeInWater == 1 ? 1.0 / WATER_IOR : WATER_IOR) : GLASS_IOR;
+    float fresnel = FresnelDielectricN(NdotV, ior);
+    
+    // 屏幕空间反射（根据模式选择）
+    #if TRANSLUCENT_SSR_MODE >= 1
+        // 步数决策
+        #ifdef TRANSLUCENT_SSRT_MAX_STEPS
+            uint raySteps = uint(SSRT_MAX_SAMPLES);
+        #else
+            uint raySteps = uint(SSRT_MAX_SAMPLES * (fresnel * 0.5 + 0.5));
+        #endif
 
-	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
-	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, screenPos)) {
-		float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
-		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 2e3;
-		reflection += (texture(colortex4, screenPos.xy * 0.5).rgb - reflection) * saturate(edgeFade);
-	}
+        // 法线偏移
+        viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
 
-	return vec4(reflection * fresnel, 1.0 - fresnel);
+        bool traceHit = false;
+        vec2 hitCoord;
+
+        #if TRANSLUCENT_SSR_MODE == 1
+            // 原版 SSRT
+            if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, screenPos)) {
+                traceHit = true;
+                hitCoord = screenPos.xy;
+            }
+        #elif TRANSLUCENT_SSR_MODE == 2
+            // 快速 SSR
+            vec3 viewReflectDir = normalize(mat3(gbufferModelView) * rayDir);
+            vec3 traceResult = rayTraceScene(screenPos, viewPos, viewReflectDir, dither);
+            if (traceResult.z > 0.5) {
+                traceHit = true;
+                hitCoord = traceResult.xy;
+            }
+        #endif
+
+        if (traceHit) {
+            float edgeFade = hitCoord.x * hitCoord.y * oms(hitCoord.x) * oms(hitCoord.y);
+            edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 2e3;
+            reflection = mix(reflection, texture(colortex4, hitCoord * 0.5).rgb, saturate(edgeFade));
+        }
+    #endif
+
+    return vec4(reflection * fresnel, 1.0 - fresnel);
 }
 
 //======// Main //================================================================================//
 void main() {
     ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-	uvec2 materialPack = loadMaterialPack(texelPos).xy;
+    
+    if (any(greaterThanEqual(texelPos, ivec2(viewSize)))) return;
 
-	uint materialID = materialPack.y;
-	bool notParticle = materialID != 500u;
+    uvec2 materialPack = loadMaterialPack(texelPos).xy;
+    uint materialID = materialPack.y;
+    bool notParticle = materialID != 500u;
 
-	// Skip opaque fragments
-	if (clamp(materialID, 2u, 3u) != materialID && notParticle) return;
+    // 半透明实体（掉落物/物品展示框/展示实体等）在 deferred 之后才渲染进 gbuffer，
+    // 像素深度比不透明深度（depthtex1）更近；2u/3u/500u 已由下方玻璃/水/粒子管线处理，
+    // 其余此类像素（主要是掉落物）必须在这里用 gbuffer 的 albedo 补合成，否则完全消失。
+    bool translucentEntity = (loadDepth0(texelPos) < loadDepth1(texelPos))
+                          && (materialID != 2u && materialID != 3u && materialID != 500u);
 
-	vec3 screenPos = vec3(texelToUv(texelPos), loadDepth0(texelPos));
-	#if defined LOD_MOD
-		if (screenPos.z > 1.0 - EPS) {
-			screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(texelPos)));
-		}
-	#endif
+    if ((materialID != 2u && materialID != 3u) && notParticle && !translucentEntity) return;
 
-	// Hand-depth correction
-	if (screenPos.z < 0.56) {
-		screenPos.z = screenPos.z * rcp(MC_HAND_DEPTH) + (0.5 - 0.5 / MC_HAND_DEPTH);
-	}
+    vec3 screenPos = vec3(texelToUv(texelPos), loadDepth0(texelPos));
+    #if defined LOD_MOD
+        if (screenPos.z > 1.0 - EPS) {
+            screenPos.z = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth0Lod(texelPos)));
+        }
+    #endif
 
-	vec3 viewPos = ScreenToViewPos(screenPos);
-	vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
+    if (screenPos.z < 0.56) {
+        screenPos.z = screenPos.z * (1.0 / MC_HAND_DEPTH) + (0.5 - 0.5 / MC_HAND_DEPTH);
+    }
 
-	float worldDistSquared = sdot(worldPos);
-	vec3 worldDir = worldPos * inversesqrt(worldDistSquared);
-	worldPos += gbufferModelViewInverse[3].xyz;
+    vec3 viewPos = ScreenToViewPos(screenPos);
+    vec3 worldPos = mat3(gbufferModelViewInverse) * viewPos;
 
-	vec2 waterData = texelFetch(colortex12, texelPos, 0).xy;
-	bool waterMask = waterData.x > 0.0;
+    float worldDistSquared = sdot(worldPos);
+    float invWorldDist = inversesqrt(worldDistSquared);
+    vec3 worldDir = worldPos * invWorldDist;
+    worldPos += gbufferModelViewInverse[3].xyz;
 
-	vec2 lightmap = Unpack2x8U(materialPack.x);
-	float dither = BlueNoise(texelPos, frameCounter + 4);
+    vec2 waterData = texelFetch(colortex12, texelPos, 0).xy;
+    bool waterMask = waterData.x > 0.0;
 
-	if (isEyeInWater == 0) {
-		vec3 sceneOut = loadSceneMain(texelPos);
+    vec2 lightmap = Unpack2x8U(materialPack.x);
+    float dither = BlueNoise(texelPos, frameCounter + 4);
 
-		// Front to back fog
-		#ifdef VOLUMETRIC_FOG
-			vec3 screenPosBack = vec3(screenPos.xy, loadDepth1(texelPos));
-			vec3 viewPosBack = ScreenToViewPos(screenPosBack);
-			vec3 worldPosBack = transMAD(gbufferModelViewInverse, viewPosBack);
-			mat2x3 airFog = RaymarchAtmosphericFog(worldPos, worldPosBack, dither, screenPosBack.z > 1.0 - EPS, VF_MAX_SAMPLES >> 1);
-			sceneOut = ApplyFog(sceneOut, airFog);
-		#endif
+    if (isEyeInWater == 0) {
+        vec3 sceneOut = loadSceneMain(texelPos);
 
-		// Process water
-		if (waterMask) {
-			mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(worldLightDir, worldDir));
-			sceneOut = ApplyFog(sceneOut, waterFog);
+        if (translucentEntity) {
+            // 掉落物等实体在 deferred 之后渲染，像素深度比不透明深度更近，
+            // 需在此用 gbuffer 的 albedo 补合成，否则完全消失。
+            // 半透明物品（玻璃/冰等）已在 Entities.frag 路由为 materialID=2u，
+            // 由 IntegrateScene 的方块玻璃分支统一处理（折射+染色+反射），不进入本分支；
+            // 此处只处理不透明贴图实体，按天空光+方块光整片着色。
+            vec2 itemLightmap = Unpack2x8U(materialPack.x);
+            vec4 itemData = texelFetch(colortex6, texelPos, 0);
+            vec3 itemAlbedo = sRGBToLinear(itemData.rgb);
+            float blockLight = CalculateBlocklightFalloff(itemLightmap.x);
+            float lum = 0.15 + 0.85 * max(itemLightmap.y, blockLight);
+            vec3 lightTint = mix(vec3(1.0), blocklightColor, blockLight);
+            sceneOut = itemAlbedo * lum * lightTint;
+        }
 
-			// Skybox reflection for occluded water
-			if (materialID == 2u) {
-				vec3 worldNormal = OctDecodeUnorm(Unpack2x8(waterData.y));
+        if (waterMask) {
+            mat2x3 waterFog = AnalyticWaterFog(lightmap.y, waterData.x * 255.0, dot(worldLightDir, worldDir));
+            sceneOut = ApplyFog(sceneOut, waterFog);
 
-				float NdotV = abs(dot(worldNormal, worldDir));
-				vec3 rayDir = worldDir + worldNormal * NdotV * 2.0;
+            #ifdef TRANSLUCENT_SKY_REF
+            if (materialID == 2u) {
+                vec3 worldNormal = OctDecodeUnorm(Unpack2x8(waterData.y));
 
-				vec2 skyViewCoord = OctEncodeUnorm(rayDir);
-				vec3 skyRadiance = textureBicubic(skyMapTex, skyViewCoord).rgb;
+                float NdotV = abs(dot(worldNormal, worldDir));
+                vec3 rayDir = worldDir + worldNormal * (NdotV * 2.0);
 
-				vec3 reflection = skyRadiance * smoothstep(0.3, 0.7, lightmap.y);
-				float fresnel = FresnelDielectricN(NdotV, WATER_IOR);
+                vec2 skyViewCoord = OctEncodeUnorm(rayDir);
+                #ifdef FAST_CLOUD_SKY_SAMPLING
+                    vec3 skyRadiance = texture(skyMapTex, skyViewCoord).rgb;
+                #else
+                    vec3 skyRadiance = textureBicubic(skyMapTex, skyViewCoord).rgb;
+                #endif
 
-				sceneOut = mix(sceneOut, reflection, fresnel);
-			}
-		}
+                vec3 reflection = skyRadiance * smoothstep(0.3, 0.7, lightmap.y);
+                float fresnel = FresnelDielectricN(NdotV, WATER_IOR);
 
-		imageStore(colorimg0, texelPos, vec4(sceneOut, 1.0));
-	}
+                sceneOut = mix(sceneOut, reflection, fresnel);
+            }
+            #endif
+        }
 
-	//============================================================================================//
+        imageStore(colorimg0, texelPos, vec4(sceneOut, 1.0));
+    }
 
-	// Translucent lighting
-	vec4 lightingOut = vec4(0.0, 0.0, 0.0, 1.0);
+    //============================================================================================//
 
-	vec3 geoNormal, worldNormal;
-	FetchNormalData(texelPos, geoNormal, worldNormal);
+    vec4 lightingOut = vec4(0.0, 0.0, 0.0, 1.0);
 
-	float NdotL = 1.0;
+    vec3 geoNormal, worldNormal;
+    FetchNormalData(texelPos, geoNormal, worldNormal);
 
-	if (notParticle) {
-		// Specular indirect
-		lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
+    float NdotL = 1.0;
 
-		NdotL = dot(worldNormal, worldLightDir);
-	} else {
-		// Skylight
-		lightingOut.rgb = global.skyUpIlluminance * cube(lightmap.y);
+    if (notParticle) {
+        lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
+        NdotL = dot(worldNormal, worldLightDir);
+    } else {
+        lightingOut.rgb = global.skyUpIlluminance * cube(lightmap.y);
+        lightingOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blocklightColor;
+    }
 
-		// Blocklight
-		lightingOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blocklightColor;
-	}
+    #ifdef CLOUD_SHADOWS
+        vec2 cloudShadowCoord = WorldToCloudShadowScreenPos(worldPos).xy;
+        #ifdef FAST_CLOUD_SKY_SAMPLING
+            float cloudShadow = texture(cloudShadowTex, saturate(cloudShadowCoord)).x;
+        #else
+            float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
+        #endif
+    #else
+        float cloudShadow = 1.0 - wetness * 0.96;
+    #endif
 
-	// Cloud shadows
-	#ifdef CLOUD_SHADOWS
-		vec2 cloudShadowCoord = WorldToCloudShadowScreenPos(worldPos).xy;
-		float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
-	#else
-		float cloudShadow = 1.0 - wetness * 0.96;
-	#endif
+    vec3 sunlightMult = cloudShadow * saturate(lightmap.y * 1e6) * global.directIlluminance;
+    
+    if (NdotL > EPS && any(greaterThan(sunlightMult, vec3(1e-4)))) {
+        float worldDist = worldDistSquared * invWorldDist;
+        vec3 normalOffset = geoNormal * (worldDist * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
+        
+        float surfaceDepth;
+        vec3 shadow = CalculatePCSS(worldPos, normalOffset, dither, surfaceDepth);
 
-	// Sunlight
-	vec3 sunlightMult = cloudShadow * saturate(lightmap.y * 1e6) * global.directIlluminance;
-	if (NdotL > EPS) {
-		vec3 normalOffset = geoNormal * (approxSqrt(worldDistSquared) * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
-		float surfaceDepth;
-		vec3 shadow = CalculatePCSS(worldPos, normalOffset, dither, surfaceDepth);
+        if (any(greaterThan(shadow, vec3(EPS)))) {
+            shadow = saturate(shadow) * sunlightMult;
 
-		if (dot(shadow, vec3(1.0)) > EPS) {
-			shadow = saturate(shadow) * sunlightMult;
+            if (notParticle) {
+                float NdotV = abs(dot(worldNormal, worldDir));
+                vec3 halfway = normalize(worldLightDir - worldDir);
+                
+                float LdotH = dot(worldLightDir, halfway);
+                float NdotH = dot(worldNormal, halfway);
+                float iorRadius = waterMask ? WATER_IOR : GLASS_IOR;
 
-			if (notParticle) {
-				float NdotV = abs(dot(worldNormal, worldDir));
-				vec3 halfway = normalize(worldLightDir - worldDir);
-				float LdotH = dot(worldLightDir, halfway);
-				float NdotH = dot(worldNormal, halfway);
+                float f0 = F0FromIOR(iorRadius);
+                lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+            } else {
+                lightingOut.rgb += shadow * (NdotL * rPI);
+            }
+        }
+    }
 
-				float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(LdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
-			} else {
-				lightingOut.rgb += shadow * NdotL * rPI;
-			}
-		}
-	}
-
-	imageStore(colorimg3, texelPos, lightingOut);
+    imageStore(colorimg3, texelPos, lightingOut);
 }

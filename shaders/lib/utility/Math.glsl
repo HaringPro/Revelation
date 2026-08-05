@@ -211,7 +211,7 @@ float quarticLength(in vec2 v) {
 
 //================================================================================================//
 
-vec3 ProjectDivide(in vec3 v, in mat4 m) {
+vec3 ProjectDivide(mat4 m, vec3 v) {
 	return projMAD(m, v) * rcp(m[2].w * v.z + m[3].w);
 }
 

@@ -170,60 +170,52 @@ const uvec3 CHAR_HASH          = uvec3(0x1F0A0A00, 0x0A0A1F0A, 1);
 const uvec3 CHAR_SPACE         = uvec3(0x00000000, 0x00000000, 8);
 
 
-// Put your sentence in this array. Use comma to separate characters.
-const uvec3 text[] = uvec3[](CHAR_A,CHAR_B,CHAR_C,CHAR_D,CHAR_E,CHAR_F,CHAR_G,CHAR_H,CHAR_I,CHAR_J,CHAR_K,CHAR_L,CHAR_M,CHAR_N,CHAR_O,CHAR_P,CHAR_Q,CHAR_R,CHAR_S,CHAR_T,CHAR_U,CHAR_V,CHAR_W,CHAR_X,CHAR_Y,CHAR_Z,CHAR_a,CHAR_b,CHAR_c,CHAR_d,CHAR_e,CHAR_f,CHAR_g,CHAR_h,CHAR_i,CHAR_j,CHAR_k,CHAR_l,CHAR_m,CHAR_n,CHAR_o,CHAR_p,CHAR_q,CHAR_r,CHAR_s,CHAR_t,CHAR_u,CHAR_v,CHAR_w,CHAR_x,CHAR_y,CHAR_z,CHAR_0,CHAR_1,CHAR_2,CHAR_3,CHAR_4,CHAR_5,CHAR_6,CHAR_7,CHAR_8,CHAR_9);
+// 需要显示的文字序列 "NHYdiediedie"
+const uvec3 text_encodings[] = uvec3[](
+    CHAR_N, CHAR_H, CHAR_Y, CHAR_d, CHAR_i, CHAR_e, CHAR_d, CHAR_i, CHAR_e, CHAR_d, CHAR_i, CHAR_e
+);
 
-// Original Text: https://github.com/HaringPro/Revelation
-const uvec3 text_encodings[] = {CHAR_h,CHAR_t,CHAR_t,CHAR_p,CHAR_s,CHAR_COLON,CHAR_SLASH,CHAR_SLASH,CHAR_g,CHAR_i,CHAR_t,CHAR_h,CHAR_u,CHAR_b,CHAR_DOT,CHAR_c,CHAR_o,CHAR_m,CHAR_SLASH,CHAR_H,CHAR_a,CHAR_r,CHAR_i,CHAR_n,CHAR_g,CHAR_P,CHAR_r,CHAR_o,CHAR_SLASH,CHAR_R,CHAR_e,CHAR_v,CHAR_e,CHAR_l,CHAR_a,CHAR_t,CHAR_i,CHAR_o,CHAR_n};
-const int   text_advances[]  = {0,6,10,14,20,26,28,34,40,46,48,52,58,64,70,72,78,84,90,96,102,108,114,116,122,128,134,140,146,152,158,164,170,176,179,185,189,191,197};
+// 每个字符宽度统一为 6 像素
+const int text_advances[] = {
+    0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72
+};
+
+// 示例数组（保留原样，不影响实际显示）
+const uvec3 text[] = uvec3[](CHAR_A,CHAR_B,CHAR_C,CHAR_D,CHAR_E,CHAR_F,CHAR_G,CHAR_H,CHAR_I,CHAR_J,CHAR_K,CHAR_L,CHAR_M,CHAR_N,CHAR_O,CHAR_P,CHAR_Q,CHAR_R,CHAR_S,CHAR_T,CHAR_U,CHAR_V,CHAR_W,CHAR_X,CHAR_Y,CHAR_Z,CHAR_a,CHAR_b,CHAR_c,CHAR_d,CHAR_e,CHAR_f,CHAR_g,CHAR_h,CHAR_i,CHAR_j,CHAR_k,CHAR_l,CHAR_m,CHAR_n,CHAR_o,CHAR_p,CHAR_q,CHAR_r,CHAR_s,CHAR_t,CHAR_u,CHAR_v,CHAR_w,CHAR_x,CHAR_y,CHAR_z,CHAR_0,CHAR_1,CHAR_2,CHAR_3,CHAR_4,CHAR_5,CHAR_6,CHAR_7,CHAR_8,CHAR_9);
 
 //==============================// Character Render //========================================//
 
 bool isChar(uint text, uint index) {
-	return index < 32u && bool(text >> index & 1u); // Use the right shift operation to decode our character code
+    return index < 32u && bool(text >> index & 1u);
 }
 
 bool isText(ivec2 texel, ivec2 pos, uvec3 text, int size) {
-    pos.y -= int(text.z) * size; // Vertical offset
-
+    pos.y -= int(text.z) * size;
     ivec2 relPos = (texel - pos) / size;
-
-    // Calculate the index for the lower part
-    // 8 is the number of columns in the character grid
-    uint index = uint(relPos.x + relPos.y * 8); 
-
-    // Lower part
+    uint index = uint(relPos.x + relPos.y * 8);
     bool result = isChar(text.x, index);
-
-    // Upper part
     result = result || isChar(text.y, index - 32u);
-
     return result;
 }
 
 vec3 renderText(ivec2 pos, int size, vec3 color) {
-	vec3 result = vec3(0.0);
+    vec3 result = vec3(0.0);
     ivec2 screenTexel = ivec2(gl_FragCoord.st);
-
     if (max(screenTexel, ivec2(pos.x, pos.y - size * 6)) == screenTexel) {
         int lastText = text_advances[text_encodings.length() - 1];
         if (min(screenTexel, ivec2(pos.x + size * (lastText + 6), pos.y + size * 6 + 12)) == screenTexel) {
             int relPos = screenTexel.x - pos.x;
             relPos /= size;
-
-            // Binary search for the character index
             int left = 0, right = text_advances.length();
             while (left < right) {
                 int middle = (left + right) >> 1;
                 if (relPos >= text_advances[middle]) left = middle + 1;
                 else right = middle;
             }
-
             int index = left - 1;
             pos += ivec2(size * text_advances[index], 0);
             result = float(isText(screenTexel, pos, text_encodings[index], size)) * color;
         }
     }
-
-	return result;
+    return result;
 }

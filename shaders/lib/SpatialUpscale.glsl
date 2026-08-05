@@ -1,103 +1,56 @@
 //================================================================================================//
-// SVGF Upscale Diffuse Indirect (with quality & blur radius control)
+// SVGF Upscale Diffuse Indirect (轻量稳定版，已移除体积雾及非必要宏)
 //================================================================================================//
 #if defined PASS_DEFERRED_LIGHTING
-#if defined SSILVB_ENABLED && defined SVGF_ENABLED
+#if defined SVGF_ENABLED && (defined SSILVB_ENABLED || defined VOXEL_GI_TRACE)
 
-// ========== 可调节参数 ==========
-#ifndef SVGF_QUALITY
-    #define SVGF_QUALITY 0 // [0 1 2]     // 0=仅自身, 1=十字形(4样本), 2=完整3x3(8样本)
-#endif
-#ifndef SVGF_BLUR_RADIUS
-    #define SVGF_BLUR_RADIUS 15.0 // [1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 1.0 15.0 20.0 25.0 30.0 50.0] 采样半径倍数（1.0=原始相邻像素，>1.0扩大模糊范围）
-#endif
-// ================================
+// 【唯一保留的可调参数】
+// 深度容差平滑度：越接近 0.0 跨越物体的边界越平滑（越不闪），越负则边缘越锐利但易闪烁。
+#define SSILVB_DEPTH_FALLBACK   -0.05   // 推荐范围 [-0.01, -0.10]
+
+// 快速 exp2 近似（替代原生 exp2，大幅降低 ALU 开销，对最终画面影响极小）
+float exp2_fast(float x) {
+    // 位操作近似，适合 x 在 [-1, 1] 区间（此处 depthDiff * fallback 通常在此范围）
+    return uintBitsToFloat(0x3F800000 + int(x * 0x3FB8AA3B));
+}
 
 vec3 UpscaleDiffuseIndirect(in ivec2 texelPos, in vec3 worldNormal, in float viewDistance, in float NdotV) {
-    texelPos >>= 1;
+    ivec2 halfPos = texelPos >> 1;
     ivec2 texelEnd = ivec2(halfViewEnd) - 1;
 
-    vec3 sum = texelFetch(colortex3, texelPos, 0).rgb;
+    vec3 centerCol = texelFetch(colortex3, halfPos, 0).rgb;
     float sumWeight = 1.0;
+    vec3 sum = centerCol;
 
+    // 质量 0 直接返回中心值，跳过所有采样
     #if SVGF_QUALITY == 0
         return sum;
     #endif
 
-    float sigmaZ = -4.0 * NdotV;
-    float depthCenter = viewDistance;
+    // 十字采样偏移（4 邻域，保持基本的方向覆盖）
+    const ivec2 offsets[4] = ivec2[](ivec2(1,0), ivec2(-1,0), ivec2(0,1), ivec2(0,-1));
+    float falloff = SSILVB_DEPTH_FALLBACK;
 
-    // 计算缩放后的偏移量（模糊半径）
-    float radius = max(1.0, SVGF_BLUR_RADIUS);
-    ivec2 offsetScale = ivec2(round(radius));
+    for (int i = 0; i < 4; ++i) {
+        ivec2 samplePos = clamp(halfPos + offsets[i], ivec2(1), texelEnd);
 
-    #if SVGF_QUALITY == 1
-        // 十字形采样（4个方向）
-        const ivec2 offsets[4] = ivec2[](ivec2(1,0), ivec2(-1,0), ivec2(0,1), ivec2(0,-1));
-        for (int i = 0; i < 4; ++i) {
-            ivec2 sampleTexel = clamp(texelPos + offsets[i] * offsetScale, ivec2(1), texelEnd);
-            vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
-            float ndot = saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal));
-            float weight = ndot * ndot;               // 平方代替 pow16
-            float depthDiff = abs(sampleAux.z - depthCenter);
-            weight *= exp2(depthDiff * sigmaZ);
-            if (weight < 0.001) continue;
-            vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
-            sum += sampleLight * weight;
-            sumWeight += weight;
-        }
-    #else
-        // 完整3x3采样（8个邻居）
-        for (uint i = 0u; i < 8u; ++i) {
-            ivec2 sampleTexel = clamp(texelPos + offset3x3N[i] * offsetScale, ivec2(1), texelEnd);
-            vec3 sampleAux = texelFetch(colortex14, sampleTexel, 0).rgb;
-            float ndot = saturate(dot(OctDecodeSnorm(sampleAux.xy), worldNormal));
-            float weight = ndot * ndot;
-            weight = weight * weight;                 // ndot^4 (接近原始pow16)
-            float depthDiff = abs(sampleAux.z - depthCenter);
-            weight *= exp2(depthDiff * sigmaZ);
-            if (weight < 0.001) continue;
-            vec3 sampleLight = texelFetch(colortex3, sampleTexel, 0).rgb;
-            sum += sampleLight * weight;
-            sumWeight += weight;
-        }
-    #endif
+        // 辅助纹理：rg = 八面体编码法线，b = 线性深度
+        vec3 aux = texelFetch(colortex14, samplePos, 0).rgb;
+        vec3 color = texelFetch(colortex3, samplePos, 0).rgb;
 
-    return sum * rcp(sumWeight);
-}
-#endif
-#endif
+        // 深度权重（快速 exp2 近似）
+        float depthWeight = exp2_fast(abs(aux.z - viewDistance) * falloff);
 
-//================================================================================================//
-// Volumetric Fog Upscale (original logic, unchanged)
-//================================================================================================//
-#if defined PASS_COMPOSITE
-#if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
+        // 法线权重（解码八面体法线并与中心法线点积，保证边缘不跨物体）
+        float ndot = saturate(dot(OctDecodeSnorm(aux.xy), worldNormal));
+        float weight = ndot * depthWeight;
 
-mat2x3 UnpackFogData(in uvec2 data) {
-    return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
-}
-
-mat2x3 UpscaleVolumetricFog(in ivec2 texelPos, in float linearDepth) {
-    ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
-    float sigmaZ = -64.0 / linearDepth;
-
-    mat2x3 sum = UnpackFogData(texelFetch(colortex11, randTexel, 0).xy);
-    float sumWeight = 1.0;
-
-    for (uint i = 0u; i < 8u; ++i) {
-        ivec2 sampleTexel = randTexel + offset3x3N[i];
-        uvec3 sampleFogData = texelFetch(colortex11, sampleTexel, 0).xyz;
-
-        float sampleDepth = uintBitsToFloat(sampleFogData.z);
-        float weight = exp2(abs(sampleDepth - linearDepth) * sigmaZ);
-
-        sum += UnpackFogData(sampleFogData.xy) * weight;
+        sum += color * weight;
         sumWeight += weight;
     }
 
-    sum *= rcp(sumWeight);
-    return sum;
+    return sum * rcp(sumWeight);
 }
+
 #endif
 #endif

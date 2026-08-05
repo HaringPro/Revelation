@@ -59,6 +59,11 @@ uniform vec3 fogColor;                          // r, g, b
 uniform vec3 skyColor;                          // r, g, b
 uniform int worldTime;                          // <ticks> = worldTicks % 24000
 uniform int worldDay;                           // <days> = worldTicks / 24000
+
+
+uniform int worldId;
+
+
 uniform int moonPhase;                          // 0-7
 uniform int frameCounter;                       // Frame index (0 to 720719, then resets to 0)
 uniform float frameTime;                        // last frame time, seconds
@@ -77,6 +82,10 @@ uniform vec3 shadowLightPosition;               // shadow light (sun or moon) po
 uniform vec3 upPosition;                        // direction up
 uniform vec3 cameraPosition;                    // camera position in world space
 uniform vec3 previousCameraPosition;            // last frame cameraPosition
+// Iris Exclusive：相机位置整数/小数分量（世界对齐体素网格 + 整数重投影，照抄 ITRP）
+uniform vec3 cameraPositionFract;               // camera position fractional component [0,1)
+uniform ivec3 cameraPositionInt;                // camera position integer component
+uniform ivec3 previousCameraPositionInt;        // last frame cameraPositionInt
 
 uniform mat4 gbufferModelView;                  // modelview matrix after setting up the camera transformations
 uniform mat4 gbufferModelViewInverse;           // inverse gbufferModelView

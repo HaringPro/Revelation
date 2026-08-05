@@ -17,15 +17,25 @@
 #define VIEWER_BASE_ALTITUDE 256.0 // [64.0 128.0 256.0 384.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0 262144.0 524288.0 1048576.0 2097152.0 4194304.0 8388608.0 16777216.0 33554432.0 67108864.0 134217728.0 268435456.0 536870912.0 1073741824.0]
 #define ATMOSPHERE_THICKNESS 100000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
 
-#define ATMOSPHERE_TURBIDITY 1.0 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
+// 根据维度切换大气浑浊度
+#ifdef DIMENSION_THE_END
+    #define ATMOSPHERE_TURBIDITY 2.5 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
+#else
+    #define ATMOSPHERE_TURBIDITY 1.0 // [0.0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
+#endif
 
-#define ATMOSPHERE_SKY_SAMPLES 32 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
-#define ATMOSPHERE_TLUT_SAMPLES 64 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
-#define ATMOSPHERE_MSLUT_SAMPLES 24 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_SKY_SAMPLES 4 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_TLUT_SAMPLES 4 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
+#define ATMOSPHERE_MSLUT_SAMPLES 2 // [2 4 6 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128]
 
 #define ProjectSky      OctEncodeUnorm
 #define UnprojectSky    OctDecodeUnorm
 
+// 末地高度控制宏（单位：米） – 仅在 DIMENSION_THE_END 定义时生效
+#ifndef END_VIEWER_ALTITUDE
+    #define END_VIEWER_ALTITUDE 10000.0 // [0.0 50000.0 100000.0 200000.0 500000.0]
+#endif
+#define LOW_PERFORMANCE_SKY
 //================================================================================================//
 
 struct AtmosphereParameters {
@@ -55,11 +65,26 @@ const vec3 mieCoeffBase = PreethamMieScatteringCoeff(exp2(ATMOSPHERE_TURBIDITY))
 const AtmosphereParameters atmosphere = AtmosphereParameters(
     planetRadius,
     planetRadius + ATMOSPHERE_THICKNESS,
-    vec3(8.059375432e-6, 1.671209429e-5, 4.080133294e-5),
+    #ifdef DIMENSION_THE_END
+        // 紫色瑞利散射：提升红、蓝，压低绿
+        vec3(1.20e-5, 0.45e-5, 1.20e-5),
+    #else
+        vec3(8.059375432e-6, 1.671209429e-5, 4.080133294e-5),
+    #endif
     mieCoeffBase * 0.9,
     mieCoeffBase,
-    vec3(8.304280072e-7, 1.314911970e-6, 5.440679729e-8),
-    vec3(0.1, 0.12, 0.2)
+    #ifdef DIMENSION_THE_END
+        // 臭氧消光：进一步吸收绿色，突出红蓝
+        vec3(1.00e-6, 0.50e-6, 1.00e-6),
+    #else
+        vec3(8.304280072e-7, 1.314911970e-6, 5.440679729e-8),
+    #endif
+    #ifdef DIMENSION_THE_END
+        // 地面反照率：暗紫色基底
+        vec3(0.20, 0.05, 0.20)
+    #else
+        vec3(0.1, 0.12, 0.2)
+    #endif
 );
 
 const mat3 atmosphereExtinction = mat3(
@@ -73,7 +98,12 @@ const mat2x3 atmosphereScattering = mat2x3(
 	atmosphere.mieScattering
 );
 
-float atmosphereViewHeight = planetRadius + VIEWER_BASE_ALTITUDE + eyeAltitude;
+// 玩家观察高度：末地使用 END_VIEWER_ALTITUDE，否则使用 VIEWER_BASE_ALTITUDE
+#ifdef DIMENSION_THE_END
+    float atmosphereViewHeight = planetRadius + END_VIEWER_ALTITUDE + eyeAltitude;
+#else
+    float atmosphereViewHeight = planetRadius + VIEWER_BASE_ALTITUDE + eyeAltitude;
+#endif
 vec3 atmosphereViewPos = vec3(0.0, atmosphereViewHeight, 0.0);
 
 //================================================================================================//
@@ -252,7 +282,15 @@ vec2 LutTransmittanceParamsToUv(float r, float mu) {
 
 vec3 AtmosphereDensityAtPoint(vec3 pos) {
     float altitude = length(pos) - atmosphere.bottomRadius;
-    return vec3(exp(-altitude * rcp(vec2(8e3, 1.4e3))), saturate(1.0 - abs(altitude - 2.5e4) * rcp(1.5e4)));
+    #ifdef LOW_PERFORMANCE_SKY
+        // 使用 exp2 近似，并略去臭氧的精细 clamp，直接返回 vec3
+        float rayleighDensity = exp2(-altitude * (1.44269504 / 8e3));
+        float mieDensity = exp2(-altitude * (1.44269504 / 1.4e3));
+        float ozoneDensity = saturate(1.0 - abs(altitude - 2.5e4) * 6.66666667e-5); // 1/15000
+        return vec3(rayleighDensity, mieDensity, ozoneDensity);
+    #else
+        return vec3(exp(-altitude * rcp(vec2(8e3, 1.4e3))), saturate(1.0 - abs(altitude - 2.5e4) * rcp(1.5e4)));
+    #endif
 }
 
 vec3 ReadTransmittanceLUT(float r, float mu) {
@@ -273,11 +311,17 @@ vec3 AtmosphereTransmittanceToPoint(vec3 pos, vec3 dir) {
 }
 
 vec3 AtmosphereTransmittanceToSun(float r, float mu) {
-	float sinThetaH = atmosphere.bottomRadius / r;
-	float cosThetaH = sqrt(saturate(1.0 - sinThetaH * sinThetaH));
-    float earthShadow = linearstep(-sinThetaH * sunAngularRadius, sinThetaH * sunAngularRadius, mu + cosThetaH);
+    float sinThetaH = atmosphere.bottomRadius / r;
+    float cosThetaH = sqrt(saturate(1.0 - sinThetaH * sinThetaH));
 
-	return ReadTransmittanceLUT(r, mu) * earthShadow;
+    #ifdef LOW_PERFORMANCE_SKY
+        // 硬边界地球阴影：快速但无半影过渡
+        float earthShadow = mu + cosThetaH > 0.0 ? 1.0 : 0.0;
+    #else
+        float earthShadow = linearstep(-sinThetaH * sunAngularRadius, sinThetaH * sunAngularRadius, mu + cosThetaH);
+    #endif
+
+    return ReadTransmittanceLUT(r, mu) * earthShadow;
 }
 
 vec3 AtmosphereTransmittanceToSun(vec3 pos, vec3 dir) {
@@ -293,6 +337,11 @@ vec3 AtmosphereMultiScattering(float r, float mu) {
 }
 
 vec3 AtmosphereSkyView(vec3 viewPos, vec3 rayDir, vec3 sunDir) {
+    #ifdef DIMENSION_NETHER
+        // 地狱天空直接返回暗红色，跳过大气采样
+        return vec3(0.25, 0.06, 0.03); // 可调暗红
+    #endif
+
     float height = length(viewPos);
     vec3 up = viewPos / height;
 

@@ -1,26 +1,13 @@
 /*
 --------------------------------------------------------------------------------
-
-	Revelation Shaders
-
-	Copyright (C) 2026 HaringPro
-	Apache License 2.0
-
-    Reference: https://www.researchgate.net/publication/354065087_ReBLUR_A_Hierarchical_Recurrent_Denoiser
-
+    Revelation Shaders - Specular Filter Pass (DISABLED)
 --------------------------------------------------------------------------------
 */
-
-//======// Input //===============================================================================//
 
 layout (local_size_x = 16, local_size_y = 16) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
-//======// Utility //=============================================================================//
-
 #include "/lib/Utility.glsl"
-
-//======// Uniform //=============================================================================//
 
 #if SPECULAR_FILTER_PASS == 2
     writeonly uniform image2D colorimg0;
@@ -29,17 +16,12 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 #endif
 
 #include "/lib/universal/Uniform.glsl"
-
-//======// Struct //==============================================================================//
-
 #include "/lib/universal/Material.glsl"
-
-//======// Function //============================================================================//
-
 #include "/lib/universal/Transform.glsl"
 #include "/lib/universal/Fetch.glsl"
 #include "/lib/universal/Random.glsl"
 
+// 保留函数定义但不会被调用，以防编译错误
 vec3 GetSpecularDominantDir(vec3 N, vec3 V, float roughness) {
     float f = (1.0 - roughness) * (approxSqrt(1.0 - roughness) + roughness);
     vec3 R = reflect(-V, N);
@@ -50,106 +32,39 @@ float LobeWeightFast(in vec3 CN, in vec3 SN, in float CR, in float SR) {
     const float factor = 4.0;
     float lambdaC = 2.0 / CR, lambdaS = 2.0 / SR;
     float product = lambdaC * lambdaS, summa = lambdaC + lambdaS;
-
     float weightN = product * (factor / maxEps(summa)) * (saturate(dot(CN, SN)) - 1.0);
     float weightR = oms(log2(summa * inversesqrt(product))) * factor;
     return exp2(weightN + weightR);
 }
 
 void SpecularFilter(inout vec4 specularData, in ivec2 texel, in float roughness, in vec3 worldNormal, in vec3 worldDir, in float filterSize, in vec2 randOffset) {
-    float offsetScale = filterSize * saturate(20.0 * roughness);
-    offsetScale *= saturate(0.25 + specularData.a * 0.25);
-
-    float NdotV = abs(dot(worldNormal, worldDir));
-
-    // Calculate kernel basis
-    vec3 reflectedDir = GetSpecularDominantDir(worldNormal, worldDir, roughness);
-    vec2 tangent = normalize(cross(worldNormal, reflectedDir).xy) * offsetScale;
-    vec2 bitangent = vec2(tangent.y, -tangent.x);
-
-    float skewFactor = mix(0.5 + 0.5 * roughness, 1.0, NdotV);
-    bitangent *= 1.0 / skewFactor;
-
-    float linearDepth = ScreenToViewDepth(loadDepth0(texel));
-
-    float sharpenWeight = 0.125 + 0.375 * saturate(specularData.a * 0.25);
-    ivec2 texelEnd = ivec2(viewSize) - 2;
-
-    // Sharpen
-    specularData.rgb *= pow(sdot(specularData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
-    float sumWeight = 1.0;
-
-    for (uint i = 0u; i < 8u; ++i) {
-        vec2 offset = offset3x3N[i] + randOffset;
-        ivec2 sampleTexel = texel + ivec2(tangent * offset.x + bitangent * offset.y);
-
-        if (clamp(sampleTexel, ivec2(1), texelEnd) == sampleTexel) {
-            vec4 sampleData = texelFetch(colortex3, sampleTexel, 0);
-
-            float sampleLinearDepth = ScreenToViewDepth(loadDepth0(sampleTexel));
-            vec3 sampleWorldNormal = FetchSurfaceNormal(sampleTexel);
-            // vec3 sampleReflectedDir = reflect(-worldDir, sampleWorldNormal);
-            float sampleRoughness = sqr(1.0 - Unpack2x8UX(loadMaterialPack(sampleTexel).z));
-
-            float weight = LobeWeightFast(worldNormal, sampleWorldNormal, roughness, sampleRoughness);
-            weight *= exp2(-4.0 * NdotV * abs(linearDepth - sampleLinearDepth));
-            // weight = saturate(weight);
-
-            // Sharpen
-            sampleData.rgb *= pow(sdot(sampleData.rgb) + EPS, 0.5 * sharpenWeight - 0.5);
-
-            specularData += sampleData * weight;
-            sumWeight += weight;
-        }
-    }
-
-    specularData *= 1.0 / sumWeight;
-
-    // Sharpen
-    specularData.rgb *= pow(sdot(specularData.rgb) + EPS, 0.5 / sharpenWeight - 0.5);
+    // 完全禁用滤波，不执行任何操作（无采样，无循环）
+    return;
 }
 
-//======// Main //================================================================================//
 void main() {
     uvec2 localPos = QuadLayout16x16(gl_LocalInvocationIndex);
     ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
     Material material = GetMaterialData(Unpack2x8U(loadMaterialPack(texelPos).z));
     if (material.specularMask) {
-        vec2 screenCoord = texelToUv(texelPos);
-        vec3 viewDir = ScreenToViewDir(screenCoord);
-
-        vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
         vec3 worldNormal = FetchSurfaceNormal(texelPos);
-
         vec4 specularData = texelFetch(colortex3, texelPos, 0);
-    #ifdef REFLECTION_FILTER
-        if (material.isRough) {
-            const float filterSize = float(32 >> SPECULAR_FILTER_PASS);
-            #if SPECULAR_FILTER_PASS > 0
-                vec2 randOffset = SampleStbnVec2(texelPos, frameCounter) - 0.5;
-            #else
-                vec2 randOffset = vec2(0.0);
-            #endif
-
-            SpecularFilter(specularData, texelPos, material.roughness, worldNormal, worldDir, filterSize, randOffset);
-        }
-    #endif
-
-    #if SPECULAR_FILTER_PASS == 2
-        vec3 sceneOut = loadSceneMain(texelPos);
-        vec3 albedo = sRGBToLinear(loadAlbedo(texelPos));
-
-        float NdotV = abs(dot(worldNormal, worldDir));
-        vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
-
-        vec3 f0 = GetMaterialF0(material.metalness, albedo);
-        vec3 specular = f0 * brdf.x + brdf.y;
-        sceneOut += specularData.rgb * specular;
-
-        imageStore(colorimg0, texelPos, vec4(sceneOut, 1.0));
-    #else
-        imageStore(colorimg3, texelPos, specularData);
-    #endif
+        // 直接输出原始数据，不进行任何滤波
+        #if SPECULAR_FILTER_PASS == 2
+            vec3 sceneOut = loadSceneMain(texelPos);
+            vec3 albedo = sRGBToLinear(loadAlbedo(texelPos));
+            vec2 screenCoord = texelToUv(texelPos);
+            vec3 viewDir = ScreenToViewDir(screenCoord);
+            vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
+            float NdotV = abs(dot(worldNormal, worldDir));
+            vec2 brdf = texture(brdfLutTex, vec2(material.roughness, NdotV)).xy;
+            vec3 f0 = GetMaterialF0(material.metalness, albedo);
+            vec3 specular = f0 * brdf.x + brdf.y;
+            sceneOut += specularData.rgb * specular;
+            imageStore(colorimg0, texelPos, vec4(sceneOut, 1.0));
+        #else
+            imageStore(colorimg3, texelPos, specularData);
+        #endif
     }
 }

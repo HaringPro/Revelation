@@ -18,7 +18,7 @@ vec3 VoxyFaceNormal(in uint face) {
 
 vec3 ScreenToViewPos(in vec3 screenPos) {
 	vec3 ndcPos = screenPos * 2.0 - 1.0;
-	return ProjectDivide(ndcPos, vxProjInv);
+	return ProjectDivide(vxProjInv, ndcPos);
 }
 
 float BlueNoise(in ivec2 texel, in int frame) {

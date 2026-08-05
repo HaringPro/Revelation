@@ -52,13 +52,21 @@ screen.Color=色彩
 
 
 # OPTIONS
-option.INFO=§f§o§lRevelation
+option.INFO=§f§o§lRevelation AD edit
+option.INFO.comment=一个目标为低端设备的改版，包含了一系列性能提升和画面改进
 value.INFO.0=§c§o§lAlpha
 value.INFO.1=§a§o§lBeta
 value.INFO.2=§b§o§lRelease
+value.INFO.3=§b§o§l1.0.2a
 option.AUTHOR=§f§o§l作者
 option.AUTHOR.comment=版权所有 (C) 2026 HaringPro. Apache-2.0 许可证
 value.AUTHOR.0=§o§lHaringPro
+option.AD=改版作者
+screen.WARN=警告:使用前请先切换至“默认”配置
+value.WARN.0=使用前请先切换至“默认”配置
+value.AD.0=§a§o§lAnotherCream
+value.AD.1=§a§o§l额啊啊啊啊嗯额
+option.AD.comment=(也叫AD / 额啊啊啊啊嗯额)
 
 option.RP_SUPPORT=§fPBR 资源包支持
 option.RENDER_MODE=§f渲染模式
@@ -75,9 +83,9 @@ suffix.ATMOSPHERE_THICKNESS=m
 
 option.ATMOSPHERE_TURBIDITY=大气浊度
 
-option.ATMOSPHERE_SKY_SAMPLES=天空采样数
-option.ATMOSPHERE_TLUT_SAMPLES=透射率LUT采样数
-option.ATMOSPHERE_MSLUT_SAMPLES=多重散射LUT采样数
+option.ATMOSPHERE_SKY_SAMPLES=Hillaire天空采样数
+option.ATMOSPHERE_TLUT_SAMPLES=Hillaire透射率LUT采样数
+option.ATMOSPHERE_MSLUT_SAMPLES=Hillaire多重散射LUT采样数
 
 option.SUN_RADIUS_MULT=太阳半径乘数
 
@@ -155,7 +163,7 @@ suffix.CLOUD_SHADOW_DISTANCE=区块
 
 # Fog
 option.VOLUMETRIC_FOG=体积雾
-option.VF_MAX_SAMPLES=体积雾最大采样数
+option.VF_MAX_SAMPLES=这个选项没用了
 option.VF_CLOUD_SHADOWS=考虑云影
 option.VF_HEIGHT=体积雾高度
 suffix.VF_HEIGHT=m
@@ -319,7 +327,7 @@ option.SUBSURFACE_SCATTERING_STRENGTH=次表面散射强度
 option.SUBSURFACE_SCATTERING_BRIGHTNESS=次表面散射亮度
 option.SUBSURFACE_SCATTERING_RADIUS=次表面散射半径
 
-option.SSRT_MAX_SAMPLES=反射采样数
+option.SSRT_MAX_SAMPLES=反射最大采样数
 option.SSRT_REFINEMENT=反射重采样
 option.SSRT_REFINEMENT_STEPS=重采样精度
 option.SSRT_SKY_TRACING=追踪天空
@@ -328,6 +336,22 @@ option.SPECULAR_IMPORTANCE_SAMPLING_BIAS=重要性采样偏度
 
 option.ROUGH_REFLECTIONS=粗糙反射支持
 option.ROUGH_REFLECTIONS_THRESHOLD=粗糙反射阈值
+option.ROUGH_REFLECTIONS_MAX=粗糙反射最高粗糙度
+option.ROUGH_REFLECTIONS_MAX.comment=粗糙度低于此值时才应用粗糙反射，超过此界限的物体不再进行粗糙反射
+option.ROUGH_REFLECTION_STEPS=粗糙反射追踪步数
+option.ROUGH_REFLECTION_STEPS.comment=单独设置粗糙物体的 SSR 追踪步数（较低即可）
+option.ROUGH_REFLECTION_BLUR_STRENGTH=粗糙反射模糊强度
+option.ROUGH_REFLECTION_BLUR_STRENGTH.comment=粗糙反射的模糊强度倍率，越高越模糊
+option.ROUGH_REFLECTION_BLUR_SAMPLES=粗糙反射模糊采样数
+option.ROUGH_REFLECTION_BLUR_SAMPLES.comment=粗糙反射的泊松圆盘采样数，越多噪点越少，性能开销越大
+option.ROUGH_REFLECTION_ON_METAL=粗糙反射作用于金属
+option.ROUGH_REFLECTION_ON_METAL.comment=开启后粗糙反射的模糊效果同样对金属表面生效
+option.REFLECTION_METAL_ATTENUATION=金属反射衰减倍率
+option.REFLECTION_METAL_ATTENUATION.comment=所有金属反射的固定衰减倍率，降低以透出金属本身纹理
+option.REFLECTION_METAL_MIX=金属反射混合权重
+option.REFLECTION_METAL_MIX.comment=金属反射与纹理的混合权重（1.0=纯反射, 0.0=纯纹理）
+option.NONMETAL_REFLECTION_BRIGHTNESS=非金属反射亮度
+option.NONMETAL_REFLECTION_BRIGHTNESS.comment=增强非金属反射亮度，与未命中反射时的亮度补偿共同作用
 option.REFLECTION_FILTER=反射过滤
 
 option.RAYTRACED_REFRACTION=光线追踪折射
@@ -375,6 +399,9 @@ option.SELECTION_BOX_COLOR_B=选择框颜色-§1蓝
 
 # Post-Processing
 option.TAA_ENABLED=时域抗锯齿(TAA)
+option.TAA_QUALITY_MODE=taa模式
+value.TAA_QUALITY_MODE.0=质量
+value.TAA_QUALITY_MODE.1=性能
 option.TAA_CLOSEST_FRAGMENT=片元择邻
 option.TAA_SHARPEN=锐化
 option.TAA_CLIPPING=方差裁切
@@ -387,6 +414,7 @@ option.MOTION_BLUR_SAMPLES=动态模糊采样数
 option.MOTION_BLUR_STRENGTH=动态模糊强度
 
 option.BLOOM=泛光
+option.BLOOM.comment=[3帧]泛光效果
 option.BLOOM_BLENDING_MODE=泛光混合模式
 value.BLOOM_BLENDING_MODE.0=叠加
 value.BLOOM_BLENDING_MODE.1=插值
@@ -450,5 +478,160 @@ option.DEBUG_BLOOM_TILES=DEBUG_BLOOM_TILES
 option.DEBUG_CLOUD_SHADOWS=DEBUG_CLOUD_SHADOWS
 option.DEBUG_CLOUD_MAP=DEBUG_CLOUD_MAP
 option.DEBUG_NORMALS=DEBUG_NORMALS
+option.DEBUG_KILL_RIPPLE_GRID=显示击杀特效采样点
+option.DEBUG_KILL_RIPPLE_GRID.comment=在屏幕上以颜色显示击杀特效的 16x16 稀疏采样点：绿色=受伤时长低，越接近/超过触发阈值越红
 option.DEBUG_RESHADING=DEBUG_RESHADING
 option.DEBUG_SKY_MAP=DEBUG_SKY_MAP
+option.DEBUG_VOXEL_GI=体素 GI 调试可视化
+option.DEBUG_VOXEL_GI.comment=压暗其余光照并放大体素 GI 贡献，直观查看 GI 生效区域（火把光晕、天空渗入、岩浆泛光等）
+option.DEBUG_VOXEL_RADIANCE=体素辐照度可视化
+option.DEBUG_VOXEL_RADIANCE.comment=直接显示传播后的体素辐照度，用于验证"体素化+传播"链路是否通
+
+
+#other
+option.VF_SHADOW_QUALITY=雾气阴影质量
+option.VF_DENSITY_MULT=全局雾气密度
+option.SSS_LOD_ENABLED=lod模组区块内的屏幕空间阴影
+option.SVGF_QUALITY=SVGF质量
+option.SVGF_BLUR_RADIUS=SVGF模糊半径
+option.SSILVB_GI_BRIGHTNESS=全局光照光线亮度
+option.SSILVB_HAND_DEPTH_THRESHOLD=全局光照手部剔除
+option.SSILVB_HAND_DEPTH_THRESHOLD.comment=用来防止玩家自己的手部对光照造成影响，正常不用动
+option.SSAO_LOD_ENABLED=lod模组区块内的屏幕空间环境光遮蔽
+option.REFLECTION_GLOBAL=全局反射开关
+option.TRANSLUCENT_SKY_REF=半透明物体天空反射
+option.TRANSLUCENT_SSRT=半透明物体反射
+option.TEXTURE_CULL_DISTANCE=实体pbr剔除距离
+option.TEXTURE_CULL_DISTANCE.comment=大于此距离不渲染pbr贴图
+option.BLOCK_TEXTURE_CULL_DISTANCE=方块pbr剔除距离
+option.BLOCK_TEXTURE_CULL_DISTANCE.comment=大于此距离不渲染pbr贴图
+option.PARALLAX_MAX_DISTANCE=视差最大渲染距离
+option.PARALLAX_MAX_DISTANCE.comment=大于此距离不渲染视差
+option.PARALLAX_FADE_START=视差淡出结束距离
+option.PARALLAX_FADE_START.comment=我没搞明白这个，别动
+option.PARALLAX_FADE_END=视差淡出开始距离
+option.PARALLAX_FADE_END.comment=我没搞明白这个，别动
+option.COMPENSATION_ENABLED=开阔区域光照补偿
+option.COMPENSATION_ENABLED.comment=在屏幕上有天空像素时提升黑暗处亮度，可能可以改善大型开阔区域的光照
+option.COMPENSATION_BOOST=补偿强度
+option.COMPENSATION_FADE_SPEED=补偿速度
+option.COMPENSATION_DELAY=补偿延迟
+option.COMPENSATION_DELAY.comment=在屏幕上没有天空像素的一段时间内仍然保持补偿
+option.COMPENSATION_AO_BOOST=ao补偿
+option.COMPENSATION_AO_BOOST.comment=增强光照补偿区域的ao强度
+option.BLOOM_DOWNSAMPLE_BLUR_RADIUS=泛光模糊范围
+option.FOG_NOISE_ENABLED=启用体积雾噪声
+screen.Compensation=光照补偿
+option.PCF_FAST_SAMPLES=PCF过滤采样数
+option.SHADOW_CULL_UNDERGROUND=地下阴影剔除
+option.REFLECTION_FALLBACK_BASE=天空光为零时的基础反射亮度
+option.REFLECTION_FALLBACK_BRIGHTNESS=未命中反射时的亮度补偿
+option.REFLECTION_FALLBACK_BRIGHTNESS.comment=与天空光/基础值相乘
+option.GTAO_INTENSITY=GTAO强度
+option.SSS_DISABLE_BEYOND_SHADOW_DIST=阴影距离外不渲染次表面散射
+option.SPECULAR_BLOOM_BOOST=反射高光强度
+option.METAL_SSR_MODE=物体反射模式
+value.METAL_SSR_MODE.0=无反射（只有天空反射）
+value.METAL_SSR_MODE.1=SSRT
+value.METAL_SSR_MODE.2=SSR
+option.METAL_REFLECT_MODE=反射阈值判断模式
+value.METAL_REFLECT_MODE.0=金属度
+value.METAL_REFLECT_MODE.1=粗糙度
+value.METAL_REFLECT_MODE.2=金属度/粗糙度
+option.METALNESS_THRESHOLD=金属度反射阈值
+option.ROUGHNESS_THRESHOLD=粗糙度反射阈值
+option.TRANSLUCENT_SSR_MODE=半透明物体反射模式
+value.TRANSLUCENT_SSR_MODE.0=无反射（只有天空反射）
+value.TRANSLUCENT_SSR_MODE.1=SSRT
+value.TRANSLUCENT_SSR_MODE.2=SSR
+option.AMBIENT_SUNLIGHT_TINT_RATIO=漫反射阳光染色强度
+option.AMBIENT_BRIGHTNESS_MULTIPLIER=漫反射亮度倍率
+option.VF_SUNLIGHT_TINT_RATIO=体积雾阳光染色强度
+option.ALWAYS_GLITCH=屏幕始终出现故障效果
+option.ALWAYS_GLITCH.comment=口区
+option.GLITCH_VISUAL=受击屏闪
+option.GLITCH_VISUAL.comment=受到伤害时屏幕出现故障特效
+option.HURT_GLITCH_INTENSITY=受击屏闪强度
+option.ENTITY_AREA_GLITCH=实体受击特效
+option.ENTITY_AREA_GLITCH.comment=同时作用于彩色玻璃
+option.ENTITY_AREA_GLITCH_INTENSITY=实体受击特效强度
+option.ENTITY_GLITCH_OUTLINE_TEAR=实体轮廓撕裂
+option.ENTITY_GLITCH_OUTLINE_TEAR.comment=开启后实体轮廓随条带一起水平位移，缺口用邻近背景近似填充；关闭时使用旧版仅内部颜色错位
+option.GLITCH_TEAR_LAYERS=故障特效切片数
+option.GLITCH_TEAR_LAYERS.comment=数值越高画面撕的越碎，细细的切成臊子
+option.KILL_RIPPLE=击杀特效
+option.KILL_RIPPLE.comment=实体被杀死倒地期间会持续变红，超过触发阈值后手部物品出现泛白提亮与扩散涟漪，模拟击杀反馈
+option.KILL_RIPPLE_TRIGGER_TIME=击杀触发阈值
+option.KILL_RIPPLE_TRIGGER_TIME.comment=实体持续变红达到该秒数判定为击杀（普通受击约 0.3~0.5 秒）
+option.KILL_RIPPLE_DURATION=特效脉冲时长
+option.KILL_RIPPLE_DURATION.comment=击杀特效单次脉冲的持续时间（秒）
+option.KILL_RIPPLE_RANGE=涟漪扩散距离
+option.KILL_RIPPLE_RANGE.comment=白色涟漪从手部轮廓向外扩散的最大像素距离
+option.KILL_RIPPLE_HIGHLIGHT=泛白提亮强度
+option.KILL_RIPPLE_HIGHLIGHT.comment=脉冲期间手部物品整体泛白的强度
+screen.R!G!B!.comment=一些有关故障效果的神秘特效（闪烁注意！）
+
+
+
+
+
+option.SKY_MODEL=大气模型
+option.SKY_MODEL.comment=Hillaire质量更高，Hosek-Wilkie还相当不完善，效果拉完了
+value.SKY_MODEL.1=Hosek-Wilkie
+value.SKY_MODEL.0=Hillaire
+option.SKY_VIEW_RESOLUTION=天空渲染分辨率
+
+
+option.DEBUG_ALIGHNMENT.comment = of texture reads. overrides other visualizations
+option.VISUALIZED_DATA.comment = 0-average color. 1-position. 2-one pixel's color. 3-light emission. 4-block type by id
+option.VOXEL_POSITION_RECONSTRUCTION_METHOD.comment 1-passed from vertex shader. 2-reconstructed with foot position & face normals
+option.WHERE_TO_VOXELIZE.comment = 1-Gbuffers. 2-Shadow pass
+
+option.VOXELIZATION=体素化
+option.VOXELIZATION.comment=体素化与全局光照系统
+
+option.ENABLE_VOXELIZATION=体素化注入
+option.ENABLE_VOXELIZATION.comment=将方块颜色与材质数据写入 3D 体素纹理（64×64×64）
+
+option.VISUALIZE_VOXELS=体素可视化
+option.VISUALIZE_VOXELS.comment=用体素颜色覆盖方块反照率，直观查看体素化结果
+
+option.VOXEL_GI_ENABLED=体素全局光照
+option.VOXEL_GI_ENABLED.comment=开启基于体素的彩色光源间接光照（射线步进/注入扩散）
+
+option.VOXEL_GI_TRACE=体素光线追踪
+option.VOXEL_GI_TRACE.comment=每像素投随机光线穿过体素网格，获取锐利的一次弹射 GI（阳光反弹、近距离遮挡、彩色反弹）；噪声靠 TAA 时域收敛
+
+option.VOXEL_GI_MODE=GI 传播模式
+option.VOXEL_GI_MODE.comment=0=纯漫反射注入（低配）| 1=射线步进（推荐，颜色传递更准确）
+value.VOXEL_GI_MODE.0=注入扩散
+value.VOXEL_GI_MODE.1=射线步进
+
+option.VOXEL_GI_STRENGTH=GI 强度
+option.VOXEL_GI_STRENGTH.comment=整体体素 GI 亮度倍率
+
+option.VOXEL_GI_BLENDED_LIGHTMAP=Lightmap混合
+option.VOXEL_GI_BLENDED_LIGHTMAP.comment=原版 Lightmap 与体素 GI 的混合倍率（1.0=完全保留原版光照，0.0=完全屏蔽原版 Lightmap，间接光照仅由体素 GI 提供）
+
+option.VOXEL_GI_RAYS=射线数量上限
+option.VOXEL_GI_RAYS.comment=每个发光体素发射的最大射线数（控制性能上限）
+
+option.VOXEL_GI_RAY_STEPS=射线步进距离
+option.VOXEL_GI_RAY_STEPS.comment=每条射线最多传播多少个体素单位
+
+option.VOXEL_GI_EMISSIVE_THRESHOLD=光源阈值
+option.VOXEL_GI_EMISSIVE_THRESHOLD.comment=PBR 自发光低于此值的方块不作为光源
+
+option.VOXEL_GI_DECAY=能量衰减
+option.VOXEL_GI_DECAY.comment=每帧保留的旧辐照度比例（1.0=不衰减，0.9=快速衰减）
+
+option.VOXEL_GI_BOOST=光源倍率
+option.VOXEL_GI_BOOST.comment=发光体素的光源能量放大倍率
+
+option.VOXEL_GI_DIR_SAMPLES=查询采样数
+option.VOXEL_GI_DIR_SAMPLES.comment=表面点沿法线方向采样体素的点数
+
+option.VOXEL_GI_DIR_DIST=查询采样距离
+option.VOXEL_GI_DIR_DIST.comment=沿法线方向采样的最大体素距离
+screen.help= Help (hover_mouse)
+screen.help.comment = There is a READ ME file in the shader.zip that explains things. Or visit patreon.com/timetravelbeard and watch the free video series there or on Youtube. ask questions on my discord linked in both. Have Fun!
