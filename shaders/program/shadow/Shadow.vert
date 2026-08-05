@@ -93,7 +93,13 @@ void main() {
         bool translucent = (materialID == 3u || materialID == 4u || materialID == 13u ||
                             (materialID >= 1000u && materialID <= 1003u) || materialID == 1500u);
         g_voxelID = translucent ? -float(materialID) : float(materialID);
-        g_notInVoxel = step(mc_Entity.x, 0.5); // 实体（mc_Entity.x=0）不体素化，由 GS 的 renderStage 判定兜底
+        // [FIX 2026-08-05] g_notInVoxel 不能用 mc_Entity.x 判定"实体"：
+        // 未列入 block.properties 的普通方块（stone/dirt/grass/planks…）mc_Entity.x 同样是 0
+        //（与实体无法区分）→ 会被 step(0,0.5)=1 误判为实体 → GS 门限 g_notInVoxel 和<0.5
+        // 恒不满足 → 普通方块全被排除出体素化 → "网格只有光源/玻璃没有墙" → 追踪永远不命中
+        // 实体 → 方块光/阳光反弹全无（只剩发射光辉光）。改由 GS 的 renderStage 门限
+        //（SOLID/TRANSLUCENT）作为唯一过滤：实体在 ENTITIES/BLOCK_ENTITIES 等阶段被排除。
+        g_notInVoxel = 0.0;
         // ITRP PT_FULLBLOCK_DETECTION（Shadow.glsl VSH L155-169）：未列入 block.properties 的
         // 方块（mc_Entity.x=0 → materialID=1，同时涵盖完整方块与按钮/告示牌/漏网半砖等
         // 非完整方块）材质 ID 无法区分，改由几何判定：顶点不在整数网格 → 标记，
@@ -101,10 +107,17 @@ void main() {
         // 发光(20-31)/形状(155-294)/透明等已列出的材料不受影响（ITRP 只查 g_voxelID<=1）。
         g_posInvalid = 0.0;
         if (materialID == 1u) {
-            // gl_Vertex 在 block model 空间下的坐标（完整方块 ∈ {0,1}，半砖/楼梯等 ∈ {0, 0.5, 1}）。
-            // 旧 bug: gl_Vertex.xyz + cameraPositionFract 导致 cameraFract≠0 时即便完整方块
-            // 顶点也偏离 round → g_posInvalid 恒 1 → GS 误丢弃，体素化缺块。
-            vec3 vertexPos = abs(gl_Vertex.xyz - round(gl_Vertex.xyz));
+            // [FIX 2026-08-06 最终根因] gl_Vertex 在 shadow pass 是相机相对/世界坐标
+            //（带相机小数位偏移），abs(gl_Vertex - round(gl_Vertex)) 恒 ≈ 相机小数 Cf ≠ 0
+            // → g_posInvalid 恒 1 → GS 整块检测把 materialID==1 的普通方块（石头/泥土/草/
+            // 木板…）全过滤 → 体素网格只有发光块（火把粉红）和形状块（155-294 不查此分支），
+            // 普通地形全空（DEBUG 全蓝）→ 追踪命中不到真实地形 → 阳光反弹全无。
+            // 改用世界对齐整数坐标：scenePos = camrel（W−C），+cameraPositionFract = W−floor(C)
+            //（精确整数，与 g_voxelCoordBase/查询端同口径）。完整方块顶点 W∈整数边界 → 整数
+            // → g_posInvalid=0 通过；半砖/楼梯（materialID==1 的漏网形状）顶点有 0.5 偏移
+            // → g_posInvalid=1 过滤（保留防"幻影整块"）。
+            vec3 worldAligned = scenePos + cameraPositionFract;
+            vec3 vertexPos = abs(worldAligned - round(worldAligned));
             g_posInvalid = step(0.001, vertexPos.x + vertexPos.y + vertexPos.z);
         }
         g_mcLightLevel = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
@@ -115,6 +128,11 @@ void main() {
         // 乘 0.001 确保面心向内偏移 ~0.0005 格，远小于半格 → 不影响正确 cell。
         // 无偏移坐标供 GS posDiff 完整方块检测（toCenter 偏移会让 face 三条边长度
         // 都变短 ~0.001 → 总和偏离 3.4142 达 0.003+→ 检测全失败，所有默认方块被丢弃）
+        // [FIX 2026-08-06 世界对齐根因] 恢复 cameraPositionFract，与 ITRP Voxelizer/Shadow.glsl
+        // 逐字一致：两端都用 (W−C)+cameraPositionFract+VOXEL_RADIUS，= W−floor(C)+VOXEL_RADIUS
+        // （精确整数、与相机位置无关的世界对齐网格）。此前只在体素化端删掉 Cf 而追踪端
+        // (VoxelTracing.glsl origin+=cameraPositionFract) 仍保留 → 两端差 1 格 → 追踪永远
+        // 读偏真实地形（只命中形状块）。Iris shadow pass 的 cameraPositionFract 与主相机一致。
         g_voxelCoordBase = scenePos + cameraPositionFract + float(VOXEL_RADIUS);
         vec3 toCenter = at_midBlock.xyz - gl_Vertex.xyz;
         g_voxelCoord = g_voxelCoordBase + toCenter * 0.001;

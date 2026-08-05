@@ -151,10 +151,9 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         if (!IsHitBlock(vray, totalStep, tracingNext, voxelCoord, abs(hvd.z), rayLength, hitNormal))
             continue;
 
-        // 反弹 albedo 用整块图集中心色：64³ 网格无法表达 16px 纹理细节，
-        // 精确纹素采样会把高对比纹理（如哭泣黑曜石的亮紫像素）反弹到相邻面
-        // → "又贴了一块黑曜石在旁边"的印子；中心色 = 该体素平均反照率。
-        vec3 alb = texture(atlas2D, hvd.xy).rgb;
+        // 反弹 albedo：固体格 r/g=染过色中心色 RG、w 高 8 位=染过色 B（Shadow.frag 草方块
+        // tint 修复）；不再采样 atlas2D（64³ 无法表达 16px 细节，中心色=体素平均反照率）。
+        vec3 alb = vec3(hvd.r, hvd.g, VoxelUnpack2xU8X(hvd.w));
 
         // 方块光兜底（普通固体格带原版方块光）
         if (lD.y > 0.01)  // 新字节序：G=blocklight
@@ -163,9 +162,30 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         // 阳光色 = 物理直射辐照度 × rcp(VOXEL_SUN_REFERENCE)（0-1 尺度，自带昼夜明暗 + 暖色温）。
         // 不能用 skyColor——它是天空蓝（环境色），与出界天空路径同色 → 反弹混进环境光里
         // 看不出"阳光反弹"（2026-08-05 用户反馈）。
+        // [FIX 2026-08-05] 阳光门限改用 voxelData.w 的写胜 skylight（对齐 ITRP DiffuseTracing
+        // 的 voxelDataW.y，也对齐本项目 IRC 的 VoxelUnpack2xU8Y）：lD.x 来自 voxelLightData 的
+        // imageAtomicMax（sky 是最低字节，max 比较被 block/emissive 高位压掉 → 门限常为 0
+        // → 阳光反弹全无，这是最终根因）。hvd = 命中体素数据（voxelDataSampler）。
         vec3 sunDir = mat3(shadowModelViewInverse) * vec3(0.0, 0.0, 1.0);
-        float sunLighting = saturate(dot(sunDir, hitNormal)) * rPI * saturate(lD.x * 444.0);  // 新字节序：R=sky
-        contrib += alb * (global.directIlluminance * rcp(VOXEL_SUN_REFERENCE))
+        float hitSkylight = VoxelUnpack2xU8Y(hvd.w);
+        // [FIX 2026-08-05] hitSkylight 可能因 imageStore 写胜（最后一片段覆盖）被背阴面写成 0 →
+        // 门限恒 0 → 阳光全无。用 max(体素sky, 像素自身skyLightmap) 兜底：体素 sky 可靠时仍用它，
+        // 不可靠（0）时退回像素自己的天光（ITRP 也是先用像素 lightmap.y 再更新）。
+        // [FIX 2026-08-05] 阳光项改用本地重算的直射辐照度：诊断确认 global.directIlluminance
+        // 在计算端（DiffuseIndirect）读到 0（SSBO 跨 pass 屏障/绑定问题）→ 阳光项整体乘 0
+        // → 阴影纯黑。本地重算（同 GlobalStorage.comp）；若 SSBO 有值则优先用 SSBO。
+        vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, worldSunDir);
+        vec3 moonIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(atmosphereViewPos, -worldSunDir) * moonlightMult;
+        vec3 directIlluminance = (sunIlluminance + moonIlluminance) * 128.0;
+        directIlluminance *= smoothstep(0.0, 0.01, worldLightDir.y);
+        if (max(max(global.directIlluminance.r, global.directIlluminance.g), global.directIlluminance.b) > 1e-4)
+            directIlluminance = global.directIlluminance;
+        // 白天兜底：SSBO/本地重算都算不出直射辐照度时用常数（排除该变量后如仍无阳光即非此因）
+        if (max(max(directIlluminance.r, directIlluminance.g), directIlluminance.b) < 1e-4 && worldLightDir.y > 0.01)
+            directIlluminance = vec3(128.0);
+        float sunLighting = saturate(dot(sunDir, hitNormal)) * saturate(max(hitSkylight, skyLightmap) * 444.0);
+
+        contrib += alb * (directIlluminance * rcp(VOXEL_SUN_REFERENCE))
                  * sunLighting * VOXEL_TRACE_SUN_STRENGTH * absorption;
         // 间接光：命中体素处的 IRC 前帧缓存（相机重投影 +cDi，与注入端同款）
         ivec3 ircHit = vc + (cameraPositionInt - previousCameraPositionInt);

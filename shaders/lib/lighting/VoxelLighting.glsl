@@ -70,7 +70,7 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // "穿心"命中会闪现全强度 → 高对比可见闪烁；× rcp(1 + dist²×FALLOFF) 后远场命中大幅
 // 变弱（dist=8 → 9%），近场 1-2 格几乎不变。只影响球形光路径（发射体素），普通固体
 // 命中/IRC 自反弹不受影响。
-#define VOXEL_GI_LIGHT_FALLOFF 0.15
+#define VOXEL_GI_LIGHT_FALLOFF 0.1 // [0.02 0.05 0.08 0.1 0.15 0.2 0.3 0.5] 发射光距离衰减（越小传播越远）
 // 发射光球形光源半径（体素格数）。ITRP 用 0.5（格内切球），但那是多 SPP + ×0.1 低强度
 // 的物理尺度；本项目 1 SPP 低配，球太小 → 贴光源面命中率极低（1 格外 ≈2.8%）→
 // 平均贡献 = 命中率 × 强度 很低 → "走起来亮（TAA 运动降权显示单帧命中）、停下来灭
@@ -111,8 +111,10 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // 本项目 0-1 尺度（skyColor 白天 ~0.1 级注入），等效底光取 0.0005（可调）。
 #define VOXEL_NOLIGHT_BRIGHTNESS 0.0005
 
-// ------ 每像素漫反射追踪参数（阶段③，随 VOXEL_GI_TRACE 开关生效，不单独暴露滑条）------
-#define VOXEL_TRACE_DISTANCE 24        // 追踪光线最大步进体素数（略增命中率，洞穴/房间反弹更可靠）
+// ------ 每像素漫反射追踪参数（阶段③，随 VOXEL_GI_TRACE 开关生效）------
+// [FIX 2026-08-05] 默认 24 → 32：用户反馈"光线传播距离太短"，加大追踪最大步进让
+// 阳光反弹/方块光能传更远；已暴露为 GUI 滑条。
+#define VOXEL_TRACE_DISTANCE 32 // [8 16 24 32 48 64 96] 追踪光线最大步进体素数（越大传播越远，性能略降）
 // 追踪 GI 强度总旋钮：信号量级 = 追踪值 × STRENGTH（命中/出界已按 ITRP 语义全强度输出，
 // 过亮就降这个，过暗就升；洞穴不过量由 lightmap 泄漏衰减保证，不靠压低天空值）。
 #define VOXEL_GI_TRACE_STRENGTH 1.0
@@ -122,8 +124,11 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // 追踪端阳光弹射强度（ITRP sunLight = colorShadowlight，无额外小系数；阴影贴图判定直射）。
 // 命中体素朝向太阳时 sunVis=1 → 阳光色×1.0×albedo（反射率级），被遮挡时 0。
 // 2026-08-05：阳光色已从 skyColor（天空蓝环境色，与出界天空路径同色 → 反弹看不出来）
-// 改为物理直射辐照度换算；强度 1.0 → 2.0 让反弹在阴影里可辨（亮度过量可回退）。
-#define VOXEL_TRACE_SUN_STRENGTH 2.0
+// 改为物理直射辐照度换算；强度 1.0 → 2.0 让反弹在阴影里可辨。
+// [FIX 2026-08-05] 2.0 → 8.0：阳光项去掉 rPI 后仍比方块光弱，实测"阳光反弹不可见"；
+// 8.0 让阳光反弹 ≈ 0.4×cosθ×albedo×8 达到可见量级（过亮可调回 2-5）。
+// 已暴露为 GUI 滑条（shaders.properties sliders），可在光影设置里直接调。
+#define VOXEL_TRACE_SUN_STRENGTH 8.0 // [0.5 1.0 2.0 3.0 5.0 8.0 12.0 16.0 24.0 32.0] 追踪端阳光反弹强度
 // 追踪端出界天空（对齐 ITRP SkyLighting 语义：出界 = skyColor × pdf × lightmap 衰减，无 0.05
 // 小系数——ITRP 正是靠 lightmap 衰减防室内漏光，不是靠压低天空值）。
 // 户外（skyLightmap≥0.23）全开：开阔地面出界光线 ≈ skyColor×dir.y×weight（白天可见方向性天光）；

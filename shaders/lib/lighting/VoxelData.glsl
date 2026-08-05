@@ -60,6 +60,12 @@ float VoxelUnpack2xU8Y(float packedValue) {
     return (scaled - floor(scaled / 256.0) * 256.0) / 255.0;
 }
 
+// Pack2xU8 高 8 位解码（草方块 tint 修复）：固体格 w 高 8 位 = 染过色 albedo.B（替代固定 texRes）。
+float VoxelUnpack2xU8X(float packedValue) {
+    float scaled = packedValue * 65535.0;
+    return floor(scaled / 256.0) / 255.0;
+}
+
 // 光线对光源球（球心=格中心，半径 VOXEL_GI_LIGHT_RADIUS，默认 1.0）的命中强度（照抄
 // ITRP SphereIntersectionLength）：光线穿过球心 → 1.0；擦边 → 平滑衰减到 0（余弦平滑，
 // 无 0/1 命中跳变——"贴着光源方块表面移动闪烁"根因：旧实现 DDA 命中发射体素 = 0/1
