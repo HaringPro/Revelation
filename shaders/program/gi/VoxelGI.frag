@@ -241,16 +241,20 @@ vec3 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             // 精确纹素采样会把高对比纹理（如哭泣黑曜石的亮紫像素）反弹到相邻面
             // → "又贴了一块黑曜石在旁边"的印子；中心色 = 该体素平均反照率。
             hit = hc;
-            vec3 alb = texture(atlas2D, hvd.xy).rgb;
+            // 反弹 albedo：固体格 r/g=染过色中心色 RG、w 高 8 位=染过色 B（草方块 tint 修复）
+            vec3 alb = vec3(hvd.r, hvd.g, VoxelUnpack2xU8X(hvd.w));
 
             // 方块光兜底（仅非发射光源体素，避免白色方块光盖掉彩色发射色）
             if (lD.y > 0.01)  // 新字节序：G=blocklight
                 contrib += alb * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
             // 真阳光：rPI 方向项（hitNormal 为命中面法线）× 命中体素天空 lightmap
             // 平滑衰减（SUNLIGHT_LEAK_FIX；不用阴影贴图硬判定，避免阴影边缘 0/1 跳变）
-            float sunLighting = saturate(dot(sunDir, hitNormal)) * rPI * saturate(lD.x * 444.0);  // 新字节序：R=sky
+            // [FIX 2026-08-05] 门限改用 voxelData.w 写胜 skylight（同追踪端/ITRP 一致）：
+            // lD.x 来自 imageAtomicMax 的 voxelLightData，sky 是最低字节被高位压掉 → 恒 0。
+            float hitSkylight = VoxelUnpack2xU8Y(hvd.w);
+            float sunLighting = saturate(dot(sunDir, hitNormal)) * rPI * saturate(hitSkylight * 444.0);
             contrib += alb * VoxelSkyColor() * (sunLighting * VOXEL_GI_SUN_STRENGTH
-                                                + lD.x * VOXEL_GI_SKY_STRENGTH) * absorption;
+                                                + hitSkylight * VOXEL_GI_SKY_STRENGTH) * absorption;
             // 自反弹：前帧 IRC 在命中点的值（相机重投影；FetchPrevRadiance 内含 ×0.01 解码）
             contrib += alb * FetchPrevRadiance(hit + cDi) * VOXEL_GI_SELF_BOUNCE * absorption;
             hitSolid = true;

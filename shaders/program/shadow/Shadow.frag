@@ -61,10 +61,24 @@ void main() {
             // voxelLightData 的 atomicMax——max 合并会把洞内格被缝隙面抬高的 sky 当整格值，
             // 导致 SUNLIGHT_LEAK_FIX 泄漏衰减失效；写胜语义下 w 即该方块写入时的真实 sky。
             // 消费端 VoxelGI.frag 用 VoxelUnpack2xU8Y(voxelData.w) 解出（VoxelData.glsl）。
-            // 浮点打包（与 ITRP Pack2xU8_to_U16 等价，避免位运算/uint 的语言服务误报）。
-            float wPack = (floor(clamp(16.0 / 255.0, 0.0, 1.0) * 255.0) * 256.0
-                         + floor(clamp(v_skylight, 0.0, 1.0) * 255.0)) / 65535.0;
-            imageStore(voxelData, ivec3(v_voxelCoord), vec4(v_midCoord, v_voxelID, wPack));
+            // [FIX 2026-08-06 草方块白] blocks.png 里草方块顶面/草皮是白色/浅灰（绿色靠顶点色
+            // gl_Color tint 染色），只存 atlas UV → 反弹采样得白色 → 草方块反弹白光。改为：
+            // 固体（正 ID）r/g=染过色中心色 RG（half）、w 高 8 位=染过色 B（8bit，替代固定
+            // texRes=16）、w 低 8 位=skylight；透明（负 ID）r/g 保留 atlas UV（透明吸收采样用）、
+            // w 保持 texRes+skylight。反弹端按 ID 区分解包（VoxelUnpack2xU8X）。
+            vec2 rgStore;
+            float wPack;
+            if (v_voxelID > 0.5) {
+                vec3 tintedAlbedo = texture(tex, v_midCoord).rgb * vectorDataOut;
+                rgStore = tintedAlbedo.rg;
+                wPack = (floor(clamp(tintedAlbedo.b, 0.0, 1.0) * 255.0) * 256.0
+                       + floor(clamp(v_skylight, 0.0, 1.0) * 255.0)) / 65535.0;
+            } else {
+                rgStore = v_midCoord;
+                wPack = (floor(clamp(16.0 / 255.0, 0.0, 1.0) * 255.0) * 256.0
+                       + floor(clamp(v_skylight, 0.0, 1.0) * 255.0)) / 65535.0;
+            }
+            imageStore(voxelData, ivec3(v_voxelCoord), vec4(rgStore, v_voxelID, wPack));
             // 亮度类光数据仍 atomicMax。旧字节序 packUnorm4x8(emissive,sky,block,0)：
             // R=emissive(byte0) G=sky(byte8) B=block(byte16) → block光(uint高位) 压掉发射光(uint低位)
             // → 火把旁边高block光方块 atomicMax 胜出 → 火把发射被清零 → "六面突然全黑"（#6根因）。

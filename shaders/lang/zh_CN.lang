@@ -613,6 +613,15 @@ option.VOXEL_GI_STRENGTH.comment=整体体素 GI 亮度倍率
 option.VOXEL_GI_BLENDED_LIGHTMAP=Lightmap混合
 option.VOXEL_GI_BLENDED_LIGHTMAP.comment=原版 Lightmap 与体素 GI 的混合倍率（1.0=完全保留原版光照，0.0=完全屏蔽原版 Lightmap，间接光照仅由体素 GI 提供）
 
+option.VOXEL_TRACE_SUN_STRENGTH=阳光反弹强度
+option.VOXEL_TRACE_SUN_STRENGTH.comment=追踪端阳光反弹（阳光从被照亮的表面反射进阴影）的强度倍率；过弱阴影发黑、过强泛白
+
+option.VOXEL_TRACE_DISTANCE=光线传播距离
+option.VOXEL_TRACE_DISTANCE.comment=追踪光线最大步进体素数；越大阳光/方块光传播越远（性能略降）
+
+option.VOXEL_GI_LIGHT_FALLOFF=光源衰减
+option.VOXEL_GI_LIGHT_FALLOFF.comment=发射光距离衰减系数；越小光源照亮范围越大
+
 option.VOXEL_GI_RAYS=射线数量上限
 option.VOXEL_GI_RAYS.comment=每个发光体素发射的最大射线数（控制性能上限）
 
