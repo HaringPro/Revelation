@@ -48,6 +48,11 @@ writeonly restrict uniform image2D colorimg3;
     // 方块图集（shaders.properties customTexture.atlas2D = blocks.png，与传播端同图集；
     // 无显式 binding：Iris 按名字自动绑定）
     uniform sampler2D atlas2D;
+    // [FIX 2026-08-06] 追踪端阳光反弹的阴影判定依赖（sunVis，与注入端 VoxelGI.frag 一致）：
+    // DistortShadowSpace 来自 shadow/Common.glsl；shadowtex1 按名绑定。此前追踪端阳光只靠
+    // skylight 门控（×444 阈值极低）→ 地下/背阴有微弱 sky 残留就 8.0 倍阳光反弹 → 到处亮。
+    #include "/lib/lighting/shadow/Common.glsl"
+    uniform sampler2DShadow shadowtex1;
     #include "/lib/lighting/VoxelTracing.glsl"
 #endif
 

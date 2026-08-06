@@ -35,6 +35,26 @@
 
 #include "/lib/lighting/VoxelData.glsl"
 
+// [FIX 2026-08-06] 命中体素是否被太阳直射（阴影贴图判定，复刻 VoxelGI.frag VoxelGI_SunVisible）：
+// 追踪端阳光反弹此前无阴影判定，洞穴/背阴体素有微弱 skylight 残留（×444 门控阈值极低）
+// → 8.0 倍阳光反弹 → "阳光散射到处都是，连地下都很亮"。加 sunVis 后只有真被太阳照亮的
+// 体素才反弹阳光（与注入端一致）。camRelPos = 相机相对世界坐标（体素坐标 − Cf − R）。
+// 依赖：shadow/Common.glsl（DistortShadowSpace）+ shadowtex1（DiffuseIndirect.comp 已声明）。
+float VoxelTraceSunVisible(vec3 camRelPos) {
+    if (sunPosition.y < 0.01) return 0.0;
+    vec3 shadowClipPos = (shadowModelView * vec4(camRelPos, 1.0)).xyz;
+    shadowClipPos = (shadowProjection * vec4(shadowClipPos, 1.0)).xyz;
+    vec3 ssp = DistortShadowSpace(shadowClipPos) * 0.5 + 0.5;
+    #ifdef ENABLE_VOXELIZATION
+        ShiftShadowScreenPos(ssp.xy);
+    #endif
+    ssp.z -= 4e-5;
+    if (all(equal(ssp, saturate(ssp)))) {
+        return textureLod(shadowtex1, vec3(ssp.xy, ssp.z), 0.0).x > 0.5 ? 1.0 : 0.0;
+    }
+    return 1.0;
+}
+
 // 每像素漫反射追踪（ITRP DiffuseTracing 思路）：
 // origin = 相机相对起点；normal = 世界法线（可能含法线贴图）；vertexNormal = 几何法线；
 // viewDist = 视距（-viewPos.z，供起点偏移）；skyLightmap = 像素天空 lightmap（泄漏衰减）；
@@ -186,9 +206,14 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         if (max(max(directIlluminance.r, directIlluminance.g), directIlluminance.b) < 1e-4 && worldLightDir.y > 0.01)
             directIlluminance = vec3(128.0);
         float sunLighting = saturate(dot(sunDir, hitNormal)) * saturate(max(hitSkylight, skyLightmap) * 444.0);
+        // [FIX 2026-08-06] 阴影判定（sunVis，与注入端 VoxelGI_SunVisible 同逻辑）：命中体素真被
+        // 太阳直射才反弹阳光。此前无 sunVis，洞穴/背阴体素有微弱 sky 残留（×444 门控也放行）
+        // → 8.0 倍阳光反弹 → 地下/背阴处到处都是阳光散射。
+        vec3 hitWorldPos = vec3(vc) - cameraPositionFract - float(VOXEL_RADIUS);
+        float sunVis = VoxelTraceSunVisible(hitWorldPos);
 
         contrib += alb * (directIlluminance * rcp(VOXEL_SUN_REFERENCE))
-                 * sunLighting * VOXEL_TRACE_SUN_STRENGTH * absorption;
+                 * sunLighting * sunVis * VOXEL_TRACE_SUN_STRENGTH * absorption;
         // 间接光：命中体素处的 IRC 前帧缓存（相机重投影 +cDi，与注入端同款）
         ivec3 ircHit = vc + (cameraPositionInt - previousCameraPositionInt);
         if (all(greaterThanEqual(ircHit, ivec3(0))) && all(lessThan(ircHit, ivec3(VOXEL_AREA))))
