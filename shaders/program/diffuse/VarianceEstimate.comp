@@ -75,6 +75,14 @@ void SharedPreload() {
 void main() {
     SharedPreload();
 
+    // [FIX 2026-08-06] 光追降噪关闭（settings.glsl 注释 VOXEL_GI_DENOISE）时：
+    // 不写方差到 colortex3（保持棋盘信号）。
+    #ifdef VOXEL_GI_ENABLED
+        #ifndef VOXEL_GI_DENOISE
+            return;
+        #endif
+    #endif
+
     uvec2 sharedTexel = gl_LocalInvocationID.xy + padRadius;
     vec2 moments = unpackHalf2x16(sharedMoments[sharedTexel.y][sharedTexel.x]);
 
@@ -91,7 +99,7 @@ void main() {
 
     // Vanilla lightmap blending（仅 SSILVB 信号需要；体素 GI 的原版 Lightmap 混合由
     // DeferredLight 按 VOXEL_GI_BLENDED_LIGHTMAP 处理，此处再混会重复叠加方块光）
-    #ifndef VOXEL_GI_TRACE
+    #ifndef VOXEL_GI_ENABLED
         float blocklight = Unpack2x8UX(loadMaterialPack(texelPos << 1).x);
         blocklight = pow5(blocklight) * exp2(-16.0 * integratedDiffuse.x * exposure.value);
         integratedDiffuse.rgb += RGBToYCoCg(blocklightColor) * saturate(blocklight) * SSILVB_BLENDED_LIGHTMAP;

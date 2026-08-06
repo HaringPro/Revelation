@@ -211,6 +211,11 @@ void main() {
         #endif
     #endif
 
+    // Iris 布尔开关引用锚（无实际作用，仅供 Iris 把 VOXEL_GI_DENOISE 识别为 GUI 布尔选项）。
+    // 必须单独一行 #ifdef（不能写进复合条件），否则该开关在 GUI 消失/空格子。
+    #ifdef VOXEL_GI_DENOISE
+    #endif
+
     // ---- 输出 GBuffer ----
     albedoOut = vec4(albedo.rgb * vertColor, 1.0);
     #ifdef WHITE_WORLD

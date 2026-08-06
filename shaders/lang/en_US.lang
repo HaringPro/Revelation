@@ -424,10 +424,13 @@ option.DEBUG_RESHADING=DEBUG_RESHADING
 option.DEBUG_SKY_MAP=DEBUG_SKY_MAP
 option.DEBUG_VOXEL_GI=DEBUG_VOXEL_GI
 option.DEBUG_VOXEL_RADIANCE=DEBUG_VOXEL_RADIANCE
+option.VOXEL_GI_ENABLED=Voxel Global Illumination
+option.VOXEL_GI_ENABLED.comment=Voxel GI: IRC propagation + per-pixel ray tracing. Single switch (VOXEL_GI_TRACE merged into this). Denoise controlled by VOXEL_GI_DENOISE.
+
+option.VOXEL_GI_DENOISE=Voxel GI Denoise
+option.VOXEL_GI_DENOISE.comment=Spatio-temporal variance-guided filtering for voxel GI ray tracing. Disable to show raw half-res checkerboard signal (noisy).
 option.VOXEL_GI_BLENDED_LIGHTMAP=Blended Lightmap
 option.VOXEL_GI_BLENDED_LIGHTMAP.comment=Blend between vanilla lightmap and voxel GI (1.0 = keep vanilla lighting, 0.0 = mask vanilla lightmap, indirect light comes from voxel GI only)
-option.VOXEL_GI_TRACE=Voxel Ray Tracing
-option.VOXEL_GI_TRACE.comment=Trace one random ray per pixel through the voxel grid for sharp single-bounce GI (sun bounce, near occlusion, colored bounce); noise converges via TAA
 
 option.VOXEL_TRACE_SUN_STRENGTH=Sun Bounce Strength
 option.VOXEL_TRACE_SUN_STRENGTH.comment=Strength of the sun bounce in per-pixel diffuse tracing (light reflected from sunlit surfaces into shadow). Too low = dark shadows, too high = overexposed.

@@ -143,7 +143,8 @@ const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937);
 
 /* Global Illumination */
 	//#define SSILVB_ENABLED
-	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering
+	#define SVGF_ENABLED // Enables spatiotemporal variance-guided filtering（SSILVB 降噪）
+	#define VOXEL_GI_DENOISE  // 光追降噪开关（SVGF 时域+空间）；注释此行或 GUI 关闭即关闭光追降噪
 
 	#define SSPT_ENABLED // Enables screen-space path tracing
 	#define RSM_ENABLED // Enables reflective shadow maps
@@ -320,8 +321,10 @@ const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937);
 	// #define DEBUG_TONE_MAPPING_PLOT
 	// #define DEBUG_KILL_RIPPLE_GRID
 	// #define FORCE_DISABLE_SUBGROUP_OPS
+	// [FIX 2026-08-06 合并] 体素 GI = 单一开关（原 VOXEL_GI_ENABLED + VOXEL_GI_TRACE 已合并）：
+	// 开启 = IRC 传播 + 每像素漫反射追踪（棋盘半分辨率 + SVGF 时域累积/滤波）。
+	// 降噪由 SVGF_ENABLED 单独控制（GUI 手动开关；没开体素 GI 时 SVGF pass 自动不跑）。
 	#define VOXEL_GI_ENABLED
-	#define VOXEL_GI_TRACE  // 阶段④：每像素漫反射追踪（棋盘半分辨率 + SVGF 时域累积/滤波，噪声不再靠 TAA）
 	// ENABLE_VOXELIZATION 是 GUI 布尔开关（shaders.properties screen.voxel + profile.Default 默认开）。
 	// Iris 通过"注释/取消注释本行"来开关（setBooleanDefineValue）。要显示开关必须同时满足：
 	//   1) 本行 `#define ENABLE_VOXELIZATION`（无值，可带注释）→ 布尔选项定义锚点；

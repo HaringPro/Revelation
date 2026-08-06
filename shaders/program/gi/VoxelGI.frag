@@ -360,9 +360,9 @@ void main() {
         if (z >= VOXEL_AREA) break;
         ivec3 c = ivec3(x, y, z);
 
-        // [FIX 2026-08-06] IRC 只被每像素追踪（VOXEL_GI_TRACE）消费 → 按 TRACE 门控，
-        // 关光追后 IRC 不再运行（deferred22 也已按此条件启用；composite2 同样受益）
-        #if defined VOXEL_GI_ENABLED && defined VOXEL_GI_TRACE
+        // [FIX 2026-08-06] IRC 只被每像素追踪（合并后的 VOXEL_GI_ENABLED）消费 → 按它门控，
+        // 关体素 GI 后 IRC 不再运行（deferred22 也已按此条件启用；composite2 同样受益）
+        #ifdef VOXEL_GI_ENABLED
 
         // ---- 当前帧体素数据（begin1 已在 shadow 前清空，shadow pass 写入本帧数据）----
         vec4 vd = texelFetch(voxelDataSampler, c, 0);

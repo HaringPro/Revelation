@@ -41,7 +41,7 @@ writeonly restrict uniform image2D colorimg3;
 #include "/lib/surface/BRDF.glsl"
 #include "/lib/lighting/SSILVB.glsl"
 
-#ifdef VOXEL_GI_TRACE
+#ifdef VOXEL_GI_ENABLED
     // 体素 GI 信号源（阶段④：与 SSILVB 互斥，体素优先）：
     // IRC 采样器/查询 + 每像素漫反射追踪（VoxelTracing 内含 VoxelData/VoxelShape）
     #include "/lib/lighting/VoxelGI.glsl"
@@ -93,7 +93,7 @@ void main() {
 		vec3 viewPos = ScreenToViewPos(vec3(screenCoord, depth));
 
 		vec4 result;
-		#ifdef VOXEL_GI_TRACE
+		#ifdef VOXEL_GI_ENABLED
 			// 体素 GI 优先：信号源 = 每像素漫反射追踪（棋盘半分辨率 1 SPP，与 SSILVB 同套路：
 			// 每帧只更新 1/4 像素，时域由 Accumulate 补全；信号存 colortex3 左上象限）。
 			// 入射光（不乘 albedo）——albedo 在 DeferredLight 读回时补乘，

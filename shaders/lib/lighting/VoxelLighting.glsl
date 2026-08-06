@@ -132,7 +132,7 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // [FIX 2026-08-05] 2.0 → 8.0：阳光项去掉 rPI 后仍比方块光弱，实测"阳光反弹不可见"；
 // 8.0 让阳光反弹 ≈ 0.4×cosθ×albedo×8 达到可见量级（过亮可调回 2-5）。
 // 已暴露为 GUI 滑条（shaders.properties sliders），可在光影设置里直接调。
-#define VOXEL_TRACE_SUN_STRENGTH 8.0 // [0.5 1.0 2.0 3.0 5.0 8.0 12.0 16.0 24.0 32.0] 追踪端阳光反弹强度
+#define VOXEL_TRACE_SUN_STRENGTH 8.0 // [0.0 0.5 1.0 2.0 3.0 5.0 8.0 12.0 16.0 24.0 32.0] 追踪端阳光反弹强度
 // 追踪端出界天空（对齐 ITRP SkyLighting 语义：出界 = skyColor × pdf × lightmap 衰减，无 0.05
 // 小系数——ITRP 正是靠 lightmap 衰减防室内漏光，不是靠压低天空值）。
 // 户外（skyLightmap≥0.23）全开：开阔地面出界光线 ≈ skyColor×dir.y×weight（白天可见方向性天光）；

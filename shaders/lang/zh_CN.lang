@@ -594,10 +594,10 @@ option.VISUALIZE_VOXELS=体素可视化
 option.VISUALIZE_VOXELS.comment=用体素颜色覆盖方块反照率，直观查看体素化结果
 
 option.VOXEL_GI_ENABLED=体素全局光照
-option.VOXEL_GI_ENABLED.comment=开启基于体素的彩色光源间接光照（射线步进/注入扩散）
+option.VOXEL_GI_ENABLED.comment=开启基于体素的彩色光源间接光照（射线步进/注入扩散）；含每像素漫反射追踪
 
-option.VOXEL_GI_TRACE=体素光线追踪
-option.VOXEL_GI_TRACE.comment=每像素投随机光线穿过体素网格，获取锐利的一次弹射 GI（阳光反弹、近距离遮挡、彩色反弹）；噪声靠 TAA 时域收敛
+option.VOXEL_GI_DENOISE=光追降噪
+option.VOXEL_GI_DENOISE.comment=体素光追的 SVGF 时域+空间降噪；关闭后直接显示半分辨率棋盘信号（未降噪，较闪烁）
 
 option.VOXEL_GI_MODE=GI 传播模式
 option.VOXEL_GI_MODE.comment=0=纯漫反射注入（低配）| 1=射线步进（推荐，颜色传递更准确）

@@ -93,6 +93,15 @@ void main() {
 	uvec2 localPos = QuadLayout8x8(gl_LocalInvocationIndex);
 	ivec2 texelPos = ivec2(localPos + gl_WorkGroupID.xy * gl_WorkGroupSize.xy);
 
+	// [FIX 2026-08-06] 光追降噪关闭（settings.glsl 注释 VOXEL_GI_DENOISE）时：
+	// 透传 colortex3（保持棋盘信号，不做边缘保持滤波）。SSILVB 不受影响（非光追模式正常降噪）。
+	#ifdef VOXEL_GI_ENABLED
+		#ifndef VOXEL_GI_DENOISE
+			imageStore(colorimg3, texelPos, imageLoad(colorimg3, texelPos));
+			return;
+		#endif
+	#endif
+
 	f16vec3 normalDepthData = f16vec3(texelFetch(colortex14, texelPos, 0).rgb);
 	// vec2 depthGradient = vec2(dFdx(normalDepthData.w), dFdy(normalDepthData.w));
 

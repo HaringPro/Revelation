@@ -528,7 +528,7 @@ void main() {
     sceneOut += LightningContribution(worldPos, worldNormal);
 
     #ifdef SSILVB_ENABLED
-        #ifndef VOXEL_GI_TRACE  // 与体素 GI 互斥（体素优先）：两者共用 colortex3 信号源，避免重复叠加
+        #ifndef VOXEL_GI_ENABLED  // 与体素 GI 互斥（体素优先）：两者共用 colortex3 信号源，避免重复叠加
             #ifdef SVGF_ENABLED
                 vec3 radiance = UpscaleDiffuseIndirect(texelPos, worldNormal, length(viewPos), abs(dot(worldNormal, worldDir)));
             #else
@@ -587,11 +587,16 @@ void main() {
                 // 经 SVGF 时域累积 + 边缘保持滤波后在此读回；此处补乘 albedo×强度，
                 // 与旧全分辨率路径（VoxelTracePixel × albedo × STRENGTH）视觉语义一致。
                 vec3 voxelGI = vec3(0.0);
-                #ifdef VOXEL_GI_TRACE
-                    #ifdef SVGF_ENABLED
-                        // UpscaleDiffuseIndirect 返回 YCoCg 空间信号（colortex3 全链路 YCoCg），须显式转回 RGB
-                        voxelGI = YCoCgToRGB(UpscaleDiffuseIndirect(texelPos, worldNormal, length(viewPos), abs(dot(worldNormal, worldDir))));
+                #ifdef VOXEL_GI_ENABLED
+                    #ifdef VOXEL_GI_DENOISE
+                        #ifdef SVGF_ENABLED
+                            // UpscaleDiffuseIndirect 返回 YCoCg 空间信号（colortex3 全链路 YCoCg），须显式转回 RGB
+                            voxelGI = YCoCgToRGB(UpscaleDiffuseIndirect(texelPos, worldNormal, length(viewPos), abs(dot(worldNormal, worldDir))));
+                        #else
+                            voxelGI = YCoCgToRGB(texelFetch(colortex3, texelPos >> 1, 0).rgb);
+                        #endif
                     #else
+                        // 光追降噪关闭：直接读 colortex3 半分辨率棋盘信号（未降噪）
                         voxelGI = YCoCgToRGB(texelFetch(colortex3, texelPos >> 1, 0).rgb);
                     #endif
                     voxelGI *= albedo * VOXEL_GI_TRACE_STRENGTH;

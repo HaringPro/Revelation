@@ -2,7 +2,11 @@
 // SVGF Upscale Diffuse Indirect (轻量稳定版，已移除体积雾及非必要宏)
 //================================================================================================//
 #if defined PASS_DEFERRED_LIGHTING
-#if defined SVGF_ENABLED && (defined SSILVB_ENABLED || defined VOXEL_GI_TRACE)
+// [FIX 2026-08-06] 改为单独 #if defined SVGF_ENABLED（原复合条件 `#if defined SVGF_ENABLED &&
+// (defined SSILVB_ENABLED || defined VOXEL_GI_ENABLED)` 会破坏 Iris 对布尔宏 SVGF_ENABLED 的
+// 扫描 → GUI 开关无法真正注释/取消注释 settings.glsl 的 #define → 关掉 SVGF 降噪仍生效）。
+// SSILVB/体素 GI 的调用点已由 DeferredLight 各自的 #ifdef 控制，函数多定义无害（未用即被优化）。
+#if defined SVGF_ENABLED
 
 // 【唯一保留的可调参数】
 // 深度容差平滑度：越接近 0.0 跨越物体的边界越平滑（越不闪），越负则边缘越锐利但易闪烁。

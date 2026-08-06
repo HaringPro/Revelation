@@ -173,6 +173,14 @@ void main() {
     integratedDiffuse = vec4(0.0);
     encodedNormalDepth = vec3(0.0);
 
+    // [FIX 2026-08-06] 光追降噪关闭（settings.glsl 注释 VOXEL_GI_DENOISE）时跳过时域累积：
+    // 不写 colortex2/14（DeferredLight 走 texelFetch 半分辨率棋盘，不依赖它们）。
+    #ifdef VOXEL_GI_ENABLED
+        #ifndef VOXEL_GI_DENOISE
+            return;
+        #endif
+    #endif
+
     if (terrainCheck) {
         #if defined LOD_MOD
             if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));

@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Get-ChildItem \"shaders\\\\world0\" -Filter \"\\*\\.fsh\" \\| ForEach-Object \\{ \\$c = Get-Content \\$_\\.FullName -Encoding UTF8; \\$rt = \\(\\$c \\| Where-Object \\{ \\$_ -match 'RENDERTARGETS' \\}\\) -join ' \\| '; \"\\$\\(\\$_\\.Name\\) :: \\$rt\" \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
