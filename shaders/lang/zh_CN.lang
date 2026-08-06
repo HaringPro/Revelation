@@ -590,9 +590,6 @@ option.WHERE_TO_VOXELIZE.comment = 1-Gbuffers. 2-Shadow pass
 option.VOXELIZATION=体素化
 option.VOXELIZATION.comment=体素化与全局光照系统
 
-option.ENABLE_VOXELIZATION=体素化注入
-option.ENABLE_VOXELIZATION.comment=将方块颜色与材质数据写入 3D 体素纹理（64×64×64）
-
 option.VISUALIZE_VOXELS=体素可视化
 option.VISUALIZE_VOXELS.comment=用体素颜色覆盖方块反照率，直观查看体素化结果
 

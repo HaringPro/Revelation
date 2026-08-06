@@ -63,7 +63,7 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 #endif
 
 // ------ 传播配置（ITRP 风格 IRC 随机注入）------
-#define VOXEL_GI_SELF_BOUNCE 0.25      // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8] 自反弹衰减比（光线命中点取前帧 IRC）
+#define VOXEL_GI_SELF_BOUNCE 0.5       // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8] 自反弹衰减比（光线命中点取前帧 IRC）
 #define VOXEL_GI_EMISSIVE_THRESHOLD 0.1 // [0.0 0.01 0.02 0.05 0.1 0.2] 发射度阈值（LabPBR 发射贴图，太低会把矿物误判为发光体）
 #define VOXEL_GI_BOOST 1.5              // [0.5 1.0 1.5 2.0 3.0 4.0] 发射体素能量倍率
 // 发射光球形光距离衰减（照抄 ITRP 语义的补充，2026-08-04 #8）：远场（16 格外）偶发
@@ -103,9 +103,13 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // 量级链路：注入 nRC → ×100 存储 → 查询 ×0.01 解码，最终 ≈ 注入值 × albedo × STRENGTH
 // 2026-08-04 真阳光改造（照抄 ITRP 思路）：阳光注入主体改为"阴影贴图判定直射"（sunVis），
 // vanilla 天空光 lightmap 降级为弱环境底，保留洞穴渐变。
-#define VOXEL_GI_SUN_STRENGTH 0.1      // 真阳光直射注入倍率（× skyColor × sunVis，sunVis 由阴影贴图判定）
-#define VOXEL_GI_SKY_STRENGTH 0.02     // 环境天空注入倍率（× skyColor × 天空 lightmap，弱底/洞穴渐变）
+#define VOXEL_GI_SUN_STRENGTH 0.5      // 真阳光直射注入倍率（× sunLight 暖阳色，2026-08-06 对齐 ITRP sunLight 后提亮，让阳光反弹传播到阴影）
+#define VOXEL_GI_SKY_STRENGTH 0.15    // 环境天空注入倍率（× skyColor × 天空 lightmap，弱底/洞穴渐变）
 #define VOXEL_GI_BLOCK_STRENGTH 0.8    // 方块光注入倍率（× blocklightColor，火把等光源）
+// [FIX 2026-08-06] 方块光反弹的最小 albedo 底：薄片/流体光源（发光地衣、岩浆）的
+// voxelData 中心色 midCoord 采样可能为 0/很暗（贴图大部分透明黑）→ albedo 乘进
+// blocklight 后趋 0 → 光源不发光。给 blocklight 反弹一个不依赖采样色的最小 albedo。
+#define VOXEL_GI_BLOCK_MIN_ALBEDO 0.5 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0] 方块光反弹最小 albedo 底
 // NOLIGHT 兜底（ITRP NOLIGHT_BRIGHTNESS 思路）：命中固体/出界外的闭塞处底光，
 // 洞穴深处不黑死。ITRP 默认 7e-6 是物理尺度（白天物理辐照度 ~300），
 // 本项目 0-1 尺度（skyColor 白天 ~0.1 级注入），等效底光取 0.0005（可调）。
@@ -134,5 +138,6 @@ vec2 VoxelTexel_From_VoxelCoord(vec3 voxelCoord) {
 // 户外（skyLightmap≥0.23）全开：开阔地面出界光线 ≈ skyColor×dir.y×weight（白天可见方向性天光）；
 // 洞穴/室内被 sat(skyLightmap*4.44) 压到 0，不会过量。若整体过亮用 VOXEL_GI_TRACE_STRENGTH 旋钮。
 #define VOXEL_GI_TRACE_SKY_STRENGTH 1.0
+// （新增环境光控制宏已移除 2026-08-06：环境光还原旧版纯 skySH 行为）
 
 #endif // VOXEL_GI_LIGHTING_INCLUDED

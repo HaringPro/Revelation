@@ -346,6 +346,8 @@ vec3 AtmosphereSkyView(vec3 viewPos, vec3 rayDir, vec3 sunDir) {
     vec3 up = viewPos / height;
 
 	float viewZenithCos = dot(rayDir, up);
+	// [临时还原 2026-08-06 奇点修复] 用回旧版 normalize(cross(up,rayDir))，
+	// 用于对比 skySH/环境光是否受奇点修复影响（测试完决定保留或恢复）。
 	vec3 sideVector = normalize(cross(up, rayDir));
 	vec3 forwardVector = normalize(cross(sideVector, up));
 

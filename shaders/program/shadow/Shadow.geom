@@ -100,7 +100,12 @@ void main() {
         if (all(bvec3(
             clamp(voxelCoord, vec3(0.0), vec3(float(VOXEL_AREA) - 1.0)) == voxelCoord,
             g_notInVoxel[0] + g_notInVoxel[1] + g_notInVoxel[2] < 0.5,
+            // [FIX 2026-08-06] 发光地衣（materialID=32）是 CUTOUT 渲染阶段，原分支
+            // （SOLID/TRANSLUCENT）会把它排除在体素外 → 地衣没有体素数据 → 不照亮周围。
+            // 只对 CUTOUT 阶段的光源块（voxelID==32）放行；草/花/门等普通 CUTOUT 方块
+            // 仍不进体素（避免幻影块，ITRP 同语义）。
             renderStage == MC_RENDER_STAGE_TERRAIN_SOLID || renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
+            || (renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT && g_voxelID[0] == 32.0)
         ))) {
             // midCoord = 三角形纹理包围盒中心（ITRP 语义；消费端 GetAtlasCoord 做精确纹素定位）
             vec2 maxTexCoord = max(texCoord[0], max(texCoord[1], texCoord[2]));
@@ -120,7 +125,10 @@ void main() {
                 if (!isFullBlock) return;
             }
             // 发光检测：材料 ID 硬编码 [20,31]（block.properties block.10020-10031，不经 LabPBR 发射贴图）
-            float emissive = (voxelID >= 20.0 && voxelID <= 31.0) ? 0.995 : 0.0;
+            // [FIX 2026-08-06] 补充岩浆（7，TRANSLUCENT）与发光地衣（32，CUTOUT）为发射体素：
+            // 原版方块光 lightmap 关闭时，岩浆/地衣不再靠 blocklight 反弹（依赖 albedo 中心色）发光，
+            // 而是作为发射源像火把一样照亮周围。消费端 VoxelLightColor 已扩展对应颜色。
+            float emissive = ((voxelID >= 20.0 && voxelID <= 31.0) || voxelID == 7.0 || voxelID == 32.0) ? 0.995 : 0.0;
             float skylight = g_mcLightLevel[0].y * 0.33333333 + g_mcLightLevel[1].y * 0.33333333 + g_mcLightLevel[2].y * 0.33333333;
             float blocklight = g_mcLightLevel[0].x * 0.33333333 + g_mcLightLevel[1].x * 0.33333333 + g_mcLightLevel[2].x * 0.33333333;
 

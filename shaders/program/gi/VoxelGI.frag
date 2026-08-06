@@ -82,11 +82,40 @@ vec3 FetchPrevRadiance(ivec3 c) {
         : texelFetch(voxelRadianceSampler, c, 0)).rgb * 0.01;
 }
 
+// Phase 1：读取上一帧天空曝光度（voxelRadiance alpha，0-1；越界=0）
+float FetchPrevExposure(ivec3 c) {
+    if (any(lessThan(c, ivec3(0))) || any(greaterThanEqual(c, ivec3(VOXEL_AREA)))) return 0.0;
+    return ((frameCounter & 1) == 0
+        ? texelFetch(voxelRadiance2Sampler, c, 0)
+        : texelFetch(voxelRadianceSampler, c, 0)).a;
+}
+
 // 天空光颜色：用 0-1 尺度的 skyColor（自带昼夜/日出日落着色）。
 // 注意：不能用 global.skyUpIlluminance —— 它是 ×128 的物理辐照度（白天约 300），
 // 用它做注入会让洞穴整体爆亮（实测教训）。
 vec3 VoxelSkyColor() {
     return skyColor;
+}
+
+// ITRP 同款简化 SimpleShadow（2026-08-06）：命中体素是否被太阳照亮（阴影贴图判定）。
+// 用户发现"洞穴白天亮度受阳光反弹控制"的根因：阳光注入只靠 hitSkylight（原版 lightmap），
+// 洞穴口 hitSkylight 不为 0 → 阳光漏入洞穴。加阴影贴图判定后，洞穴/背阴体素 sunVis=0
+// → 不注入阳光。camRelPos = 相机相对世界坐标（体素坐标 − Cf − R，ITRP IRC_CS L498 同款）。
+uniform sampler2DShadow shadowtex1;
+
+float VoxelGI_SunVisible(vec3 camRelPos) {
+    if (sunPosition.y < 0.01) return 0.0;
+    vec3 shadowClipPos = (shadowModelView * vec4(camRelPos, 1.0)).xyz;
+    shadowClipPos = (shadowProjection * vec4(shadowClipPos, 1.0)).xyz;
+    vec3 ssp = DistortShadowSpace(shadowClipPos) * 0.5 + 0.5;
+    #ifdef ENABLE_VOXELIZATION
+        ShiftShadowScreenPos(ssp.xy);
+    #endif
+    ssp.z -= 4e-5;
+    if (all(equal(ssp, saturate(ssp)))) {
+        return textureLod(shadowtex1, vec3(ssp.xy, ssp.z), 0.0).x > 0.5 ? 1.0 : 0.0;
+    }
+    return 1.0;
 }
 
 // 单个体素的 IRC 随机注入（照抄 ITRP IRC_CS 语义）：
@@ -100,12 +129,14 @@ vec3 VoxelSkyColor() {
 //   命中固体 → 发射光 + 方块光 + 真阳光（rPI 方向项 × 阴影判定）+ 自反弹 + NOLIGHT 兜底
 // - 透明体素（负 ID）自动穿透（DDA 判空 z>0.5 只挡正 ID 固体）
 // c = 当前体素坐标；cDi = 相机重投影；返回 0-1 空间累计值（未 ×100、未时间混合）。
-vec3 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
+// 返回 vec4：rgb = 辐照度（0-1），a = 天空曝光度（0-1，Phase 1：向上出界样本占比）
+vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
     // 每帧换种子（triple32 为完美整数哈希；frameCounter+1 避免第 0 帧全 0 种子）
     uint seed = triple32(uint(c.x + c.y * VOXEL_AREA + c.z * VOXEL_AREA * VOXEL_AREA) * 0x9E3779B1u
                          + uint(frameCounter + 1) * 0x85EBCA77u);
 
     vec3 result = vec3(0.0);
+    float exposure = 0.0; // Phase 1：该体素的天空曝光累积（向上出界样本数）
     vec3 voxelPos = vec3(c) + 0.5;
     // 世界空间太阳方向（shadowModelViewInverse 为纯旋转矩阵，第三行=第三列）
     vec3 sunDir = mat3(shadowModelViewInverse) * vec3(0.0, 0.0, 1.0);
@@ -245,16 +276,27 @@ vec3 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             vec3 alb = vec3(hvd.r, hvd.g, VoxelUnpack2xU8X(hvd.w));
 
             // 方块光兜底（仅非发射光源体素，避免白色方块光盖掉彩色发射色）
+            // [FIX 2026-08-06] 薄片/流体光源中心色可能为 0 → 用 min albedo 底（同追踪端）
             if (lD.y > 0.01)  // 新字节序：G=blocklight
-                contrib += alb * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
+                contrib += max(alb, vec3(VOXEL_GI_BLOCK_MIN_ALBEDO)) * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
             // 真阳光：rPI 方向项（hitNormal 为命中面法线）× 命中体素天空 lightmap
             // 平滑衰减（SUNLIGHT_LEAK_FIX；不用阴影贴图硬判定，避免阴影边缘 0/1 跳变）
             // [FIX 2026-08-05] 门限改用 voxelData.w 写胜 skylight（同追踪端/ITRP 一致）：
             // lD.x 来自 imageAtomicMax 的 voxelLightData，sky 是最低字节被高位压掉 → 恒 0。
             float hitSkylight = VoxelUnpack2xU8Y(hvd.w);
             float sunLighting = saturate(dot(sunDir, hitNormal)) * rPI * saturate(hitSkylight * 444.0);
-            contrib += alb * VoxelSkyColor() * (sunLighting * VOXEL_GI_SUN_STRENGTH
-                                                + hitSkylight * VOXEL_GI_SKY_STRENGTH) * absorption;
+            // [FIX 2026-08-06 ITRP 同款阳光色] 阳光项用暖阳色 sunLight（sunIrradiance 暖白
+            // ×128×rcp(300) 归一化到 0-1，白天≈0.43，对齐 ITRP IRC_CS 的 sunLight/黑体色温 + 追踪端
+            // directIlluminance），不再是天空蓝 VoxelSkyColor——蓝天空色导致阳光反弹偏蓝且暗，
+            // 是阴影不亮的关键 bug 之一。天空光（天光）单独用 skyColor 保留。
+            vec3 sunLight = sunIrradiance * 128.0 * rcp(VOXEL_SUN_REFERENCE);
+            // [FIX 2026-08-06 ITRP 同款 SimpleShadow] 命中体素真被太阳照亮才注入阳光
+            //（阴影贴图判定）：洞穴/背阴体素 sunVis=0 → 不注入 → 洞穴白天不再因阳光反弹而亮
+            //（用户发现"洞穴亮度受阳光反弹控制"的根因）。hitWorldPos = camrel（ITRP L498 同款）。
+            vec3 hitWorldPos = vec3(hc) - cameraPositionFract - float(VOXEL_RADIUS);
+            float sunVis = VoxelGI_SunVisible(hitWorldPos);
+            contrib += alb * sunLight * sunLighting * sunVis * VOXEL_GI_SUN_STRENGTH * absorption;
+            contrib += alb * VoxelSkyColor() * hitSkylight * VOXEL_GI_SKY_STRENGTH * absorption;
             // 自反弹：前帧 IRC 在命中点的值（相机重投影；FetchPrevRadiance 内含 ×0.01 解码）
             contrib += alb * FetchPrevRadiance(hit + cDi) * VOXEL_GI_SELF_BOUNCE * absorption;
             hitSolid = true;
@@ -262,22 +304,26 @@ vec3 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
         }
 
         if (!hitSolid) {
-            // 出界或射程用尽 → 天空 + NOLIGHT 兜底（照抄 ITRP IRC_CS L402/L514-515）：
-            // 天空 × sat(hitSkylight * 4.44)（SUNLIGHT_LEAK_FIX 阈值 0.23，与追踪端同口径；
-            // 半砖/室内微光格 lD.y≈0.1-0.2 时压到 ~0，露天全开）。注意：之前误用
-            // sat(hitSkylight*2-1)（阈值 0.5）——那是 ITRP 的 PT_IRC_INITIAL_SKYLIGHT
-            // 播种阈值，不是出界天空衰减阈值，且与追踪端不一致（两端口径必须统一）。
-            contrib += VoxelSkyColor() * saturate(dir.y * 2.0 + 0.3)
-                     * saturate(hitSkylight * 4.44) * absorption;
+            // 出界 → 天空 + NOLIGHT 兜底：回退简单 VoxelSkyColor（AtmosphereSkyView 方案无效
+            // 移除 2026-08-06）；ITRP 式方向衰减 sat(dir.y*25+0.5) × sat(hitSkylight*4.44)
+            // [FIX 2026-08-06 Phase2] leak 门控方向化（同追踪端）：向上出界信任网格几何
+            //（光线真逃逸到天空就贡献完整天光），侧向/朝下模糊出界保留原版 lightmap 压制
+            // 防洞穴漏光。修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被压死。
+            float leakGate = saturate(hitSkylight * 4.44);
+            float skyTrust = mix(leakGate, 1.0, smoothstep(0.0, 0.4, dir.y));
+            contrib += VoxelSkyColor() * saturate(dir.y * 25.0 + 0.5)
+                     * skyTrust * absorption;
             // NOLIGHT 底光（ITRP 出界路径专有：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)；
             // 命中路径无此项，闭塞处底光由自反弹/方块光链路提供）
             contrib += vec3(0.97, 0.99, 1.18) * VOXEL_NOLIGHT_BRIGHTNESS
                      * saturate(rayLen * 0.2) * absorption;
+            // Phase 1：该样本向上出界（dir.y>0.1）→ 该体素可见天空，计入曝光度
+            if (dir.y > 0.1) exposure += 1.0;
         }
         result += contrib * rcpPdf;
     }
 
-    return result * rcp(float(VOXEL_IRC_SPP));
+    return vec4(result * rcp(float(VOXEL_IRC_SPP)), exposure * rcp(float(VOXEL_IRC_SPP)));
 }
 
 //======// Main //================================================================================//
@@ -314,14 +360,13 @@ void main() {
         if (z >= VOXEL_AREA) break;
         ivec3 c = ivec3(x, y, z);
 
-        #ifdef VOXEL_GI_ENABLED
+        // [FIX 2026-08-06] IRC 只被每像素追踪（VOXEL_GI_TRACE）消费 → 按 TRACE 门控，
+        // 关光追后 IRC 不再运行（deferred22 也已按此条件启用；composite2 同样受益）
+        #if defined VOXEL_GI_ENABLED && defined VOXEL_GI_TRACE
 
         // ---- 当前帧体素数据（begin1 已在 shadow 前清空，shadow pass 写入本帧数据）----
         vec4 vd = texelFetch(voxelDataSampler, c, 0);
         bool sld = vd.z > 0.5; // voxelID 原值（>0 即固体，0=空气）
-
-        // blocker：1=空（查询端半权重参与），0=固体
-        float blk = sld ? 0.0 : 1.0;
 
         // ---- IRC 随机注入（照抄 ITRP：只对非空气体素注入）----
         // ITRP 语义：IRC 网格存"体素表面辐照度"，空气体素 alpha=1 标记遮挡、不注入。
@@ -330,8 +375,11 @@ void main() {
         //（旧实现：空体素全方向注入 = "空气辐照度场"，查询端被空气邻居稀释 → GI
         // 看不见，语义与 ITRP 完全不同）。
         vec3 nRC = vec3(0.0);
+        float nExp = 0.0; // Phase 1：本帧天空曝光度
         if (sld) {
-            nRC = IrcTraceVoxel(c, cDi);
+            vec4 irc = IrcTraceVoxel(c, cDi);
+            nRC = irc.rgb;
+            nExp = irc.a;
         }
 
         // ---- 上一帧辐照度（带相机重投影）----
@@ -346,6 +394,9 @@ void main() {
         // 播种天空值让前缘格从一开始就稳定；空气格保持 0（不写入无用值）。
         vec3 pRC = pValid ? FetchPrevRadiance(prevC)
                           : (sld ? VoxelSkyColor() * VOXEL_IRC_EDGE_SEED : nRC);
+        // Phase 1：上一帧天空曝光度（新暴露固体格播种 VOXEL_IRC_EDGE_SEED，避免移动前缘闪）
+        float pExp = pValid ? FetchPrevExposure(prevC)
+                            : (sld ? VOXEL_IRC_EDGE_SEED : nExp);
 
         // 旧帧全黑（冷启动 / 相机大幅移动新暴露）→ 直接写本帧值（等价 bw=0）。
         // 0.99 混合下每帧仅接受 1% 新值，若无此播种首次进入场景会黑屏 100+ 帧
@@ -355,13 +406,14 @@ void main() {
 
         // ---- 时间混合（实体/空体素统一；IRC 随机采样靠时域累积降噪）----
         nRC = max(mix(nRC, pRC, localBw), 1e-7);
+        nExp = mix(nExp, pExp, localBw); // Phase 1：曝光度同样时域混合
 
         // ---- 保色压缩：任一分量 >1.0 时按最大分量整体缩放，保持色相不漂白 ----
         float maxC = max(max(nRC.r, nRC.g), nRC.b);
         if (maxC > 1.0) nRC *= 1.0 / maxC;
 
-        // ---- 写入 ×100 ----
-        vec4 o = vec4(nRC * 100.0, blk);
+        // ---- 写入 ×100（alpha 复用为天空曝光度；原 blk=1 空标记仅 DEBUG 用，废弃）----
+        vec4 o = vec4(nRC * 100.0, nExp);
         if ((frameCounter & 1) == 0)
             imageStore(voxelRadiance, c, o);
         else

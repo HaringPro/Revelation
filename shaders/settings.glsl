@@ -320,10 +320,15 @@ const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937);
 	// #define DEBUG_TONE_MAPPING_PLOT
 	// #define DEBUG_KILL_RIPPLE_GRID
 	// #define FORCE_DISABLE_SUBGROUP_OPS
-	#define ENABLE_VOXELIZATION
-	//#define VISUALIZE_VOXELS
 	#define VOXEL_GI_ENABLED
 	#define VOXEL_GI_TRACE  // 阶段④：每像素漫反射追踪（棋盘半分辨率 + SVGF 时域累积/滤波，噪声不再靠 TAA）
+	// ENABLE_VOXELIZATION 是 GUI 布尔开关（shaders.properties screen.voxel + profile.Default 默认开）。
+	// Iris 通过"注释/取消注释本行"来开关（setBooleanDefineValue）。要显示开关必须同时满足：
+	//   1) 本行 `#define ENABLE_VOXELIZATION`（无值，可带注释）→ 布尔选项定义锚点；
+	//   2) 存在单独一行的 `#ifdef ENABLE_VOXELIZATION` 引用（Terrain.frag 可视化块 + Shadow 系列）。
+	//   缺任一 → GUI 只占位不显示（"空格子"）。注意不能用 `#if defined A && defined B` 复合条件。
+	#define ENABLE_VOXELIZATION  // 体素化：shadow pass 直写 voxelData（3D 纹理）；关闭则无 GI
+	//#define VISUALIZE_VOXELS
 	//#define DEBUG_VOXEL_GI  // 调试：黄=光源体素 绿=接收 GI（链路末端，查询）
 	//#define DEBUG_VOXEL_RADIANCE  // 调试：直接显示传播后的体素辐照度（验证"体素化+传播"链路）
 	#include "/lib/lighting/VoxelLighting.glsl"

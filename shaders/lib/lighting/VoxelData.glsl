@@ -107,6 +107,10 @@ vec3 VoxelLightColor(float voxelID) {
         if (id == 30) return vec3(1.00);              // 信标
         return vec3(0.40, 0.90, 0.90);                // 31：幽匿/幽匿感测体
     }
+    // [FIX 2026-08-06] 岩浆/发光地衣发射色（Shadow.geom 已把它们加入发射区）：
+    // 原版方块光 lightmap 关闭后岩浆/地衣作为体素发射源照亮周围，固定暖色/绿色。
+    if (voxelID == 7.0) return vec3(1.00, 0.45, 0.18);   // 岩浆
+    if (voxelID == 32.0) return vec3(0.55, 0.95, 0.35);  // 发光地衣
     return vec3(1.0); // 兜底：白色（非发射体素不会走到此路径）
 }
 

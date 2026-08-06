@@ -459,14 +459,8 @@ void main() {
     #ifndef SSILVB_ENABLED
         if (lightmap.y > EPS) {
             float lm3 = cube(lightmap.y);
-            vec3 skyAmbient = ConvolvedReconstructSH3(global.skySH, worldNormal) * lm3;
-            skyAmbient += CalculateFakeBouncedLight(worldNormal) * lm3 * (lightmap.y * lightmap.y) * sunlightBase;
-            // 体素 GI 开启时：按 VOXEL_GI_BLENDED_LIGHTMAP 混合原版天空 Lightmap
-            // （0.0=完全屏蔽原版，间接光照仅由体素 GI 提供；1.0=完全保留）
-            #ifdef VOXEL_GI_ENABLED
-                skyAmbient *= VOXEL_GI_BLENDED_LIGHTMAP;
-            #endif
-            ambientAccum += skyAmbient;
+            ambientAccum += ConvolvedReconstructSH3(global.skySH, worldNormal) * lm3;
+            ambientAccum += CalculateFakeBouncedLight(worldNormal) * lm3 * (lightmap.y * lightmap.y) * sunlightBase;
         }
     #endif
 
@@ -494,7 +488,7 @@ void main() {
         }
     #endif
 
-    // 应用环境光亮度与颜色控制
+    // 应用环境光亮度与颜色控制（还原旧版：完整 AO，无 mix 门控，无额外 skySH 叠加）
     sceneOut += ambientAccum * finalAo * AMBIENT_BRIGHTNESS_MULTIPLIER * AMBIENT_COLOR_TINT;
 
     // ====== Emissive & Blocklight ======
@@ -577,7 +571,7 @@ void main() {
             // 单点诊断：整屏显示"玩家所在体素"（网格坐标恒为 VOXEL_RADIUS）的传播缓存，
             // 逐帧演化 = 时间混合/衰减的直观读数（只回答"缓存是否在衰减"这一个问题）。
             // R = 传播缓存（×100 原始值 ×0.5：nRC≈0.08 → 4 饱和红；≈0.004 → 0.2 暗红）
-            // B = alpha（1=空体素；蓝调 = 该空体素已被传播端写入）
+            // B = 天空曝光度 alpha（0-1，光追自算；蓝调越亮 = 该格可见天空程度越高）
             // 注意：查询坐标系 = 相机相对 + VOXEL_RADIUS（与体素化端一致）。
             // 本函数的 worldPos 在 L215 已被改成绝对坐标，此处不能用；
             // 玩家相机自身在网格中的坐标恒为 VOXEL_RADIUS，直接查询即可。

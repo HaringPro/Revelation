@@ -156,8 +156,10 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         vec3 alb = vec3(hvd.r, hvd.g, VoxelUnpack2xU8X(hvd.w));
 
         // 方块光兜底（普通固体格带原版方块光）
+        // [FIX 2026-08-06] 薄片/流体光源（发光地衣/岩浆）voxelData 中心色可能为 0 →
+        // albedo 乘进 blocklight 后趋 0 不发光；用 min albedo 底，不依赖采样色。
         if (lD.y > 0.01)  // 新字节序：G=blocklight
-            contrib += alb * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
+            contrib += max(alb, vec3(VOXEL_GI_BLOCK_MIN_ALBEDO)) * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
         // 真阳光弹射：命中面法线方向项 + 天空 lightmap 平滑衰减（SUNLIGHT_LEAK_FIX）
         // 阳光色 = 物理直射辐照度 × rcp(VOXEL_SUN_REFERENCE)（0-1 尺度，自带昼夜明暗 + 暖色温）。
         // 不能用 skyColor——它是天空蓝（环境色），与出界天空路径同色 → 反弹混进环境光里
@@ -201,9 +203,15 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
     // - NOLIGHT 兜底：出界路径专有（ITRP L345：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)）
     // 射程用尽：仅返回发射光球形累积 + 底光。主底光仍由 IRC 阳光扩散提供。
     if (exitGrid) {
-        if (dir.y > 0.05)
-            contrib += skyColor * saturate(dir.y * 2.0 + 0.3)
-                     * saturate(skyLightmap * 4.44) * VOXEL_GI_TRACE_SKY_STRENGTH * absorption;
+        // 出界天空：回退简单 skyColor（AtmosphereSkyView 方案 2026-08-06 无效已移除）；
+        // ITRP 式方向衰减 sat(dir.y*25+0.5) + SUNLIGHT_LEAK_FIX × sat(skyLightmap*4.44)
+        // [FIX 2026-08-06 Phase2] leak 门控方向化：向上出界信任网格几何（光线真逃逸到
+        // 天空就贡献完整天光），侧向/朝下模糊出界保留原版 lightmap 压制防洞穴漏光。
+        // 修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被原版 lightmap 压死。
+        float leakGate = saturate(skyLightmap * 4.44);
+        float skyTrust = mix(leakGate, 1.0, smoothstep(0.0, 0.4, dir.y));
+        contrib += skyColor * saturate(dir.y * 25.0 + 0.5)
+                 * skyTrust * VOXEL_GI_TRACE_SKY_STRENGTH * absorption;
         contrib += blocklightColor * blockLightmap * VOXEL_GI_BLOCK_STRENGTH * absorption;
     }
     contrib += vec3(0.97, 0.99, 1.18) * VOXEL_NOLIGHT_BRIGHTNESS * saturate(rayLength * 0.2) * absorption;

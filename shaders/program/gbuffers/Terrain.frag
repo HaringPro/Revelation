@@ -192,7 +192,10 @@ void main() {
     #endif
 
     // --- Voxel Visualization Injection ---
+    // 嵌套单独 #ifdef（Iris 选项扫描只识别单独的 `#ifdef X`，不能用 `#if defined A && defined B`
+    // 复合条件——会跳过整行导致 VISUALIZE_VOXELS 与 ENABLE_VOXELIZATION 两个开关都消失）
     #ifdef VISUALIZE_VOXELS
+        #ifdef ENABLE_VOXELIZATION
         {
             // 读取体素数据（atlas 引用格式，RGBA16）并按相机位移重投影。
             // 数据为本帧（gbuffers 边写边读，边缘可能闪烁；调试功能，默认关闭）
@@ -205,6 +208,7 @@ void main() {
                 }
             }
         }
+        #endif
     #endif
 
     // ---- 输出 GBuffer ----
