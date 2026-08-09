@@ -14,7 +14,9 @@
 
 //======// Output //==============================================================================//
 
-layout (location = 0) out vec3 shadowcolor0Out;
+// [2026-08-09] vec3 → vec4：a 存纹理不透明度，供阳光反弹的 AlbedoToAbsorption
+// 计算彩色阴影（ITRP SimpleShadow 同款：玻璃等半透明物体会给反弹光线染色）。
+layout (location = 0) out vec4 shadowcolor0Out;
 layout (location = 1) out vec4 shadowcolor1Out;
 
 //======// Input //===============================================================================//
@@ -110,10 +112,12 @@ void main() {
     const float alphaThresh = 1.0 - rcp255;
 
     if (albedo.a > alphaThresh) {
-        shadowcolor0Out = albedo.rgb * vectorDataOut;
+        shadowcolor0Out = vec4(albedo.rgb * vectorDataOut, 1.0);
     } else {
+        // a 存原始纹理不透明度（吸收计算用）；rgb 保持原有混合（PCSS 彩色阴影视觉不变）
+        float opacity = albedo.a;
         albedo.a = approxSqrt(approxSqrt(albedo.a));
-        shadowcolor0Out = mix(vec3(albedo.a), albedo.rgb * vectorDataOut, albedo.a);
+        shadowcolor0Out = vec4(mix(vec3(albedo.a), albedo.rgb * vectorDataOut, albedo.a), opacity);
     }
 
     shadowcolor1Out.w = 0.0;

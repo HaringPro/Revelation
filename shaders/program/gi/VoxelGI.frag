@@ -103,6 +103,10 @@ vec3 VoxelSkyColor() {
 // → 不注入阳光。camRelPos = 相机相对世界坐标（体素坐标 − Cf − R，ITRP IRC_CS L498 同款）。
 uniform sampler2DShadow shadowtex1;
 
+// ITRP 阳光阴影判定（SimpleShadow 实时阴影贴图，带命中面法线偏移防自阴影）
+// 必须放在 shadow/Common.glsl（DistortShadowSpace）与 shadowtex1 声明之后。
+#include "/lib/lighting/VoxelSunShadow.glsl"
+
 float VoxelGI_SunVisible(vec3 camRelPos) {
     if (sunPosition.y < 0.01) return 0.0;
     vec3 shadowClipPos = (shadowModelView * vec4(camRelPos, 1.0)).xyz;
@@ -293,8 +297,13 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             // [FIX 2026-08-06 ITRP 同款 SimpleShadow] 命中体素真被太阳照亮才注入阳光
             //（阴影贴图判定）：洞穴/背阴体素 sunVis=0 → 不注入 → 洞穴白天不再因阳光反弹而亮
             //（用户发现"洞穴亮度受阳光反弹控制"的根因）。hitWorldPos = camrel（ITRP L498 同款）。
-            vec3 hitWorldPos = vec3(hc) - cameraPositionFract - float(VOXEL_RADIUS);
-            float sunVis = VoxelGI_SunVisible(hitWorldPos);
+            // [2026-08-09 ITRP 移植] 用连续命中点（对齐 ITRP SimpleShadow 的 hitVoxelPos），
+            // 避免整数格坐标对体素化逐帧更新敏感导致 sunVis 跳变。
+            vec3 hitVoxelPos = voxelPos + dir * rayLen;
+            vec3 hitWorldPos = hitVoxelPos - cameraPositionFract - float(VOXEL_RADIUS);
+            // 用带法线偏移的实时阴影贴图判定，避免体素命中面自阴影导致 sunVis 恒 0。
+            // 彩色阴影：实心挡=0，直射=1，穿玻璃=玻璃吸收色（注入光线染色）
+            vec3 sunVis = VoxelSunShadowMap(hitWorldPos, hitNormal);
             // [2026-08-09 恢复] 阳光注入已恢复（删除临时 *0.0）。sunVis 阴影贴图判定
             // 保证只有真被太阳直射的体素才注入阳光，洞穴/背阴体素 sunVis=0，不会漏光。
             contrib += alb * sunLight * sunLighting * sunVis * VOXEL_GI_SUN_STRENGTH * absorption;

@@ -34,6 +34,8 @@
 //================================================================================================//
 
 #include "/lib/lighting/VoxelData.glsl"
+// ITRP 阳光阴影判定（SimpleShadow 实时阴影贴图 + SimpleShadowTracing 体素 DDA 短程遮挡）
+#include "/lib/lighting/VoxelSunShadow.glsl"
 
 // [FIX 2026-08-06] 命中体素是否被太阳直射（阴影贴图判定，复刻 VoxelGI.frag VoxelGI_SunVisible）：
 // 追踪端阳光反弹此前无阴影判定，洞穴/背阴体素有微弱 skylight 残留（×444 门控阈值极低）
@@ -216,8 +218,16 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         // [FIX 2026-08-06] 阴影判定（sunVis，与注入端 VoxelGI_SunVisible 同逻辑）：命中体素真被
         // 太阳直射才反弹阳光。此前无 sunVis，洞穴/背阴体素有微弱 sky 残留（×444 门控也放行）
         // → 8.0 倍阳光反弹 → 地下/背阴处到处都是阳光散射。
-        vec3 hitWorldPos = vec3(vc) - cameraPositionFract - float(VOXEL_RADIUS);
-        float sunVis = VoxelTraceSunVisible(hitWorldPos);
+        // [2026-08-09 ITRP 移植] 用连续命中点（对齐 ITRP SimpleShadow/SimpleShadowTracing
+        // 的 hitVoxelPos）：整数格坐标会让阴影判定对体素化数据的逐帧更新非常敏感
+        // （相机移动时网格内容变化 → sunVis 在 0/1 间跳变 → 阳光散射时有时无）。
+        vec3 hitVoxelPos = origin + dir * rayLength;
+        vec3 hitWorldPos = hitVoxelPos - cameraPositionFract - float(VOXEL_RADIUS);
+        // 阳光可见性 = 实时阴影贴图（带命中面法线偏移防自阴影）
+        // × 体素 DDA 短程遮挡（3 格内屋檐/树冠/墙角等网格内遮挡，阴影贴图分辨率外）。
+        // 彩色阴影：实心挡=0，直射=1，穿玻璃=玻璃吸收色（反弹光线染色）
+        vec3 sunVis = VoxelSunShadowMap(hitWorldPos, hitNormal)
+                    * VoxelSunShadowTracing(hitVoxelPos, sunDir);
 
         // [2026-08-09 恢复] 追踪端阳光反弹已恢复（删除临时 *0.0）；sunVis 判定
         // 保证只有被太阳直射的体素才反弹阳光，洞穴/背阴处不会产生阳光散射。
