@@ -313,8 +313,11 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             // 防洞穴漏光。修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被压死。
             float leakGate = saturate(hitSkylight * 4.44);
             float skyTrust = mix(leakGate, 1.0, smoothstep(0.0, 0.4, dir.y));
+            // [2026-08-09] 洞穴门控：体素自身 skylight 为 0（洞穴深处）时不注入天空光，
+            // 避免 IRC 缓存把网格内的洞穴壁照亮（"体素内方块光关闭后仍然亮"的主因）。
+            float caveGate = step(0.02, hitSkylight);
             contrib += VoxelSkyColor() * saturate(dir.y * 25.0 + 0.5)
-                     * skyTrust * absorption;
+                     * skyTrust * caveGate * absorption;
             // NOLIGHT 底光（ITRP 出界路径专有：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)；
             // 命中路径无此项，闭塞处底光由自反弹/方块光链路提供）
             contrib += vec3(0.97, 0.99, 1.18) * VOXEL_NOLIGHT_BRIGHTNESS

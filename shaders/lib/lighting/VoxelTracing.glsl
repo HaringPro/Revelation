@@ -244,9 +244,18 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         // 修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被原版 lightmap 压死。
         float leakGate = saturate(skyLightmap * 4.44);
         float skyTrust = mix(leakGate, 1.0, smoothstep(0.0, 0.4, dir.y));
+        // [2026-08-09] 洞穴门控：原版天光 lightmap 为 0（完全无天光，如洞穴深处）时，
+        // 方向化信任会失效——光线只是走出了 64³ 网格，不代表头顶真的无遮挡。
+        // 此时不注入天空光，让该区域按非光追样式（lightmap 衰减）正常变暗。
+        float caveGate = step(0.02, skyLightmap);
         contrib += skyColor * saturate(dir.y * 25.0 + 0.5)
-                 * skyTrust * VOXEL_GI_TRACE_SKY_STRENGTH * absorption;
-        contrib += blocklightColor * blockLightmap * VOXEL_GI_BLOCK_STRENGTH * absorption;
+                 * skyTrust * caveGate * VOXEL_GI_TRACE_SKY_STRENGTH * absorption;
+        // [2026-08-09] 出界不再返回原版方块光底光：光追开启时体素网格内的原版方块光
+        // （lightmap 光晕）应被屏蔽，由体素 GI 的方块光（命中/IRC 注入，lD.y 驱动）
+        // 接管。保留此项会把 DeferredLight 已屏蔽的原版方块光又加回来（火把光晕
+        // 双倍/未屏蔽）。"体素外以非光追样式渲染"由 DeferredLight 的 lightmap.x
+        // 路径负责，与此处无关。
+        // contrib += blocklightColor * blockLightmap * VOXEL_GI_BLOCK_STRENGTH * absorption;
     }
     contrib += vec3(0.97, 0.99, 1.18) * VOXEL_NOLIGHT_BRIGHTNESS * saturate(rayLength * 0.2) * absorption;
     return contrib * weight;
