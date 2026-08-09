@@ -295,6 +295,8 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             //（用户发现"洞穴亮度受阳光反弹控制"的根因）。hitWorldPos = camrel（ITRP L498 同款）。
             vec3 hitWorldPos = vec3(hc) - cameraPositionFract - float(VOXEL_RADIUS);
             float sunVis = VoxelGI_SunVisible(hitWorldPos);
+            // [2026-08-09 恢复] 阳光注入已恢复（删除临时 *0.0）。sunVis 阴影贴图判定
+            // 保证只有真被太阳直射的体素才注入阳光，洞穴/背阴体素 sunVis=0，不会漏光。
             contrib += alb * sunLight * sunLighting * sunVis * VOXEL_GI_SUN_STRENGTH * absorption;
             contrib += alb * VoxelSkyColor() * hitSkylight * VOXEL_GI_SKY_STRENGTH * absorption;
             // 自反弹：前帧 IRC 在命中点的值（相机重投影；FetchPrevRadiance 内含 ×0.01 解码）

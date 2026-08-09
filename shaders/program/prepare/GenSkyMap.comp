@@ -46,7 +46,11 @@ void main() {
 
     // Checkerboard render
 	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
-	if ((tid & 1) == offset || worldTimeChanged) {
+	// [2026-08-09 修复] 棋盘条件必须用 all(equal(...))：`(tid & 1) == offset` 是 bvec2，
+	// 直接放进 if 属于非法 GLSL（部分驱动行为未定义），会导致天空图写入异常 →
+	// 球谐光（skySH）退化 → 朝上面过暗/缺少天空光染色。改为规范写法后行为确定：
+	// 每帧只写当前棋盘相位的 1/4 纹素，4 帧全覆盖，由历史累积补全。
+	if (all(equal(tid & 1, offset)) || worldTimeChanged) {
 		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyMapImg));
 
 		vec3 worldDir = UnprojectSky(uv);

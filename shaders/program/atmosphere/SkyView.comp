@@ -32,16 +32,10 @@
 
 //======// Input //===============================================================================//
 layout (local_size_x = 8, local_size_y = 8) in;
-// workGroups 说明（2026-08-06 修复天空残缺/全黑）：
-//  - 不能写 `SKY_VIEW_RESOLUTION / 8` 表达式：Iris 的 ComputeDirectiveParser 只接受整数
-//    字面量，表达式会抛 NumberFormatException。
-//  - 不能写死字面量（如 ivec3(24,24,1)）：skyViewImg 的实际尺寸随 SKY_VIEW_RESOLUTION
-//    选项变化，字面量只匹配 192×192；切到 64/128/256 时 dispatch 覆盖不足 + uv 计算
-//    溢出 → LUT 残缺/全黑。
-//  - 改用相对 workGroups `workGroupsRender = vec2(1.0, 1.0)`：Iris 按屏幕尺寸 dispatch
-//    （ceil(viewWidth/8, viewHeight/8)），总是覆盖整个 image；uv 由 imageSize 归一化，
-//    因此任意 SKY_VIEW_RESOLUTION 下都正确。这与旧版（表达式解析失败后 Iris 走默认
-//    屏幕尺寸）的行为一致。
+// workGroups 说明（2026-08-08 排查"skyMap 淡灰 + 屏幕纯黑"，最终结论）：
+//  - 恢复 `workGroupsRender = vec2(1.0, 1.0)`：用户实测原版（此写法）LUT 正常；
+//    改为字面量 ivec3(24,24,1) 后 skyViewTex 变空/暗（实际图像尺寸并非恒 192×192）。
+//  - 屏幕尺寸 dispatch 总能覆盖图像，uv 由 imageSize 归一化，任何尺寸下都正确。
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 //======// Utility //=============================================================================//

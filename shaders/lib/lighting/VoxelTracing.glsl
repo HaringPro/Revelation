@@ -212,6 +212,8 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         vec3 hitWorldPos = vec3(vc) - cameraPositionFract - float(VOXEL_RADIUS);
         float sunVis = VoxelTraceSunVisible(hitWorldPos);
 
+        // [2026-08-09 恢复] 追踪端阳光反弹已恢复（删除临时 *0.0）；sunVis 判定
+        // 保证只有被太阳直射的体素才反弹阳光，洞穴/背阴处不会产生阳光散射。
         contrib += alb * (directIlluminance * rcp(VOXEL_SUN_REFERENCE))
                  * sunLighting * sunVis * VOXEL_TRACE_SUN_STRENGTH * absorption;
         // 间接光：命中体素处的 IRC 前帧缓存（相机重投影 +cDi，与注入端同款）

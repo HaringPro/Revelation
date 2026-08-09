@@ -43,7 +43,9 @@ void main() {
 
     // Checkerboard render cloud shadow map
 	ivec2 offset = checkerboardOffset4x4[frameCounter & 15];
-	if ((tid & 3) == offset || worldTimeChanged) {
+	// [2026-08-09 修复] 与 GenSkyMap 同款：`(tid & 3) == offset` 是 bvec2 放进 if，
+	// 非法 GLSL（部分驱动行为未定义），改为 all(equal(...)) 规范写法。
+	if (all(equal(tid & 3, offset)) || worldTimeChanged) {
 		float dither = BlueNoise(tid, frameCounter);
 
 		vec2 uv = (vec2(tid) + dither) * rcp(textureSize(cloudShadowTex, 0));
