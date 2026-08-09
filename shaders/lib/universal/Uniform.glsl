@@ -82,7 +82,7 @@ uniform vec3 shadowLightPosition;               // shadow light (sun or moon) po
 uniform vec3 upPosition;                        // direction up
 uniform vec3 cameraPosition;                    // camera position in world space
 uniform vec3 previousCameraPosition;            // last frame cameraPosition
-// Iris Exclusive：相机位置整数/小数分量（世界对齐体素网格 + 整数重投影，照抄 ITRP）
+// Iris Exclusive：相机位置整数/小数分量（世界对齐体素网格 + 整数重投影，照抄 参考实现）
 uniform vec3 cameraPositionFract;               // camera position fractional component [0,1)
 uniform ivec3 cameraPositionInt;                // camera position integer component
 uniform ivec3 previousCameraPositionInt;        // last frame cameraPositionInt

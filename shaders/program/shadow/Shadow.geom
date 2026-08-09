@@ -4,7 +4,7 @@
     Copyright (C) 2026 HaringPro
     Apache License 2.0
 
-    Geometry Shader（ITRP Shadow.glsl GSH 移植，低配简化）：
+    Geometry Shader（参考实现 Shadow.glsl GSH 移植，低配简化）：
     - 真阴影三角形：加 bias 防漏光 → ShiftShadowNdcPos 挤到右上区（仅 ENABLE_VOXELIZATION）
     - 体素三角形：三角形质心 → 世界对齐网格坐标 → VoxelTexel_From_VoxelCoord
       Y 型平铺到阴影贴图左条带。太阳方向固定 → 体素化内容不随相机转动，
@@ -63,7 +63,7 @@ flat out float v_isVoxel;     // 1=体素 tile 像素（FSH 走 image 路径）0
 void main() {
     #ifdef ENABLE_VOXELIZATION
 
-        // ---- 真阴影分支：bias + Shift（照抄 ITRP GSH L238-270）----
+        // ---- 真阴影分支：bias + Shift（照抄 参考实现 GSH L238-270）----
         // 用无偏移 g_voxelCoordBase 计算边长（偏移版 g_voxelCoord 的 toCenter*0.001
         // 会让面三角每条边缩短 ~0.001 → 总和偏离 3.4142 达 0.003+
         // → 完整方块检测全失败 → 所有默认方块被丢弃 → 体素网格只剩光源没有墙）
@@ -94,7 +94,7 @@ void main() {
             EndPrimitive();
         }
 
-        // ---- 体素分支：质心网格坐标 → Y 型平铺左条带（照抄 ITRP GSH L277-444，去纹素对齐）----
+        // ---- 体素分支：质心网格坐标 → Y 型平铺左条带（照抄 参考实现 GSH L277-444，去纹素对齐）----
         vec3 voxelCoord = floor(g_voxelCoord[0] * 0.33333333 + g_voxelCoord[1] * 0.33333333 + g_voxelCoord[2] * 0.33333333);
 
         if (all(bvec3(
@@ -103,17 +103,17 @@ void main() {
             // [FIX 2026-08-06] 发光地衣（materialID=32）是 CUTOUT 渲染阶段，原分支
             // （SOLID/TRANSLUCENT）会把它排除在体素外 → 地衣没有体素数据 → 不照亮周围。
             // 只对 CUTOUT 阶段的光源块（voxelID==32）放行；草/花/门等普通 CUTOUT 方块
-            // 仍不进体素（避免幻影块，ITRP 同语义）。
+            // 仍不进体素（避免幻影块，参考实现 同语义）。
             renderStage == MC_RENDER_STAGE_TERRAIN_SOLID || renderStage == MC_RENDER_STAGE_TERRAIN_TRANSLUCENT
             || (renderStage == MC_RENDER_STAGE_TERRAIN_CUTOUT && g_voxelID[0] == 32.0)
         ))) {
-            // midCoord = 三角形纹理包围盒中心（ITRP 语义；消费端 GetAtlasCoord 做精确纹素定位）
+            // midCoord = 三角形纹理包围盒中心（参考实现 语义；消费端 GetAtlasCoord 做精确纹素定位）
             vec2 maxTexCoord = max(texCoord[0], max(texCoord[1], texCoord[2]));
             vec2 minTexCoord = min(texCoord[0], min(texCoord[1], texCoord[2]));
             vec2 midCoord = (maxTexCoord + minTexCoord) * 0.5;
 
             float voxelID = g_voxelID[0];
-            // ITRP PT_FULLBLOCK_DETECTION（GSH L416-426）：普通方块（voxelID==1，未列入
+            // 参考实现 PT_FULLBLOCK_DETECTION（GSH L416-426）：普通方块（voxelID==1，未列入
             // block.properties）的三角形须覆盖整格面（边长和 ≈ 3.41421356 = 2+√2，整块面
             // 三角 = 两单位边 + 面对角线）且三顶点全在整数网格（g_posInvalid 和=0）且非透明
             // 渲染阶段 → 才写入体素；半砖/楼梯/按钮等非整格面 → 跳过（"隐形幻影整块"根因）。

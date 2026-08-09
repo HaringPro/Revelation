@@ -596,7 +596,7 @@ void main() {
             vec4 rad = FetchVoxelRadiance(ivec3(VOXEL_RADIUS));
             sceneOut = vec3(rad.r * 0.15, 0.0, rad.a * 0.6);
         #else
-                // 主 GI = 每像素漫反射追踪（阶段④，对齐 ITRP：Soild_FS 正常模式 GI =
+                // 主 GI = 每像素漫反射追踪（阶段④，对齐 参考实现：Soild_FS 正常模式 GI =
                 // colortex1 追踪输出，IRC 仅作内部数据——注入循环 + 追踪命中自反弹种子）。
                 // 追踪已迁到 DiffuseIndirect.comp：棋盘半分辨率每帧 1 SPP（1/4 像素），
                 // 经 SVGF 时域累积 + 边缘保持滤波后在此读回；此处补乘 albedo×强度，

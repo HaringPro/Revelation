@@ -31,7 +31,7 @@ layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 #endif
 
 // 无显式 binding：与 Terrain.frag / 传播端保持一致，交由 Iris 按名字自动绑定。
-// 显式 binding 会与 Iris 给普通贴图分配的硬件纹理单元冲突（全黑根因），照抄 ITRP 做法。
+// 显式 binding 会与 Iris 给普通贴图分配的硬件纹理单元冲突（全黑根因），照抄 参考实现 做法。
 // 格式限定符必须保留：voxelData 为 rgba16f，voxelLightData 为 r32ui。
 layout (rgba16f) writeonly uniform image3D voxelData;
 layout (r32ui) writeonly uniform uimage3D voxelLightData;

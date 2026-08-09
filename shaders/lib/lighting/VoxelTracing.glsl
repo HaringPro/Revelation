@@ -1,5 +1,5 @@
 //================================================================================================//
-// Voxel GI — 每像素漫反射追踪（阶段④：ITRP DiffuseTracing_FS 移植）
+// Voxel GI — 每像素漫反射追踪（阶段④：参考实现 DiffuseTracing_FS 移植）
 //
 // 与 IRC（辐照度缓存）互补：
 // - IRC = 低频平滑间接光（时域累积，无方向性）
@@ -8,16 +8,16 @@
 //   提供锐利的一次弹射 GI（阳光的方向性反弹、近距离遮挡、彩色反弹）。
 // 噪声靠 TAA 时域收敛（settings.glsl TAA_ENABLED 默认开）。
 //
-// 阶段④ ITRP 化（对照 itrp/Lib/Programs/Composite/DiffuseTracing_FS.glsl）：
+// 阶段④ 参考实现化（对照参考实现的漫反射追踪实现）：
 // - 共享 VoxelData.glsl：穿透式 DDA（发射光体素不挡光，球形光源平滑贡献后继续；
 //   普通固体命中停止）+ 命中 albedo 用整块图集中心色（体素数据 xy=midCoord）
 //   ——注意：不用 GetAtlasCoord 精确纹素（64³ 网格会把高对比纹理图案反弹到
 //   相邻面 → "光源印子"，2026-08-04 实测；函数保留待 BlockShape 阶段）
-// - HemisphereUnitVector 均匀半球采样 + vertexNormal 回落（ITRP L208-209）：
+// - HemisphereUnitVector 均匀半球采样 + vertexNormal 回落（参考实现 L208-209）：
 //   采样方向若落到几何法线背面（法线贴图朝向过陡）→ 沿几何法线重采样
-// - 起点沿几何法线偏移防自交（ITRP L173：voxelPos += vertexNormal * (-viewPos.z * 0.0003)）
-// - ×pdf 加权（ITRP hitSurface=pdf 约定：均匀采样 × 2cosθ = 漫反射辐照度核，
-//   无 1/cos 发散、无 firefly；与 IRC 的 rcpPdf 教科书估计器不同——这是 ITRP 原始约定）
+// - 起点沿几何法线偏移防自交（参考实现 L173：voxelPos += vertexNormal * (-viewPos.z * 0.0003)）
+// - ×pdf 加权（参考实现 hitSurface=pdf 约定：均匀采样 × 2cosθ = 漫反射辐照度核，
+//   无 1/cos 发散、无 firefly；与 IRC 的 rcpPdf 教科书估计器不同——这是 参考实现 原始约定）
 // - 出界天空 × 天空光泄漏衰减（SUNLIGHT_LEAK_FIX，同注入端）
 // - 发射光走 HitLightShpere 球形光源（平滑距离衰减 + 穿透）→ 修"贴光源表面
 //   移动闪烁"（旧：DDA 命中发射体素 = 0/1 全强度开关）
@@ -26,15 +26,15 @@
 // - origin = 相机相对世界坐标（= DeferredLight 的 worldPos - cameraPosition）
 // - 命中体素 → IRC 读取用 vc + cDi 重投影（网格跟随相机，见命中段注释）
 //
-// 已实现：透明单层吸收（照抄 ITRP isTranslucent：水3/玻璃4/叶13，光穿过被着色衰减一次）、
-// 方块形状求交（照抄 ITRP BlockShape 完整版：楼梯/门/玻璃板/板条/活塞/墙/栅栏/栅栏门/
+// 已实现：透明单层吸收（照抄 参考实现 isTranslucent：水3/玻璃4/叶13，光穿过被着色衰减一次）、
+// 方块形状求交（照抄 参考实现 BlockShape 完整版：楼梯/门/玻璃板/板条/活塞/墙/栅栏/栅栏门/
 // 压力板/漏斗/活板门/堆肥桶/炼药锅/脚手架/铁砧等，形状 ID 155-294，见 VoxelShape.glsl）
-// 未实现（留后续）：折射（ITRP PT_DIFFUSE_REFRACTION）、半分辨率降采样、
+// 未实现（留后续）：折射（参考实现 PT_DIFFUSE_REFRACTION）、半分辨率降采样、
 // 追踪专用时域累积（现靠 TAA）。
 //================================================================================================//
 
 #include "/lib/lighting/VoxelData.glsl"
-// ITRP 阳光阴影判定（SimpleShadow 实时阴影贴图 + SimpleShadowTracing 体素 DDA 短程遮挡）
+// 参考实现 阳光阴影判定（SimpleShadow 实时阴影贴图 + SimpleShadowTracing 体素 DDA 短程遮挡）
 #include "/lib/lighting/VoxelSunShadow.glsl"
 
 // [FIX 2026-08-06] 命中体素是否被太阳直射（阴影贴图判定，复刻 VoxelGI.frag VoxelGI_SunVisible）：
@@ -57,10 +57,10 @@ float VoxelTraceSunVisible(vec3 camRelPos) {
     return 1.0;
 }
 
-// 每像素漫反射追踪（ITRP DiffuseTracing 思路）：
+// 每像素漫反射追踪（参考实现 DiffuseTracing 思路）：
 // origin = 相机相对起点；normal = 世界法线（可能含法线贴图）；vertexNormal = 几何法线；
 // viewDist = 视距（-viewPos.z，供起点偏移）；skyLightmap = 像素天空 lightmap（泄漏衰减）；
-// blockLightmap = 像素方块光 lightmap（出界 BlockLighting 底光，ITRP L354）；
+// blockLightmap = 像素方块光 lightmap（出界 BlockLighting 底光，参考实现 L354）；
 // 返回 0-1 尺度的"入射光"（已含命中体素 albedo 反射，未乘当前像素 albedo/强度）。
 vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist, float skyLightmap, float blockLightmap, inout uint seed) {
     // 世界对齐网格对齐：origin 为相机相对坐标，+cameraPositionFract 抵消小数 +VOXEL_RADIUS
@@ -69,7 +69,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
     // VoxelTraceDDA 判出界 [0,64) 立即退出 → 命中永远不触发、全走天空路径（"只有噪点没有光"根因）
     origin += cameraPositionFract;
     origin += float(VOXEL_RADIUS);
-    // 起点沿几何法线偏移防自交（ITRP L173：随视距增大，自交风险更高）
+    // 起点沿几何法线偏移防自交（参考实现 L173：随视距增大，自交风险更高）
     origin += vertexNormal * (viewDist * 0.0003);
 
     // [2026-08-09] 体素网格外（像素世界位置超出 64³ 网格）没有光追数据：
@@ -79,16 +79,16 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         return vec3(0.0);
     }
 
-    // ITRP 均匀半球采样：方向若落到几何法线背面 → 沿几何法线重采样（vertexNormal 回落）
+    // 参考实现 均匀半球采样：方向若落到几何法线背面 → 沿几何法线重采样（vertexNormal 回落）
     vec3 dir = VoxelHemisphereUnitVector(normal, seed);
     if (dot(dir, vertexNormal) <= 0.0)
         dir = VoxelHemisphereUnitVector(vertexNormal, seed);
-    // 余弦 pdf（ITRP L210）：均匀采样 × 2cosθ = 漫反射辐照度核（无 1/cos 发散）
+    // 余弦 pdf（参考实现 L210）：均匀采样 × 2cosθ = 漫反射辐照度核（无 1/cos 发散）
     float weight = saturate(dot(dir, normal)) * 2.0;
 
-    // ---- 穿透式 DDA 步进（照抄 ITRP DiffuseTracing_FS L389-493）----
+    // ---- 穿透式 DDA 步进（照抄 参考实现 DiffuseTracing_FS L389-493）----
     // - 空气（z<=0.5，含负 ID 透明体素）→ 穿透
-    // - 发射光体素（lD.x>阈值）→ 球形光源平滑贡献 + 穿透不挡光（ITRP L397-398：
+    // - 发射光体素（lD.x>阈值）→ 球形光源平滑贡献 + 穿透不挡光（参考实现 L397-398：
     //   HitLightShpere * hitSurface；修"贴光源表面 0/1 命中闪烁"——光线对准球心
     //   才强、擦边平滑衰减，不再有命中/未命中的硬跳变）
     // - 普通固体 → 命中停止（albedo/方块光/阳光/IRC 前帧）
@@ -99,11 +99,11 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
     float rayLength = 0.0;
     vec3 contrib = vec3(0.0);
     bool exitGrid = false;
-    // 透明吸收累积（ITRP hitSurface）：首次命中水/玻璃/树叶时着色衰减，其后贡献全乘此系数
+    // 透明吸收累积（参考实现 hitSurface）：首次命中水/玻璃/树叶时着色衰减，其后贡献全乘此系数
     vec3 absorption = vec3(1.0);
     bool traceTranslucent = true;
 
-    // ---- 起点格自发光（照抄 ITRP IRC_CS L196-200 的 curEmissive，注入端 VoxelGI.frag
+    // ---- 起点格自发光（照抄 参考实现 IRC_CS L196-200 的 curEmissive，注入端 VoxelGI.frag
     // 已有、追踪端此前缺失）----
     // 贴光源的面（如贴火把的墙面）像素起点 = 面坐标 + vertexNormal 法线偏移（朝光源方向），
     // 会把起点推进光源格内；DDA 只检查"经过"的格、不检查起点格 → 光线从光源内部出发，
@@ -128,7 +128,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         voxelCoord += tracingNext * sdir;
         totalStep += tracingNext * rdir;
         if (rayLength > float(VOXEL_TRACE_DISTANCE)) {
-            exitGrid = true; // 射程用尽也走出界路径（ITRP exitTracing 语义：距离/越界统一出界）
+            exitGrid = true; // 射程用尽也走出界路径（参考实现 exitTracing 语义：距离/越界统一出界）
             break;
         }
 
@@ -141,7 +141,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         vec4 hvd = texelFetch(voxelDataSampler, vc, 0);
         // 判空：voxelID 原值整数（>0 即固体，0=空气；半精度浮点整数精确）
         if (hvd.z <= 0.5) {
-            // 透明体素：水/玻璃/树叶单层吸收着色（ITRP isTranslucent，只吸收一次；
+            // 透明体素：水/玻璃/树叶单层吸收着色（参考实现 isTranslucent，只吸收一次；
             // 植物/传送门纯穿透）。hvd.xy = 图集中心 UV，采样取方块颜色与不透明度。
             if (traceTranslucent && VoxelIsTranslucentAbsorb(abs(hvd.z))) {
                 vec4 tc = texture(atlas2D, hvd.xy);
@@ -161,13 +161,13 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
             // 图案"印"到旁边面 → 固定色 = 均匀光斑。
             vec3 albE = VoxelLightColor(abs(hvd.z));
             // 追踪端发射光：× VOXEL_GI_TRACE_LIGHT_STRENGTH 压低脉冲（1 SPP 高方差采样，
-            // ITRP 语义：发射光主体由 IRC 时域累积承载，追踪只补锐利弱光；强脉冲会导致
+            // 参考实现 语义：发射光主体由 IRC 时域累积承载，追踪只补锐利弱光；强脉冲会导致
             // 贴光源面"命中/未命中"跳变闪烁，见 VoxelLighting.glsl 宏注释）
             contrib += VoxelHitLightSphere(origin, dir, vec3(vc), albE) * absorption * VOXEL_GI_TRACE_LIGHT_STRENGTH;
             continue;
         }
 
-        // ---- 普通固体命中：形状求交（ITRP IsHitBlock 桥接）----
+        // ---- 普通固体命中：形状求交（参考实现 IsHitBlock 桥接）----
         // 全块（voxelID<=154，含熔岩/发光/反光）：整格命中，法线 = -tracingNext*sdir；
         // 形状块（155-294，楼梯/门/栅栏/墙…）：HitShape 子盒判定，光线穿过子盒
         // 空隙（未命中）→ 继续步进（穿透式 DDA 语义）。hitNormal 由 IsHitBlock 输出。
@@ -193,7 +193,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         // 阳光色 = 物理直射辐照度 × rcp(VOXEL_SUN_REFERENCE)（0-1 尺度，自带昼夜明暗 + 暖色温）。
         // 不能用 skyColor——它是天空蓝（环境色），与出界天空路径同色 → 反弹混进环境光里
         // 看不出"阳光反弹"（2026-08-05 用户反馈）。
-        // [FIX 2026-08-05] 阳光门限改用 voxelData.w 的写胜 skylight（对齐 ITRP DiffuseTracing
+        // [FIX 2026-08-05] 阳光门限改用 voxelData.w 的写胜 skylight（对齐 参考实现 DiffuseTracing
         // 的 voxelDataW.y，也对齐本项目 IRC 的 VoxelUnpack2xU8Y）：lD.x 来自 voxelLightData 的
         // imageAtomicMax（sky 是最低字节，max 比较被 block/emissive 高位压掉 → 门限常为 0
         // → 阳光反弹全无，这是最终根因）。hvd = 命中体素数据（voxelDataSampler）。
@@ -201,7 +201,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         float hitSkylight = VoxelUnpack2xU8Y(hvd.w);
         // [FIX 2026-08-05] hitSkylight 可能因 imageStore 写胜（最后一片段覆盖）被背阴面写成 0 →
         // 门限恒 0 → 阳光全无。用 max(体素sky, 像素自身skyLightmap) 兜底：体素 sky 可靠时仍用它，
-        // 不可靠（0）时退回像素自己的天光（ITRP 也是先用像素 lightmap.y 再更新）。
+        // 不可靠（0）时退回像素自己的天光（参考实现 也是先用像素 lightmap.y 再更新）。
         // [FIX 2026-08-05] 阳光项改用本地重算的直射辐照度：诊断确认 global.directIlluminance
         // 在计算端（DiffuseIndirect）读到 0（SSBO 跨 pass 屏障/绑定问题）→ 阳光项整体乘 0
         // → 阴影纯黑。本地重算（同 GlobalStorage.comp）；若 SSBO 有值则优先用 SSBO。
@@ -218,7 +218,7 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         // [FIX 2026-08-06] 阴影判定（sunVis，与注入端 VoxelGI_SunVisible 同逻辑）：命中体素真被
         // 太阳直射才反弹阳光。此前无 sunVis，洞穴/背阴体素有微弱 sky 残留（×444 门控也放行）
         // → 8.0 倍阳光反弹 → 地下/背阴处到处都是阳光散射。
-        // [2026-08-09 ITRP 移植] 用连续命中点（对齐 ITRP SimpleShadow/SimpleShadowTracing
+        // [2026-08-09 参考实现 移植] 用连续命中点（对齐 参考实现 SimpleShadow/SimpleShadowTracing
         // 的 hitVoxelPos）：整数格坐标会让阴影判定对体素化数据的逐帧更新非常敏感
         // （相机移动时网格内容变化 → sunVis 在 0/1 间跳变 → 阳光散射时有时无）。
         vec3 hitVoxelPos = origin + dir * rayLength;
@@ -240,15 +240,15 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
         return contrib * weight;
     }
 
-    // 出界（网格外且朝上）→ 天光 + 像素自身方块光底（照抄 ITRP DiffuseTracing_FS
+    // 出界（网格外且朝上）→ 天光 + 像素自身方块光底（照抄 参考实现 DiffuseTracing_FS
     // L340-354：SkyLighting + BlockLighting(lightmap.x) + NOLIGHT）：
     // - 天空 × sat(skyLightmap*4.44)（SUNLIGHT_LEAK_FIX 阈值 0.23，与注入端同口径）
-    // - blocklight 底 = 像素自己 lightmap 的方块光（光线出界不丢失光源信息，ITRP L354）
-    // - NOLIGHT 兜底：出界路径专有（ITRP L345：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)）
+    // - blocklight 底 = 像素自己 lightmap 的方块光（光线出界不丢失光源信息，参考实现 L354）
+    // - NOLIGHT 兜底：出界路径专有（参考实现 L345：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)）
     // 射程用尽：仅返回发射光球形累积 + 底光。主底光仍由 IRC 阳光扩散提供。
     if (exitGrid) {
         // 出界天空：回退简单 skyColor（AtmosphereSkyView 方案 2026-08-06 无效已移除）；
-        // ITRP 式方向衰减 sat(dir.y*25+0.5) + SUNLIGHT_LEAK_FIX × sat(skyLightmap*4.44)
+        // 参考实现 式方向衰减 sat(dir.y*25+0.5) + SUNLIGHT_LEAK_FIX × sat(skyLightmap*4.44)
         // [FIX 2026-08-06 Phase2] leak 门控方向化：向上出界信任网格几何（光线真逃逸到
         // 天空就贡献完整天光），侧向/朝下模糊出界保留原版 lightmap 压制防洞穴漏光。
         // 修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被原版 lightmap 压死。

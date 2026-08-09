@@ -1,12 +1,12 @@
 //================================================================================================//
-// Voxel Sun Shadow — ITRP 阳光 GI 阴影判定移植（2026-08-09）
+// Voxel Sun Shadow — 参考实现 阳光 GI 阴影判定移植（2026-08-09）
 //
-// 参考 ITRP Lib/PathTracing/Tracer/ShadowTracing.glsl：
-// - VoxelSunShadowMap：实时阴影贴图判定（ITRP SimpleShadow 简化移植）——
+// 参考 参考实现 Lib/PathTracing/Tracer/ShadowTracing.glsl：
+// - VoxelSunShadowMap：实时阴影贴图判定（参考实现 SimpleShadow 简化移植）——
 //   命中点世界坐标 → 阴影贴图屏幕坐标（失真 + 体素平铺 Shift），沿命中面法线
 //   做微小屏幕偏移避免体素表面自阴影（阴影边缘 0/1 跳变 → 块状闪烁/漏光），
 //   shadowtex1 硬件深度比较。
-// - VoxelSunShadowTracing：体素 DDA 短程遮挡判定（ITRP SimpleShadowTracing 移植）——
+// - VoxelSunShadowTracing：体素 DDA 短程遮挡判定（参考实现 SimpleShadowTracing 移植）——
 //   从命中体素向太阳方向步进 3 格，撞到固体/形状 → 0（阳光被挡）。
 //   捕捉阴影贴图分辨率外的网格内小遮挡（屋檐/树冠缝隙/墙角）。
 //
@@ -18,7 +18,7 @@
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowcolor0;
 
-// 实时阴影贴图判定（ITRP SimpleShadow 移植，去 RTW warp）：
+// 实时阴影贴图判定（参考实现 SimpleShadow 移植，去 RTW warp）：
 // 返回彩色阴影 vec3——1=全亮直射；0=被实心挡；穿过半透明物体（玻璃）时
 // = AlbedoToAbsorption(玻璃颜色, 不透明度)，反弹光线带上玻璃染色。
 vec3 VoxelSunShadowMap(vec3 camRelPos, vec3 normal) {
@@ -30,7 +30,7 @@ vec3 VoxelSunShadowMap(vec3 camRelPos, vec3 normal) {
     #ifdef ENABLE_VOXELIZATION
         ShiftShadowScreenPos(ssp.xy);
     #endif
-    // 沿阴影空间命中法线做微小屏幕偏移（ITRP SimpleShadow NDC 0.00025 ≈ 屏幕 0.000125），
+    // 沿阴影空间命中法线做微小屏幕偏移（参考实现 SimpleShadow NDC 0.00025 ≈ 屏幕 0.000125），
     // 避免体素命中面自阴影导致 sunVis 恒 0（阴影边缘块状闪烁/漏光）
     ssp.xy += (mat3(shadowModelView) * normal).xy * 0.000125;
     if (all(equal(ssp, saturate(ssp)))) {
@@ -60,7 +60,7 @@ vec3 VoxelSunShadowMap(vec3 camRelPos, vec3 normal) {
     return result;
 }
 
-// 体素 DDA 短程阳光遮挡判定（ITRP SimpleShadowTracing）：1=阳光可见，0=被网格内固体挡住
+// 体素 DDA 短程阳光遮挡判定（参考实现 SimpleShadowTracing）：1=阳光可见，0=被网格内固体挡住
 float VoxelSunShadowTracing(vec3 voxelPos, vec3 sunDir) {
     vec3 voxelCoord = floor(voxelPos);
     vec3 sdir = sign(sunDir);

@@ -1,16 +1,16 @@
 //================================================================================================//
-// Voxel Shape — 方块形状求交（照抄 ITRP BlockShape.glsl 完整版，ID 平移 +150）
+// Voxel Shape — 方块形状求交（照抄 参考实现 BlockShape.glsl 完整版，ID 平移 +150）
 //
-// ITRP 形状 ID 5-144 平移 +150 → 本项目形状 ID 155-294（block.properties 写作
+// 参考实现 形状 ID 5-144 平移 +150 → 本项目形状 ID 155-294（block.properties 写作
 // block.10155-10294，Shadow.vert materialID = mc_Entity.x - 1e4 = 155-294）。
 // 平移避开了项目现有材料 ID：1 普通实心 / 3 水 / 4 玻璃 / 7 熔岩 / 13 树叶 /
 // 20-31 发光 / 50 反光 / 1000+ 植物 / 1500 传送门。
 //
-// 与项目 VoxelData.glsl 的区别：ITRP 用 Ray 结构体（ori/dir/rdir/sdir），项目 DDA
+// 与项目 VoxelData.glsl 的区别：参考实现 用 Ray 结构体（ori/dir/rdir/sdir），项目 DDA
 // 用裸向量 —— 此处定义 VoxelRay 结构体桥接，消费端（VoxelTracing / VoxelGI.frag）
 // 构建 VoxelRay 后调用 IsHitBlock。
 //
-// IsHitBlock（ITRP L566-579，追踪/IRC 与形状求交的桥）：
+// IsHitBlock（参考实现 L566-579，追踪/IRC 与形状求交的桥）：
 // - 全块（voxelID <= 154，含熔岩/发光/反光等普通方块）：整格命中，
 //   法线 = -tracingNext * ray.sdir（DDA 进入面方向反推）
 // - 形状块（155-294）：rayLength 重置为"本格退出距离"（minVec3(totalStep)，
@@ -23,7 +23,7 @@
 // 依赖：VoxelMin3/VoxelMax3（VoxelData.glsl）。须在 VoxelData.glsl 之后 include。
 //================================================================================================//
 
-// 光线结构体（ITRP Ray：ori=起点、dir=单位方向、rdir=1/abs(dir)、sdir=sign(dir)）
+// 光线结构体（参考实现 Ray：ori=起点、dir=单位方向、rdir=1/abs(dir)、sdir=sign(dir)）
 struct VoxelRay {
     vec3 ori;
     vec3 dir;
@@ -31,7 +31,7 @@ struct VoxelRay {
     vec3 sdir;
 };
 
-// 子盒求交（照抄 ITRP IsHitBox L126-157）：
+// 子盒求交（照抄 参考实现 IsHitBox L126-157）：
 // blockOrigin = voxelCoord - ray.ori（体素空间）；boxOrigin/boxSize = 子盒在体素内的
 // 相对位置/尺寸。命中条件：子盒进入距离 tEnter <= min(rayLength, tExit)（rayLength =
 // 光线进入本格的距离或本格退出距离，由调用方决定语义）。命中后 rayLength = tEnter
@@ -59,13 +59,13 @@ bool IsHitBox(VoxelRay ray, vec3 blockOrigin, vec3 boxOrigin, vec3 boxSize, inou
     return hit;
 }
 
-// 形状求交（照抄 ITRP HitShape L164-564；ID 平移：vID = voxelID - 150）。
+// 形状求交（照抄 参考实现 HitShape L164-564；ID 平移：vID = voxelID - 150）。
 // 形状 ID 参考全部用 vID（5-144 原表），几何公式里的 ID 系数同样用 vID。
 bool HitShape(VoxelRay ray, vec3 voxelCoord, float voxelID, inout float rayLength, out vec3 hitNormal) {
     vec3 blockOrigin = voxelCoord - ray.ori;
     hitNormal = vec3(0.0);
 
-    // 平移回 ITRP 原 ID（形状区间 155-294 → 5-144）
+    // 平移回 参考实现 原 ID（形状区间 155-294 → 5-144）
     float vID = voxelID - 150.0;
 
     bool hit = false;
@@ -435,7 +435,7 @@ bool HitShape(VoxelRay ray, vec3 voxelCoord, float voxelID, inout float rayLengt
     return hit;
 }
 
-// 追踪循环与形状求交的桥（照抄 ITRP IsHitBlock L566-579）：
+// 追踪循环与形状求交的桥（照抄 参考实现 IsHitBlock L566-579）：
 // - 全块（voxelID <= 154，含熔岩/发光等普通方块）：整格命中，法线 = -tracingNext*sdir
 //   （DDA 进入面方向反推；rayLength 保持调用方传入的"本格进入距离"不变）
 // - 形状块（155-294）：rayLength 重置为"本格退出距离"= minVec3(totalStep)

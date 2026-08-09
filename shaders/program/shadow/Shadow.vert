@@ -100,11 +100,11 @@ void main() {
         // 实体 → 方块光/阳光反弹全无（只剩发射光辉光）。改由 GS 的 renderStage 门限
         //（SOLID/TRANSLUCENT）作为唯一过滤：实体在 ENTITIES/BLOCK_ENTITIES 等阶段被排除。
         g_notInVoxel = 0.0;
-        // ITRP PT_FULLBLOCK_DETECTION（Shadow.glsl VSH L155-169）：未列入 block.properties 的
+        // 参考实现 PT_FULLBLOCK_DETECTION（Shadow.glsl VSH L155-169）：未列入 block.properties 的
         // 方块（mc_Entity.x=0 → materialID=1，同时涵盖完整方块与按钮/告示牌/漏网半砖等
         // 非完整方块）材质 ID 无法区分，改由几何判定：顶点不在整数网格 → 标记，
         // GS 端按三角形边长和判定是否覆盖整格面，非整格面不写入体素（消除"幻影整块"）。
-        // 发光(20-31)/形状(155-294)/透明等已列出的材料不受影响（ITRP 只查 g_voxelID<=1）。
+        // 发光(20-31)/形状(155-294)/透明等已列出的材料不受影响（参考实现 只查 g_voxelID<=1）。
         g_posInvalid = 0.0;
         if (materialID == 1u) {
             // [FIX 2026-08-06 最终根因] gl_Vertex 在 shadow pass 是相机相对/世界坐标
@@ -128,7 +128,7 @@ void main() {
         // 乘 0.001 确保面心向内偏移 ~0.0005 格，远小于半格 → 不影响正确 cell。
         // 无偏移坐标供 GS posDiff 完整方块检测（toCenter 偏移会让 face 三条边长度
         // 都变短 ~0.001 → 总和偏离 3.4142 达 0.003+→ 检测全失败，所有默认方块被丢弃）
-        // [FIX 2026-08-06 世界对齐根因] 恢复 cameraPositionFract，与 ITRP Voxelizer/Shadow.glsl
+        // [FIX 2026-08-06 世界对齐根因] 恢复 cameraPositionFract，与 参考实现 Voxelizer/Shadow.glsl
         // 逐字一致：两端都用 (W−C)+cameraPositionFract+VOXEL_RADIUS，= W−floor(C)+VOXEL_RADIUS
         // （精确整数、与相机位置无关的世界对齐网格）。此前只在体素化端删掉 Cf 而追踪端
         // (VoxelTracing.glsl origin+=cameraPositionFract) 仍保留 → 两端差 1 格 → 追踪永远

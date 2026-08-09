@@ -15,7 +15,7 @@
 //======// Output //==============================================================================//
 
 // [2026-08-09] vec3 → vec4：a 存纹理不透明度，供阳光反弹的 AlbedoToAbsorption
-// 计算彩色阴影（ITRP SimpleShadow 同款：玻璃等半透明物体会给反弹光线染色）。
+// 计算彩色阴影（参考实现 SimpleShadow 同款：玻璃等半透明物体会给反弹光线染色）。
 layout (location = 0) out vec4 shadowcolor0Out;
 layout (location = 1) out vec4 shadowcolor1Out;
 
@@ -34,7 +34,7 @@ flat in float v_blocklight;  // 方块光 lightmap（0-1）
 flat in vec2 v_midCoord;     // 方块图集 UV 中心
 flat in float v_isVoxel;     // 1=体素 tile 像素
 
-// 无显式 binding：Iris 按 properties 的 image.<name> = <samplerName> 自动绑定（照抄 ITRP）。
+// 无显式 binding：Iris 按 properties 的 image.<name> = <samplerName> 自动绑定（照抄 参考实现）。
 // 显式 binding 会与 Iris 给普通贴图分配的硬件纹理单元冲突（全黑根因，血泪教训 #1）。
 layout (rgba16f) uniform writeonly image3D voxelData;      // xy=atlas UV 中心 z=voxelID(原值) w=texRes(16)
 layout (r32ui) uniform uimage3D voxelLightData;            // x=emissive y=sky z=block（atomicMax 需读写权限，不能 writeonly）
@@ -58,7 +58,7 @@ void main() {
         // ---- 体素 tile 像素：直写 3D image（格式与 gbuffers 时代 Terrain.frag 完全一致）----
         if (v_isVoxel > 0.5) {
             // 同方块所有片元 midCoord/voxelID 同值 → imageStore 直接覆盖（无需 atomicMax）
-            // w = Pack2xU8(texRes, skylight)（照抄 ITRP Shadow FSH L588：高 8 位纹理分辨率
+            // w = Pack2xU8(texRes, skylight)（照抄 参考实现 Shadow FSH L588：高 8 位纹理分辨率
             //（低配固定 16）、低 8 位天空光 lightmap）。skylight 走 imageStore（写胜）而非
             // voxelLightData 的 atomicMax——max 合并会把洞内格被缝隙面抬高的 sky 当整格值，
             // 导致 SUNLIGHT_LEAK_FIX 泄漏衰减失效；写胜语义下 w 即该方块写入时的真实 sky。
@@ -90,7 +90,7 @@ void main() {
             return;
         }
 
-        // ---- 真阴影只落在右上区，Shift 后溢出像素丢弃（照抄 ITRP FSH L551-552）----
+        // ---- 真阴影只落在右上区，Shift 后溢出像素丢弃（照抄 参考实现 FSH L551-552）----
         if (clamp(gl_FragCoord.xy, vec2(VOXEL_TILE_WIDTH, 0.0), vec2(VOXEL_SHADOW_RES, VOXEL_SHADOW_WIDTH)) != gl_FragCoord.xy)
             discard;
     #endif

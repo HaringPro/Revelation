@@ -1,10 +1,10 @@
 //================================================================================================//
-// Voxel GI — IRC 缓存内部数据访问（对齐 ITRP 语义）
+// Voxel GI — IRC 缓存内部数据访问（对齐 参考实现 语义）
 //
-// ITRP 架构（对照 Soild_FS.glsl L576-585）：IRC（辐照度缓存）是**内部数据**，不直接渲染上屏。
+// 参考实现 架构（对照 Soild_FS.glsl L576-585）：IRC（辐照度缓存）是**内部数据**，不直接渲染上屏。
 // - 注入循环（VoxelGI.frag）每帧维护缓存
 // - 每像素漫反射追踪（VoxelTracing.glsl）命中体素时，用本文件的 FetchVoxelRadiance
-//   取命中点的前帧辐照度作为"自反弹种子"（对应 ITRP DiffuseTracing_FS L569
+//   取命中点的前帧辐照度作为"自反弹种子"（对应 参考实现 DiffuseTracing_FS L569
 //   SampleIrradianceCache(hitVoxelPos)）
 // - DEBUG_VOXEL_RADIANCE 单点诊断（玩家相机格）
 // 主 GI 由每像素追踪提供（高分辨率、无 64³ 方格），IRC 不再直接上屏。

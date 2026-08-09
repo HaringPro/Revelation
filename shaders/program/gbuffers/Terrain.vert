@@ -83,10 +83,10 @@ void main() {
         tangentPack.y = (floatBitsToUint(at_tangent.w) & 0x80000000u) | 0x3F800000u;
     #endif
 
-    // --- Voxel 可视化坐标（世界对齐网格 + cameraPositionFract，照抄 ITRP）---
+    // --- Voxel 可视化坐标（世界对齐网格 + cameraPositionFract，照抄 参考实现）---
     // 注意：此处 worldPos 是相机相对坐标（gbufferModelViewInverse 不包含相机平移，
     // 证据见下方枝叶摇曳代码：要先 worldPos += cameraPosition 才是绝对坐标）。
-    // ITRP 世界对齐网格：体素坐标 = 相机相对 + cameraPositionFract（小数对齐，网格
+    // 参考实现 世界对齐网格：体素坐标 = 相机相对 + cameraPositionFract（小数对齐，网格
     // 在绝对世界上固定，相机仅移动整数格时网格内容整体平移，由重投影补偿）+
     // voxelResolution * 0.5。shadow pass 的体素化（Shadow.vert）用同一公式。
     vec3 voxelCenterPos = worldPos + cameraPositionFract + float(VOXEL_RADIUS);

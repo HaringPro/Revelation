@@ -58,7 +58,7 @@ in vec3 block_centered_relative_pos;
 uniform sampler3D voxelDataSampler;  // 可视化读取体素数据（atlas 引用格式，RGBA16，shadow pass 写入）
 // 无显式 binding：gbuffers 的 image 与方块图集等普通贴图共用同一套硬件纹理单元，
 // 显式 binding 会覆盖 Iris 的运行时分配，导致 imageAtomicMax 写到错误单元（全黑根因）。
-// 照抄 ITRP：由 shaders.properties 的 image.<name> = <samplerName> 按名字自动绑定。
+// 照抄 参考实现：由 shaders.properties 的 image.<name> = <samplerName> 按名字自动绑定。
 // 注意：非 writeonly 的 image 变量强制要求格式限定符（r32ui / rgba16）。
 
 uniform sampler2D tex;

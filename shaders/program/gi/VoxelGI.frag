@@ -1,27 +1,27 @@
 /*
 --------------------------------------------------------------------------------
-    Revelation Shaders — Voxel GI 辐照度缓存（IRC 随机注入，ITRP 架构移植 · 阶段②）
+    Revelation Shaders — Voxel GI 辐照度缓存（IRC 随机注入，参考实现 架构移植 · 阶段②）
     Copyright (C) 2026 HaringPro
 
-    照抄 ITRP IRC_CS 语义：
+    照抄 参考实现 IRC_CS 语义：
     - 只对非空气体素注入（表面/内部固体都投光），空气体素 alpha=1 标记遮挡不注入
-    - 表面判定（ITRP sampleHemisphere）：恰好 1 空邻居 + 非普通方块（abs(ID)>1，
+    - 表面判定（参考实现 sampleHemisphere）：恰好 1 空邻居 + 非普通方块（abs(ID)>1，
       岩浆/光源等特殊方块）→ 起点沿空邻居方向偏移半格到表面 + 半球采样
       pdf=saturate(dot(dir,n))*2.0；其余（普通实心/内部固体/多空邻居）→ 全方向 pdf=1.6
-    - 穿透式 DDA 增量步进判定命中（照抄 ITRP IRC_CS L199/L297/L301 语义）：
+    - 穿透式 DDA 增量步进判定命中（照抄 参考实现 IRC_CS L199/L297/L301 语义）：
       空气/透明（z<=0.5）→ 穿透；发射光体素（lD.x>阈值）→ 球形光源平滑贡献
       + 穿透不挡光（照抄 HitLightShpere）；普通固体才命中停止，其中形状块
-      （155-294，楼梯/门/栅栏等，照抄 ITRP BlockShape IsHitBlock）先做子盒
+      （155-294，楼梯/门/栅栏等，照抄 参考实现 BlockShape IsHitBlock）先做子盒
       求交，穿过子盒空隙则继续步进
     - 命中：方块光 + 真阳光（rPI 方向项 × 命中体素 lightmap 平滑衰减，
       无阴影贴图硬判定——体素中心单点比较在阴影边缘 0/1 跳变会块状闪烁）
       + 自反弹（前帧 IRC，带整数重投影）
-    - 起点自发光（照抄 ITRP IRC_CS L196-200）：发射体素先把自己的球形光加进结果，
+    - 起点自发光（照抄 参考实现 IRC_CS L196-200）：发射体素先把自己的球形光加进结果，
       否则火把格自身 IRC 为暗 → 追踪端反弹火把格得暗值 → "光源周围黑印"
     - 发射色 = VoxelLightColor 材料 ID 固定色表（火把暖黄），不用暗色纹理 albedo
     - 出界：skyColor 方向性天空 × SUNLIGHT_LEAK_FIX 衰减（×当前体素天空光，防洞穴漏光）
     - ×100 内部存储 / ×0.01 外部采样（voxelRadiance / voxelRadiance2 ping-pong）
-    - 时间混合：IRC 是随机采样，靠时域累积降噪（VOXEL_GI_BLEND=0.99，ITRP PT_IRC_BLENDWEIGHT）
+    - 时间混合：IRC 是随机采样，靠时域累积降噪（VOXEL_GI_BLEND=0.99，参考实现 PT_IRC_BLENDWEIGHT）
     - 相机移动时前帧坐标重投影（cDi = cameraPositionInt - previousCameraPositionInt）
 --------------------------------------------------------------------------------
 */
@@ -38,7 +38,7 @@
 
 // 全部不写 layout(binding=N)：显式 image binding 与 Iris 运行时分配的
 // 普通贴图纹理单元同处一套硬件单元，会冲突导致 imageStore/imageAtomic 静默失效
-// （"整个世界全黑"根因）。照抄 ITRP：无 binding，靠 shaders.properties 的
+// （"整个世界全黑"根因）。照抄 参考实现：无 binding，靠 shaders.properties 的
 // image.<name> = <samplerName> 让 Iris 按名字自动绑定。
 uniform sampler3D voxelRadianceSampler;
 uniform sampler3D voxelRadiance2Sampler;
@@ -65,7 +65,7 @@ uniform sampler2D atlas2D;
 
 #include "/lib/lighting/VoxelLighting.glsl"
 
-// 共享体素追踪工具（Ray/DDA/半球采样/GetAtlasCoord，照抄 ITRP TracingUtilities）
+// 共享体素追踪工具（Ray/DDA/半球采样/GetAtlasCoord，照抄 参考实现 TracingUtilities）
 #include "/lib/lighting/VoxelData.glsl"
 
 //======// 阴影变换（sunDir 方向项用 shadowModelViewInverse）//=================================//
@@ -97,13 +97,13 @@ vec3 VoxelSkyColor() {
     return skyColor;
 }
 
-// ITRP 同款简化 SimpleShadow（2026-08-06）：命中体素是否被太阳照亮（阴影贴图判定）。
+// 参考实现 同款简化 SimpleShadow（2026-08-06）：命中体素是否被太阳照亮（阴影贴图判定）。
 // 用户发现"洞穴白天亮度受阳光反弹控制"的根因：阳光注入只靠 hitSkylight（原版 lightmap），
 // 洞穴口 hitSkylight 不为 0 → 阳光漏入洞穴。加阴影贴图判定后，洞穴/背阴体素 sunVis=0
-// → 不注入阳光。camRelPos = 相机相对世界坐标（体素坐标 − Cf − R，ITRP IRC_CS L498 同款）。
+// → 不注入阳光。camRelPos = 相机相对世界坐标（体素坐标 − Cf − R，参考实现 IRC_CS L498 同款）。
 uniform sampler2DShadow shadowtex1;
 
-// ITRP 阳光阴影判定（SimpleShadow 实时阴影贴图，带命中面法线偏移防自阴影）
+// 参考实现 阳光阴影判定（SimpleShadow 实时阴影贴图，带命中面法线偏移防自阴影）
 // 必须放在 shadow/Common.glsl（DistortShadowSpace）与 shadowtex1 声明之后。
 #include "/lib/lighting/VoxelSunShadow.glsl"
 
@@ -122,8 +122,8 @@ float VoxelGI_SunVisible(vec3 camRelPos) {
     return 1.0;
 }
 
-// 单个体素的 IRC 随机注入（照抄 ITRP IRC_CS 语义）：
-// - 表面判定（ITRP sampleHemisphere）：恰好 1 个空邻居（z<=0.5：空气/负 ID 透明体素）
+// 单个体素的 IRC 随机注入（照抄 参考实现 IRC_CS 语义）：
+// - 表面判定（参考实现 sampleHemisphere）：恰好 1 个空邻居（z<=0.5：空气/负 ID 透明体素）
 //   + 当前体素是"特殊方块"（abs(voxelID)>1，非普通实心块 ID=1）→ 半球采样：
 //   起点沿空邻居方向偏移半格到表面，法线背离空侧，pdf = saturate(dot(dir,n))*2.0；
 //   其余（普通实心 / 内部固体 / 多空邻居）→ 全方向均匀（pdf=1.6）
@@ -145,7 +145,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
     // 世界空间太阳方向（shadowModelViewInverse 为纯旋转矩阵，第三行=第三列）
     vec3 sunDir = mat3(shadowModelViewInverse) * vec3(0.0, 0.0, 1.0);
 
-    // ---- 表面判定（ITRP sampleHemisphere）----
+    // ---- 表面判定（参考实现 sampleHemisphere）----
     // 计数 6 邻居中的空体素（z<=0.5：空气或负 ID 透明），并累加指向空邻居的方向。
     // 恰好 1 个空邻居 = 该体素是一面"表面"；sampleOffset 指向唯一空侧。
     int emptyCount = 0;
@@ -158,28 +158,28 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             sampleOffset += vec3(VOXEL_DIRS[i]);
         }
     }
-    // ITRP：sampleHemisphere = hasVoxel.x==1 && hasCurrVoxel==0
-    //（恰 1 空邻居 && 当前体素非普通方块，ITRP 用 abs(ID)>240 判"普通"）。
+    // 参考实现：sampleHemisphere = hasVoxel.x==1 && hasCurrVoxel==0
+    //（恰 1 空邻居 && 当前体素非普通方块，参考实现 用 abs(ID)>240 判"普通"）。
     // 本项目普通实心块 = ID 1（block.properties 未列出的方块均归一）；特殊方块
     //（岩浆 7 / 光源 20-31 等正 ID≠1）→ 半球采样；透明块（负 ID）不进入本函数
     //（main 的 sld 判定已排除）。
     vec4 currVoxelData = texelFetch(voxelDataSampler, c, 0);
     float currID = currVoxelData.z;
     bool sampleHemisphere = emptyCount == 1 && abs(currID) > 1.0;
-    // ITRP：sampleOffset 累加指向 ordinary(close) 邻居，hitNormal=-sampleOffset 即
+    // 参考实现：sampleOffset 累加指向 ordinary(close) 邻居，hitNormal=-sampleOffset 即
     // 朝向空旷/特殊邻居。本项目累加指向 empty 邻居 → surfaceNormal=+sampleOffset
-    // 即朝向空旷侧（同 ITRP 语义："背离固体、朝向空旷"）。
+    // 即朝向空旷侧（同 参考实现 语义："背离固体、朝向空旷"）。
     // 旧 bug：-sampleOffset 把半球投向固体侧 → 火把光打入墙/地板（房间暗）、
     // 半砖半球对着邻居固体 → 捕获邻居 IRC（含扩散火光 → 假亮），移动时网格重置
     // 新鲜播种绕过偏差，静止时偏差累积（VOXEL_GI_BLEND=0.99）。
     vec3 surfaceNormal = sampleOffset;
     if (sampleHemisphere) voxelPos += sampleOffset * 0.49999;
 
-    // 当前体素光数据（curEmissive = 起点本身是发射体素 → 起点自发光贡献，ITRP IRC_CS
+    // 当前体素光数据（curEmissive = 起点本身是发射体素 → 起点自发光贡献，参考实现 IRC_CS
     // L196-200；hitSkylight = SUNLIGHT_LEAK_FIX 的泄漏衰减用值：本项目 DDA 对透明体素
     // 直接穿透、无中间命中记录，出界衰减用起点体素自己的天空光即可）
     vec4 curLight = unpackUnorm4x8(texelFetch(voxelLightSampler, c, 0).r);
-    // hitSkylight 改从 voxelData.w 解（ITRP Unpack2xU8_Y_from_U16，VoxelData.glsl）：
+    // hitSkylight 改从 voxelData.w 解（参考实现 Unpack2xU8_Y_from_U16，VoxelData.glsl）：
     // voxelData.w = Pack2xU8(texRes, skylight)（Shadow.frag 打包），imageStore 写胜语义
     // ——修 voxelLightData.R 的 atomicMax max 合并：洞内格被缝隙面抬高的 sky 会让泄漏
     // 衰减失效（该压的没压）。curEmissive 仍读 lightData（emissive 取整格最大是正确语义）。
@@ -187,7 +187,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
     bool curEmissive = curLight.z > VOXEL_GI_EMISSIVE_THRESHOLD;  // 新字节序：B=emissive
 
     for (int s = 0; s < VOXEL_IRC_SPP; ++s) {
-        // 随机方向 + 对应 PDF（ITRP 归一化系数：半球 2·dot、全方向 1.6）
+        // 随机方向 + 对应 PDF（参考实现 归一化系数：半球 2·dot、全方向 1.6）
         vec3 dir;
         float pdf;
         if (sampleHemisphere) {
@@ -199,7 +199,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
         }
         float rcpPdf = rcp(pdf);
 
-        // ---- 穿透式 DDA 步进（照抄 ITRP IRC_CS L292-330：发射光体素 → 球形光源
+        // ---- 穿透式 DDA 步进（照抄 参考实现 IRC_CS L292-330：发射光体素 → 球形光源
         // 平滑贡献 + 穿透不挡光；普通固体命中停止）----
         vec3 hvoxel = floor(voxelPos);
         vec3 hsdir = sign(dir);
@@ -208,10 +208,10 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
         bool exitGrid = false;
         bool hitSolid = false;
         vec3 contrib = vec3(0.0);
-        // 透明吸收累积（ITRP hitSurface）：首次命中水/玻璃/树叶时着色衰减，其后贡献全乘此系数
+        // 透明吸收累积（参考实现 hitSurface）：首次命中水/玻璃/树叶时着色衰减，其后贡献全乘此系数
         vec3 absorption = vec3(1.0);
         bool traceTranslucent = true;
-        // 起点自发光贡献（照抄 ITRP IRC_CS L196-200：发射体素先把自己的球形光加进结果）。
+        // 起点自发光贡献（照抄 参考实现 IRC_CS L196-200：发射体素先把自己的球形光加进结果）。
         // 缺这段时发射格（火把格）自身 IRC 不含自己的光 → 追踪端反弹该格取到暗值
         // → "光源周围黑印 / 隐形光源印子"（2026-08-04 实测）。voxelPos 已按表面判定
         // 偏移，球形测试对半球采样落在表面上、全方向采样在格心，均有正向命中。
@@ -237,7 +237,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             vec4 hvd = texelFetch(voxelDataSampler, hc, 0);
             // 判空：voxelID 原值整数（>0 即固体，0=空气/负 ID 透明）
             if (hvd.z <= 0.5) {
-                // 透明体素：水/玻璃/树叶单层吸收着色（ITRP isTranslucent，只吸收一次；
+                // 透明体素：水/玻璃/树叶单层吸收着色（参考实现 isTranslucent，只吸收一次；
                 // 植物/传送门纯穿透）。hvd.xy = 图集中心 UV，采样取方块颜色与不透明度。
                 if (traceTranslucent && VoxelIsTranslucentAbsorb(abs(hvd.z))) {
                     vec4 tc = texture(atlas2D, hvd.xy);
@@ -251,7 +251,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
 
             if (lD.z > VOXEL_GI_EMISSIVE_THRESHOLD) {  // 新字节序：B=emissive
                 // 发射光体素：球形光源平滑贡献（光线对准球心才强，擦边平滑衰减——
-                // 修 0/1 命中跳变）+ 穿透继续（光源不阻挡光线，ITRP 语义）。
+                // 修 0/1 命中跳变）+ 穿透继续（光源不阻挡光线，参考实现 语义）。
                 // 发射色按材料 ID 查固定光源色表（VoxelLightColor）：火把纹理中心是
                 // 暗色木杆，用 albedo 当发射色又暗又灰（"光源周围黑印"主因之一）。
                 vec3 albE = VoxelLightColor(abs(hvd.z));
@@ -259,7 +259,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
                 continue;
             }
 
-            // ---- 普通固体命中：形状求交（ITRP IsHitBlock 桥接）----
+            // ---- 普通固体命中：形状求交（参考实现 IsHitBlock 桥接）----
             // 全块（voxelID<=154，含熔岩/发光/反光）：整格命中，法线 = -tracingNext*sdir；
             // 形状块（155-294，楼梯/门/栅栏/墙…）：HitShape 子盒判定，光线穿过子盒
             // 空隙（未命中）→ 继续步进（穿透式 DDA 语义）。hitNormal 由 IsHitBlock 输出。
@@ -285,19 +285,19 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
                 contrib += max(alb, vec3(VOXEL_GI_BLOCK_MIN_ALBEDO)) * blocklightColor * lD.y * VOXEL_GI_BLOCK_STRENGTH * absorption;
             // 真阳光：rPI 方向项（hitNormal 为命中面法线）× 命中体素天空 lightmap
             // 平滑衰减（SUNLIGHT_LEAK_FIX；不用阴影贴图硬判定，避免阴影边缘 0/1 跳变）
-            // [FIX 2026-08-05] 门限改用 voxelData.w 写胜 skylight（同追踪端/ITRP 一致）：
+            // [FIX 2026-08-05] 门限改用 voxelData.w 写胜 skylight（同追踪端/参考实现 一致）：
             // lD.x 来自 imageAtomicMax 的 voxelLightData，sky 是最低字节被高位压掉 → 恒 0。
             float hitSkylight = VoxelUnpack2xU8Y(hvd.w);
             float sunLighting = saturate(dot(sunDir, hitNormal)) * rPI * saturate(hitSkylight * 444.0);
-            // [FIX 2026-08-06 ITRP 同款阳光色] 阳光项用暖阳色 sunLight（sunIrradiance 暖白
-            // ×128×rcp(300) 归一化到 0-1，白天≈0.43，对齐 ITRP IRC_CS 的 sunLight/黑体色温 + 追踪端
+            // [FIX 2026-08-06 参考实现 同款阳光色] 阳光项用暖阳色 sunLight（sunIrradiance 暖白
+            // ×128×rcp(300) 归一化到 0-1，白天≈0.43，对齐 参考实现 IRC_CS 的 sunLight/黑体色温 + 追踪端
             // directIlluminance），不再是天空蓝 VoxelSkyColor——蓝天空色导致阳光反弹偏蓝且暗，
             // 是阴影不亮的关键 bug 之一。天空光（天光）单独用 skyColor 保留。
             vec3 sunLight = sunIrradiance * 128.0 * rcp(VOXEL_SUN_REFERENCE);
-            // [FIX 2026-08-06 ITRP 同款 SimpleShadow] 命中体素真被太阳照亮才注入阳光
+            // [FIX 2026-08-06 参考实现 同款 SimpleShadow] 命中体素真被太阳照亮才注入阳光
             //（阴影贴图判定）：洞穴/背阴体素 sunVis=0 → 不注入 → 洞穴白天不再因阳光反弹而亮
-            //（用户发现"洞穴亮度受阳光反弹控制"的根因）。hitWorldPos = camrel（ITRP L498 同款）。
-            // [2026-08-09 ITRP 移植] 用连续命中点（对齐 ITRP SimpleShadow 的 hitVoxelPos），
+            //（用户发现"洞穴亮度受阳光反弹控制"的根因）。hitWorldPos = camrel（参考实现 L498 同款）。
+            // [2026-08-09 参考实现 移植] 用连续命中点（对齐 参考实现 SimpleShadow 的 hitVoxelPos），
             // 避免整数格坐标对体素化逐帧更新敏感导致 sunVis 跳变。
             vec3 hitVoxelPos = voxelPos + dir * rayLen;
             vec3 hitWorldPos = hitVoxelPos - cameraPositionFract - float(VOXEL_RADIUS);
@@ -316,7 +316,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
 
         if (!hitSolid) {
             // 出界 → 天空 + NOLIGHT 兜底：回退简单 VoxelSkyColor（AtmosphereSkyView 方案无效
-            // 移除 2026-08-06）；ITRP 式方向衰减 sat(dir.y*25+0.5) × sat(hitSkylight*4.44)
+            // 移除 2026-08-06）；参考实现 式方向衰减 sat(dir.y*25+0.5) × sat(hitSkylight*4.44)
             // [FIX 2026-08-06 Phase2] leak 门控方向化（同追踪端）：向上出界信任网格几何
             //（光线真逃逸到天空就贡献完整天光），侧向/朝下模糊出界保留原版 lightmap 压制
             // 防洞穴漏光。修"阴影里朝上的面黑"：cast shadow/树冠缝隙的天光不再被压死。
@@ -327,7 +327,7 @@ vec4 IrcTraceVoxel(ivec3 c, ivec3 cDi) {
             float caveGate = step(0.02, hitSkylight);
             contrib += VoxelSkyColor() * saturate(dir.y * 25.0 + 0.5)
                      * skyTrust * caveGate * absorption;
-            // NOLIGHT 底光（ITRP 出界路径专有：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)；
+            // NOLIGHT 底光（参考实现 出界路径专有：NOLIGHT_BRIGHTNESS * saturate(rayLength*0.2)；
             // 命中路径无此项，闭塞处底光由自反弹/方块光链路提供）
             contrib += vec3(0.97, 0.99, 1.18) * VOXEL_NOLIGHT_BRIGHTNESS
                      * saturate(rayLen * 0.2) * absorption;
@@ -356,12 +356,12 @@ void main() {
     int ia = min(pixIdx * perPixel, totalVoxels);
     int ib = min(ia + perPixel, totalVoxels);
 
-    // 整数相机重投影（照抄 ITRP：cameraPositionInt - previousCameraPositionInt）。
+    // 整数相机重投影（照抄 参考实现：cameraPositionInt - previousCameraPositionInt）。
     // 世界对齐网格中，相机仅移动整数格时内容整体平移，用整数差值补偿回读位置；
     // 小数移动不移动网格（cameraPositionFract 已抵消），因此不能用 float 差值取整。
     ivec3 cDi = cameraPositionInt - previousCameraPositionInt;
 
-    // 时间混合权重：IRC 随机采样靠时域累积降噪（0.99=每帧接受 1% 新值，ITRP PT_IRC_BLENDWEIGHT）
+    // 时间混合权重：IRC 随机采样靠时域累积降噪（0.99=每帧接受 1% 新值，参考实现 PT_IRC_BLENDWEIGHT）
     float bw = 1.0 - (1.0 - VOXEL_GI_BLEND) * saturate(frameTime / 0.01666667);
     // 前 2 帧 pRC 读的是未初始化缓冲（可能是垃圾大值），跳过混合直接写采样值，
     // 避免"首帧大值被每帧 ×0.9 稀释"造成视觉上逐渐变黑的假象
@@ -382,12 +382,12 @@ void main() {
         vec4 vd = texelFetch(voxelDataSampler, c, 0);
         bool sld = vd.z > 0.5; // voxelID 原值（>0 即固体，0=空气）
 
-        // ---- IRC 随机注入（照抄 ITRP：只对非空气体素注入）----
-        // ITRP 语义：IRC 网格存"体素表面辐照度"，空气体素 alpha=1 标记遮挡、不注入。
-        // 表面/内部固体都投光，采样方向与 PDF 由 IrcTraceVoxel 内部按 ITRP 表面判定
+        // ---- IRC 随机注入（照抄 参考实现：只对非空气体素注入）----
+        // 参考实现 语义：IRC 网格存"体素表面辐照度"，空气体素 alpha=1 标记遮挡、不注入。
+        // 表面/内部固体都投光，采样方向与 PDF 由 IrcTraceVoxel 内部按 参考实现 表面判定
         // 选择（恰 1 空邻居 + 特殊方块 → 半球；否则全方向）。空体素不注入
         //（旧实现：空体素全方向注入 = "空气辐照度场"，查询端被空气邻居稀释 → GI
-        // 看不见，语义与 ITRP 完全不同）。
+        // 看不见，语义与 参考实现 完全不同）。
         vec3 nRC = vec3(0.0);
         float nExp = 0.0; // Phase 1：本帧天空曝光度
         if (sld) {
@@ -402,7 +402,7 @@ void main() {
         // 直接采用本帧采样值（等价 bw=0），等下一帧旧帧有数据后再恢复时间混合。
         ivec3 prevC = c + cDi;
         bool pValid = all(greaterThanEqual(prevC, ivec3(0))) && all(lessThan(prevC, ivec3(VOXEL_AREA)));
-        // ITRP PT_IRC_INITIAL_SKYLIGHT：新暴露的**固体**格用平滑天空值播种（见
+        // 参考实现 PT_IRC_INITIAL_SKYLIGHT：新暴露的**固体**格用平滑天空值播种（见
         // VoxelLighting.glsl VOXEL_IRC_EDGE_SEED），而不是裸 1-SPP 随机样本——
         // 裸样本每帧随机（亮/暗乱跳）且 0.99 混合要 ~100 帧才收敛 = "移动噪声前沿"，
         // 播种天空值让前缘格从一开始就稳定；空气格保持 0（不写入无用值）。
@@ -414,7 +414,7 @@ void main() {
 
         // 旧帧全黑（冷启动 / 相机大幅移动新暴露）→ 直接写本帧值（等价 bw=0）。
         // 0.99 混合下每帧仅接受 1% 新值，若无此播种首次进入场景会黑屏 100+ 帧
-        //（ITRP PT_IRC_INITIAL_SKYLIGHT 思路：缓存全黑时跳过混合播种）。
+        //（参考实现 PT_IRC_INITIAL_SKYLIGHT 思路：缓存全黑时跳过混合播种）。
         float localBw = bw;
         if (pValid && max(max(pRC.r, pRC.g), pRC.b) < 1e-4) localBw = 0.0;
 
