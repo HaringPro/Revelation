@@ -70,6 +70,13 @@ vec3 VoxelTracePixel(vec3 origin, vec3 normal, vec3 vertexNormal, float viewDist
     // 起点沿几何法线偏移防自交（ITRP L173：随视距增大，自交风险更高）
     origin += vertexNormal * (viewDist * 0.0003);
 
+    // [2026-08-09] 体素网格外（像素世界位置超出 64³ 网格）没有光追数据：
+    // 直接返回 0，交由 DeferredLight 的非光追路径（lightmap / SH 环境光）接管，
+    // 避免"起点出界 → 立即拿天空光"导致大型洞穴里网格外的区域反而发亮。
+    if (any(lessThan(origin, vec3(0.0))) || any(greaterThanEqual(origin, vec3(float(VOXEL_AREA))))) {
+        return vec3(0.0);
+    }
+
     // ITRP 均匀半球采样：方向若落到几何法线背面 → 沿几何法线重采样（vertexNormal 回落）
     vec3 dir = VoxelHemisphereUnitVector(normal, seed);
     if (dot(dir, vertexNormal) <= 0.0)

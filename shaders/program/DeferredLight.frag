@@ -186,6 +186,21 @@ void main() {
     vec3 camRelPos = worldPos;
     vec3 worldDir = normalize(worldPos);
 
+    // [2026-08-09] 原版方块光颜色（BLOCKLIGHT_COLOR_R/G/B）策略：
+    // - 光追关闭：按玩家设置正常工作；
+    // - 光追开启：体素网格内强制 0（原版方块光关闭，由体素 GI 提供方块光），
+    //   网格外强制默认颜色 RGB=1（亮度保留玩家设置）——无 GI 数据的区域
+    //   以非光追样式渲染。
+    vec3 activeBlocklightColor = blocklightColor;
+    #ifdef VOXEL_GI_ENABLED
+        vec3 blocklightVoxelCoord = camRelPos + cameraPositionFract + float(VOXEL_RADIUS);
+        if (all(greaterThanEqual(blocklightVoxelCoord, vec3(0.0))) && all(lessThan(blocklightVoxelCoord, vec3(float(VOXEL_AREA))))) {
+            activeBlocklightColor = vec3(0.0);
+        } else {
+            activeBlocklightColor = vec3(BLOCKLIGHT_BRIGHTNESS);
+        }
+    #endif
+
     uvec4 materialPack = loadMaterialPack(texelPos);
     uint materialID = materialPack.y;
     vec3 albedo = sRGBToLinear(loadAlbedo(texelPos));
@@ -505,7 +520,7 @@ void main() {
                     lightmap.x *= VOXEL_GI_BLENDED_LIGHTMAP;
                 #endif
                 if (lightmap.x > EPS) {
-                    sceneOut += lightmap.x * emissive.a * mix(finalAo, vec3(1.0), lightmap.x) * blocklightColor;
+                    sceneOut += lightmap.x * emissive.a * mix(finalAo, vec3(1.0), lightmap.x) * activeBlocklightColor;
                 }
             }
         #endif
@@ -515,7 +530,7 @@ void main() {
         #ifdef VOXEL_GI_ENABLED
             lightmap.x *= VOXEL_GI_BLENDED_LIGHTMAP;
         #endif
-        sceneOut += lightmap.x * mix(finalAo, vec3(1.0), lightmap.x) * blocklightColor;
+        sceneOut += lightmap.x * mix(finalAo, vec3(1.0), lightmap.x) * activeBlocklightColor;
     #endif
 
     #ifdef HANDHELD_LIGHTING
