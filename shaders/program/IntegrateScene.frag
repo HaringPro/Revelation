@@ -60,7 +60,7 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
 		vec3 rayPos = screenPos;
 
 		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, REFRACTION_SAMPLES, rayPos)) {
-            return screenPos.xy;
+            return;
         }
 
 		vec2 refractedCoord = rayPos.xy;
