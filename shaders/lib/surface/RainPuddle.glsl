@@ -2,7 +2,7 @@
 
 #define RIPPLE_MAX_RADIUS 1 // [1 2 3]
 #define RIPPLE_SCALE 4.0 // [1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0]
-#define RIPPLE_INTENSITY 0.2 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
+#define RIPPLE_INTENSITY 0.1 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 
 vec2 RippleSlope(vec2 uv, float time) {
     vec2 p0 = floor(uv);
@@ -64,8 +64,8 @@ void ApplyRainPuddleMaterial(inout vec3 albedo, inout vec3 specTex, vec3 worldPo
 	// Apply wetness to normal
     vec2 rippleSlope = RippleSlope(minecraftPos.xz * RIPPLE_SCALE, frameTimeCounter);
     rippleSlope *= saturate(4.0 * abs(dot(geoNormal, worldPos) * inversesqrt(sdot(worldPos))));
-    vec3 rippleNormal = vec3(rippleSlope * noise * rainStrength, 4.0).xzy;
-    normal = normalize(normal + rippleNormal * puddles);
+    vec3 rippleNormal = vec3(rippleSlope * noise * rainStrength, 1.0).xzy;
+    normal = normalize(mix(normal, rippleNormal, puddles));
 
 	// Apply wetness to specular
 	specTex.r = mix(specTex.r, RAIN_PUDDLE_SMOOTHNESS, puddles);
