@@ -13,18 +13,18 @@
 
 //================================================================================================//
 
-bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps, inout vec3 hitPos) {
-	vec3 rayOrigin = hitPos;
+bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps, out vec3 hitPos) {
+	vec3 rayOrigin = ViewToScreenPos(viewOrigin);
 
-	float maxDist = step(viewDir.z, 0.0) * 1e23 - (viewOrigin.z + near) / viewDir.z;
-	vec3 rayDir = normalize(ViewToScreenPos(viewDir * maxDist + viewOrigin) - rayOrigin);
+	float maxViewT = step(viewDir.z, 0.0) * 1e23 - (viewOrigin.z + near) / viewDir.z;
+	vec3 rayDir = normalize(ViewToScreenPos(viewDir * maxViewT + viewOrigin) - rayOrigin);
 	rayDir *= minOf((step(0.0, rayDir) - rayOrigin) / rayDir);
 
 	float rSteps = 1.0 / float(steps);
 	vec3 rayStep = rayDir * rSteps;
 	float invDirZ = rcp(abs(rayStep.z));
 
-	float compareTolerance = max(abs(rayStep.z), -1e-3 / viewOrigin.z);
+	float compareTolerance = max(abs(rayStep.z), 1e-3 / sqr(viewOrigin.z));
 
 	#if defined LOD_MOD
 		float screenDepthSky = ViewToScreenDepth(ScreenToViewDepthLod(1.0));
@@ -39,17 +39,18 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 		hitPos = rayOrigin + rayStep * t;
 
 		if (saturate(hitPos.xy) != hitPos.xy) break;
-		if (hitPos.z >= screenDepthSky) {
-		#ifdef SSRT_SKY_TRACING
-			hit = true;
-		#endif
-			break;
-		}
 
 		ivec2 sampleTexel = uvToTexelScaled(hitPos.xy);
 		float sampleDepth = loadDepth2(sampleTexel);
 		#if defined LOD_MOD
 			if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
+		#endif
+		#ifdef SSRT_SKY_TRACING
+		if (sampleDepth > screenDepthSky - EPS) {
+            hitPos = rayOrigin + rayDir;
+            hit = hitPos.z > screenDepthSky - EPS;
+			break;
+		}
 		#endif
 
 		float depthDiff = sampleDepth - hitPos.z;
@@ -58,7 +59,7 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 			break;
 		}
 
-		t += clamp(depthDiff * invDirZ, 0.01, 1.1);
+		t += clamp(depthDiff * invDirZ, 0.05, 1.0);
 	}
 
 	#ifdef SSRT_REFINEMENT
@@ -73,12 +74,7 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 				if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
 			#endif
 
-			float depthDiff = sampleDepth - hitPos.z;
-			if (abs(depthDiff + compareTolerance) < compareTolerance) {
-				hitPos -= rayStep;
-			} else {
-				hitPos += rayStep;
-			}
+			hitPos += signMul(rayStep, sampleDepth - hitPos.z);
 		}
 	}
 	#endif

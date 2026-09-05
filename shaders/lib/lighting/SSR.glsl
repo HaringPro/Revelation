@@ -1,7 +1,7 @@
 #include "/lib/lighting/SSRT.glsl"
 #include "/lib/universal/MonteCarlo.glsl"
 
-vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 screenPos, vec3 worldDir, vec3 viewPos, float skylight, float dither) {
+vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 worldDir, vec3 viewPos, float skylight, float dither) {
 	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
 
 	vec3 halfway = worldNormal;
@@ -25,13 +25,14 @@ vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 scre
 	}
 
 	uint stepCount = uint(SSRT_MAX_SAMPLES * oms(material.roughness * 0.75));
-	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, stepCount, screenPos)) {
-		float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
+    vec3 hitPos;
+	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, stepCount, hitPos)) {
+		float edgeFade = hitPos.x * hitPos.y * oms(hitPos.x) * oms(hitPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 1e3;
-		reflection.rgb += (texture(colortex4, scaleScreenUv(screenPos.xy)).rgb - reflection.rgb) * saturate(edgeFade);
+		reflection.rgb += (texture(colortex4, scaleScreenUv(hitPos.xy)).rgb - reflection.rgb) * saturate(edgeFade);
 
-		ivec2 texel = uvToTexelScaled(screenPos.xy);
-		vec3 reflectViewPos = ScreenToViewPos(vec3(screenPos.xy, loadDepth0(texel)));
+		ivec2 texel = uvToTexelScaled(hitPos.xy);
+		vec3 reflectViewPos = ScreenToViewPos(vec3(hitPos.xy, loadDepth0(texel)));
 		reflection.a = distance(reflectViewPos, viewPos);
 	}
 

@@ -51,7 +51,7 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/lighting/SSRT.glsl"
 
-vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal, vec3 worldDir, float dither, float skylight, bool waterMask) {
+vec4 CalculateSpecularReflections(vec3 viewPos, vec3 worldNormal, vec3 worldDir, float dither, float skylight, bool waterMask) {
 	float NdotV = abs(dot(worldNormal, worldDir));
 	vec3 rayDir = worldDir + worldNormal * NdotV * 2.0;
 
@@ -68,10 +68,12 @@ vec4 CalculateSpecularReflections(vec3 screenPos, vec3 viewPos, vec3 worldNormal
 	uint raySteps = uint(SSRT_MAX_SAMPLES * (fresnel * 0.5 + 0.5));
 
 	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
-	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, screenPos)) {
-		float edgeFade = screenPos.x * screenPos.y * oms(screenPos.x) * oms(screenPos.y);
+
+    vec3 hitPos;
+	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, hitPos)) {
+		float edgeFade = hitPos.x * hitPos.y * oms(hitPos.x) * oms(hitPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 2e3;
-		reflection += (texture(colortex4, scaleScreenUv(screenPos.xy)).rgb - reflection) * saturate(edgeFade);
+		reflection += (texture(colortex4, scaleScreenUv(hitPos.xy)).rgb - reflection) * saturate(edgeFade);
 	}
 
 	return vec4(reflection * fresnel, 1.0 - fresnel);
@@ -148,7 +150,7 @@ void main() {
 
 	if (notParticle) {
 		// Specular indirect
-		lightingOut = CalculateSpecularReflections(screenPos, viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
+		lightingOut = CalculateSpecularReflections(viewPos, worldNormal, worldDir, dither, lightmap.y, waterMask);
 
 		NdotL = dot(worldNormal, shadowDirWorld);
 	} else {

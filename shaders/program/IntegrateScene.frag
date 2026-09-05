@@ -57,13 +57,12 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
 
 	#ifdef RAYTRACED_REFRACTION
 		float dither = BlueNoise(texelPos, frameCounter);
-		vec3 rayPos = screenPos;
-
-		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, REFRACTION_SAMPLES, rayPos)) {
+		vec3 hitPos;
+		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, REFRACTION_SAMPLES, hitPos)) {
             return;
         }
 
-		vec2 refractedCoord = rayPos.xy;
+		vec2 refractedCoord = hitPos.xy;
 	#else
         // Newton's method for refraction
         // https://jcgt.org/published/0015/01/03/
