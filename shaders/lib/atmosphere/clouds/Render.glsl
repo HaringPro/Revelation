@@ -95,7 +95,7 @@ float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
 
 vec2 CloudMultiScatteringApproxHaringPro(float sunlightOD, float phase, float sigmaT, float omega, float msVolume, vec3 lightDir) {
 	// https://zhuanlan.zhihu.com/p/457997155
-	float fms = omega * oms(exp2(-300.0 * sigmaT));
+	float fms = omega * oms(exp2(-256.0 * sigmaT));
 
     float scatteringSun = phase + uniformPhase * fms / (1.0 - fms);
     scatteringSun *= exp(-sunlightOD);
@@ -263,13 +263,13 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 						float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, lightDir, noise.y);
 
 						// Approximate multi-scattering
-                        float msVolume = linearstep(0.4, 1.0, dimensionalProfile);
-                        msVolume *= saturate(4.0 * heightFraction);
+                        float msVolume = linearstep(0.25, 1.0, dimensionalProfile);
+                        msVolume *= linearstep(0.0, 0.4, heightFraction);
 						vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, sigmaT, cloudLayer0.coeff.albedo, msVolume, lightDir);
 
 						// Estimate the ground reflected light
-						float scatteringGround = oms(sqr(dimensionalProfile)) * oms(heightFraction) * lightDir.y;
-						scattering += scatteringGround * uniformPhase;
+						float groundT = rcp(1.0 + sigmaT * heightFraction * cloudLayer0.thickness);
+						scattering += groundT * uniformPhase * lightDir.y;
 
 						float stepTransmittance = exp2(-rLOG2 * sigmaT * stepLength);
 
@@ -338,12 +338,12 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 		vec3 directIlluminance = sunIlluminance + moonIlluminance;
 
 		// Lerp bottom and top sky illuminance based on normalized height
-		float heightFraction = saturate((length(cloudPos) - cloudLayer0.minHeight) * rcp(cloudLayer0.thickness));
-        vec3 skyBottomIlluminance = ConvolvedReconstructSH3(global.skySH, vec3(0.0, -1.0, 0.0));
-		vec3 skyIlluminance = mix(skyBottomIlluminance, global.skyUpIlluminance, heightFraction);
+		// float heightFraction = saturate((length(cloudPos) - cloudLayer0.minHeight) * rcp(cloudLayer0.thickness));
+        // vec3 skyBottomIlluminance = ConvolvedReconstructSH3(global.skySH, vec3(0.0, -1.0, 0.0));
+		// vec3 skyIlluminance = mix(skyBottomIlluminance, global.skyUpIlluminance, heightFraction);
 
 		result.scatteredLight = scatteringBase.x * directIlluminance;
-		result.scatteredLight += scatteringBase.y * max0(skyIlluminance);
+		result.scatteredLight += scatteringBase.y * global.skyUpIlluminance;
 
 		result.scatteredLight += LightningContribution(cloudPos - atmosphereViewPos) * sqr(scatteringBase.y);
 
