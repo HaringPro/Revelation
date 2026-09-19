@@ -29,7 +29,7 @@
 
 #define PURKINJE_SHIFT
 // #define PURKINJE_SHIFT_NOISE
-#define PURKINJE_SHIFT_STRENGTH 0.2 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+#define PURKINJE_SHIFT_STRENGTH 0.3 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 // #define VIGNETTE_ENABLED
 #define VIGNETTE_STRENGTH 1.0 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.5 3.0 3.5 4.0 5.0]
@@ -92,7 +92,7 @@ float MesopicAdaptation(float exposure) {
 		float adaptedLogLuminance = (AUTO_EV_BIAS - exposureEv) / exposureCurve;
 	#endif
 
-	return 1.0 - smoothstep(-5.0, 1.0, adaptedLogLuminance);
+	return 1.0 - smoothstep(-8.0, -2.0, adaptedLogLuminance);
 }
 
 vec3 ScotopicVision(vec3 color, float mesopicFactor) {

@@ -55,7 +55,7 @@ vec4 RenderMoon(vec3 worldDir, vec3 moonDir) {
 
 		uv = vec2(longitude * rTAU + 0.5, latitude * rPI);
 		// vec3 color = sRGBToLinear(texture(moonTex, uv).rgb) * sRGB_2_Rec2020;
-		vec3 color = pow4(texture(moonTex, uv).rgb);
+		vec3 color = cube(texture(moonTex, uv).rgb);
 
 		return vec4(diffuse * color * moonRadiance, 1.0);
 	}
