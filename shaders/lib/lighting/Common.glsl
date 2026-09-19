@@ -37,14 +37,15 @@ vec3 HardCodeEmissive(uint materialID, vec3 albedo, vec3 worldPos) {
 		case 25u: {
 			float mcPosFractY = fract(worldPos.y + cameraPosition.y);
 			if (mcPosFractY > 0.18) return vec3(2.0, 1.0, 1.0) * step(0.4, albedo.r);
-			else return vec3(2.0, 1.0, 1.0) * step(1.25, albedo.r / (albedo.g + albedo.b)) * step(0.2, albedo.r);
+			else return vec3(2.0, 1.0, 1.0) * step(1.25 * (albedo.g + albedo.b), albedo.r) * step(0.2, albedo.r);
 		}
 		// Soul fire
 		case 26u:
 			return vec3(albedoLuminance * step(0.2, albedo.b) * 2.0);
 		// Amethyst
 		case 27u:
-			return vec3(albedoLuminance);
+			float midDist = distance(fract(worldPos + cameraPosition), vec3(0.5));
+			return vec3(albedoLuminance * saturate(1.0 - midDist * 1.5));
 		// Glowberry
 		case 28u:
 			return vec3(saturate(dot(albedo, vec3(1.0, -0.6, -0.9)) - 0.1) * 16.0);
@@ -54,8 +55,7 @@ vec3 HardCodeEmissive(uint materialID, vec3 albedo, vec3 worldPos) {
 		// Beacon core
 		case 30u: {
 			vec3 midBlockPos = abs(fract(worldPos + cameraPosition) - 0.5);
-			if (maxOf(midBlockPos) < 0.4) return vec3(5.0 * albedoLuminance);
-			else return vec3(0.0);
+			vec3(5.0 * albedoLuminance * step(maxOf(midBlockPos), 0.4));
 		}
 		// Sculk
 		case 31u:
