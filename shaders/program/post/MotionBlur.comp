@@ -28,7 +28,7 @@ restrict writeonly uniform image2D colorimg0; // Motion blur output
 
 #include "/lib/universal/Random.glsl"
 
-#define loadInput(texel) (texelFetch(colortex1, texelPos, 0).rgb)
+#define loadInput(texel) (texelFetch(colortex1, texel, 0).rgb)
 
 vec3 MotionBlur(ivec2 texelPos) {
 	#if SR_ENABLE
