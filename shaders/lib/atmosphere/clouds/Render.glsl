@@ -47,7 +47,7 @@ float[cloudMsCount] SetupParticipatingMediaPhases(float primaryPhase, float fall
 float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise) {
 	const uint steps = uint(CLOUD_LOW_SUNLIGHT_SAMPLES);
 	const float rSteps = 1.0 / float(steps);
-	float rayLength = cloudLayer0.thickness * (1.75 - rayDir.y);
+	float rayLength = cloudLayer0.thickness / max(rayDir.y, 0.25);
 
 	float stepLength = rayLength * rSteps * rSteps;
 	vec3 rayStep = rayDir * stepLength;
@@ -102,7 +102,7 @@ vec2 CloudMultiScatteringApproxHaringPro(float sunlightOD, float phase, float si
     scatteringSun += msVolume / (1.0 + sunlightOD * 0.5);
 
     // Estimate the transmittance to the zenith using sunlight optical depth
-    float skylightOD = sunlightOD * (lightDir.y + 0.05); // Multiply by sin(elevation angle) to convert to the zenith OD
+    float skylightOD = sunlightOD * max(lightDir.y, 0.1); // Multiply by sin(elevation angle) to convert to the zenith OD
     float scatteringSky = 1.0 / (1.0 + skylightOD); // 1 / (1 + x) curve to approximate MS
 
 	return vec2(scatteringSun, scatteringSky);
@@ -119,7 +119,7 @@ vec3 RenderCloudHigh(vec3 rayPos, vec3 lightDir, float noise, float LdotV) {
         // Raymarch optical depth to sun
         const uint steps = 3;
         const float rSteps = 1.0 / float(steps);
-        float rayLength = cloudLayer2.thickness * (1.5 - lightDir.y);
+        float rayLength = cloudLayer2.thickness / max(lightDir.y, 0.5);
         float stepLength = rayLength * rSteps * rSteps;
 
         vec2 rayStep = lightDir.xz * stepLength;
