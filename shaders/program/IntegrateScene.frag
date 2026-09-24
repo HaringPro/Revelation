@@ -223,17 +223,29 @@ void main() {
 
 	// Initialize
 	float fogMask = 1.0;
+	float LdotV = dot(shadowDirWorld, worldDir);
 
-	// Volumetric fog
-	#ifdef VOLUMETRIC_FOG
-		if (isEyeInWater == 0) {
+	// Atmospheric fog
+    if (isEyeInWater == 0) {
+	    #ifdef VOLUMETRIC_FOG
 			mat2x3 volFogData = UpscaleVolumetricFog(texelPos, -viewPos.z);
 			sceneColor = ApplyFog(sceneColor, volFogData);
 			fogMask = mix(1.0, mean(volFogData[1]), eyeSkylightSmooth);
-		}
-	#endif
+	    #else
+			float cameraHeight = eyeAltitude - VF_HEIGHT;
+			float rayLength = min(viewDist, lodRenderDist);
 
-	float LdotV = dot(shadowDirWorld, worldDir);
+			ExponentialHeightFog(
+				global.directIlluminance * eyeSkylightSmooth,
+				global.skyUpIlluminance * eyeSkylightSmooth,
+				rayLength,
+				cameraHeight,
+				cameraHeight + rayLength * worldDir.y,
+				LdotV,
+				sceneColor
+			);
+	    #endif
+    }
 
 	// Underwater fog
 	if (isEyeInWater == 1) {

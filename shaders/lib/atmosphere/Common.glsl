@@ -456,7 +456,7 @@ void ExponentialHeightFog(
 
 	// In-scatter
 	vec3 inscatter = sunColor * (atmosphereScatteringCoeff * AtmospherePhase(LdotV));
-	inscatter += ambColor * (atmosphereScatteringCoeff * vec2(1.0));
+	inscatter += ambColor * (atmosphereScatteringCoeff * vec2(rPI));
 	inscatter *= (1.0 - transmittance) * rcp(betaT);
 
 	background = background * transmittance + inscatter;

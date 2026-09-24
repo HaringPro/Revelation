@@ -120,13 +120,33 @@ void main() {
 	if (isEyeInWater == 0) {
 		vec3 sceneOut = loadSceneMain(texelPos);
 
-		// Front to back fog
+		// Front to back atmopheric fog
 		#ifdef VOLUMETRIC_FOG
 			vec3 screenPosBack = vec3(screenPos.xy, loadDepth1(texelPos));
 			vec3 viewPosBack = ScreenToViewPos(screenPosBack);
 			vec3 worldPosBack = transMAD(gbufferModelViewInverse, viewPosBack);
 			mat2x3 airFog = RaymarchAtmosphericFog(worldPos, worldPosBack, dither, VF_MAX_SAMPLES >> 1);
 			sceneOut = ApplyFog(sceneOut, airFog);
+		#else
+			vec3 viewPosBack = ScreenToViewPos(vec3(screenPos.xy, loadDepth1(texelPos)));
+			vec3 fogRay = transMAD(gbufferModelViewInverse, viewPosBack) - worldPos;
+
+			float rayLengthSquared = sdot(fogRay);
+			float rayLengthInverse = inversesqrt(maxEps(rayLengthSquared));
+			float rayLength = min(rayLengthSquared * rayLengthInverse, lodRenderDist);
+			fogRay *= rayLengthInverse;
+
+			float startHeight = eyeAltitude + worldPos.y - VF_HEIGHT;
+
+			ExponentialHeightFog(
+				global.directIlluminance * eyeSkylightSmooth,
+				global.skyUpIlluminance * eyeSkylightSmooth,
+				rayLength,
+				startHeight,
+				startHeight + rayLength * fogRay.y,
+				dot(shadowDirWorld, fogRay),
+				sceneOut
+			);
 		#endif
 
 		// Water fog

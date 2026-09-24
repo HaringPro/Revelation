@@ -53,17 +53,33 @@ void main() {
 
 		vec2 noise = SampleStbnVec2(tid, frameCounter);
 
+        // Clouds
 		#ifdef CLOUDS
 			CloudRenderResult cloudResult = RenderClouds(worldDir, noise, skyRadiance);
             skyRadiance = skyRadiance * cloudResult.transmittance + cloudResult.scatteredLight;
 		#endif
 
-		#ifdef VOLUMETRIC_FOG
-			if (isEyeInWater == 0) {
-				mat2x3 volFogData = RaymarchAtmosphericFog(vec3(0.0), worldDir * lodRenderDist, noise.x, VF_MAX_SAMPLES >> 1);
+	    // Atmospheric fog
+		if (isEyeInWater == 0) {
+		    #ifdef VOLUMETRIC_FOG
+				mat2x3 volFogData = RaymarchAtmosphericFog(
+                    vec3(0.0), worldDir * lodRenderDist, noise.x, VF_MAX_SAMPLES >> 1
+                );
 				skyRadiance = ApplyFog(skyRadiance, volFogData);
-			}
-		#endif
+		    #else
+				float cameraHeight = eyeAltitude - VF_HEIGHT;
+
+				ExponentialHeightFog(
+					global.directIlluminance * eyeSkylightSmooth,
+					global.skyUpIlluminance * eyeSkylightSmooth,
+					lodRenderDist,
+					cameraHeight,
+					cameraHeight + worldDir.y * lodRenderDist,
+					dot(shadowDirWorld, worldDir),
+					skyRadiance
+				);
+		    #endif
+		}
 
 		// Accumulate
 		vec4 history = texelFetch(skyEnvMapTex, tid, 0);
