@@ -61,7 +61,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 rayStart, vec3 rayEnd, float dither, uint ste
 	float LdotV = dot(shadowDirWorld, rayDir);
 
     // Do not use the HG-D phase as it amplifies flaws when visibility is missing
-	vec2 phase = vec2(AirPhase(LdotV), DualLobePhase(LdotV, 0.7, -0.3, 0.1));
+	vec2 phase = vec2(AirPhase(LdotV), DualLobePhase(LdotV, 0.7, -0.3, 0.25));
 
 	float mieDensityMult = VF_MIE_DENSITY * 3e3 * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
 
@@ -88,7 +88,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 rayStart, vec3 rayEnd, float dither, uint ste
 		fogMieScattering
 	);
 
-	float uniformFog = (2.0 + wetness * VF_MIE_DENSITY_RAIN_MULT * 2.0) / maxDist;
+	float uniformFog = (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT * 2.0) / maxDist;
 
 	vec3 scatteringSun = vec3(0.0);
 	vec3 scatteringSky = vec3(0.0);
@@ -156,15 +156,15 @@ mat2x3 RaymarchAtmosphericFog(vec3 rayStart, vec3 rayEnd, float dither, uint ste
 			vec2 density = CalculateFogDensity(lightPos, uniformFog);
 			opticalDepthSun += density * stepSize;
 		}
-        vec3 transmittanceToSun = exp2(-rLOG2 * fogExtinctionCoeff * opticalDepthSun) * sampleShadow;
+        vec3 transmittanceToSun = exp(-fogExtinctionCoeff * opticalDepthSun) * sampleShadow;
 
 		vec3 stepExtinction = fogExtinctionCoeff * stepDensity;
-		vec3 stepTransmittance = exp2(-rLOG2 * dt * stepExtinction);
+		vec3 stepTransmittance = exp(-dt * stepExtinction);
 
 		vec3 stepIntegral = transmittance * oms(stepTransmittance) / maxEps(stepExtinction);
 
 		// https://zhuanlan.zhihu.com/p/457997155
-		float fms = 0.9 * oms(exp2(-128.0 * mean(stepExtinction)));
+		float fms = 0.9 * oms(exp2(-256.0 * mean(stepExtinction)));
 		vec2 msEnergy = phase + uniformPhase * fms / oms(fms);
 
 		scatteringSun += fogScatteringCoeff * (stepDensity * msEnergy) * stepIntegral * transmittanceToSun;
