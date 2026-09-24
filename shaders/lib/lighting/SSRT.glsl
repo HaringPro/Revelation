@@ -6,7 +6,6 @@
 #define INCLUDE_LIGHTING_SSRT
 
 #define SSRT_MAX_SAMPLES 16 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
-#define SSRT_SKY_TRACING
 
 #define SSRT_REFINEMENT
 #define SSRT_REFINEMENT_STEPS 4 // [2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32]
@@ -45,17 +44,11 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 		#if defined LOD_MOD
 			if (sampleDepth > 1.0 - EPS) sampleDepth = ViewToScreenDepth(ScreenToViewDepthLod(loadDepth1Lod(sampleTexel)));
 		#endif
-		#ifdef SSRT_SKY_TRACING
-		if (sampleDepth > screenDepthSky - EPS) {
-            hitPos = rayOrigin + rayDir;
-            hit = hitPos.z > screenDepthSky - EPS;
-			break;
-		}
-		#endif
 
 		float depthDiff = sampleDepth - hitPos.z;
 		if (abs(depthDiff + compareTolerance) < compareTolerance) {
 			hit = true;
+			hitPos.z = sampleDepth;
 			break;
 		}
 

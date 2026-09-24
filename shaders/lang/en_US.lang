@@ -320,7 +320,6 @@ option.SUBSURFACE_SCATTERING_RADIUS=Subsurface Scattering Radius
 option.SSRT_MAX_SAMPLES=Raytrace Samples
 option.SSRT_REFINEMENT=Raytrace Refinement
 option.SSRT_REFINEMENT_STEPS=Raytrace Refinement Steps
-option.SSRT_SKY_TRACING=Raytrace Sky
 
 option.SPECULAR_IMPORTANCE_SAMPLING_BIAS=Importance Sampling Bias
 option.SPECULAR_IMPORTANCE_SAMPLING_BIAS.comment=Scales the random parameter in GGX visible-normal importance sampling, biasing samples toward the specular lobe peak. Higher values reduce specular noise but may miss wide-lobe contributions from rough surfaces.
