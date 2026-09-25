@@ -112,17 +112,17 @@ void main() {
 	float historyFactor = saturate(frameIndex * 0.1 - 0.125);
 
 	vec3 viewDir  = ScreenToViewDirRaw(texelToUvScaled(texelPos));
-	vec3 geoNormal = mat3(gbufferModelView) * FetchGeometryNormal(texelPos);
+	vec3 viewGeoNormal = mat3(gbufferModelView) * FetchGeometryNormal(texelPos);
 
-	float NdotV = abs(dot(geoNormal, viewDir));
-	vec2 offsetScale = oms(abs(geoNormal.xy) * oms(NdotV)) * ldexp(2.0, FILTER_PASS_INDEX);
+	float NdotV = abs(dot(viewGeoNormal, viewDir));
+	vec2 offsetScale = oms(abs(viewGeoNormal.xy) * oms(NdotV)) * ldexp(2.0, FILTER_PASS_INDEX);
 
 	float invThresholdZ = 8.0 / normalDepthData.z;
 
 	// float variance = CalculateVariance(ivec2(localPos + padRadius));
 	float variance = filteredColVar.a;
 	float sigmaL = -0.5 * inversesqrt(variance + EPS) * historyFactor;
-	float sigmaN = 32.0 * exp2(-0.5 * variance / sqr(centerLuma)) * historyFactor;
+	float sigmaN = -32.0 * centerLuma * sigmaL;
 
 	vec3 centerNormal = OctDecodeSnorm(normalDepthData.xy);
 
@@ -142,7 +142,7 @@ void main() {
 
 			float logWeightN = log2(saturate(dot(OctDecodeSnorm(sampleAux.xy), centerNormal))) * sigmaN;
 			float logWeightL = abs(sampleLuma - centerLuma) * sigmaL;
-			weight *= saturate(exp2(logWeightN + logWeightL));
+			weight *= saturate(approxExp(logWeightN + logWeightL));
 
 			filteredColVar += sampleColVar * vec4(vec3(weight), weight * weight);
 			sumWeight += weight;
