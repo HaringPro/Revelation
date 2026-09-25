@@ -38,6 +38,7 @@ void main() {
     #if UPSCALE_MODE == 0
         ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
         vec2 scaledUv = scaleScreenUv(texelToUv(texelPos));
+        scaledUv = min(scaledUv, (renderScale - originTexelSize));
         imageStore(FSR1_EASU_OUT, texelPos, texture(FSR1_EASU_IN, scaledUv));
     #else
         fsr1Easu(scaledViewSize, originViewSize, originViewSize);

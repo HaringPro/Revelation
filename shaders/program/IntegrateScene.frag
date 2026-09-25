@@ -127,14 +127,18 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
 	}
 
 	mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
+		ivec2 fogTexelMax = ivec2(scaledHalfViewSize) - 1;
+
 		ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
+		randTexel = min(randTexel, fogTexelMax);
+
 		float sigmaZ = -32.0 / linearDepth;
 
 		mat2x3 sum = UnpackFogData(texelFetch(colortex11, randTexel, 0).xy);
 		float sumWeight = 1.0;
 
 		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 sampleTexel = randTexel + offset3x3N[i];
+			ivec2 sampleTexel = min(randTexel + offset3x3N[i], fogTexelMax);
 			uvec3 sampleFogData = texelFetch(colortex11, sampleTexel, 0).xyz;
 
 			float sampleDepth = uintBitsToFloat(sampleFogData.z);
