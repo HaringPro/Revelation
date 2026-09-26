@@ -13,7 +13,7 @@
 */
 
 
-#include "/settings.glsl"
+#include "/lib/Setting.glsl"
 
 #if defined VOXY || defined DISTANT_HORIZONS
 	#define LOD_MOD

@@ -1,6 +1,6 @@
 {
     "includeSettings": "
-    #include "/settings.glsl"
+    #include "/lib/Setting.glsl"
     ",
     "version": 1,
     "excludeLodsFromVanillaDepth": true,
