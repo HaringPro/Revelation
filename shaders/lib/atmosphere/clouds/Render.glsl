@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_CLOUDS_RENDER
+#define INCLUDE_LIB_CLOUDS_RENDER
+
 /*
 --------------------------------------------------------------------------------
 
@@ -354,3 +357,5 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 
 	return result;
 }
+
+#endif // INCLUDE_LIB_CLOUDS_RENDER

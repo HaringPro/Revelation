@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_TRANSFORM
+#define INCLUDE_LIB_UNIVERSAL_TRANSFORM
+
 vec3 ScreenToViewPosRaw(vec3 screenPos) {
 	vec3 ndcPos = screenPos * 2.0 - 1.0;
 	return projectAndDivide(gbufferProjectionInverse, ndcPos);
@@ -135,3 +138,5 @@ float ViewToScreenDepth(float depth) {
 		return 0.5 - (lodProjection[3].z / depth + lodProjection[2].z) * 0.5;
 	}
 #endif
+
+#endif // INCLUDE_LIB_UNIVERSAL_TRANSFORM

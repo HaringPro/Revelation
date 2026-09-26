@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_POST_DOF
+#define INCLUDE_LIB_POST_DOF
+
 const float DOF_SENSOR_WIDTH = 0.036;
 const float dofFocalLength = DOF_FOCAL_LENGTH * 0.001;
 const float dofApertureRadius = 0.5 * dofFocalLength / DOF_F_STOP;
@@ -74,3 +77,5 @@ float DofVogelRadius(uint sampleIndex, float radialPhase, float inverseSampleCou
 	float radiusSq = float(sampleIndex) * inverseSampleCount + radialPhase;
 	return radiusSq * inversesqrt(maxEps(radiusSq));
 }
+
+#endif // INCLUDE_LIB_POST_DOF

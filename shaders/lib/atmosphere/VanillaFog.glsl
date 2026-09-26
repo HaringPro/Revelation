@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_ATMOSPHERE_VANILLA_FOG
+#define INCLUDE_LIB_ATMOSPHERE_VANILLA_FOG
+
 void RenderVanillaFog(inout vec3 color, inout float fogTransmittance, float viewDistance) {
 	// Lava fog
 	#ifdef LAVA_FOG
@@ -23,3 +26,5 @@ void RenderVanillaFog(inout vec3 color, inout float fogTransmittance, float view
 		color *= smoothstep(12.0, 2.0, darknessFactor * viewDistance);
 	#endif
 }
+
+#endif // INCLUDE_LIB_ATMOSPHERE_VANILLA_FOG

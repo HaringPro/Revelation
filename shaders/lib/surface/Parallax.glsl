@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_SURFACE_PARALLAX
+#define INCLUDE_LIB_SURFACE_PARALLAX
+
 float SampleHeight(vec2 localCoord) {
     #ifdef SMOOTH_PARALLAX
         // Bilinear interpolation
@@ -86,3 +89,5 @@ vec3 CalculateParallax(vec2 localCoord, vec3 tangentDir, float dither, float par
 
 	return rayPos;
 }
+
+#endif // INCLUDE_LIB_SURFACE_PARALLAX

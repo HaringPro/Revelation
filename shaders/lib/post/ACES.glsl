@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_POST_ACES
+#define INCLUDE_LIB_POST_ACES
+
 // https://github.com/aces-aswf/aces-core
 
 /*
@@ -539,3 +542,5 @@ vec3 ACES2(vec3 inPixel) {
 
 	return outColor;
 }
+
+#endif // INCLUDE_LIB_POST_ACES

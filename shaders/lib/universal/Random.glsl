@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_RANDOM
+#define INCLUDE_LIB_UNIVERSAL_RANDOM
+
 const int noiseTextureResolution = 256;
 const float noiseTexturePixelSize = 1.0 / noiseTextureResolution;
 
@@ -301,3 +304,5 @@ uint OwenScramble(uint p, uint seed) {
 	p = OwenHash(p, seed);
 	return bitfieldReverse(p);
 }
+
+#endif // INCLUDE_LIB_UNIVERSAL_RANDOM

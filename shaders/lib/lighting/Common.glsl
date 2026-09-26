@@ -1,3 +1,5 @@
+#if !defined INCLUDE_LIB_LIGHTING_COMMON
+#define INCLUDE_LIB_LIGHTING_COMMON
 
 #include "/lib/lighting/BRDF.glsl"
 
@@ -82,3 +84,5 @@ float HardCodeEmissive(uint materialID, vec3 albedo, vec3 worldPos) {
 			return 0.0;
 	}
 }
+
+#endif // INCLUDE_LIB_LIGHTING_COMMON

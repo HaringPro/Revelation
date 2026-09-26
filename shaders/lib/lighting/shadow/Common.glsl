@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_SHADOW_COMMON
+#define INCLUDE_LIB_SHADOW_COMMON
+
 // Method from GeForceLegend
 // https://discord.com/channels/237199950235041794/525510804494221312/1379718853872848896
 
@@ -17,3 +20,5 @@ vec3 DistortShadowSpace(vec3 shadowClipPos) {
 	float distortionFactor = CalcDistortionFactor(shadowClipPos.xy);
 	return shadowClipPos * vec3(vec2(distortionFactor), 0.2);
 }
+
+#endif // INCLUDE_LIB_SHADOW_COMMON

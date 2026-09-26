@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_LIGHTING_BRDF
+#define INCLUDE_LIB_LIGHTING_BRDF
+
 /*
 --------------------------------------------------------------------------------
 
@@ -310,3 +313,5 @@ float EvaluateSpecularProbability(vec3 reflectance, vec3 albedo, float metallic,
 	float diffuseEnergy = luminance(albedo * oms(metallic));
 	return saturate(specularEnergy * rcp(maxEps(specularEnergy + diffuseEnergy)));
 }
+
+#endif // INCLUDE_LIB_LIGHTING_BRDF

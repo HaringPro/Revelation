@@ -1,5 +1,5 @@
-#if !defined INCLUDE_UTILITY_COMPAT
-#define INCLUDE_UTILITY_COMPAT
+#if !defined INCLUDE_LIB_UTILITY_COMPAT
+#define INCLUDE_LIB_UTILITY_COMPAT
 
 #if defined MC_GL_NV_gpu_shader5
 	#extension GL_NV_gpu_shader5 : enable
@@ -41,4 +41,4 @@
 	#endif
 #endif
 
-#endif // INCLUDE_UTILITY_COMPAT
+#endif // INCLUDE_LIB_UTILITY_COMPAT

@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_CLOUDS_SHAPE
+#define INCLUDE_LIB_CLOUDS_SHAPE
+
 /*
 --------------------------------------------------------------------------------
 
@@ -24,9 +27,6 @@
 
 --------------------------------------------------------------------------------
 */
-
-#if !defined INCLUDE_CLOUDS_SHAPE
-#define INCLUDE_CLOUDS_SHAPE
 
 #include "/lib/atmosphere/clouds/Common.glsl"
 
@@ -176,4 +176,4 @@ float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensiona
 	return cloudDensity * mix(CLOUD_CU_DENSITY_B, CLOUD_CU_DENSITY_T, heightFade);
 }
 
-#endif // INCLUDE_CLOUDS_SHAPE
+#endif // INCLUDE_LIB_CLOUDS_SHAPE

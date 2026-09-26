@@ -1,5 +1,5 @@
-#if !defined INCLUDE_WATER_WATERWAVE
-#define INCLUDE_WATER_WATERWAVE
+#if !defined INCLUDE_LIB_WATER_WATER_WAVE
+#define INCLUDE_LIB_WATER_WATER_WAVE
 
 const mat2 goldenRotate = mat2(cos(goldenAngle), -sin(goldenAngle), sin(goldenAngle), cos(goldenAngle));
 
@@ -107,4 +107,4 @@ vec3 CalculateWaterNormal(vec3 rayPos, vec3 rayDir) {
 	return CalculateWaterNormal(rayPos.xz + offset.xy);
 }
 
-#endif // INCLUDE_WATER_WATERWAVE
+#endif // INCLUDE_LIB_WATER_WATER_WAVE

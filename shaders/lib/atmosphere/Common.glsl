@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_ATMOSPHERE_COMMON
+#define INCLUDE_LIB_ATMOSPHERE_COMMON
+
 /*
 --------------------------------------------------------------------------------
 
@@ -461,3 +464,5 @@ void ExponentialHeightFog(
 
 	background = background * transmittance + inscatter;
 }
+
+#endif // INCLUDE_LIB_ATMOSPHERE_COMMON

@@ -1,3 +1,5 @@
+#if !defined INCLUDE_LIB_SHADOW_CAUSTIC
+#define INCLUDE_LIB_SHADOW_CAUSTIC
 
 vec2 WaterRefractionSlope(vec3 encodedNormal) {
 	vec3 waveNormal = normalize(encodedNormal * 2.0 - 1.0);
@@ -104,3 +106,5 @@ vec3 CalculateWaterCaustics(vec3 worldPos, float waterDepth, vec3 encodedNormal)
 
 	return focus * transmittance;
 }
+
+#endif // INCLUDE_LIB_SHADOW_CAUSTIC

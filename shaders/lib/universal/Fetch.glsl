@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_FETCH
+#define INCLUDE_LIB_UNIVERSAL_FETCH
+
 vec3 FetchBaseColor(ivec2 texel) {
 	return sRGBToLinear(loadAlbedo(texel).rgb) * sRGB_2_Rec2020;
 }
@@ -19,3 +22,5 @@ void FetchNormalData(ivec2 texel, out vec3 geometryNormal, out vec3 surfaceNorma
 vec4 ExtractSpecularTex(uvec4 pack) {
 	return vec4(Unpack2x8U(pack.z), Unpack2x8U(pack.w));
 }
+
+#endif // INCLUDE_LIB_UNIVERSAL_FETCH

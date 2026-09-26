@@ -1,5 +1,5 @@
-#if !defined INCLUDE_SURFACE_MATERIAL
-#define INCLUDE_SURFACE_MATERIAL
+#if !defined INCLUDE_LIB_SURFACE_MATERIAL
+#define INCLUDE_LIB_SURFACE_MATERIAL
 
 float IORFromF0(float f0) {
 	float sqrtF0 = f0 * inversesqrt(f0);
@@ -123,4 +123,4 @@ Material GetMaterialData(vec2 specTex) {
 	return material;
 }
 
-#endif
+#endif // INCLUDE_LIB_SURFACE_MATERIAL

@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_WATER_PHYSICS_OCEANS
+#define INCLUDE_LIB_WATER_PHYSICS_OCEANS
+
 // https://github.com/haubna/PhysicsMod/blob/main/oceans.glsl
 
 // just some basic consts for the wave function based on afl_ext's shader https://www.shadertoy.com/view/Xdlczl
@@ -203,3 +206,5 @@ WavePixelData physics_wavePixel(const vec2 position, const float factor, const f
 
 	return data;
 }
+
+#endif // INCLUDE_LIB_WATER_PHYSICS_OCEANS

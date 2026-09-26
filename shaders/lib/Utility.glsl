@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UTILITY
+#define INCLUDE_LIB_UTILITY
+
 /*
 --------------------------------------------------------------------------------
 
@@ -47,3 +50,5 @@
 #include "/lib/utility/Load.glsl"
 #include "/lib/utility/Compute.glsl"
 #include "/lib/utility/RenderScale.glsl"
+
+#endif // INCLUDE_LIB_UTILITY

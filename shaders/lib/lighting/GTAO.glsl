@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_LIGHTING_GTAO
+#define INCLUDE_LIB_LIGHTING_GTAO
+
 /* Ground-Truth Ambient Occlusion */
 // Reference: https://www.activision.com/cdn/research/Practical_Real_Time_Strategies_for_Accurate_Indirect_Occlusion_NEW%20VERSION_COLOR.pdf
 
@@ -94,3 +97,5 @@ vec3 ApproxMultiBounce(float ao, vec3 albedo) {
 
 	return max(vec3(ao), ((ao * a - b) * ao + c) * ao);
 }
+
+#endif // INCLUDE_LIB_LIGHTING_GTAO

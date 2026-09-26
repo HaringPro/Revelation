@@ -1,3 +1,5 @@
+#if !defined INCLUDE_LIB_SHADOW_RENDER
+#define INCLUDE_LIB_SHADOW_RENDER
 
 #define PCSS_SEARCH_SAMPLES 8 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 48 64]
 #define PCSS_FILTER_SAMPLES 16 // [4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 48 64]
@@ -191,3 +193,5 @@ float ScreenSpaceShadow(vec3 rayPos, vec3 viewPos, float dither, float sssAmount
 
 	return result;
 }
+
+#endif // INCLUDE_LIB_SHADOW_RENDER

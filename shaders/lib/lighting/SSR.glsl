@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_LIGHTING_SSR
+#define INCLUDE_LIB_LIGHTING_SSR
+
 #include "/lib/lighting/SSRT.glsl"
 #include "/lib/universal/MonteCarlo.glsl"
 
@@ -38,3 +41,5 @@ vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 worl
 
 	return reflection;
 }
+
+#endif // INCLUDE_LIB_LIGHTING_SSR

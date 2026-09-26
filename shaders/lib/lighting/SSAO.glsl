@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_LIGHTING_SSAO
+#define INCLUDE_LIB_LIGHTING_SSAO
+
 /* Screen-Space Ambient Occlusion */
 
 #define SSAO_SAMPLES 12 // [1 2 3 4 5 6 7 8 9 10 12 16 18 20 22 24 26 28 30 32 48 64]
@@ -45,3 +48,5 @@ float CalculateSSAO(vec2 coord, vec3 viewPos, vec3 normal, vec2 dir) {
 
 	return sqr(saturate(1.0 - sum * rSteps * SSAO_STRENGTH));
 }
+
+#endif // INCLUDE_LIB_LIGHTING_SSAO

@@ -1,3 +1,5 @@
+#if !defined INCLUDE_LIB_WATER_WATER_FOG
+#define INCLUDE_LIB_WATER_WATER_FOG
 
 float WaterPhase(float LdotV) {
 	float phase = FournierForandPhase(LdotV, 1.175, 4.065);
@@ -95,3 +97,5 @@ mat2x3 AnalyticWaterFog(float skylight, float waterDepth, float LdotV) {
 		return mat2x3(scattering, transmittance);
 	}
 #endif
+
+#endif // INCLUDE_LIB_WATER_WATER_FOG

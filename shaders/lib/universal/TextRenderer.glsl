@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_TEXT_RENDERER
+#define INCLUDE_LIB_UNIVERSAL_TEXT_RENDERER
+
 /*
 =============================================================================
 
@@ -227,3 +230,5 @@ vec3 renderText(ivec2 pos, int size, vec3 color) {
 
 	return result;
 }
+
+#endif // INCLUDE_LIB_UNIVERSAL_TEXT_RENDERER

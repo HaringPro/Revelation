@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_POST_AGX
+#define INCLUDE_LIB_POST_AGX
+
 //======// Constants //===========================================================================//
 
 const float min_ev = -7.5;
@@ -363,3 +366,5 @@ vec3 AgX_AllenWp(vec3 color) {
 	// components may be useful for subsequent color adjustments.
 	return color;
 }
+
+#endif // INCLUDE_LIB_POST_AGX

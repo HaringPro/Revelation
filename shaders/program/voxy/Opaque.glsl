@@ -1,5 +1,5 @@
 // Keep Voxy patch path stable: do not emit #extension from shared includes.
-#define INCLUDE_UTILITY_COMPAT
+#define INCLUDE_LIB_UTILITY_COMPAT
 
 #include "/lib/Utility.glsl"
 

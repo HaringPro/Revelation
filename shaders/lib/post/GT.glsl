@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_POST_GT
+#define INCLUDE_LIB_POST_GT
+
 //======// GT //==================================================================================//
 
 // Uchimura 2017, "HDR theory and practice"
@@ -417,3 +420,5 @@ vec3 GT7(vec3 color) {
 
 	return color;
 }
+
+#endif // INCLUDE_LIB_POST_GT

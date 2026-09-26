@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_MONTE_CARLO
+#define INCLUDE_LIB_UNIVERSAL_MONTE_CARLO
+
 // Monte Carlo integration of distributions
 
 // PDF = 1 / (4 * PI)
@@ -164,3 +167,5 @@ void AddLobeWithMIS(inout vec3 weight, inout float pdf, vec3 lobeWeight, float l
 		pdf += lobePdf;
 	}
 }
+
+#endif // INCLUDE_LIB_UNIVERSAL_MONTE_CARLO

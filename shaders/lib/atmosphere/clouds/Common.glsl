@@ -1,5 +1,5 @@
-#if !defined INCLUDE_CLOUDS_COMMON
-#define INCLUDE_CLOUDS_COMMON
+#if !defined INCLUDE_LIB_CLOUDS_COMMON
+#define INCLUDE_LIB_CLOUDS_COMMON
 
 /*
 --------------------------------------------------------------------------------
@@ -176,4 +176,4 @@ vec3 WorldToCloudShadowPrevScreenPos(vec3 worldPos) {
 	return shadowPos * 0.5 + 0.5;
 }
 
-#endif
+#endif // INCLUDE_LIB_CLOUDS_COMMON

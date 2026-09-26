@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_ATMOSPHERE_ATMOSPHERIC_FOG
+#define INCLUDE_LIB_ATMOSPHERE_ATMOSPHERIC_FOG
+
 #include "/lib/atmosphere/Rainbow.glsl"
 #include "/lib/atmosphere/clouds/Common.glsl"
 
@@ -199,3 +202,5 @@ mat2x3 RaymarchAtmosphericFog(vec3 rayStart, vec3 rayEnd, float dither, uint ste
 
 	return mat2x3(scattering, transmittance);
 }
+
+#endif // INCLUDE_LIB_ATMOSPHERE_ATMOSPHERIC_FOG

@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_UNIVERSAL_SSBO
+#define INCLUDE_LIB_UNIVERSAL_SSBO
+
 #ifndef SSBO_DECLARED_TPYE
 #define SSBO_DECLARED_TPYE readonly
 #endif
@@ -22,3 +25,5 @@ layout(std430, binding = 2) SSBO_DECLARED_TPYE buffer CloudData {
 	mat4 prevShadowViewProj;
     vec2 upscaleJitter;
 } cloud;
+
+#endif // INCLUDE_LIB_UNIVERSAL_SSBO

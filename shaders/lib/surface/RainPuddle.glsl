@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_SURFACE_RAIN_PUDDLE
+#define INCLUDE_LIB_SURFACE_RAIN_PUDDLE
+
 // https://www.shadertoy.com/view/ldfyzl
 
 #define RIPPLE_MAX_RADIUS 1 // [1 2 3]
@@ -71,3 +74,5 @@ void ApplyRainPuddleMaterial(inout vec3 albedo, inout vec3 specTex, vec3 worldPo
 	specTex.r = mix(specTex.r, RAIN_PUDDLE_SMOOTHNESS, puddles);
 	// specTex.g = mix(specTex.g, 0.02, puddles);
 }
+
+#endif // INCLUDE_LIB_SURFACE_RAIN_PUDDLE

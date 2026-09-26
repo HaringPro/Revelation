@@ -1,3 +1,6 @@
+#if !defined INCLUDE_LIB_LIGHTING_SSILVB
+#define INCLUDE_LIB_LIGHTING_SSILVB
+
 // Adapted from "Screen Space sBitMask Lighting with Visibility Bitmask" by Olivier Therrien, et al.
 // https://arxiv.org/pdf/2301.11376
 // https://cdrinmatane.github.io/posts/cgspotlight-slides/
@@ -294,3 +297,5 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 	irradiance.rgb += skyIrradiance * irradiance.a * cube(skylight);
 	return irradiance;
 }
+
+#endif // INCLUDE_LIB_LIGHTING_SSILVB

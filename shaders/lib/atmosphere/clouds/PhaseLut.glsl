@@ -1,5 +1,5 @@
-#if !defined INCLUDE_CLOUDS_PHASE_LUT
-#define INCLUDE_CLOUDS_PHASE_LUT
+#if !defined INCLUDE_LIB_CLOUDS_PHASE_LUT
+#define INCLUDE_LIB_CLOUDS_PHASE_LUT
 
 #define CLOUD_PHASE_CU 0
 #define CLOUD_PHASE_ST 1
@@ -41,4 +41,4 @@ float SampleCloudPhaseLutScalar(float cosTheta, int cloudType) {
 
 #endif
 
-#endif
+#endif // INCLUDE_LIB_CLOUDS_PHASE_LUT

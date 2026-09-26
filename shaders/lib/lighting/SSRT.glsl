@@ -1,9 +1,9 @@
+#if !defined INCLUDE_LIB_LIGHTING_SSRT
+#define INCLUDE_LIB_LIGHTING_SSRT
+
 // Reference:
 // Morgan McGuire, Michael Mara. "Efficient GPU Screen-Space Ray Tracing". JCGT, 2014.
 // https://jcgt.org/published/0003/04/04/paper.pdf
-
-#if !defined INCLUDE_LIGHTING_SSRT
-#define INCLUDE_LIGHTING_SSRT
 
 #define SSRT_MAX_SAMPLES 16 // [4 8 12 16 18 20 24 28 32 36 40 48 64 128 256 512]
 
@@ -75,4 +75,4 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 	return hit;
 }
 
-#endif // INCLUDE_LIGHTING_SSRT
+#endif // INCLUDE_LIB_LIGHTING_SSRT
