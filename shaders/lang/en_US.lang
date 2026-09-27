@@ -330,6 +330,7 @@ option.ROUGH_REFLECTIONS_THRESHOLD=Rough Reflections Threshold
 option.REFLECTION_FILTER=Reflection Filter
 
 option.RAYTRACED_REFRACTION=Raytraced Refraction
+option.RAYTRACED_REFRACTION.comment=Experimental feature. Not yet complete.
 option.REFRACTION_SAMPLES=Refraction Samples
 
 # Transparent

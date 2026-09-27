@@ -334,6 +334,7 @@ option.ROUGH_REFLECTIONS_THRESHOLD=粗糙反射阈值
 option.REFLECTION_FILTER=反射过滤
 
 option.RAYTRACED_REFRACTION=光线追踪折射
+option.RAYTRACED_REFRACTION.comment=实验性功能，尚未完善。
 option.REFRACTION_SAMPLES=折射采样数
 
 # Transparent
