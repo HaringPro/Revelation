@@ -5,10 +5,10 @@ profile.Default=默认
 # SCREENS
 screen.Environment=环境
 screen.Lighting=光照
-screen.Materials=材质
-screen.PostProcessing=后处理
-screen.Debug=调试
-screen.Compatibility=兼容
+screen.Materials=§7材质
+screen.PostProcessing=§7后处理
+screen.Debug=§8调试
+screen.Compatibility=§8兼容
 
 screen.Atmosphere=大气
 screen.OuterSpace=太空
@@ -38,7 +38,7 @@ screen.Parallax=视差
 screen.Emissive=自发光
 screen.SubsurfaceScattering=次表面散射
 screen.Transparent=半透明
-screen.WaterParams=水参数
+screen.WaterParams=水体参数
 screen.MiscMaterials=杂项
 
 screen.SuperResolution=§l超分辨率
@@ -53,15 +53,15 @@ screen.TonemappingParams=色调映射参数
 
 
 # OPTIONS
-option.INFO=§f§o§lRevelation
-value.INFO.0=§c§o§lAlpha
-value.INFO.1=§a§o§lBeta
-value.INFO.2=§b§o§lRelease
-option.AUTHOR=§f§o§l作者
+option.INFO=§f§3§lRevelation
+value.INFO.0=§c§lAlpha
+value.INFO.1=§a§lBeta
+value.INFO.2=§b§lRelease
+option.AUTHOR=§f§3§l作者
 option.AUTHOR.comment=版权所有 (C) 2026 HaringPro. Apache-2.0 许可证
-value.AUTHOR.0=§o§lHaringPro
+value.AUTHOR.0=§lHaringPro
 
-option.RP_SUPPORT=§fPBR 资源包支持
+option.RP_SUPPORT=§f§3PBR §f资源包支持
 option.RENDER_MODE=§f渲染模式
 value.RENDER_MODE.0=§b§l离线渲染
 value.RENDER_MODE.1=§e§l实时渲染
@@ -246,9 +246,9 @@ option.SCREEN_SPACE_SHADOWS=屏幕空间阴影
 option.SCREEN_SPACE_SHADOWS_SAMPLES=屏幕空间阴影采样数
 
 option.BLOCKLIGHT_BRIGHTNESS=方块光亮度
-option.BLOCKLIGHT_COLOR_R=方块光颜色-§4红
-option.BLOCKLIGHT_COLOR_G=方块光颜色-§2绿
-option.BLOCKLIGHT_COLOR_B=方块光颜色-§1蓝
+option.BLOCKLIGHT_COLOR_R=方块光颜色-§c红
+option.BLOCKLIGHT_COLOR_G=方块光颜色-§a绿
+option.BLOCKLIGHT_COLOR_B=方块光颜色-§9蓝
 option.HANDHELD_LIGHTING=手持光照
 option.COLORED_HANDHELD_LIGHTING=彩色手持光照
 option.HELD_LIGHT_BRIGHTNESS=手持光照亮度
@@ -346,21 +346,21 @@ option.WATER_FOG_DENSITY=水雾密度
 option.WATER_IOR=水体折射率
 option.WATER_PARALLAX_SAMPLES=水体视差采样数
 
-option.WATER_ABSORPTION_R=水体吸收系数-§4红
-option.WATER_ABSORPTION_G=水体吸收系数-§2绿
-option.WATER_ABSORPTION_B=水体吸收系数-§1蓝
-option.WATER_SCATTERING_R=水体散射系数-§4红
-option.WATER_SCATTERING_G=水体散射系数-§2绿
-option.WATER_SCATTERING_B=水体散射系数-§1蓝
+option.WATER_ABSORPTION_R=水体吸收系数-§c红
+option.WATER_ABSORPTION_G=水体吸收系数-§a绿
+option.WATER_ABSORPTION_B=水体吸收系数-§9蓝
+option.WATER_SCATTERING_R=水体散射系数-§c红
+option.WATER_SCATTERING_G=水体散射系数-§a绿
+option.WATER_SCATTERING_B=水体散射系数-§9蓝
 
 option.TRANSLUCENT_ROUGHNESS=半透明粗糙度
 option.GLASS_IOR=玻璃折射率
 
 # Misc
 option.DEFAULT_DIELECTRIC_F0=默认电介质F0
-option.SELECTION_BOX_COLOR_R=选择框颜色-§4红
-option.SELECTION_BOX_COLOR_G=选择框颜色-§2绿
-option.SELECTION_BOX_COLOR_B=选择框颜色-§1蓝
+option.SELECTION_BOX_COLOR_R=选择框颜色-§c红
+option.SELECTION_BOX_COLOR_G=选择框颜色-§a绿
+option.SELECTION_BOX_COLOR_B=选择框颜色-§9蓝
 
 
 # Post-Processing
@@ -495,11 +495,14 @@ value.UPSCALE_MODE.1=FSR 1.0
 # Compatibility
 option.MOD_BLOCK_SUPPORT=模组方块支持
 option.PHYSICS_OCEAN_SUPPORT=物理海洋支持
-option.FORCE_DISABLE_SUBGROUP_OPS=§4强制禁用子组操作
+option.FORCE_DISABLE_SUBGROUP_OPS=§c强制禁用子组操作
 
 # Debug
 option.WHITE_WORLD=纯白世界
 option.DEBUG_NORMALS=测试法线
+value.DEBUG_NORMALS.0=关
+value.DEBUG_NORMALS.1=纹理
+value.DEBUG_NORMALS.2=几何
 option.DEBUG_ATMOSPHERE_LUTS=测试大气 LUT
 option.DEBUG_SKY_MAP=测试天空盒映射
 option.DEBUG_BLOOM_TILES=测试泛光

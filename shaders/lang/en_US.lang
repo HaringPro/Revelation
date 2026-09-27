@@ -5,10 +5,10 @@ profile.Default=Default
 # SCREENS
 screen.Environment=Environment
 screen.Lighting=Lighting
-screen.Materials=Materials
-screen.PostProcessing=Post-Processing
-screen.Debug=Debug
-screen.Compatibility=Compatibility
+screen.Materials=§7Materials
+screen.PostProcessing=§7Post-Processing
+screen.Debug=§8Debug
+screen.Compatibility=§8Compatibility
 
 screen.Atmosphere=Atmosphere
 screen.OuterSpace=Outer Space
@@ -53,14 +53,18 @@ screen.TonemappingParams=Tonemapping Parameters
 
 
 # OPTIONS
-option.INFO=Revelation
-option.AUTHOR=Author
-option.AUTHOR.comment=Copyright (C) 2026 HaringPro. Apache License 2.0
+option.INFO=§f§3§lRevelation
+value.INFO.0=§c§lAlpha
+value.INFO.1=§a§lBeta
+value.INFO.2=§b§lRelease
+option.AUTHOR=§f§3§lAuthor
+option.AUTHOR.comment=Copyright (C) 2026 HaringPro. All Rights Reserved
+value.AUTHOR.0=§lHaringPro
 
-option.RP_SUPPORT=Resource Pack Support
-option.RENDER_MODE=Render Mode
-value.RENDER_MODE.0=Screenshot
-value.RENDER_MODE.1=Gameplay
+option.RP_SUPPORT=§f§3PBR §fResource Pack Support
+option.RENDER_MODE=§fRender Mode
+value.RENDER_MODE.0=§b§lScreenshot
+value.RENDER_MODE.1=§e§lGameplay
 
 # Environment
 option.PLANET_GROUND=Planet Ground
@@ -242,9 +246,9 @@ option.SCREEN_SPACE_SHADOWS=Screen-Space Shadows
 option.SCREEN_SPACE_SHADOWS_SAMPLES=Screen-Space Shadows Samples
 
 option.BLOCKLIGHT_BRIGHTNESS=Blocklight Brightness
-option.BLOCKLIGHT_COLOR_R=Blocklight Color §4Red
-option.BLOCKLIGHT_COLOR_G=Blocklight Color §2Green
-option.BLOCKLIGHT_COLOR_B=Blocklight Color §1Blue
+option.BLOCKLIGHT_COLOR_R=Blocklight Color §cRed
+option.BLOCKLIGHT_COLOR_G=Blocklight Color §aGreen
+option.BLOCKLIGHT_COLOR_B=Blocklight Color §9Blue
 option.HANDHELD_LIGHTING=Handheld Lighting
 option.COLORED_HANDHELD_LIGHTING=Colored Handheld Lighting
 option.HELD_LIGHT_BRIGHTNESS=Held Light Brightness
@@ -342,21 +346,21 @@ option.WATER_FOG_DENSITY=Water Fog Density
 option.WATER_IOR=Water IOR
 option.WATER_PARALLAX_SAMPLES=Water Parallax Samples
 
-option.WATER_ABSORPTION_R=Water Absorption §4Red
-option.WATER_ABSORPTION_G=Water Absorption §2Green
-option.WATER_ABSORPTION_B=Water Absorption §1Blue
-option.WATER_SCATTERING_R=Water Scattering §4Red
-option.WATER_SCATTERING_G=Water Scattering §2Green
-option.WATER_SCATTERING_B=Water Scattering §1Blue
+option.WATER_ABSORPTION_R=Water Absorption §cRed
+option.WATER_ABSORPTION_G=Water Absorption §aGreen
+option.WATER_ABSORPTION_B=Water Absorption §9Blue
+option.WATER_SCATTERING_R=Water Scattering §cRed
+option.WATER_SCATTERING_G=Water Scattering §aGreen
+option.WATER_SCATTERING_B=Water Scattering §9Blue
 
 option.TRANSLUCENT_ROUGHNESS=Translucent Roughness
 option.GLASS_IOR=Glass IOR
 
 # Misc
 option.DEFAULT_DIELECTRIC_F0=Default Dielectric F0
-option.SELECTION_BOX_COLOR_R=Selection Box Color §4Red
-option.SELECTION_BOX_COLOR_G=Selection Box Color §2Green
-option.SELECTION_BOX_COLOR_B=Selection Box Color §1Blue
+option.SELECTION_BOX_COLOR_R=Selection Box Color §cRed
+option.SELECTION_BOX_COLOR_G=Selection Box Color §aGreen
+option.SELECTION_BOX_COLOR_B=Selection Box Color §9Blue
 
 
 # Post-Processing
@@ -491,11 +495,14 @@ value.UPSCALE_MODE.1=FSR 1.0
 # Compatibility
 option.MOD_BLOCK_SUPPORT=Mod Block Support
 option.PHYSICS_OCEAN_SUPPORT=Physics Ocean Support
-option.FORCE_DISABLE_SUBGROUP_OPS=§4Force Disable Subgroup Ops
+option.FORCE_DISABLE_SUBGROUP_OPS=§cForce Disable Subgroup Ops
 
 # Debug
 option.WHITE_WORLD=White World
 option.DEBUG_NORMALS=Debug Normals
+value.DEBUG_NORMALS.0=Off
+value.DEBUG_NORMALS.1=Surface
+value.DEBUG_NORMALS.2=Geometry
 option.DEBUG_ATMOSPHERE_LUTS=Debug Atmosphere LUTs
 option.DEBUG_SKY_MAP=Debug Sky Map
 option.DEBUG_BLOOM_TILES=Debug Bloom Tiles
