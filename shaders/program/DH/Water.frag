@@ -99,6 +99,13 @@ void main() {
 	} else {
 		normalOut.zw = normalOut.xy;
         albedoOut = vertColor;
+        #ifdef DISTANT_HORIZONS_TEXTURES
+            if (dh_hasTexture()) {
+                vec4 albedo = dh_sampleTexture();
+                vec3 clampedColor = saturate(albedoOut.rgb * (albedo.rgb * 2.0));
+                albedoOut.rgb = mix(albedoOut.rgb, clampedColor, albedo.a);
+            }
+        #endif
 		waterOut = vec4(0.0);
 	}
 

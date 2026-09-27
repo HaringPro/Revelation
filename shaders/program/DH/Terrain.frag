@@ -48,7 +48,14 @@ void main() {
 	}
 
 	albedoOut = vec4(vertColor, 1.0);
-	/* Terrain noises */ {
+    #ifdef DISTANT_HORIZONS_TEXTURES
+        if (dh_hasTexture()) {
+            vec4 albedo = dh_sampleTexture();
+            vec3 clampedColor = saturate(albedoOut.rgb * (albedo.rgb * 2.0));
+            albedoOut.rgb = mix(albedoOut.rgb, clampedColor, albedo.a);
+        }
+    #else
+	    // Terrain noises
 		const float res = 8.0;
 		const float strength = 0.5;
 
@@ -58,7 +65,7 @@ void main() {
 		float noise = texture(noisetex, noisePos * (res / 256.0)).x * 2.0;
 
 		albedoOut.rgb = pow(albedoOut.rgb, vec3(mix(1.0, noise, strength)));
-	}
+    #endif
 
 	#ifdef WHITE_WORLD
 		albedoOut = vec4(1.0);
