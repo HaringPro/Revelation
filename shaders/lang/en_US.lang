@@ -5,10 +5,10 @@ profile.Default=Default
 # SCREENS
 screen.Environment=Environment
 screen.Lighting=Lighting
-screen.Materials=§7Materials
-screen.PostProcessing=§7Post-Processing
-screen.Debug=§8Debug
-screen.Compatibility=§8Compatibility
+screen.Materials=Materials
+screen.PostProcessing=Post-Processing
+screen.Debug=Debug
+screen.Compatibility=Compatibility
 
 screen.Atmosphere=Atmosphere
 screen.OuterSpace=Outer Space

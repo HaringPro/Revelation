@@ -5,10 +5,10 @@ profile.Default=默认
 # SCREENS
 screen.Environment=环境
 screen.Lighting=光照
-screen.Materials=§7材质
-screen.PostProcessing=§7后处理
-screen.Debug=§8调试
-screen.Compatibility=§8兼容
+screen.Materials=材质
+screen.PostProcessing=后处理
+screen.Debug=调试
+screen.Compatibility=兼容
 
 screen.Atmosphere=大气
 screen.OuterSpace=太空
