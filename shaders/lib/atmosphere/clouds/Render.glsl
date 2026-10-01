@@ -50,7 +50,7 @@ float[cloudMsCount] SetupParticipatingMediaPhases(float primaryPhase, float fall
 float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise) {
 	const uint steps = uint(CLOUD_LOW_SUNLIGHT_SAMPLES);
 	const float rSteps = 1.0 / float(steps);
-	float rayLength = cloudLayer0.thickness / max(rayDir.y, 0.25);
+	float rayLength = cloudLayer0.thickness / max(rayDir.y, 0.5);
 
 	float stepLength = rayLength * rSteps * rSteps;
 	vec3 rayStep = rayDir * stepLength;
