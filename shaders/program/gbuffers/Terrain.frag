@@ -197,7 +197,7 @@ void main() {
 	#endif
 
 	// Compute rain puddles
-	#ifdef RAIN_PUDDLES
+	#if defined RAIN_PUDDLES && defined DIMENSION_OVERWORLD
 		if (wetnessCustom > EPS) {
 			ApplyRainPuddleMaterial(albedoOut.rgb, specularTex.rgb, worldPos, normal, geoNormal, lightmap.y);
 		}

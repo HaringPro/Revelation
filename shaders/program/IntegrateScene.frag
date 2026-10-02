@@ -121,37 +121,35 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
     }
 }
 
-#if defined VOLUMETRIC_FOG || defined UW_VOLUMETRIC_FOG
-	mat2x3 UnpackFogData(uvec2 data) {
-		return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
-	}
+mat2x3 UnpackFogData(uvec2 data) {
+    return mat2x3(DecodeRGBE8U(data.x), DecodeRGBE8U(data.y));
+}
 
-	mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
-		ivec2 fogTexelMax = ivec2(scaledHalfViewSize) - 1;
+mat2x3 UpscaleVolumetricFog(ivec2 texelPos, float linearDepth) {
+    ivec2 fogTexelMax = ivec2(scaledHalfViewSize) - 1;
 
-		ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
-		randTexel = min(randTexel, fogTexelMax);
+    ivec2 randTexel = ivec2(vec2(texelPos >> 1) + BlueNoise(texelPos, frameCounter + 7));
+    randTexel = min(randTexel, fogTexelMax);
 
-		float sigmaZ = -32.0 / linearDepth;
+    float sigmaZ = -32.0 / linearDepth;
 
-		mat2x3 sum = UnpackFogData(texelFetch(colortex11, randTexel, 0).xy);
-		float sumWeight = 1.0;
+    mat2x3 sum = UnpackFogData(texelFetch(colortex11, randTexel, 0).xy);
+    float sumWeight = 1.0;
 
-		for (uint i = 0u; i < 8u; ++i) {
-			ivec2 sampleTexel = min(randTexel + offset3x3N[i], fogTexelMax);
-			uvec3 sampleFogData = texelFetch(colortex11, sampleTexel, 0).xyz;
+    for (uint i = 0u; i < 8u; ++i) {
+        ivec2 sampleTexel = min(randTexel + offset3x3N[i], fogTexelMax);
+        uvec3 sampleFogData = texelFetch(colortex11, sampleTexel, 0).xyz;
 
-			float sampleDepth = uintBitsToFloat(sampleFogData.z);
-			float weight = exp2(abs(sampleDepth - linearDepth) * sigmaZ);
+        float sampleDepth = uintBitsToFloat(sampleFogData.z);
+        float weight = exp2(abs(sampleDepth - linearDepth) * sigmaZ);
 
-			sum += UnpackFogData(sampleFogData.xy) * weight;
-			sumWeight += weight;
-		}
+        sum += UnpackFogData(sampleFogData.xy) * weight;
+        sumWeight += weight;
+    }
 
-		sum *= rcp(sumWeight);
-		return sum;
-	}
-#endif
+    sum *= rcp(sumWeight);
+    return sum;
+}
 
 //======// Main //================================================================================//
 void main() {
@@ -231,10 +229,10 @@ void main() {
 
 	// Atmospheric fog
     if (isEyeInWater == 0) {
-	    #ifdef VOLUMETRIC_FOG
+	    #if defined DIMENSION_NETHER || defined VOLUMETRIC_FOG
 			mat2x3 volFogData = UpscaleVolumetricFog(texelPos, -viewPos.z);
 			sceneColor = ApplyFog(sceneColor, volFogData);
-			fogMask = mix(1.0, mean(volFogData[1]), eyeSkylightSmooth);
+			fogMask = mean(volFogData[1]);
 	    #else
 			float cameraHeight = eyeAltitude - VF_HEIGHT;
 			float rayLength = min(viewDist, lodRenderDist);

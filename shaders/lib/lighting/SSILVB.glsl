@@ -293,8 +293,18 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 	irradiance *= rSliceCount / float(sectorCount);
 	irradiance = vec4(irradiance.rgb, saturate(1.0 - irradiance.a));
 
+    // Skylight
 	vec3 skyIrradiance = ConvolvedReconstructSH3(global.skySH, worldNormal);
 	irradiance.rgb += skyIrradiance * irradiance.a * cube(skylight);
+
+    // Minimal ambient light
+    #if defined DIMENSION_OVERWORLD
+        float ambientColor = max(MINIMUM_AMBIENT_BRIGHTNESS, 5e-3 * nightVision);
+    #elif defined DIMENSION_NETHER
+        vec3 ambientColor = (netherColorCustom + 0.5) * (1.0 + nightVision);
+    #endif
+    irradiance.rgb += ambientColor * irradiance.a;
+
 	return irradiance;
 }
 
