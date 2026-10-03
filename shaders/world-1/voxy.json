@@ -1,0 +1,48 @@
+{
+    "includeSettings": "
+    #include "/lib/Setting.glsl"
+    ",
+    "version": 1,
+    "excludeLodsFromVanillaDepth": true,
+    "opaqueDrawBuffers": [6, 7, 8],
+    "translucentDrawBuffers": [6, 16, 17, 12],
+    "blending": {
+        "-1": "off"
+    },
+    "useViewportDims": true,
+    "uniforms": [
+        "vxProj",
+        "vxProjInv",
+        "gbufferModelViewInverse",
+        "cameraPosition",
+        "far",
+        "frameCounter",
+        "frameTimeCounter",
+        "taaJitter",
+        "scaledTexelSize"
+    ],
+    "samplers": [
+        "vxDepthTexOpaque",
+        "noisetex",
+        "depthtex0"
+    ],
+    #if SR_ENABLE
+    "renderScale": [SR_RENDER_SCALE_FACTOR],
+    #elif RENDER_SCALE_1000X == 500
+    "renderScale": [0.5],
+    #elif RENDER_SCALE_1000X == 588
+    "renderScale": [0.588],
+    #elif RENDER_SCALE_1000X == 600
+    "renderScale": [0.6],
+    #elif RENDER_SCALE_1000X == 667
+    "renderScale": [0.667],
+    #elif RENDER_SCALE_1000X == 750
+    "renderScale": [0.75],
+    #elif RENDER_SCALE_1000X == 850
+    "renderScale": [0.85],
+    #elif RENDER_SCALE_1000X == 900
+    "renderScale": [0.9],
+    #endif
+
+    "taaOffset": "{ return taaJitter; }"
+}

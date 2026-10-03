@@ -105,6 +105,7 @@ void main() {
 	sceneOut = vec3(0.0);
 
 	if (materialID == 0u) { // Sky
+    #if defined DIMENSION_OVERWORLD
 		vec3 viewDir  = ScreenToViewDir(screenCoord);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
@@ -139,6 +140,7 @@ void main() {
 
 			sceneOut += celestial * transmittance;
 		}
+    #endif // DIMENSION_OVERWORLD
 	} else {
 		vec3 screenPos = vec3(screenCoord, loadDepth0(texelPos));
         #ifdef PARALLAX_SHADOW
@@ -170,6 +172,10 @@ void main() {
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
 
 		vec2 lightmap = Unpack2x8U(materialPack.x);
+        // #if !defined DIMENSION_OVERWORLD
+        //     lightmap.y = 1.0;
+        // #endif
+
 		vec4 specularTex = ExtractSpecularTex(materialPack);
 
 		Material material = GetMaterialData(specularTex, albedo);
@@ -205,6 +211,19 @@ void main() {
 		vec3 diffuseRadiance = vec3(0.0);
 		vec3 specularRadiance = vec3(0.0);
 
+		float NdotV = dot(worldNormal, -worldDir);
+		float NdotL = dot(worldNormal, shadowDirWorld);
+		float LdotV = dot(shadowDirWorld, -worldDir);
+
+        // Must use unclamped NdotL & NdotV
+        float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
+        float NdotH = saturate((NdotL + NdotV) * invLenH);
+        float VdotH = saturate(LdotV * invLenH + invLenH);
+        NdotL = saturate(NdotL);
+        NdotV = saturate(NdotV);
+
+        #if defined DIMENSION_OVERWORLD
+
 		// Cloud shadows
 		#ifdef CLOUD_SHADOWS
 			// float cloudShadow = CalculateCloudShadows(worldPos);
@@ -221,17 +240,6 @@ void main() {
 		#if defined LOD_MOD
 			distanceFade = saturate(distanceFade + float(lodMask));
 		#endif
-
-		float NdotV = dot(worldNormal, -worldDir);
-		float NdotL = dot(worldNormal, shadowDirWorld);
-		float LdotV = dot(shadowDirWorld, -worldDir);
-
-        // Must use unclamped NdotL & NdotV
-        float invLenH = inversesqrt(2.0 + 2.0 * LdotV);
-        float NdotH = saturate((NdotL + NdotV) * invLenH);
-        float VdotH = saturate(LdotV * invLenH + invLenH);
-        NdotL = saturate(NdotL);
-        NdotV = saturate(NdotV);
 
 		// Shadows and SSS
 		if (NdotL + sssAmount > EPS) {
@@ -273,6 +281,8 @@ void main() {
 			}
 		}
 
+        #endif // DIMENSION_OVERWORLD
+
 		// Ambient occlusion
 		#if AO_ENABLED > 0 && !defined SSILVB_ENABLED
 			vec3 ao = vec3(1.0);
@@ -291,8 +301,8 @@ void main() {
 			const float ao = 1.0;
 		#endif
 
-		// Skylight & Blocklight
 		#ifndef SSILVB_ENABLED
+            // Skylight
 			if (lightmap.y > EPS) {
 				// Spherical harmonics skylight
 				vec3 skylight = ConvolvedReconstructSH3(global.skySH, worldNormal);
@@ -303,10 +313,19 @@ void main() {
 				diffuseRadiance += bounce * pow5(lightmap.y) * sunlightBase * ao;
 			}
 
+            // Blocklight
 			if (lightmap.x > EPS) {
 				lightmap.x = CalculateBlocklightFalloff(lightmap.x);
 				diffuseRadiance += lightmap.x * (ao * oms(lightmap.x) + lightmap.x) * blocklightColor;
 			}
+
+            // Minimal ambient light
+            #if defined DIMENSION_OVERWORLD
+                float ambientColor = max(MINIMUM_AMBIENT_BRIGHTNESS, 5e-3 * nightVision);
+            #elif defined DIMENSION_NETHER
+                vec3 ambientColor = (netherColorCustom + 0.5) * (1.0 + nightVision);
+            #endif
+            diffuseRadiance += (worldNormal.y * 0.4 + 0.6) * ambientColor * ao;
 		#endif
 
 		// Handheld light
@@ -338,9 +357,6 @@ void main() {
 			#endif
 			diffuseRadiance += YCoCgToRGB(radiance);
 		#endif
-
-		// Minimal ambient light
-		diffuseRadiance += (worldNormal.y * 0.4 + 0.6) * max(MINIMUM_AMBIENT_BRIGHTNESS, 5e-3 * nightVision) * ao;
 
 		// Apply diffuse color (baseColor * (1 - metallic))
 		material.metallic *= 0.2 * lightmap.y + 0.8;

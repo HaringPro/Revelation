@@ -140,6 +140,7 @@ void main() {
 		#endif
 
         // Apply rain ripples
+        #if defined RAIN_PUDDLES && defined DIMENSION_OVERWORLD
 		if (rainStrength > EPS) {
 			vec3 minecraftPos = worldPos + cameraPosition;
 		    vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
@@ -148,6 +149,7 @@ void main() {
             rippleSlope *= saturate(4.0 * abs(dot(geoNormal, worldDir))) * saturate(lightmap.y * 5.0 - 4.0);
             worldNormal = normalize(worldNormal + vec3(rippleSlope * rainStrength, 0.0).xzy);
         }
+        #endif
 
 		normalOut.zw = OctEncodeSnorm(worldNormal);
 		waterOut = vec4(0.0);

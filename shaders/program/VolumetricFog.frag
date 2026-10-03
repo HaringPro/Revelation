@@ -44,7 +44,12 @@ uniform sampler2D shadowcolor1;
 #include "/lib/lighting/shadow/Common.glsl"
 
 #include "/lib/atmosphere/Common.glsl"
+
+#if defined DIMENSION_NETHER
+#include "/lib/atmosphere/NetherFog.glsl"
+#else
 #include "/lib/atmosphere/AtmosphericFog.glsl"
+#endif
 
 #include "/lib/water/WaterFog.glsl"
 
@@ -74,7 +79,9 @@ void main() {
 
 	mat2x3 volFogData = mat2x3(vec3(0.0), vec3(1.0));
 
-	#ifdef VOLUMETRIC_FOG
+    #if defined DIMENSION_NETHER
+		volFogData = RaymarchNetherFog(gbufferModelViewInverse[3].xyz, worldPos, dither, 24);
+	#elif defined VOLUMETRIC_FOG
 		if (isEyeInWater == 0) {
 			volFogData = RaymarchAtmosphericFog(gbufferModelViewInverse[3].xyz, worldPos, dither, VF_MAX_SAMPLES);
 		}

@@ -4,30 +4,40 @@
 #include "/lib/lighting/SSRT.glsl"
 #include "/lib/universal/MonteCarlo.glsl"
 
+#if defined DIMENSION_NETHER
+#include "/lib/atmosphere/NetherFog.glsl"
+#endif
+
 vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 worldDir, vec3 viewPos, float skylight, float dither) {
 	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
 
 	vec3 halfway = worldNormal;
-#ifdef ROUGH_REFLECTIONS
+    #ifdef ROUGH_REFLECTIONS
 	if (!material.mirrorMask) {
 		mat3 tbnMatrix = BuildOrthonormalBasis(worldNormal);
 
 		vec2 noise = SampleStbnVec2(ivec2(gl_FragCoord.xy), frameCounter + 3);
 		halfway = tbnMatrix * SampleVisibleGGX(-worldDir * tbnMatrix, material.roughness, noise);
 	}
-#endif
+    #endif
 	vec3 lightDir = reflect(worldDir, halfway);
 
 	float NdotL = dot(worldNormal, lightDir);
 	if (NdotL < EPS) return vec4(0.0);
 
 	vec4 reflection = vec4(0.0, 0.0, 0.0, FP16_MAX);
+
+    #if defined DIMENSION_NETHER
+        vec3 worldPos = transMAD(gbufferModelViewInverse, viewPos);
+        reflection.rgb = RaymarchNetherFog(worldPos, worldPos + lightDir * lodRenderDist, dither, 16)[0];
+    #else
 	if (skylight > EPS && isEyeInWater == 0) {
 		vec3 skyRadiance = textureBicubic(skyEnvMapTex, saturate(ProjectCubemap(lightDir, 96.0))).rgb;
 		reflection.rgb = skyRadiance * smoothstep(0.3, 0.7, skylight);
 	}
+    #endif
 
-	uint stepCount = uint(SSRT_MAX_SAMPLES * oms(material.roughness * 0.75));
+	uint stepCount = uint(SSRT_MAX_SAMPLES * oms(material.roughness * 0.5));
     vec3 hitPos;
 	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * lightDir, dither, stepCount, hitPos)) {
 		float edgeFade = hitPos.x * hitPos.y * oms(hitPos.x) * oms(hitPos.y);
