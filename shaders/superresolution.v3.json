@@ -1,5 +1,5 @@
 {
-    "schema_version": 2,
+    "schema_version": 3,
     "profiles": {
         "*": {
             "jitter": {
@@ -11,6 +11,15 @@
                 "hdr": true,
                 "auto_exposure": true,
                 "motion_jittered": false,
+                "disabled_algorithms": [
+                    "none",
+                    "fsr1",
+                    "fsr2",
+                    "sgsr1",
+                    "sgsr2",
+                    "anime4k",
+                    "dlssrr"
+                ],
                 "trigger": {
                     "type": "AFTER",
                     "pass": "composite7"
