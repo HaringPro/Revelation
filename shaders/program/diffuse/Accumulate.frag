@@ -145,6 +145,11 @@ void main() {
 			if (lodMask) depth = ViewToScreenDepth(ScreenToViewDepthLod(depth));
 		#endif
 
+		// Hand-depth correction
+		if (depth < 0.56) {
+			depth = depth * rcp(MC_HAND_DEPTH) + (0.5 - 0.5 / MC_HAND_DEPTH);
+		}
+
 		vec3 screenPos = vec3(renderCoord, depth);
 		vec3 worldNormal = FetchSurfaceNormal(renderTexel);
 
