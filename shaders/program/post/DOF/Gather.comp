@@ -62,12 +62,12 @@ DofGatherSample DofBuildGatherSample(
 	float sampleDistance,
 	float centerCoc,
 	float centerCocRadius,
-	float coveringCoc
+	float coveringCoc,
+	float coveringBias
 ) {
 	vec4 sampleData = DofLoadPoint(centerUv, sampleOffset);
 	float sampleCocRadius = abs(sampleData.a) * rcp(DOF_MAX_BLUR_RADIUS);
-	float coveringBias = float(coveringCoc < 0.0);
-	float coveringMembership = saturate(coveringCoc - sampleData.a + coveringBias);
+	float coveringMembership = hermite(saturate(coveringCoc - sampleData.a + coveringBias));
 	float coveringCoverage = DofApertureCoverage(
 		sampleCocRadius, sampleDistance, DOF_MAX_BLUR_RADIUS
 	) * coveringMembership;
@@ -108,14 +108,25 @@ vec3 DofGatherDisk(
 	float coveringCoc,
 	float gatherRadius
 ) {
-	const float inverseSampleCount = rcp(float(DOF_GATHER_SAMPLES));
+	const uint maxPairCount = uint(DOF_GATHER_SAMPLES >> 1);
+	uint pairCount = min(
+		maxPairCount,
+		max(4u, uint(ceil(hPI * sqr(gatherRadius))))
+	);
+	float inverseSampleCount = rcp(float(pairCount << 1u));
 	radialPhase *= inverseSampleCount;
 
 	float inverseMaxBlurRadius = rcp(DOF_MAX_BLUR_RADIUS);
 	float gatherRadiusFraction = gatherRadius * inverseMaxBlurRadius;
 	float centerCocRadius = abs(centerCoc) * inverseMaxBlurRadius;
-	vec3 centerLayerColor = centerData.rgb * EPS;
-	float centerLayerWeight = EPS;
+	float coveringBias = float(coveringCoc < 0.0);
+
+	float centerWeight = sqr(gatherRadiusFraction) - gatherRadiusFraction + 1.0;
+	float centerRatio = saturate(centerCocRadius * rcp(maxEps(gatherRadiusFraction)));
+	centerWeight = mix(centerWeight, EPS, pow4(centerRatio));
+	vec3 centerLayerColor = centerData.rgb * centerWeight;
+	float centerLayerWeight = centerWeight;
+
 	vec3 coveringColor = vec3(0.0);
 	float coveringWeight = 0.0;
 	float coveringOpacity = 0.0;
@@ -125,7 +136,7 @@ vec3 DofGatherDisk(
 		vec3 vignettingData = DofApertureVignettingPrepare(centerUv);
 	#endif
 
-	for (uint pairIndex = 0u; pairIndex < uint(DOF_GATHER_SAMPLES >> 1); ++pairIndex) {
+	for (uint pairIndex = 0u; pairIndex < pairCount; ++pairIndex) {
 		uint firstIndex = pairIndex << 1u;
 		float firstRadius = DofVogelRadius(firstIndex, radialPhase, inverseSampleCount);
 		float secondRadius = DofVogelRadius(firstIndex + 1u, radialPhase, inverseSampleCount);
@@ -141,11 +152,11 @@ vec3 DofGatherDisk(
 		#endif
 		DofGatherSample firstSample = DofBuildGatherSample(
 			centerUv, firstOffset, firstRadius * gatherRadiusFraction,
-			centerCoc, centerCocRadius, coveringCoc
+			centerCoc, centerCocRadius, coveringCoc, coveringBias
 		);
 		DofGatherSample secondSample = DofBuildGatherSample(
 			centerUv, secondOffset, secondRadius * gatherRadiusFraction,
-			centerCoc, centerCocRadius, coveringCoc
+			centerCoc, centerCocRadius, coveringCoc, coveringBias
 		);
 
 		DofAccumulateGatherSample(
@@ -154,7 +165,7 @@ vec3 DofGatherDisk(
 		DofAccumulateGatherSample(
 			secondSample, centerLayerColor, centerLayerWeight, coveringColor, coveringWeight
 		);
-		coveringOpacity += 2.0 * max(firstSample.coveringOpacity, secondSample.coveringOpacity);
+		coveringOpacity += firstSample.coveringOpacity + secondSample.coveringOpacity;
 
 		direction = DofRotatePair(direction);
 		aperturePhase = fract(aperturePhase + dofPairPhase);
@@ -173,12 +184,16 @@ vec4 DofFilter(ivec2 texelPos) {
 	vec2 centerUv = texelToUvScaled(texelPos);
 
 	float centerCoc = centerData.a;
+	vec4 gatherData = imageLoad(colorimg15, texelPos);
+	float gatherRadius = maxEps(gatherData.y);
+	bool foregroundCover = gatherData.x < 0.0 && centerCoc >= 0.0;
+	if (!foregroundCover && gatherRadius <= 2.0 && abs(centerCoc) <= 2.0) {
+		return vec4(centerData.rgb, fogMask);
+	}
+
 	vec2 kernelNoise = SampleStbnVec2(texelPos, frameCounter + 6);
 	float jitterAngle = TAU * kernelNoise.x;
 	vec2 initialDir = vec2(cos(jitterAngle), sin(jitterAngle));
-
-	vec4 gatherData = imageLoad(colorimg15, texelPos);
-	float gatherRadius = maxEps(gatherData.y);
 	vec3 filteredColor = DofGatherDisk(
 		centerUv, centerData, initialDir, kernelNoise.x, kernelNoise.y,
 		centerCoc, gatherData.x, gatherRadius

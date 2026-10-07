@@ -35,7 +35,7 @@ const uint padRadius = 1u;
 const uvec2 sharedSize = gl_WorkGroupSize.xy + (padRadius << 1u);
 
 shared vec4 sharedTile[sharedSize.y][sharedSize.x];
-shared float sharedCoc[sharedSize.y][sharedSize.x];
+shared vec4 sharedFullData[sharedSize.y][sharedSize.x];
 
 //======// Function //============================================================================//
 
@@ -52,8 +52,9 @@ void SharedPreload() {
 		if (loadIndex < sharedArea) {
 			uvec2 localTexel = uvec2(loadIndex % sharedSize.x, loadIndex / sharedSize.x);
 			ivec2 sourceTexel = clamp(groupBase + ivec2(localTexel), ivec2(0), imageEnd);
+			vec4 sourceData = texelFetch(colortex3, sourceTexel, 0);
 			sharedTile[localTexel.y][localTexel.x] = texelFetch(colortex15, sourceTexel, 0);
-			sharedCoc[localTexel.y][localTexel.x] = texelFetch(colortex3, sourceTexel, 0).a;
+			sharedFullData[localTexel.y][localTexel.x] = sourceData;
 		}
 	}
 
@@ -65,8 +66,8 @@ vec4 DofPostfilterLoad(uvec2 localTexel) {
 	return sharedTile[localTexel.y][localTexel.x];
 }
 
-float DofPostfilterLoadCoc(uvec2 localTexel) {
-	return sharedCoc[localTexel.y][localTexel.x];
+vec4 DofPostfilterLoadFullData(uvec2 localTexel) {
+	return sharedFullData[localTexel.y][localTexel.x];
 }
 
 void DofSort3(vec3 a, vec3 b, vec3 c, out vec3 low, out vec3 median, out vec3 high) {
@@ -85,7 +86,7 @@ vec3 DofMedian3x3(uvec2 localCenter, float centerCoc) {
 	for (uint i = 0u; i < 8u; ++i) {
 		uvec2 sampleTexel = uvec2(ivec2(localCenter) + offset3x3N[i]);
 		vec4 sampleData = DofPostfilterLoad(sampleTexel);
-		float sampleCoc = DofPostfilterLoadCoc(sampleTexel);
+		float sampleCoc = DofPostfilterLoadFullData(sampleTexel).a;
 		float sameLayer = float((sampleCoc < 0.0) == centerForeground);
 		samples[i < 4u ? i : i + 1u] = mix(samples[4], sampleData.rgb, sameLayer);
 	}
@@ -104,6 +105,24 @@ vec3 DofMedian3x3(uvec2 localCenter, float centerCoc) {
 	return resultMedian;
 }
 
+vec3 DofFixedBlur3x3(uvec2 localCenter, vec3 centerColor) {
+	const float cornerWeight = 0.5453;
+	const float sideWeight = 0.9717;
+	vec3 color = centerColor;
+	float weight = 1.0;
+
+	for (uint i = 0u; i < 8u; ++i) {
+		ivec2 offset = offset3x3N[i];
+		uvec2 sampleTexel = uvec2(ivec2(localCenter) + offset);
+		vec3 sampleColor = DofPostfilterLoadFullData(sampleTexel).rgb;
+		float kernelWeight = (offset.x == 0 || offset.y == 0) ? sideWeight : cornerWeight;
+		color += sampleColor * kernelWeight;
+		weight += kernelWeight;
+	}
+
+	return color * rcp(weight);
+}
+
 //======// Main //================================================================================//
 void main() {
 	SharedPreload();
@@ -112,7 +131,22 @@ void main() {
 	if (any(greaterThanEqual(texelPos, ivec2(scaledViewSize)))) return;
 
 	uvec2 localCenter = gl_LocalInvocationID.xy + padRadius;
-	vec4 centerData = DofPostfilterLoad(localCenter);
-	vec3 medianColor = DofMedian3x3(localCenter, DofPostfilterLoadCoc(localCenter));
-	imageStore(colorimg0, texelPos, vec4(medianColor, centerData.a));
+	vec4 filteredData = DofPostfilterLoad(localCenter);
+	vec4 fullData = DofPostfilterLoadFullData(localCenter);
+	float centerCoc = fullData.a;
+	float cocRadius = abs(centerCoc);
+
+	if (cocRadius < 0.25) {
+		imageStore(colorimg0, texelPos, vec4(fullData.rgb, filteredData.a));
+		return;
+	}
+
+	if (cocRadius <= 2.0) {
+		vec3 fixedColor = DofFixedBlur3x3(localCenter, fullData.rgb);
+		float fixedBlend = saturate(2.0 * cocRadius - 0.5);
+		imageStore(colorimg0, texelPos, vec4(mix(fullData.rgb, fixedColor, fixedBlend), filteredData.a));
+		return;
+	}
+
+	imageStore(colorimg0, texelPos, vec4(DofMedian3x3(localCenter, centerCoc), filteredData.a));
 }
