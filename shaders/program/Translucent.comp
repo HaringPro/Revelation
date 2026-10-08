@@ -69,18 +69,17 @@ vec4 CalculateSpecularReflections(vec3 viewPos, vec3 worldNormal, vec3 worldDir,
 		reflection = skyRadiance * smoothstep(0.3, 0.7, skylight);
 	}
 
-	float ior = waterMask ? isEyeInWater == 1 ? 1.0 / WATER_IOR : WATER_IOR : GLASS_IOR;
-	float fresnel = FresnelDielectricN(NdotV, ior);
-	uint raySteps = uint(SSRT_MAX_SAMPLES * (fresnel * 0.5 + 0.5));
-
 	viewPos += mat3(gbufferModelView) * worldNormal * saturate(length(viewPos) * 3e-4);
 
     vec3 hitPos;
-	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, raySteps, hitPos)) {
+	if (ScreenSpaceRaytrace(viewPos, mat3(gbufferModelView) * rayDir, dither, SSRT_MAX_SAMPLES, hitPos)) {
 		float edgeFade = hitPos.x * hitPos.y * oms(hitPos.x) * oms(hitPos.y);
 		edgeFade *= 1e2 + cube(saturate(1.0 - gbufferModelViewInverse[2].y)) * 2e3;
 		reflection += (texture(colortex4, scaleScreenUv(hitPos.xy)).rgb - reflection) * saturate(edgeFade);
 	}
+
+	float ior = waterMask ? isEyeInWater == 1 ? 1.0 / WATER_IOR : WATER_IOR : GLASS_IOR;
+	float fresnel = FresnelDielectricN(NdotV, ior);
 
 	return vec4(reflection * fresnel, 1.0 - fresnel);
 }
