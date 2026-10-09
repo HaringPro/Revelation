@@ -104,7 +104,6 @@ suffix.CLOUD_TAAU_SCALE=x
 option.CLOUD_TAAU_CLIPPING=Upsampling Clipping
 option.CLOUD_TAAU_CLIPPING.comment=Clips history-frame cloud data to the statistical range (mean ± stddev) of the current 3×3 neighborhood, preventing cloud ghosting.
 option.CLOUD_MAX_ACCUM_FRAMES=Max Accumulated Frames
-option.CLOUD_TAAU_ANTIFLICKER=Anti-flicker
 
 option.CLOUD_LOW_SAMPLES_MIN=Min Main Samples
 option.CLOUD_LOW_SAMPLES_MAX=Max Main Samples

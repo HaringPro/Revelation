@@ -9,7 +9,7 @@
 --------------------------------------------------------------------------------
 */
 
-#define PASS_CLOUD_SM
+#define PASS_GEN_CLOUD_SHADOW
 
 //======// Input //===============================================================================//
 
@@ -50,27 +50,25 @@ void main() {
         vec3 worldPos = SetupCloudShadowPos(uv);
         vec3 rayPos = worldPos + atmosphereViewPos;
 
-        // Increase steps for lower elevation
-        float steps = float(CLOUD_SHADOW_SAMPLES) * (2.0 - shadowDirWorld.y);
-
         // vec2 intersection = RaySphericalShellIntersection(rayPos, shadowDirWorld, cloudLayer0.minHeight, cloudLayer0.maxHeight);
         float top = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.maxHeight).y;
 	    float bottom = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.minHeight).y;
-	    vec2 intersection = vec2(bottom, top);
-        float stepLength = (intersection.y - intersection.x) * rcp(steps);
+        float tMax = clamp(top - bottom, 0.0, 1e5);
+
+        // Variable step count based on raymarching distance
+        float stepCount = floor(float(CLOUD_SHADOW_SAMPLES) * (1.0 + saturate(tMax * 1e-5)));
+        float stepLength = tMax * rcp(stepCount);
         vec3 rayStep = shadowDirWorld * stepLength;
 
-        rayPos += shadowDirWorld * intersection.x;
+        rayPos += shadowDirWorld * bottom;
         rayPos += rayStep * fract(dither + PHI);
 
         float extinction = 0.0;
         const float threshold = -log2(cloudMinTransmittance) / cloudLayer0.coeff.extinction;
 
         // Raymarch along the light vector
-        for (uint i = 0u; i < uint(steps) && extinction < threshold; ++i, rayPos += rayStep) {
-            // Normalized height in clouds
+        for (uint i = 0u; i < uint(stepCount) && extinction < threshold; ++i, rayPos += rayStep) {
             float heightFraction = length(rayPos) * rcp(cloudLayer0.thickness) - cloudLayer0.minHeight / cloudLayer0.thickness;
-            // if (abs(heightFraction - 0.5) > 0.5) break; // Skip if outside the clouds
 
             float temp;
             extinction += CloudVolumeDensity(rayPos, heightFraction, temp, cloudDensityModeBase) * stepLength;
@@ -83,7 +81,7 @@ void main() {
         float cloudShadow = oms(strength) + transmittance * strength;
 
         // Reproject and accumulate
-        vec3 cloudMidPos = worldPos + shadowDirWorld * dot(intersection, vec2(0.5));
+        vec3 cloudMidPos = worldPos + shadowDirWorld * (top + bottom) * 0.5;
         vec2 prevUV = WorldToCloudShadowPrevScreenPos(cloudMidPos).xy;
 
         if (saturate(prevUV) == prevUV && !historyReset) {

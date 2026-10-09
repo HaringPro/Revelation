@@ -104,7 +104,6 @@ suffix.CLOUD_TAAU_SCALE=x
 option.CLOUD_TAAU_CLIPPING=方差裁切
 option.CLOUD_TAAU_CLIPPING.comment=将历史帧云数据裁剪到当前 3×3 邻域统计范围（均值±标准差）内，防止云层重影。
 option.CLOUD_MAX_ACCUM_FRAMES=最大累积帧数
-option.CLOUD_TAAU_ANTIFLICKER=抗闪烁
 
 option.CLOUD_LOW_SAMPLES_MIN=最低主步进采样数
 option.CLOUD_LOW_SAMPLES_MAX=最高主步进采样数

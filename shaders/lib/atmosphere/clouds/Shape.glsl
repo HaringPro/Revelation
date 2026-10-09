@@ -155,7 +155,7 @@ float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensiona
     noisePos *= rcp(2e3);
 
 	// Add curl noise
-	#if !defined PASS_SKY_MAP
+	#if !defined PASS_GEN_SKY_MAP
 	if (sampleMode == cloudDensityModeDetail) {
 		vec3 curlNoise = texture(curlNoise3D, noisePos * 2.0).xyz;
 		noisePos += curlNoise * gradient * oms(coverage) * 0.3;

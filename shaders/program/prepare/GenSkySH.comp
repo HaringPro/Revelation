@@ -40,7 +40,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 		shared vec3[9] sharedSkySH[8];
 	#endif
 #else
-	shared vec3[9] sharedSkySH[gl_WorkGroupSize.x];
+	shared vec3[9] sharedSkySH[256];
 #endif
 
 //======// Function //============================================================================//
@@ -64,7 +64,7 @@ void ParallelReduceSum(uint index, uint samples) {
 
 //======// Main //================================================================================//
 void main() {
-	const uint samples = gl_WorkGroupSize.x;
+	const uint samples = 256;
 
 	uint index = gl_LocalInvocationIndex;
 

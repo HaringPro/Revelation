@@ -41,7 +41,7 @@ vec2 CalculateFogDensity(vec3 rayPos, float uniformFog) {
 
 //================================================================================================//
 
-#if !defined CLOUD_SHADOWS || defined PASS_SKY_MAP
+#if !defined CLOUD_SHADOWS || defined PASS_GEN_SKY_MAP
 	#undef VF_CLOUD_SHADOWS
 #endif
 
@@ -66,7 +66,7 @@ mat2x3 RaymarchAtmosphericFog(vec3 rayStart, vec3 rayEnd, float dither, uint ste
     // Do not use the HG-D phase as it amplifies flaws when visibility is missing
 	vec2 phase = vec2(AirPhase(LdotV), DualLobePhase(LdotV, 0.7, -0.3, 0.25));
 
-	float mieDensityMult = VF_MIE_DENSITY * 3e3 * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
+	float mieDensityMult = VF_MIE_DENSITY * 2e3 * (1.0 + wetness * VF_MIE_DENSITY_RAIN_MULT);
 
 	#ifdef VF_TIME_FADE
 		mieDensityMult *= max(wetness, sqr(1.0 - timeNoon) - timeSunset * 0.25);

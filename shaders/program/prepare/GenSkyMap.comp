@@ -9,7 +9,7 @@
 --------------------------------------------------------------------------------
 */
 
-#define PASS_SKY_MAP
+#define PASS_GEN_SKY_MAP
 
 //======// Input //===============================================================================//
 
@@ -43,9 +43,11 @@ writeonly uniform image2D skyEnvMapImg;
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
 
+    vec4 history = texelFetch(skyEnvMapTex, tid, 0);
+
 	// Checkerboard render
 	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
-	if ((tid & 1) == offset || historyReset) {
+	if ((tid & 1) == offset || history.a < 4.0) {
 		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyEnvMapImg));
 
 		vec3 worldDir = UnprojectCubemap(uv, 96.0);
@@ -81,11 +83,10 @@ void main() {
 		    #endif
 		}
 
-		// Accumulate
-		vec4 history = texelFetch(skyEnvMapTex, tid, 0);
 		history.a *= float(!historyReset);
 
-		skyRadiance = mix(history.rgb, skyRadiance, rcp(min(++history.a, 64.0)));
+        // Accumulate
+		skyRadiance = mix(history.rgb, skyRadiance, rcp(min(++history.a, 32.0)));
 		imageStore(skyEnvMapImg, tid, vec4(skyRadiance, history.a));
 	}
 }
