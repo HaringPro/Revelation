@@ -15,7 +15,7 @@
 
 //================================================================================================//
 
-#define PLANET_GROUND
+// #define PLANET_GROUND
 
 #define VIEWER_BASE_ALTITUDE 256.0 // [64.0 128.0 256.0 384.0 512.0 1024.0 2048.0 4096.0 8192.0 16384.0 32768.0 65536.0 131072.0 262144.0 524288.0 1048576.0 2097152.0 4194304.0 8388608.0 16777216.0 33554432.0 67108864.0 134217728.0 268435456.0 536870912.0 1073741824.0]
 #define ATMOSPHERE_THICKNESS 100000.0 // [0.0 5000.0 10000.0 20000.0 30000.0 40000.0 50000.0 60000.0 70000.0 80000.0 90000.0 100000.0 110000.0 120000.0 130000.0 140000.0 150000.0 160000.0]
@@ -356,7 +356,13 @@ bool AtmosphereSetupRay(inout vec3 rayPos, vec3 rayDir, out float tMax, out bool
 		rayPos += rayDir * tTop - upVector;
 	}
 
-	float tBottom = RaySphereIntersectNearest(rayPos, rayDir, atmosphere.bottomRadius);
+	#ifndef PLANET_GROUND
+        float groundRadius = max(atmosphere.bottomRadius - 5e3, 1e3);
+	    float tBottom = RaySphereIntersectNearest(rayPos, rayDir, groundRadius);
+    #else
+    	float tBottom = RaySphereIntersectNearest(rayPos, rayDir, atmosphere.bottomRadius);
+	#endif
+
 	float tTop = RaySphereIntersectNearest(rayPos, rayDir, atmosphere.topRadius);
 
 	if (tBottom < 0.0) {
@@ -377,20 +383,11 @@ bool AtmosphereSetupRay(inout vec3 rayPos, vec3 rayDir, out float tMax, out bool
 }
 
 vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
-	float cosTheta = dot(rayDir, sunDir);
-
-	#ifndef PLANET_GROUND
-		// Hacks to simulate atmosphere on the ground
-		if (rayDir.y < 0.0) {
-			rayDir.y *= saturate(exp2(atmosphereViewHeight * 1e-3 - atmosphere.topRadius * 1e-3));
-			rayDir = normalize(rayDir);
-		}
-	#endif
-
 	float tMax;
 	bool groundHit;
 	if (AtmosphereSetupRay(rayPos, rayDir, tMax, groundHit)) return vec3(0.0);
 
+	float cosTheta = dot(rayDir, sunDir);
 	vec2 phaseValue = AtmospherePhase(cosTheta);
 
 	// Adaptive sample count
@@ -425,6 +422,7 @@ vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
 	}
 
 	// Ground diffuse
+	#ifdef PLANET_GROUND
 	if (groundHit) {
 		float planetHeight = length(rayPos);
 		vec3 upVector = rayPos / planetHeight;
@@ -434,6 +432,7 @@ vec3 RaymarchScattering(vec3 rayPos, vec3 rayDir, vec3 sunDir) {
 
 		lum += atmosphere.groundAlbedo * rPI * saturate(sunZenithCos) * transmittance * transmittanceToSun;
 	}
+	#endif
 
 	return lum;
 }
