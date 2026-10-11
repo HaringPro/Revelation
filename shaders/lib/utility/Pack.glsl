@@ -137,6 +137,67 @@ vec3 UnprojectEquirectanglarNonlinear(vec2 uv) {
 	return vec3(sincos(phi) * cos(theta), sin(theta)).yzx;
 }
 
+// Lambert cylindrical equal-area projection
+vec2 ProjectEqualArea(vec3 dir) {
+	float phi = atan(dir.z, dir.x); // Longitude
+
+	return vec2(phi * rTAU + 0.5, dir.y * 0.5 + 0.5);
+}
+
+vec3 UnprojectEqualArea(vec2 uv) {
+	float phi = (uv.x * 2.0 - 1.0) * PI; // Longitude
+	float y = uv.y * 2.0 - 1.0; // sin(latitude)
+	float cosTheta = sqrt(saturate(1.0 - sqr(y)));
+
+	return vec3(sincos(phi) * cosTheta, y).yzx;
+}
+
+// Hammer projection, equal-area with point poles and a single wrap seam
+vec2 ProjectHammer(vec3 dir) {
+	float halfPhi = 0.5 * atan(dir.z, dir.x); // Half longitude
+	float cosTheta = sqrt(saturate(1.0 - sqr(dir.y)));
+
+	float w = inversesqrt(1.0 + cosTheta * cos(halfPhi));
+
+	return vec2(cosTheta * sin(halfPhi), dir.y) * w * 0.5 + 0.5;
+}
+
+vec3 UnprojectHammer(vec2 uv) {
+	vec2 xy = (uv * 2.0 - 1.0) * vec2(2.0 * SQRT2, SQRT2); // Scale to the bounding ellipse
+	float z = sqrt(saturate(1.0 - dot(sqr(xy), vec2(0.125, 0.5)))); // z² = cos(latitude) * cos(longitude / 2), clamped to the rim
+	float w = sqrt(1.0 + sqr(z));
+
+	float phi = 2.0 * atan(xy.x * w, 2.0 * SQRT2 * sqr(z)); // Longitude
+	float theta = fastAsin(xy.y * w * rcp(SQRT2)); // Latitude
+
+	return vec3(sincos(phi) * cos(theta), sin(theta)).yzx;
+}
+
+// Hammer weighted for the sky env map: v is remapped by f(t) = t(1 + 2t)/3, putting
+// the equator at 1/3 so the cloud-bearing upper hemisphere gets 2/3 of the rows
+vec2 ProjectHammerWeighted(vec3 dir) {
+	float halfPhi = 0.5 * atan(dir.z, dir.x); // Half longitude
+	float cosTheta = sqrt(saturate(1.0 - sqr(dir.y)));
+
+	float w = inversesqrt(1.0 + cosTheta * cos(halfPhi));
+	float s = dir.y * w;
+
+	// f(s * 0.5 + 0.5) = (s + 1)(s + 2) / 6
+	return vec2(cosTheta * sin(halfPhi) * w * 0.5 + 0.5, fma(s, s + 3.0, 2.0) * (1.0 / 6.0));
+}
+
+vec3 UnprojectHammerWeighted(vec2 uv) {
+	float x = (uv.x * 2.0 - 1.0) * 2.0 * SQRT2;
+	float y = (sqrt(fma(uv.y, 24.0, 1.0)) - 3.0) * (SQRT2 * 0.5); // Inverse v remap fused with the ellipse scale
+	float z = sqrt(saturate(1.0 - x * x * 0.125 - y * y * 0.5)); // z² = cos(latitude) * cos(longitude / 2), clamped to the rim
+	float w = sqrt(1.0 + sqr(z));
+
+	float phi = 2.0 * atan(x * w, 2.0 * SQRT2 * sqr(z)); // Longitude
+	float theta = fastAsin(y * w * rcp(SQRT2)); // Latitude
+
+	return vec3(sincos(phi) * cos(theta), sin(theta)).yzx;
+}
+
 // [+X][+Y][+Z]
 // [-X][-Y][-Z]
 

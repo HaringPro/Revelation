@@ -108,8 +108,8 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
             float NdotV = abs(dot(worldNormal, worldDir));
             vec3 rayDir = worldDir + worldNormal * NdotV * 2.0;
 
-            vec2 skyViewCoord = ProjectCubemap(rayDir, 96.0);
-            vec3 skyRadiance = textureBicubic(skyEnvMapTex, skyViewCoord).rgb;
+            vec2 skyMapCoord = ProjectSkyMap(rayDir);
+            vec3 skyRadiance = textureBicubic(skyEnvMapTex, skyMapCoord).rgb;
 
             vec2 lightmap = Unpack2x8U(loadMaterialPack(refractedTexel).x);
 

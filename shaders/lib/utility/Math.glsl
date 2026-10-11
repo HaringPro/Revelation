@@ -3,6 +3,7 @@ const float hPI 		    = 1.57079632679;
 const float rPI 		    = 0.31830988618;
 const float TAU 		    = 6.28318530718;
 const float rTAU 		    = 0.15915494310;
+const float SQRT2 		    = 1.41421356237;
 const float rLOG2 		    = 1.44269504089;
 const float PHI 		    = 0.61803398875;
 const float goldenAngle     = 2.39996322973;

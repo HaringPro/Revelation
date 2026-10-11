@@ -70,7 +70,7 @@ void main() {
 
 	// Sample and compute SH coefficients
 	vec3 direction = SampleUniformSphere(R2(index));
-	vec3 skyRadiance = texture(skyEnvMapTex, ProjectCubemap(direction, 96.0)).rgb;
+	vec3 skyRadiance = texture(skyEnvMapTex, ProjectSkyMap(direction)).rgb;
 
 	vec3[9] shCoeff;
 	float[9] basis = BasisSH3(direction);

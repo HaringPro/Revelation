@@ -32,7 +32,7 @@ vec4 CalculateSpecularReflections(Material material, vec3 worldNormal, vec3 worl
         reflection.rgb = RaymarchNetherFog(worldPos, worldPos + lightDir * lodRenderDist, dither, 16)[0];
     #else
 	if (skylight > EPS && isEyeInWater == 0) {
-		vec3 skyRadiance = textureBicubic(skyEnvMapTex, saturate(ProjectCubemap(lightDir, 96.0))).rgb;
+		vec3 skyRadiance = textureBicubic(skyEnvMapTex, saturate(ProjectSkyMap(lightDir))).rgb;
 		reflection.rgb = skyRadiance * smoothstep(0.3, 0.7, skylight);
 	}
     #endif

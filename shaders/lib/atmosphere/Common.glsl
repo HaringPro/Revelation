@@ -28,6 +28,9 @@
 
 #define ApplyFog(scene, fog) ((scene) * fog[1] + fog[0])
 
+#define ProjectSkyMap(dir) ProjectHammerWeighted(dir)
+#define UnprojectSkyMap(uv) UnprojectHammerWeighted(uv)
+
 //================================================================================================//
 
 struct AtmosphereParameters {
