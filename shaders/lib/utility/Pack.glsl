@@ -107,7 +107,7 @@ vec3 UnprojectMercator(vec2 uv) {
 
 // Equirectangular projection
 vec2 ProjectEquirectanglar(vec3 dir) {
-	float phi = atan(dir.x, dir.z); // Longitude
+	float phi = atan(dir.z, dir.x); // Longitude
 	float theta = fastAsin(dir.y) * 2.0; // Latitude
 
 	return vec2(phi, theta) * rTAU + 0.5;
@@ -122,7 +122,7 @@ vec3 UnprojectEquirectanglar(vec2 uv) {
 }
 
 vec2 ProjectEquirectanglarNonlinear(vec3 dir) {
-	float phi = atan(dir.x, dir.z); // Longitude
+	float phi = atan(dir.z, dir.x); // Longitude
 	float theta = fastAsin(dir.y); // Latitude
 	theta = signI(theta) * sqrt(abs(theta)); // Non-linear mapping
 
