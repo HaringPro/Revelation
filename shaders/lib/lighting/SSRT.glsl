@@ -48,7 +48,7 @@ bool ScreenSpaceRaytrace(vec3 viewOrigin, vec3 viewDir, float dither, uint steps
 		float depthDiff = sampleDepth - hitPos.z;
 		if (abs(depthDiff + compareTolerance) < compareTolerance) {
 			hit = true;
-			hitPos.z = sampleDepth;
+			// hitPos.z = sampleDepth;
 			break;
 		}
 
