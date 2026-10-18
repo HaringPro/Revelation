@@ -40,13 +40,13 @@ writeonly uniform image2D cloudShadowImg;
 //======// Main //================================================================================//
 void main() {
     ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(cloudShadowImg);
+    if (any(greaterThanEqual(tid, size))) return;
 
     // Checkerboard render cloud shadow map
     ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
-    if ((tid & 1) == offset || historyReset) {
-        float dither = BlueNoise(tid, frameCounter);
-
-        vec2 uv = (vec2(tid) + dither) / textureSize(cloudShadowTex, 0);
+    if ((tid & 1) == offset || frameCounter == 0) {
+        vec2 uv = (vec2(tid) + 0.5) / size;
         vec3 worldPos = SetupCloudShadowPos(uv);
         vec3 rayPos = worldPos + atmosphereViewPos;
 
@@ -54,14 +54,16 @@ void main() {
         float top = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.maxHeight).y;
 	    float bottom = RaySphereIntersection(rayPos, shadowDirWorld, cloudLayer0.minHeight).y;
         float tMax = clamp(top - bottom, 0.0, 1e5);
+        float tNorm = saturate(tMax * 1e-5);
 
         // Variable step count based on raymarching distance
-        float stepCount = floor(float(CLOUD_SHADOW_SAMPLES) * (1.0 + saturate(tMax * 1e-5)));
+        float stepCount = floor(float(CLOUD_SHADOW_SAMPLES) * (1.0 + tNorm));
         float stepLength = tMax * rcp(stepCount);
         vec3 rayStep = shadowDirWorld * stepLength;
-
         rayPos += shadowDirWorld * bottom;
-        rayPos += rayStep * fract(dither + PHI);
+
+        float dither = BlueNoise(tid, frameCounter >> 2);
+        rayPos += rayStep * dither;
 
         float extinction = 0.0;
         const float threshold = -log2(cloudMinTransmittance) / cloudLayer0.coeff.extinction;
@@ -77,7 +79,7 @@ void main() {
         float transmittance = exp2(-rLOG2 * cloudLayer0.coeff.extinction * extinction);
         transmittance = linearstep(cloudMinTransmittance, 1.0, transmittance);
 
-        float strength = linearstep(0.02, 0.05, shadowDirWorld.y) * sqrt(CLOUD_SHADOW_STRENGTH);
+        const float strength = sqrt(CLOUD_SHADOW_STRENGTH);
         float cloudShadow = oms(strength) + transmittance * strength;
 
         // Reproject and accumulate
@@ -85,9 +87,9 @@ void main() {
         vec2 prevUV = WorldToCloudShadowPrevScreenPos(cloudMidPos).xy;
 
         if (saturate(prevUV) == prevUV && !historyReset) {
-            const float weight = rcp(32.0);
+            const float alpha = rcp(32.0);
             float prevValue = textureLod(cloudShadowTex, prevUV, 0.0).x;
-            cloudShadow = mix(prevValue, cloudShadow, weight);
+            cloudShadow = mix(prevValue, cloudShadow, alpha);
         }
 
         imageStore(cloudShadowImg, tid, vec4(cloudShadow, 0.0, 0.0, 0.0));

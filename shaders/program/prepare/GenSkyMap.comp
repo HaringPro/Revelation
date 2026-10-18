@@ -42,18 +42,18 @@ writeonly uniform image2D skyEnvMapImg;
 //======// Main //================================================================================//
 void main() {
 	ivec2 tid = ivec2(gl_GlobalInvocationID.xy);
-
-    vec4 history = texelFetch(skyEnvMapTex, tid, 0);
+    ivec2 size = imageSize(skyEnvMapImg);
+    if (any(greaterThanEqual(tid, size))) return;
 
 	// Checkerboard render
 	ivec2 offset = checkerboardOffset2x2[frameCounter & 3];
-	if ((tid & 1) == offset || history.a < 4.0) {
-		vec2 uv = (vec2(tid) + 0.5) * rcp(imageSize(skyEnvMapImg));
+	if ((tid & 1) == offset || frameCounter == 0) {
+		vec2 uv = (vec2(tid) + 0.5) / size;
 
 		vec3 worldDir = UnprojectSkyMap(uv);
 		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, sunDirWorld);
 
-		vec2 noise = SampleStbnVec2(tid, frameCounter);
+		vec2 noise = SampleStbnVec2(tid, frameCounter >> 2);
 
         // Clouds
 		#ifdef CLOUDS
@@ -83,6 +83,7 @@ void main() {
 		    #endif
 		}
 
+        vec4 history = texelFetch(skyEnvMapTex, tid, 0);
 		history.a *= float(!historyReset);
 
         // Accumulate
