@@ -212,7 +212,7 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 
 		float cosN = dot(projN, viewDir) * inversesqrt(projNSqrLen);
 
-		float angN = signMul(acosFast4(satSnorm(cosN)), dot(viewDir, cross(sliceN, projN)));
+		float angN = signMul(acosFast4(clampCos(cosN)), dot(viewDir, cross(sliceN, projN)));
 		float angOff = angN * rPI + 0.5;
 
         float sinN = sin(angN);
@@ -263,7 +263,7 @@ vec4 CalculateSSILVB(vec2 fragCoord, vec3 viewPos, vec3 worldNormal, float skyli
 					fastRcpSqrtNR0(sdot(sampleDirBack)) * dot(sampleDirBack, viewDir)
 				);
 
-				frontBackHorizon = acosFast4(satSnorm(frontBackHorizon));
+				frontBackHorizon = acosFast4(clampCos(frontBackHorizon));
 				frontBackHorizon = saturate(frontBackHorizon * rPI + angOff);
 
 				// map to slice relative distribution

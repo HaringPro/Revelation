@@ -11,7 +11,7 @@ const float cloudPhaseEndpointDensity = 1.98;
 const float cloudPhaseForwardBias = 0.84;
 
 vec2 CloudPhaseLutUv(float cosTheta, int cloudType) {
-	float angle = acos(satSnorm(cosTheta)) * rPI;
+	float angle = acos(clampCos(cosTheta)) * rPI;
 	float centered = fma(angle, 2.0, -1.0);
 	float symmetric = fma(centered / mix(cloudPhaseEndpointDensity, 1.0, abs(centered)), 0.5, 0.5);
 	float u = symmetric / mix(cloudPhaseForwardBias, 1.0, symmetric);

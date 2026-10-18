@@ -29,7 +29,7 @@ const float FP16_MAX        = 65504.0;
 #define maxEps(x) 		    max(x, EPS)
 
 #define saturate(x) 	    clamp(x, 0.0, 1.0)
-#define satSnorm(x) 	    clamp(x, -1.0, 1.0)
+#define clampCos(x) 	    clamp(x, -1.0, 1.0)
 
 #define hermite(x)          smoothstep(0.0, 1.0, x)
 
@@ -43,10 +43,10 @@ const float FP16_MAX        = 65504.0;
 
 float maxOf(vec2 v)   	 { return max(v.x, v.y); }
 float maxOf(vec3 v)   	 { return max(v.x, max(v.y, v.z)); }
-float maxOf(vec4 v)   	 { return max(v.x, max(v.y, max(v.z, v.w))); }
+float maxOf(vec4 v)   	 { return max(max(v.x, v.y), max(v.z, v.w)); }
 float minOf(vec2 v)   	 { return min(v.x, v.y); }
 float minOf(vec3 v)   	 { return min(v.x, min(v.y, v.z)); }
-float minOf(vec4 v)   	 { return min(v.x, min(v.y, min(v.z, v.w))); }
+float minOf(vec4 v)   	 { return min(min(v.x, v.y), min(v.z, v.w)); }
 
 float sqr(float x)    	 { return x * x; }
 vec2  sqr(vec2 x)	  	 { return x * x; }
@@ -183,7 +183,9 @@ vec2 fastAsin(vec2 x) {
 }
 
 // https://www.desmos.com/calculator/cd3mvg1gfo
-float approxExp(float x) { return rcp(x * x - x + 1.0); }
+float approxExp(float x) {
+    return rcp(x * x - x + 1.0);
+}
 
 //================================================================================================//
 
@@ -218,13 +220,4 @@ vec3 rotate(vec3 v, vec3 a, vec3 b) {
 vec2 sampleVogelDisk(uint idx, uint num, float phi) {
 	float r = approxSqrt((float(idx) + 0.5) / float(num));
 	return cossin(idx * goldenAngle + phi) * r;
-}
-
-// https://developer.download.nvidia.cn/cg/refract.html
-vec3 refract(vec3 i, vec3 n, float eta) {
-	float cosi = -dot(i, n);
-	float cost2 = 1.0 - eta * eta * oms(cosi * cosi);
-	if (cost2 < 0.0) return vec3(0.0);
-
-	return eta * i + (eta * cosi - sqrt(abs(cost2))) * n;
 }
