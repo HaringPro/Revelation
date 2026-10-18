@@ -84,7 +84,7 @@ void main() {
 
     vec2 currPixel = gl_FragCoord.xy;
     #ifdef CLOUD_TAAU_ENABLED
-        currPixel *= 1.0 / float(CLOUD_TAAU_SCALE);
+        currPixel *= rcp(float(CLOUD_TAAU_SCALE));
     #endif
     currPixel += 0.5 - cloud.upscaleJitter;
 
@@ -109,16 +109,14 @@ void main() {
 	disocclusion = disocclusion || saturate(prevCoord) != prevCoord;
 	// Previous ground invalidation
 	disocclusion = disocclusion || frameIndex < 1u;
-	// Fov change invalidation
-	// disocclusion = disocclusion || (gbufferProjection[0].x - gbufferPreviousProjection[0].x) > 0.25;
+
+    ivec2 currTexel = ivec2(floor(currPixel));
+    vec4 currData = texelFetch(cloudOriginTex, currTexel, 0);
 
 	if (disocclusion) {
-		// Return smoothed origin
-		cloudOut = textureBicubic(cloudOriginTex, currCoord);
+		cloudOut = currData;
 	} else {
-		ivec2 currTexel = ivec2(floor(currPixel));
-		vec4 currData = texelFetch(cloudOriginTex, currTexel, 0);
-
+        prevCoord = min(prevCoord, 1.0 - 2.0 * originTexelSize);
 		vec4 prevData = max0(textureCatmullRom(cloudReconstructTex, prevCoord));
 
 		#ifdef CLOUD_TAAU_CLIPPING
