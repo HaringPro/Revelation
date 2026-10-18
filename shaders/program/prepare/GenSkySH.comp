@@ -6,7 +6,7 @@
 	Copyright (C) 2026 HaringPro
 	Apache License 2.0
 
-	Pass: Generate Skylight SH Coefficients
+	Pass: Generate skylight SH coefficients and evaluate sky up illuminance
 
 --------------------------------------------------------------------------------
 */
@@ -72,18 +72,17 @@ void main() {
 	vec3 direction = SampleUniformSphere(R2(index));
 	vec3 skyRadiance = texture(skyEnvMapTex, ProjectSkyMap(direction)).rgb;
 
+    // Uniform sphere PDF: 1 / (4 * PI)
+	const float normFactor = 4.0 * PI / float(samples);
+	skyRadiance *= normFactor;
+
 	vec3[9] shCoeff;
 	float[9] basis = BasisSH3(direction);
-
-	const float normFactor = 4.0 * PI / float(samples);
-	for (uint band = 0u; band < 9u; ++band) {
-		shCoeff[band] = basis[band] * normFactor * skyRadiance;
-	}
 
 	#ifdef SUBGROUP_OPS
 		// Reduce SH coefficients in subgroup
 		for (uint band = 0u; band < 9u; ++band) {
-			shCoeff[band] = subgroupAdd(shCoeff[band]);
+			shCoeff[band] = subgroupAdd(basis[band] * skyRadiance);
 			SCALARIZED_LOAD(sharedSkySH[gl_SubgroupID][band], shCoeff[band]);
 		}
 		barrier();
@@ -97,7 +96,7 @@ void main() {
 	#else
 		// Reduce SH coefficients in shared memory
 		for (uint band = 0u; band < 9u; ++band) {
-			sharedSkySH[index][band] = shCoeff[band];
+			sharedSkySH[index][band] = basis[band] * skyRadiance;
 		}
 		barrier();
 
