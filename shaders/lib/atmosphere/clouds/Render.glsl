@@ -33,20 +33,6 @@
 
 //================================================================================================//
 
-// Referring to Unreal Engine
-// For Wrenninge MS
-float[cloudMsCount] SetupParticipatingMediaPhases(float primaryPhase, float falloff) {
-	float phases[cloudMsCount];
-	phases[0] = primaryPhase;
-
-	for (uint ms = 1u; ms < cloudMsCount; ++ms) {
-		phases[ms] = mix(uniformPhase, primaryPhase, falloff);
-		falloff *= falloff;
-	}
-
-	return phases;
-}
-
 float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise) {
 	const uint steps = uint(CLOUD_LOW_SUNLIGHT_SAMPLES);
 	const float rSteps = 1.0 / float(steps);
@@ -55,11 +41,8 @@ float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise) {
 	float stepLength = rayLength * rSteps * rSteps;
 	vec3 rayStep = rayDir * stepLength;
 
-	// Early exit if transmittance is too small (optimization)
-	float threshold = -log(0.005) / (cloudLayer0.coeff.extinction * stepLength);
-
 	float sumDensity = 0.0;
-	for (uint i = 0u; i < steps && sumDensity < threshold; ++i) {
+	for (uint i = 0u; i < steps; ++i) {
 		float fi = float(i);
 		vec3 samplePos = rayPos + rayStep * sqr(fi + noise);
 
@@ -77,7 +60,7 @@ float CloudVolumeOpticalDepth(vec3 rayPos, vec3 rayDir, float noise) {
 }
 
 // [Wrenninge et al., 2013]
-float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
+float CloudMultiScatteringApproxWrenninge(float opticalDepth, float phase) {
 	float scatteringFalloff = cloudMsFalloffA;
 	float extinctionFalloff = cloudMsFalloffB;
 
@@ -98,7 +81,7 @@ float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
 
 vec2 CloudMultiScatteringApproxHaringPro(float sunlightOD, float phase, float sigmaT, float omega, float msVolume, vec3 lightDir) {
 	// https://zhuanlan.zhihu.com/p/457997155
-	float fms = omega * oms(exp2(-256.0 * sigmaT));
+	float fms = omega * oms(exp2(-192.0 * sigmaT));
 
     float scatteringSun = phase + uniformPhase * fms / (1.0 - fms);
     scatteringSun *= exp(-sunlightOD);
@@ -263,11 +246,11 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 						float sigmaT = stepDensity * cloudLayer0.coeff.extinction;
 
 						// Compute the optical depth of sunlight through clouds
-						float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, lightDir, noise.y);
+						float opticalDepthSun = CloudVolumeOpticalDepth(rayPos, lightDir, R1(i, noise.y));
 
 						// Approximate multi-scattering
                         float msVolume = linearstep(0.25, 1.0, dimensionalProfile);
-                        msVolume *= linearstep(0.0, 0.4, heightFraction);
+                        msVolume *= saturate(3.0 * heightFraction);
 						vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, sigmaT, cloudLayer0.coeff.albedo, msVolume, lightDir);
 
 						// Estimate the ground reflected light
