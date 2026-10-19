@@ -64,34 +64,20 @@ void CalculateTranslucentRefraction(inout vec3 sceneColor, ivec2 texelPos, vec3 
 
 		vec2 refractedCoord = hitPos.xy;
 	#else
-        // Newton's method for refraction
-        // https://jcgt.org/published/0015/01/03/
-        vec3 viewPosBack = ScreenToViewPos(vec3(screenPos.xy, loadDepth1(texelPos)));
 		vec2 refractedCoord = screenPos.xy;
+        vec3 viewPosBack = ScreenToViewPos(vec3(screenPos.xy, loadDepth1(texelPos)));
 
-        for (uint i = 0u; i < REFRACTION_SAMPLES; ++i) {
-            float denom = dot(viewNormal, refractedDir);
-            if (abs(denom) < EPS) break;
+        float denom = dot(viewNormal, refractedDir);
 
-            float t = dot(viewPosBack - viewPos, viewNormal) / denom;
-            vec3 hitViewPos = viewPos + refractedDir * t;
+        float t = dot(viewPosBack - viewPos, viewNormal) / denom;
+        vec3 hitViewPos = viewPos + refractedDir * t;
 
-            vec3 hitScreenPos = ViewToScreenPos(hitViewPos);
-            ivec2 hitTexelPos = uvToTexelScaled(hitScreenPos.xy);
+        vec3 hitScreenPos = ViewToScreenPos(hitViewPos);
+        ivec2 hitTexelPos = uvToTexelScaled(hitScreenPos.xy);
 
-            vec3 screenPosBack = vec3(hitScreenPos.xy, loadDepth1(hitTexelPos));
-            viewPosBack = ScreenToViewPos(screenPosBack);
-            viewNormal = mat3(gbufferModelView) * FetchGeometryNormal(hitTexelPos);
-
-            if (sdot(hitViewPos - viewPosBack) < 1.0) {
-                refractedCoord = hitScreenPos.xy;
-                break;
-            }
-        }
+        float refractedDepth = loadDepth1(hitTexelPos);
+        refractedCoord = mix(hitScreenPos.xy, screenPos.xy, step(refractedDepth, screenPos.z));
 	#endif
-
-	float refractedDepth = loadDepth1(uvToTexelScaled(refractedCoord));
-	refractedCoord = mix(refractedCoord, screenPos.xy, step(refractedDepth, screenPos.z));
 
     ivec2 refractedTexel = uvToTexelScaled(refractedCoord);
 	float confidence = smoothstep(0.8, 1.0, maxOf(abs(refractedCoord * 2.0 - 1.0)));
