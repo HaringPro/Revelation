@@ -17,7 +17,7 @@ float CalculateWaterHeight(vec2 position) {
 	#if RENDER_MODE == 1
 		float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
 	#else
-		const float waveTime = 0.0;
+		float waveTime = 0.0;
 	#endif
 	vec2 pos = 0.0075 * position;
 
@@ -48,7 +48,7 @@ float CalculateWaterHeightFull(vec2 position) {
 	#if RENDER_MODE == 1
 		float waveTime = 0.02 * WATER_WAVE_SPEED * frameTimeCounter;
 	#else
-		const float waveTime = 0.0;
+		float waveTime = 0.0;
 	#endif
 	vec2 pos = 0.0075 * position;
 
