@@ -30,10 +30,6 @@ out vec3 sceneOut;
 
 #include "/lib/universal/SSBO.glsl"
 
-#ifdef COLORED_HANDHELD_LIGHTING
-	#include "/lib/lighting/HandheldAlbedo.glsl"
-#endif
-
 //======// Function //============================================================================//
 
 #include "/lib/universal/Transform.glsl"
@@ -48,6 +44,9 @@ out vec3 sceneOut;
 
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
+#ifdef HANDHELD_LIGHTING
+	#include "/lib/lighting/Handheld.glsl"
+#endif
 
 #if AO_ENABLED > 0 && !defined SSILVB_ENABLED
 	#include "/lib/lighting/SSAO.glsl"
@@ -167,9 +166,10 @@ void main() {
 		vec3 worldDir = worldPos / viewDist;
 		worldPos += gbufferModelViewInverse[3].xyz;
 
-		vec3 geoNormal, worldNormal;
-		FetchNormalData(texelPos, geoNormal, worldNormal);
+		vec3 worldGeoNormal, worldNormal;
+		FetchNormalData(texelPos, worldGeoNormal, worldNormal);
 		vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
+        vec3 viewGeoNormal = mat3(gbufferModelView) * worldGeoNormal;
 
 		vec2 lightmap = Unpack2x8U(materialPack.x);
         // #if !defined DIMENSION_OVERWORLD
@@ -233,11 +233,11 @@ void main() {
 
 			// PCSS
 			if (lessThanFLT1(distanceFade)) {
-				shadow *= mix(CalculatePCSS(worldPos, geoNormal * normalOffsetBase, dither, surfaceDepth), vec3(1.0), distanceFade);
+				shadow *= mix(CalculatePCSS(worldPos, worldGeoNormal * normalOffsetBase, dither, surfaceDepth), vec3(1.0), distanceFade);
 			}
 
 			#ifdef SCREEN_SPACE_SHADOWS
-				float contactShadow = ScreenSpaceShadow(screenPos, viewPos + viewNormal * normalOffsetBase, dither, sssAmount);
+				float contactShadow = ScreenSpaceShadow(screenPos, viewPos + viewGeoNormal * normalOffsetBase, dither, sssAmount);
 			#else
 				const float contactShadow = 1.0;
 			#endif
@@ -313,21 +313,11 @@ void main() {
 
 		// Handheld light
 		#ifdef HANDHELD_LIGHTING
-			if (heldBlockLightValue + heldBlockLightValue2 > EPS) {
-				float NdotL = saturate(dot(worldNormal, -worldDir));
-				float attenuation = rcp(1.0 + viewDist * viewDist) * NdotL;
-				float intensity = max(heldBlockLightValue, heldBlockLightValue2);
-                intensity *= HELD_LIGHT_BRIGHTNESS;
-
-                #ifdef COLORED_HANDHELD_LIGHTING
-					vec4 heldLightData = handheldAlbedo.average;
-					vec3 heldLightColor = mix(blocklightColor, heldLightData.rgb, heldLightData.a);
-                #else
-                    #define heldLightColor blocklightColor
-                #endif
-				diffuseRadiance += intensity * attenuation * heldLightColor;
-                diffuseRadiance += intensity * 4.0 * float(handMask) * luminance(albedo);
-			}
+			HandheldLighting(
+                viewPos, viewGeoNormal, viewNormal, viewPos / -viewDist,
+			    albedo, material.roughness, material.reflectance, dither,
+                diffuseRadiance, specularRadiance
+            );
 		#endif
 
 		// Indirect diffuse lighting

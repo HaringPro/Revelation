@@ -54,6 +54,9 @@ writeonly uniform image2D colorimg3; // Lighting output
 
 #include "/lib/lighting/Common.glsl"
 #include "/lib/lighting/shadow/Render.glsl"
+#ifdef HANDHELD_LIGHTING
+	#include "/lib/lighting/Handheld.glsl"
+#endif
 
 #include "/lib/lighting/SSRT.glsl"
 
@@ -121,6 +124,7 @@ void main() {
 
 	vec2 lightmap = Unpack2x8U(materialPack.x);
 	float dither = BlueNoise(texelPos, frameCounter + 4);
+    vec3 f0 = vec3(F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR));
 
 	if (isEyeInWater == 0) {
 		vec3 sceneOut = loadSceneMain(texelPos);
@@ -170,8 +174,8 @@ void main() {
 	// Translucent lighting
 	vec4 lightingOut = vec4(0.0, 0.0, 0.0, 1.0);
 
-	vec3 geoNormal, worldNormal;
-	FetchNormalData(texelPos, geoNormal, worldNormal);
+	vec3 worldGeoNormal, worldNormal;
+	FetchNormalData(texelPos, worldGeoNormal, worldNormal);
 
 	float NdotL = 1.0;
 
@@ -188,23 +192,22 @@ void main() {
 		lightingOut.rgb += CalculateBlocklightFalloff(lightmap.x) * blocklightColor;
 	}
 
-	// Cloud shadows
-	#ifdef CLOUD_SHADOWS
-		vec2 cloudShadowCoord = WorldToCloudShadowScreenPos(worldPos).xy;
-		float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
-	#else
-		float cloudShadow = 1.0 - wetness * 0.96;
-	#endif
-
 	// Sunlight
-	vec3 sunlightMult = cloudShadow * saturate(lightmap.y * 1e6) * global.directIlluminance;
-	if (NdotL > EPS) {
-		vec3 normalOffset = geoNormal * (worldDistSquared * worldDistInverse * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
+	if (NdotL > EPS && lightmap.y > EPS) {
+		vec3 normalOffset = worldGeoNormal * (worldDistSquared * worldDistInverse * 2e-3 + 2e-2) * (2.0 - saturate(NdotL));
 		float surfaceDepth;
 		vec3 shadow = CalculatePCSS(worldPos, normalOffset, dither, surfaceDepth);
 
 		if (dot(shadow, vec3(1.0)) > EPS) {
-			shadow = saturate(shadow) * sunlightMult;
+            // Cloud shadows
+            #ifdef CLOUD_SHADOWS
+                vec2 cloudShadowCoord = WorldToCloudShadowScreenPos(worldPos).xy;
+                float cloudShadow = textureBicubic(cloudShadowTex, saturate(cloudShadowCoord)).x;
+            #else
+                float cloudShadow = 1.0 - wetness * 0.96;
+            #endif
+
+			shadow = saturate(shadow * cloudShadow) * global.directIlluminance;
 
 			if (notParticle) {
 				float NdotV = -dot(worldNormal, worldDir);
@@ -216,13 +219,33 @@ void main() {
                 NdotL = saturate(NdotL);
                 NdotV = saturate(NdotV);
 
-				float f0 = F0FromIOR(waterMask ? WATER_IOR : GLASS_IOR);
-				lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, vec3(f0));
+				lightingOut.rgb += shadow * SpecularGGX(VdotH, NdotV, NdotL, NdotH, TRANSLUCENT_ROUGHNESS, f0);
 			} else {
 				lightingOut.rgb += shadow * rPI;
 			}
 		}
 	}
+
+	#ifdef HANDHELD_LIGHTING
+		vec3 viewDir = viewPos * -worldDistInverse;
+		if (notParticle) {
+            vec3 viewNormal = mat3(gbufferModelView) * worldNormal;
+            vec3 viewGeoNormal = mat3(gbufferModelView) * worldGeoNormal;
+            vec3 diffuse = vec3(0.0);
+            HandheldLighting(
+                viewPos, viewGeoNormal, viewNormal, viewDir, vec3(1.0),
+                TRANSLUCENT_ROUGHNESS, f0, dither,
+                diffuse, lightingOut.rgb
+            );
+        } else {
+            vec3 specular = vec3(0.0);
+            HandheldLighting(
+                viewPos, viewDir, viewDir, viewDir, vec3(1.0),
+		        1.0, f0, dither,
+                lightingOut.rgb, specular
+            );
+        }
+	#endif
 
 	imageStore(colorimg3, texelPos, lightingOut);
 }

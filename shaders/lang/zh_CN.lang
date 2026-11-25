@@ -249,7 +249,7 @@ option.BLOCKLIGHT_COLOR_R=方块光颜色-§c红
 option.BLOCKLIGHT_COLOR_G=方块光颜色-§a绿
 option.BLOCKLIGHT_COLOR_B=方块光颜色-§9蓝
 option.HANDHELD_LIGHTING=手持光照
-option.COLORED_HANDHELD_LIGHTING=彩色手持光照
+option.HANDHELD_SHADOWS=手持光照阴影
 option.HELD_LIGHT_BRIGHTNESS=手持光照亮度
 
 option.NIGHT_BRIGHTNESS=夜间亮度

@@ -46,14 +46,19 @@ uniform float alphaTestRef;
 
 uniform vec2 scaledViewSize;
 
-#if defined COLORED_HANDHELD_LIGHTING && GBUFFERS_HAND
-	uniform int heldBlockLightValue;
-	uniform int heldBlockLightValue2;
-	uniform bool isRightHanded;
+#if GBUFFERS_HAND && EMISSIVE_MODE < 2
+uniform int currentRenderedItemId;
+#include "/lib/surface/Emission.glsl"
 
-	#define HANDHELD_ALBEDO_ACCESS coherent restrict
-	#define HANDHELD_ALBEDO_ACCUMULATE
-	#include "/lib/lighting/HandheldAlbedo.glsl"
+uint HandEmission(vec3 rgb) {
+	// Iris supplies the default block-state ID for block items and the item ID for sprites such as buckets.
+	uint profile = DecodeMaterialID(currentRenderedItemId);
+	if (currentRenderedItemId == 20001) profile = MAT_BERRIES;
+	if (currentRenderedItemId == 20025) profile = MAT_LAVA_CAULDRON;
+	// The placed beacon uses block-local coordinates. Its item model has a cyan core inside a glass shell.
+	if (profile == MAT_BEACON) profile = rgb.g > 0.94 || rgb.g - rgb.r > 0.36 ? MAT_LAMP : MAT_SOLID;
+	return WriteBuiltinMaterial(profile, rgb, vec3(0.0));
+}
 #endif
 
 //======// Main //================================================================================//
@@ -72,16 +77,6 @@ void main() {
 		albedo.rgb = vec3(1.0);
 	#endif
 
-	#if defined COLORED_HANDHELD_LIGHTING && GBUFFERS_HAND
-		bool handOnRight = gl_FragCoord.x >= 0.5 * scaledViewSize.x;
-		int handheldLightValue = handOnRight == isRightHanded ? heldBlockLightValue : heldBlockLightValue2;
-
-		if (handheldLightValue > 0) {
-			vec3 linearAlbedo = sRGBToLinear(albedo.rgb) * sRGB_2_Rec2020;
-			AccumulateHandheldAlbedo(linearAlbedo, ivec2(gl_FragCoord.xy));
-		}
-	#endif
-
 	albedoOut = albedo;
 
 	materialOut.x = Pack2x8U(lightmap);
@@ -91,6 +86,9 @@ void main() {
 		materialOut.y = MAT_GLASS;
 	#else
 		materialOut.y = MAT_SOLID;
+        #if EMISSIVE_MODE < 2
+            materialOut.y = HandEmission(albedo.rgb);
+        #endif
 	#endif
 
 	#if defined MC_SPECULAR_MAP && GBUFFERS_HAND

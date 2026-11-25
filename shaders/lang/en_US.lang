@@ -249,7 +249,7 @@ option.BLOCKLIGHT_COLOR_R=Blocklight Color §cRed
 option.BLOCKLIGHT_COLOR_G=Blocklight Color §aGreen
 option.BLOCKLIGHT_COLOR_B=Blocklight Color §9Blue
 option.HANDHELD_LIGHTING=Handheld Lighting
-option.COLORED_HANDHELD_LIGHTING=Colored Handheld Lighting
+option.HANDHELD_SHADOWS=Handheld Light Shadows
 option.HELD_LIGHT_BRIGHTNESS=Held Light Brightness
 
 option.NIGHT_BRIGHTNESS=Night Brightness
