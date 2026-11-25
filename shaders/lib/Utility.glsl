@@ -42,6 +42,7 @@
 #include "/lib/utility/Math.glsl"
 #include "/lib/utility/Matrix.glsl"
 #include "/lib/utility/Pack.glsl"
+#include "/lib/utility/MaterialID.glsl"
 #include "/lib/utility/Color.glsl"
 #include "/lib/utility/Interpolate.glsl"
 #include "/lib/utility/Phase.glsl"

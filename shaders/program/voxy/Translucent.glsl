@@ -42,8 +42,9 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec4 baseColor = parameters.sampledColour * parameters.tinting;
 	vec2 lightmap = vec2(0.0, saturate((parameters.lightMap.y - 0.03125) * 1.06667));
 
-	bool waterMask = parameters.customId == 10003u;
-	uint materialId = waterMask ? 3u : 2u;
+	uint surfaceID = DecodeMaterialID(int(parameters.customId));
+	bool waterMask = surfaceID == MAT_WATER;
+	uint materialId = waterMask || surfaceID == MAT_NETHER_PORTAL ? surfaceID : MAT_GLASS;
 
 	vec3 geoNormal = VoxyFaceNormal(parameters.face);
 	vec2 encodedNormal = OctEncodeSnorm(geoNormal);

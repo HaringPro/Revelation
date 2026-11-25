@@ -2,6 +2,7 @@
 #define INCLUDE_LIB_UTILITY_COMPAT
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 layout(location = 0) out vec4 albedoOut;
 layout(location = 1) out uvec4 materialOut;
@@ -27,7 +28,8 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	#endif
 
 	materialOut.x = Pack2x8U(lightmap);
-	materialOut.y = max(parameters.customId - 10000u, 1u);
+	uint materialID = DecodeMaterialID(int(parameters.customId));
+	materialOut.y = WriteBuiltinMaterial(materialID, baseColor.rgb, vec3(0.0));
 	materialOut.zw = uvec2(0u);
 
 	normalOut.xy = OctEncodeSnorm(geoNormal);

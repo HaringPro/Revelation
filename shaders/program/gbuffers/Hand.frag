@@ -86,11 +86,11 @@ void main() {
 
 	materialOut.x = Pack2x8U(lightmap);
 	#if GBUFFERS_PARTICLES_TRANSLUCENT
-		materialOut.y = 500u;
+		materialOut.y = MAT_TRANSLUCENT_PARTICLE;
 	#elif GBUFFERS_HAND_WATER
-		materialOut.y = 2u;
+		materialOut.y = MAT_GLASS;
 	#else
-	    materialOut.y = 1u;
+		materialOut.y = MAT_SOLID;
 	#endif
 
 	#if defined MC_SPECULAR_MAP && GBUFFERS_HAND

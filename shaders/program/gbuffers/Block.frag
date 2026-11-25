@@ -12,6 +12,7 @@
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 //======// Output //==============================================================================//
 
@@ -110,7 +111,8 @@ void main() {
         deltaUv2 *= renderScale.y;
     #endif
 
-	vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
+	vec4 albedoTex = textureGrad(tex, texCoord, deltaUv1, deltaUv2);
+	vec4 albedo = albedoTex * vertColor;
 
 	if (albedo.a < alphaTestRef) discard;
 
@@ -137,7 +139,7 @@ void main() {
 	#endif
 
     // Render end portal
-	if (materialID == 46u) {
+	if (materialID == MAT_END_PORTAL) {
 		vec3 worldDir = normalize(worldPos);
 		vec3 worldDirAbs = abs(worldDir);
 		vec3 sampleMask = step(maxOf(worldDirAbs), worldDirAbs);
@@ -158,7 +160,13 @@ void main() {
 	albedoOut = albedo;
 
 	materialOut.x = Pack2x8U(lightmap, BlueNoise(ivec2(gl_FragCoord.xy), frameCounter + 1));
-	materialOut.y = materialID;
+	uint id = materialID;
+	if (id == MAT_SIGN) {
+		// Vanilla glyphs use a white coverage texture and carry their dye in the vertex color.
+		bool brightGlyph = minOf(lightmap) > 0.99 && minOf(albedoTex.rgb) > 0.98;
+		id = brightGlyph ? MAT_GLOW : MAT_SOLID;
+	}
+	materialOut.y = WriteBuiltinMaterial(id, albedo.rgb, fract(worldPos + cameraPosition));
 
 	// Compute rain puddles
 	#if defined RAIN_PUDDLES && defined DIMENSION_OVERWORLD

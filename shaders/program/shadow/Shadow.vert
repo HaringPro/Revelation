@@ -18,27 +18,25 @@
 out vec2 texCoord;
 out vec3 vectorData; // Minecraft position in water, vertColor in other materials
 
-flat out uint isWater;
+flat out uint materialID;
 
 //======// Attribute //===========================================================================//
 
 in vec4 mc_Entity;
-in vec4 at_tangent;
+in vec2 mc_midTexCoord;
 
 //======// Uniform //=============================================================================//
 
-uniform vec3 cameraPosition;
-uniform mat4 shadowModelViewInverse;
-
-uniform int blockEntityId;
+#include "/lib/universal/Uniform.glsl"
 
 //======// Function //============================================================================//
 
 #include "/lib/lighting/shadow/Common.glsl"
+#include "/lib/surface/Foliage.glsl"
 
 //======// Main //================================================================================//
 void main() {
-	if (blockEntityId == 10030) {
+	if (blockEntityId == MATERIAL_PROPERTY_BASE + int(MAT_BEACON)) {
 		gl_Position = vec4(-1.0);
 		return;
 	}
@@ -54,12 +52,18 @@ void main() {
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 
-	isWater = 0u;
-	if (int(mc_Entity.x) == 10003) {
-		isWater = 1u;
+	materialID = DecodeMaterialID(int(mc_Entity.x));
+	if (materialID == MAT_WATER) {
 		vectorData = transMAD(shadowModelViewInverse, viewPos) + cameraPosition;
 	} else {
 		vectorData = gl_Color.rgb;
+	}
+
+	if (materialID == MAT_LEAVES || materialID >= MATERIAL_ROOTED_BASE) {
+		vec3 worldPos = transMAD(shadowModelViewInverse, viewPos);
+		float skylight = saturate((gl_MultiTexCoord1.y - 8.0) * rcp(232.0));
+		ApplyFoliageDisplacement(worldPos, materialID, skylight, step(gl_MultiTexCoord0.y, mc_midTexCoord.y));
+		viewPos = transMAD(shadowModelView, worldPos);
 	}
 
 	gl_Position.xyz = DistortShadowSpace(projMAD(gl_ProjectionMatrix, viewPos));

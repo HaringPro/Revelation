@@ -12,6 +12,7 @@
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 //======// Output //==============================================================================//
 
@@ -70,7 +71,8 @@ void main() {
 	#if GBUFFERS_LIGHTNING
        vec4 albedo = vec4(0.7, 0.675, 1.0, texture(tex, texCoord).a);
     #else
-        vec4 albedo = textureGrad(tex, texCoord, deltaUv1, deltaUv2) * vertColor;
+        vec4 albedoTex = textureGrad(tex, texCoord, deltaUv1, deltaUv2);
+        vec4 albedo = albedoTex * vertColor;
         if (albedo.a < alphaTestRef) discard;
     #endif
 
@@ -84,9 +86,18 @@ void main() {
 
 	materialOut.x = Pack2x8U(lightmap);
 	#if GBUFFERS_SPIDEREYES
-		materialOut.y = 20u;
+		materialOut.y = WriteBuiltinMaterial(MAT_GLOW, albedo.rgb, vec3(0.0));
+	#elif GBUFFERS_LIGHTNING
+		materialOut.y = WriteBuiltinMaterial(MAT_LIGHTNING, albedo.rgb, vec3(0.0));
 	#else
-		materialOut.y = materialID;
+		uint id = materialID;
+		if (id == MAT_GUARDIAN) {
+			float darkest = minOf(albedoTex.rgb);
+			if (darkest <= 0.78 || maxOf(albedoTex.rgb) - darkest >= 0.016) id = MAT_SOLID;
+		}
+		vec3 emissionColor = albedo.rgb;
+		if (id == MAT_GLOW_SQUID) emissionColor *= lightmap.x;
+		materialOut.y = WriteBuiltinMaterial(id, emissionColor, vec3(0.0));
 	#endif
 
 	#if defined MC_SPECULAR_MAP

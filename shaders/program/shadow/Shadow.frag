@@ -25,7 +25,7 @@ layout(location = 1) out vec4 shadowcolor1Out;
 in vec2 texCoord;
 in vec3 vectorData; // Minecraft position in water, vertColor in other materials
 
-flat in uint isWater;
+flat in uint materialID;
 
 //======// Uniform //=============================================================================//
 
@@ -41,7 +41,7 @@ uniform sampler2D tex;
 
 //======// Main //================================================================================//
 void main() {
-	if (isWater == 1u) {
+	if (materialID == MAT_WATER) {
 		vec3 waveNormal = CalculateWaterNormal(vectorData.xz);
 		shadowcolor1Out = vec4(waveNormal.xzy * 0.5 + 0.5, 1.0);
 	} else {

@@ -12,6 +12,7 @@
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 //======// Output //==============================================================================//
 
@@ -73,6 +74,10 @@ void main() {
 
 	materialOut.x = Pack2x8U(lightmap);
 	materialOut.y = materialID;
+	#if EMISSIVE_MODE < 2
+		if (materialID == MAT_LAMP) materialOut.y = WriteBuiltinMaterial(MAT_LAMP, albedoOut.rgb, vec3(0.0));
+		if (materialID == MAT_FIRE) materialOut.y = WriteBuiltinMaterial(MAT_FIRE, albedoOut.rgb, vec3(0.0));
+	#endif
 	materialOut.zw = uvec2(0);
 
 	normalOut.xy = OctEncodeSnorm(geoNormal);

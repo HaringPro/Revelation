@@ -12,6 +12,7 @@
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 //======// Output //==============================================================================//
 
@@ -188,7 +189,7 @@ void main() {
 	#endif
 
 	materialOut.x = Pack2x8U(lightmap, dither);
-	materialOut.y = materialID;
+	materialOut.y = WriteBuiltinMaterial(materialID, albedoOut.rgb, fract(worldPos + gbufferModelViewInverse[3].xyz + cameraPosition));
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = textureGrad(specular, realTexCoord, deltaUv1, deltaUv2);

@@ -43,7 +43,7 @@ void main() {
 
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
-	materialID = uint(blockEntityId - 10000);
+	materialID = DecodeMaterialID(blockEntityId);
 
 	vec3 viewPos = transMAD(gl_ModelViewMatrix, gl_Vertex.xyz);
 	worldPos = transMAD(gbufferModelViewInverse, viewPos);

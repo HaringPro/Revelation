@@ -164,8 +164,9 @@ void main() {
 	uvec4 materialPack = loadMaterialPack(texelPos);
 
 	uint materialID = materialPack.y;
-	bool glassMask = materialID == 2u;
-	bool waterMask = materialID == 3u;
+	bool portalMask = materialID == MAT_NETHER_PORTAL;
+	bool glassMask = materialID == MAT_GLASS || portalMask;
+	bool waterMask = materialID == MAT_WATER;
 
 	vec3 sceneColor = loadSceneMain(texelPos);
 
@@ -191,7 +192,7 @@ void main() {
 		vec3 albedo = sRGBToLinear(translucentColor.rgb) * sRGB_2_Rec2020;
 
 		// Particle translucent
-		if (materialID == 500u) {
+		if (materialID == MAT_TRANSLUCENT_PARTICLE) {
 			vec3 diffuseLight = texelFetch(colortex3, texelPos, 0).rgb;
 			sceneColor = mix(sceneColor, albedo * diffuseLight, translucentColor.a);
 		}
@@ -203,7 +204,10 @@ void main() {
 				sceneColor *= exp2(log2(albedo * oms(0.125 * translucentColor.a)) * approxSqrt(translucentColor.a + 0.25));
 
 				// Emissive
-				sceneColor += (2.0 * EMISSIVE_BRIGHTNESS) * Unpack2x8UX(materialPack.x) * mean(albedo) * albedo;
+                if (portalMask) {
+                    float emissive = EMISSIVE_BRIGHTNESS * 2.0 * maxOf(translucentColor.rgb);
+                    sceneColor += emissive * luminance(albedo) * albedo;
+                }
 			}
 
 			// Apply specular lighting

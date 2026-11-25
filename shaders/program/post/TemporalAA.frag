@@ -162,7 +162,7 @@ void main() {
 			// Voxy LoD often does not write vanilla depth (depth ~= 1.0 but non-sky material).
 			// Detect it and use DH/VOXY reprojection path instead of fully disabling temporal effects.
 			uint materialID = loadMaterialPack(texelPos).y;
-			if (depth > 1.0 - EPS && materialID != 0u) {
+			if (depth > 1.0 - EPS && materialID != MAT_SKY) {
 				float lodDepth = loadDepth0Lod(texelPos);
 				motionVector = ReprojectScreenPosLod(vec3(screenCoord, lodDepth)).xy - screenCoord;
 			} else

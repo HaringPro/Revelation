@@ -67,7 +67,7 @@ void main() {
 	vec3 geoNormal = normalize(cross(dFdx(worldPos), dFdy(worldPos)));
 	normalOut.xy = OctEncodeSnorm(geoNormal);
 
-	if (materialID == 3u) { // water
+	if (materialID == MAT_WATER) { // water
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 
 		#ifdef PHYSICS_OCEAN

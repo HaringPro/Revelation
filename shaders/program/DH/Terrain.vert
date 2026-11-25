@@ -44,7 +44,13 @@ void main() {
 	lightmap = mat2(gl_TextureMatrix[1]) * gl_MultiTexCoord1.xy + gl_TextureMatrix[1][3].xy;
 	lightmap = saturate((lightmap - 0.03125) * 1.06667);
 
-	materialID = dhMaterialId == DH_BLOCK_LEAVES ? 13u : 1u;
+	materialID = dhMaterialId == DH_BLOCK_LEAVES ? MAT_LEAVES : MAT_SOLID;
+	#ifdef DH_BLOCK_LAVA
+		if (dhMaterialId == DH_BLOCK_LAVA) materialID = MAT_FIRE;
+	#endif
+	#ifdef DH_BLOCK_ILLUMINATED
+		if (dhMaterialId == DH_BLOCK_ILLUMINATED) materialID = MAT_LAMP;
+	#endif
 
 	geoNormal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
 

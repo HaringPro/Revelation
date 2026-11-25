@@ -71,6 +71,10 @@ void main() {
 		geoNormal = mat3(gbufferModelViewInverse) * normalize(gl_NormalMatrix * gl_Normal);
 	#endif
 
-	// 829925: Physics mod snow
-	materialID = entityId == 829925 ? 39u : uint(entityId - 10000);
+	materialID = entityId == PHYSICS_SNOW_ENTITY_ID ? MAT_WEAK_SSS : DecodeMaterialID(entityId);
+	if (materialID == MAT_GUARDIAN) {
+		// Vanilla submits a constant fullbright lightmap and attack tint across each beam quad.
+		bool beamDraw = lightmap.x > 0.99 && maxOf(vertColor.rgb) - minOf(vertColor.rgb) > 0.10;
+		if (!beamDraw) materialID = MAT_SOLID;
+	}
 }

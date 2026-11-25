@@ -12,6 +12,7 @@
 //======// Utility //=============================================================================//
 
 #include "/lib/Utility.glsl"
+#include "/lib/surface/Emission.glsl"
 
 //======// Output //==============================================================================//
 
@@ -61,7 +62,7 @@ void main() {
 	albedoOut = vec4(albedo.rgb, 1.0);
 
 	materialOut.x = Pack2x8U(lightmap);
-	materialOut.y = lightmap.x > 0.999 ? 20u : 40u;
+	materialOut.y = lightmap.x > 0.999 ? WriteBuiltinMaterial(MAT_GLOW, albedo.rgb, vec3(0.0)) : MAT_PARTICLE;
 
 	#if defined MC_SPECULAR_MAP
 		vec4 specularTex = texture(specular, texCoord);

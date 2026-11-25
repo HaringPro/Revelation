@@ -13,10 +13,6 @@
 
 #include "/lib/Utility.glsl"
 
-#define WAVING_FOLIAGE
-#define WAVING_FOLIAGE_SPEED 1.0 // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 3.0 5.0 7.0 10.0]
-#define WAVING_FOLIAGE_STRENGTH 0.1 // [0.0 0.01 0.02 0.03 0.04 0.05 0.06 0.08 0.1 0.12 0.14 0.16 0.18 0.2 0.22 0.24 0.26 0.28 0.3 0.33 0.36 0.4 0.43 0.46 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
-// #define INTERACTIVE_PLANT
 #define UNLABELLED_FOILAGE_DETECTION
 
 //======// Output //==============================================================================//
@@ -48,7 +44,7 @@ in vec4 at_tangent;
 
 //======// Function //============================================================================//
 
-#include "/lib/universal/Random.glsl"
+#include "/lib/surface/Foliage.glsl"
 
 //======// Main //================================================================================//
 void main() {
@@ -59,11 +55,15 @@ void main() {
 
 	vec3 worldPos = transMAD(gbufferModelViewInverse, transMAD(gl_ModelViewMatrix, gl_Vertex.xyz));
 
-	materialID = uint(max(mc_Entity.x - 1e4, 1));
+	materialID = DecodeMaterialID(int(mc_Entity.x));
 
-	// Unlabelled foilage detection
+	// Unlabelled foliage detection
 	#ifdef UNLABELLED_FOILAGE_DETECTION
-		if (materialID < 1u && maxOf(abs(gl_Normal)) < 0.99) materialID = 1003u;
+		// Crossed plant quads are vertical and diagonal in block space.
+        vec3 absNormal = abs(gl_Normal);
+		if (mc_Entity.x < float(MATERIAL_PROPERTY_BASE) && absNormal.y < 0.02 && minOf(absNormal.xz) > 0.6) {
+			materialID = MAT_STATIC_PLANT;
+		}
 	#endif
 
 	// Encode normal and tangent
@@ -74,48 +74,7 @@ void main() {
 		tangentPack = bitfieldInsert(PackSnorm3x10(tangent), uint(at_tangent.w < 0.0), 30, 1);
 	#endif
 
-    bool plantMask = clamp(materialID, 1000u, 1002u) == materialID;
-	#ifdef INTERACTIVE_PLANT
-		if (plantMask && sdot(worldPos) < 4.0) {
-            worldPos.xz *= 1.0 + exp2(3.0 - length(worldPos * vec3(8.0, 2.0, 8.0)));
-        }
-	#endif
-
-	#ifdef WAVING_FOLIAGE
-		// Plants
-		if (plantMask) {
-			worldPos += cameraPosition;
-
-			float time = frameTimeCounter * WAVING_FOLIAGE_SPEED;
-			float intensity = cube(lightmap.y) * (wetness + 1.0) * WAVING_FOLIAGE_STRENGTH;
-			float topVertex = step(gl_MultiTexCoord0.y, mc_midTexCoord.y) + float(materialID == 1001u);
-			intensity *= step(materialID, 1000u) * 0.25 + 0.75; // Decrease intensity for tall plants
-
-			float noise = textureBicubic(noisetex, (worldPos.xz + time) * 0.005).x * 2.0;
-
-			float windOffset = sin(dot(worldPos.xz, vec2(2.0, 2.5)) + sin(time * 0.5) * 2.0);
-			windOffset *= sin(dot(worldPos.xz + time * 2.0, vec2(1.0, 0.75))) + noise;
-			worldPos.xz += vec2(0.4, 0.3) * windOffset * intensity * topVertex;
-
-			worldPos -= cameraPosition;
-		}
-
-		// Leaves
-		if (materialID == 13u) {
-			worldPos += cameraPosition;
-
-			float time = frameTimeCounter * WAVING_FOLIAGE_SPEED;
-			float intensity = cube(lightmap.y) * (wetness + 1.0) * WAVING_FOLIAGE_STRENGTH;
-
-			float noise = Pseudo3DNoise((worldPos + time) * 2.0) * 2.0;
-
-			float windOffset = sin(dot(worldPos, vec3(2.0, 1.5, 1.5)) + sin(time * 0.5) * 2.0);
-			windOffset *= sin(dot(worldPos + time * 2.0, vec3(1.0, 0.5, 0.75))) + noise;
-			worldPos += vec3(0.15, 0.1, 0.1) * windOffset * intensity;
-
-			worldPos -= cameraPosition;
-		}
-	#endif
+	ApplyFoliageDisplacement(worldPos, materialID, lightmap.y, step(gl_MultiTexCoord0.y, mc_midTexCoord.y));
 
 	#if defined PARALLAX || defined AUTO_GENERATED_NORMAL
         vec2 halfSize = abs(texCoord - mc_midTexCoord);

@@ -86,8 +86,8 @@ Material GetMaterialData(vec4 specTex, vec3 albedo) {
 	#else
 		material.emissive = specTex.b;
 	#endif
-	material.emissive = pow(material.emissive, EMISSIVE_CURVE) * EMISSIVE_BRIGHTNESS;
-    material.emissive *= luminance(albedo) * 4.0;
+	material.emissive = pow(material.emissive, EMISSIVE_CURVE) * MATERIAL_EMISSION_MAX;
+    material.emissive *= luminance(albedo) * EMISSIVE_BRIGHTNESS;
 
     material.reflectance = GetMaterialF0(material.metallic, albedo);
 
@@ -121,6 +121,19 @@ Material GetMaterialData(vec2 specTex) {
 	material.mirrorMask = material.roughness < ROUGH_REFLECTIONS_THRESHOLD;
 
 	return material;
+}
+
+float BuiltinSubsurface(uint id) {
+	if (id < MATERIAL_SSS_BASE) return 0.0;
+	if (id == MAT_LEAVES || id == MAT_STRONG_SSS) return 0.8;
+	if (id >= MATERIAL_FOLIAGE_BASE) return 0.6;
+	return id == MAT_PARTICLE ? 0.3 : 0.5;
+}
+
+float ReadBuiltinEmission(uint data) {
+	float emission = float(data >> 8u) * rcp255;
+	emission *= emission * MATERIAL_EMISSION_MAX;
+	return emission * EMISSIVE_BRIGHTNESS;
 }
 
 #endif // INCLUDE_LIB_SURFACE_MATERIAL

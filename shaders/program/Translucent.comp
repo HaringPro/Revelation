@@ -91,10 +91,10 @@ void main() {
 	uvec2 materialPack = loadMaterialPack(texelPos).xy;
 
 	uint materialID = materialPack.y;
-	bool notParticle = materialID != 500u;
+	bool notParticle = materialID != MAT_TRANSLUCENT_PARTICLE;
 
 	// Skip opaque fragments
-	if (clamp(materialID, 2u, 3u) != materialID && notParticle) return;
+	if (materialID != MAT_GLASS && materialID != MAT_WATER && materialID != MAT_NETHER_PORTAL && notParticle) return;
 
 	vec3 screenPos = vec3(texelToUvScaled(texelPos), loadDepth0(texelPos));
 	#if defined LOD_MOD

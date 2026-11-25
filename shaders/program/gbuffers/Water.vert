@@ -50,12 +50,9 @@ void main() {
 	texCoord = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
 	lightmap = saturate((gl_MultiTexCoord1.xy - 8.0) * rcp(232.0));
 
-	// Nether portal
-	lightmap.x = float(mc_Entity.x == 11500.0);
-
+	uint surfaceID = DecodeMaterialID(int(mc_Entity.x));
+	materialID = surfaceID == MAT_WATER || surfaceID == MAT_NETHER_PORTAL ? surfaceID : MAT_GLASS;
 	vertColor = gl_Color;
-
-	materialID = mc_Entity.x == 10003.0 ? 3u : 2u;
 
 	#ifdef PHYSICS_OCEAN
 		// basic texture to determine how shallow/far away from the shore the water is

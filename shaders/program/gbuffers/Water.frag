@@ -91,7 +91,7 @@ void main() {
         deltaUv2 *= renderScale.y;
     #endif
 
-	if (materialID == 3u) { // water
+	if (materialID == MAT_WATER) { // water
 		ivec2 texelPos = ivec2(gl_FragCoord.xy);
 		vec3 worldDir = normalize(worldPos - gbufferModelViewInverse[3].xyz);
 

@@ -55,7 +55,7 @@ void main() {
 
 	vertColor = gl_Color;
 
-	materialID = dhMaterialId == DH_BLOCK_WATER ? 3u : 2u;
+	materialID = dhMaterialId == DH_BLOCK_WATER ? MAT_WATER : MAT_GLASS;
 
 	#ifdef PHYSICS_OCEAN
 		// basic texture to determine how shallow/far away from the shore the water is

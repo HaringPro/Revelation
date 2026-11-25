@@ -96,7 +96,7 @@ void main() {
 	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
 
 	uvec4 materialPack = loadMaterialPack(texelPos);
-	uint materialID = materialPack.y;
+	uint materialID = materialPack.y & MATERIAL_ID_MASK;
 
 	vec3 albedo = FetchBaseColor(texelPos);
 
@@ -104,7 +104,7 @@ void main() {
 
 	sceneOut = vec3(0.0);
 
-	if (materialID == 0u) { // Sky
+	if (materialID == MAT_SKY) { // Sky
     #if defined DIMENSION_OVERWORLD
 		vec3 viewDir  = ScreenToViewDir(screenCoord);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
@@ -182,24 +182,7 @@ void main() {
 
 		float sssAmount = 0.0;
 		#if SUBSURFACE_SCATTERING_MODE < 2
-			// Hard-coded sss amount for certain materials
-			switch (materialID) {
-				case 1000u: case 1001u: case 1002u: case 1003u: case 27u: case 28u: // Plants
-					sssAmount = 0.6;
-					break;
-				case 13u: // Leaves
-					sssAmount = 0.8;
-					break;
-				case 37u: case 39u: // Weak SSS
-					sssAmount = 0.5;
-					break;
-				case 38u: case 51u: // Strong SSS
-					sssAmount = 0.8;
-					break;
-				case 40u: // Particles
-					sssAmount = 0.3;
-					break;
-			}
+			sssAmount = BuiltinSubsurface(materialID);
 		#endif
 		#if TEXTURE_FORMAT == 0 && SUBSURFACE_SCATTERING_MODE > 0 && defined MC_SPECULAR_MAP
 			sssAmount = max(sssAmount, specularTex.b * step(64.5 * rcp255, specularTex.b));
@@ -268,7 +251,7 @@ void main() {
 				float phase = HenyeyGreensteinPhase(-LdotV, 0.7) * 0.25 + uniformPhase * 0.75;
 				vec3 sss = sigmaS * phase * exp2(-rLOG2 * surfaceDepth * (sigmaS + sigmaA));
 
-				float cutout = float(clamp(materialID, 1000u, 1003u) == materialID || clamp(materialID, 27u, 28u) == materialID);
+				float cutout = float(materialID >= MATERIAL_FOLIAGE_BASE && materialID != MAT_LEAVES);
 				sss *= mix(1.0, contactShadow, saturate(distanceFade + cutout * 0.75));
 
 				diffuseRadiance += sunlightBase * sss * SUBSURFACE_SCATTERING_BRIGHTNESS;
@@ -375,8 +358,7 @@ void main() {
 			sceneOut = material.emissive * albedo;
 		#endif
 		#if EMISSIVE_MODE < 2
-			// Hard-coded emissive
-			sceneOut += HardCodeEmissive(materialID, albedo, worldPos) * EMISSIVE_BRIGHTNESS * albedo;
+			sceneOut += ReadBuiltinEmission(materialPack.y) * luminance(albedo) * albedo;
 		#endif
 
 		sceneOut += diffuseRadiance + specularRadiance;
